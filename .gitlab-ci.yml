@@ -1,0 +1,118 @@
+image: gradle:8-jdk21
+
+variables:
+  # Thay thế URL Webhook của bạn vào đây
+  DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1459559029180465389/V33G3HEFpb4thBgw4AUMoOs7IpSFqqXdvIddUIQnxga3QX5IJBQFvlcGM8OXzvlPbQLA"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  # URL ảnh icon nhỏ ở góc và ảnh lớn bên phải (Thumbnail)
+  # Bạn nên thay link này bằng link logo plugin của bạn (đuôi .png/.jpg)
+  ICON_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
+  THUMBNAIL_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
+
+stages:
+  - build
+  - notify
+
+# --- STAGE 1: BUILD ---
+build_job:
+  stage: build
+  script:
+    - gradle clean build
+  artifacts:
+    paths:
+      - build/libs/*.jar
+    expire_in: never
+
+# --- STAGE 2: NOTIFY SUCCESS (Chạy khi build thành công) ---
+notify_success:
+  stage: notify
+  needs: [ "build_job" ]
+  when: on_success
+  before_script:
+    - apt-get update && apt-get install -y git jq curl
+  script:
+    - |
+      # 1. LẤY THÔNG TIN
+      COMMIT_MSG=$(git log -1 --pretty=%B)
+      AUTHOR=$(git log -1 --pretty=%an)
+      HASH=$(git log -1 --pretty=%h)
+      VERSION=$(gradle properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+      NAME=$(gradle properties -q | grep "^name:" | awk '{print $2}' || echo "Plugin")
+      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      
+      # 2. TẠO JSON EMBED (MÀU XANH)
+      # Màu 5763719 (Green)
+      jq -n \
+        --arg author "$AUTHOR pushed an update for $NAME" \
+        --arg desc "$COMMIT_MSG" \
+        --arg footer "Build Success • Version $VERSION • $HASH" \
+        --arg timestamp "$TIMESTAMP" \
+        --arg icon "$ICON_URL" \
+        --arg thumb "$THUMBNAIL_URL" \
+        '{
+          username: "SinceDungeon Build",
+          avatar_url: $icon,
+          embeds: [{
+            color: 5763719,
+            author: { name: $author, icon_url: $icon },
+            title: "Build Successful & Ready!",
+            description: $desc,
+            thumbnail: { url: $thumb },
+            footer: { text: $footer },
+            timestamp: $timestamp
+          }]
+        }' > success_payload.json
+
+      # 3. GỬI EMBED TRƯỚC
+      curl -H "Content-Type: application/json" -d @success_payload.json "$DISCORD_WEBHOOK_URL"
+      
+      # 4. UPLOAD FILE JAR NGAY SAU ĐÓ
+      JAR_FILE=$(find build/libs -name "*.jar" | head -n 1)
+      if [ -f "$JAR_FILE" ]; then
+        echo "Uploading $JAR_FILE..."
+        curl -X POST -F "file=@$JAR_FILE" "$DISCORD_WEBHOOK_URL"
+      else
+        echo "Jar file not found!"
+      fi
+
+# --- STAGE 2: NOTIFY FAILURE (Chạy khi build thất bại) ---
+notify_failure:
+  stage: notify
+  needs: [ "build_job" ]
+  when: on_failure
+  before_script:
+    - apt-get update && apt-get install -y git jq curl
+  script:
+    - |
+      # 1. LẤY THÔNG TIN
+      AUTHOR=$(git log -1 --pretty=%an)
+      HASH=$(git log -1 --pretty=%h)
+      NAME=$(gradle properties -q | grep "^name:" | awk '{print $2}' || echo "Plugin")
+      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      JOB_URL="$CI_PROJECT_URL/-/jobs/$CI_JOB_ID"
+
+      # 2. TẠO JSON EMBED (MÀU ĐỎ)
+      # Màu 15548997 (Red)
+      jq -n \
+        --arg author "$AUTHOR broke the build for $NAME!" \
+        --arg desc "The build failed. Please check the console logs." \
+        --arg url "$JOB_URL" \
+        --arg footer "Build Failed • $HASH" \
+        --arg timestamp "$TIMESTAMP" \
+        --arg icon "$ICON_URL" \
+        '{
+          username: "SinceDungeon Build",
+          avatar_url: $icon,
+          embeds: [{
+            color: 15548997,
+            author: { name: $author, icon_url: $icon },
+            title: "Build Failed ❌",
+            url: $url,
+            description: $desc,
+            footer: { text: $footer },
+            timestamp: $timestamp
+          }]
+        }' > fail_payload.json
+
+      # 3. GỬI CẢNH BÁO
+      curl -H "Content-Type: application/json" -d @fail_payload.json "$DISCORD_WEBHOOK_URL"

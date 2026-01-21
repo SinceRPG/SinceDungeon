@@ -1,0 +1,26 @@
+name: SinceDungeon
+version: '1.0'
+main: net.danh.sinceDungeon.SinceDungeon
+api-version: '1.21'
+authors: [ VoChiDanh ]
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: true
+    MMOItems:
+      load: BEFORE
+      required: true
+    MythicLib:
+      load: BEFORE
+      required: true
+    WorldGuard:
+      load: BEFORE
+      required: true
+    MythicMobs:
+      load: BEFORE
+      required: true
+permissions:
+  SinceDungeon.admin:
+    description: Admin permission for SinceDungeon
+    default: op

@@ -1,0 +1,206 @@
+prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» <gray>"
+
+admin:
+  reload: "<green>Đã tải lại toàn bộ file cấu hình và dungeon."
+  invalid_player: "<red>Không tìm thấy người chơi này."
+
+game:
+  start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"
+  stage_start: "<yellow>Giai đoạn <stage> bắt đầu!"
+  stage_complete: "<green>Giai đoạn <stage> hoàn thành!"
+  finish: "<gold><b>DUNGEON HOÀN THÀNH!</b>"
+  completion_time: "<gray>Thời gian hoàn thành: <green><time>s"
+  no_reward: "<red>Rất tiếc, bạn không đạt đủ điều kiện nhận thưởng."
+  death: "<red>Bạn đã bị hạ gục! Dungeon thất bại." # [MỚI]
+
+lobby:
+  preparing: "<yellow>Đang khởi tạo thế giới dungeon..."
+  countdown: "<yellow>Dungeon sẽ bắt đầu trong <time> giây..."
+
+action:
+  chest_appear: "<yellow>Một rương kho báu đã xuất hiện!"
+  chest_found: "<green>Bạn đã tìm thấy một rương ẩn!"
+  chest_not_empty: "<red>Bạn phải lấy hết đồ trong rương để tiếp tục!"
+  loot_complete: "<green>Đã dọn sạch rương!"
+  reach_start: "<yellow>Hãy di chuyển đến tọa độ <x>, <z>!"
+  reach_complete: "<green>Đã đến điểm kiểm tra!"
+  wall_break: "<yellow>Bức tường chắn đã bị phá hủy!"
+  spawn_wave: "<red>Xuất hiện <amount> <mob>!"
+  kill_remain: "<yellow>Còn lại <amount> kẻ địch."
+  kill_complete: "<green>Đã tiêu diệt hết quái vật!"
+  mythic_wave_start: "<red>Boss <mob> đã xuất hiện!"
+  mythic_wave_remain: "<yellow>Còn lại <amount> <mob>."
+  mythic_wave_complete: "<green>Boss đã bị tiêu diệt!"
+
+error:
+  already_in: "<red>Bạn đang ở trong một dungeon khác!"
+  file_not_found: "<red>Không tìm thấy file dungeon: <file>"
+  dungeon_maintenance: "<red>Dungeon này đang bảo trì."
+  condition_fail: "<red>Bạn không đủ điều kiện: <condition>"
+  template_missing: "<red>Map mẫu <world> không tồn tại!"
+  create_failed: "<red>Lỗi khởi tạo dungeon. Vui lòng báo admin."
+  mythic_mob_not_found: "<red>Lỗi config: Không tìm thấy MythicMob <mob>."
+  mob_spawn_fail: "<red>Lỗi spawn mob <mob>: <error>"
+
+reward:
+  gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"
+  auto_claim: "<green>Tự động nhận <count> rương còn lại."
+  claimed_all: "<green>Bạn đã nhận hết phần thưởng!"
+  received_item: "<gray>Nhận được: <green><item>"
+  received_custom: "<gray>Phần thưởng: <green><item>"
+  inventory_full: "<red>Túi đầy! Vật phẩm đã rơi xuống đất."
+
+  settings:
+    gui_size: 27
+    button_slot: 13
+
+  icons:
+    button:
+      material: CHEST
+      name: "<gold><b>Mở Rương</b>"
+      lore:
+        - "<gray>Nhấn để mở rương ngẫu nhiên!"
+        - "<gray>Còn lại: <yellow><count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "<light_purple><b>Rương Bí Ẩn</b>"
+      lore:
+        - "<gray>Bên trong có gì nhỉ?"
+
+editor:
+  # [MỚI] Mô tả cho các hành động trong Editor
+  actions:
+    spawn_wave: "Spawn quái vật Vanilla theo đợt"
+    reach_location: "Yêu cầu người chơi đi tới tọa độ"
+    loot_chest: "Tạo rương kho báu cần loot"
+    break_wall: "Phá hủy tường khi đập block kích hoạt"
+    mythic_wave: "Spawn Boss từ MythicMobs"
+
+  title:
+    main: "<b>Dungeon Editor</b>"
+    dungeon: "<b>Sửa: <name></b>"
+    conditions: "<b>Điều kiện</b>"
+    rewards_main: "<b>Menu Phần Thưởng</b>"
+    reward_tiers: "<b>Mốc Thưởng</b>"
+    reward_pool: "<b>Kho Phần Thưởng</b>"
+    edit_reward: "<b>Sửa Thưởng #<index></b>"
+    stages: "<b>Các Giai Đoạn</b>"
+    actions: "<b>Giai Đoạn <stage></b>"
+    select_type: "<b>Chọn Loại Hành Động</b>"
+    edit_action: "<b>Sửa Hành Động #<index></b>"
+
+  items:
+    click_edit: "<yellow>Nhấn để sửa"
+    create_new: "<green><b>Tạo Dungeon Mới</b>"
+    world_template: "<yellow>Map Mẫu"
+    world_template_lore:
+      - "<gray>Hiện tại: <white><world>"
+      - "<yellow>Nhấn để đổi"
+    public_status: "<yellow>Trạng thái Public"
+    public_status_lore:
+      - "<gray>Hiện tại: <status>"
+      - "<yellow>Nhấn để bật/tắt"
+    conditions: "<yellow>Điều kiện vào"
+    conditions_lore:
+      - "<gray>Chỉnh sửa điều kiện tham gia"
+    rewards: "<gold>Phần thưởng"
+    rewards_lore:
+      - "<gray>Chỉnh sửa phần thưởng"
+    stages: "<red>Giai đoạn (Stages)"
+    stages_lore:
+      - "<gray>Chỉnh sửa nội dung dungeon"
+    save: "<green><b>Lưu Thay Đổi</b>"
+    back: "<red>Quay Lại"
+
+    condition_item: "<yellow>Điều kiện #<index>"
+    condition_lore:
+      - "<gray>Kiểm tra: <white><check>"
+      - "<gray>Tin nhắn lỗi: <white><msg>"
+      - ""
+      - "<yellow>Chuột Trái: Sửa điều kiện"
+      - "<yellow>Chuột Phải: Sửa tin nhắn"
+      - "<red>Shift-Phải: Xóa"
+    add_condition: "<green>Thêm Điều Kiện"
+
+    reward_tiers_item: "<gold>Mốc Thời Gian"
+    reward_pool_item: "<gold>Kho Vật Phẩm"
+    tier_item: "<yellow><time>s"
+    tier_lore:
+      - "<gray>Số rương: <white><amount>"
+      - ""
+      - "<yellow>Chuột Trái: Sửa"
+      - "<red>Chuột Phải: Xóa"
+    add_tier: "<green>Thêm Mốc"
+
+    pool_item: "<yellow>Thưởng #<index>"
+    pool_lore:
+      - "<gray>Loại: <white><type>"
+      - "<gray>Giá trị: <white><val>"
+      - ""
+      - "<yellow>Nhấn để sửa"
+      - "<red>Shift-Phải: Xóa"
+    add_pool_item: "<green>Thêm Phần Thưởng"
+
+    reward_type: "<yellow>Loại"
+    reward_type_lore:
+      - "<gray>Hiện tại: <white><type>"
+      - "<yellow>Nhấn để đổi (ITEM/COMMAND/MMOITEM)"
+    reward_value: "<yellow>Giá trị"
+    reward_value_lore:
+      - "<gray>Hiện tại: <white><val>"
+      - "<yellow>Chuột Trái: Nhập tay"
+      - "<yellow>Chuột Phải: Lấy item trên tay"
+    reward_chance: "<yellow>Tỉ lệ"
+    reward_chance_lore:
+      - "<gray>Hiện tại: <white><val>%"
+      - "<yellow>Nhấn để sửa"
+    reward_name: "<yellow>Tên hiển thị"
+    reward_name_lore:
+      - "<gray>Hiện tại: <white><val>"
+      - "<yellow>Nhấn để sửa"
+
+    stage_item: "<yellow>Giai đoạn <stage>"
+    stage_lore:
+      - "<gray>Nhấn để sửa các hành động"
+    add_stage: "<green>Thêm Giai Đoạn"
+
+    action_item: "<yellow>Hành động #<index>"
+    action_lore:
+      - "<gray>Loại: <white><type>"
+      - ""
+      - "<yellow>Nhấn để sửa"
+      - "<red>Shift-Chuột: Xóa"
+    add_action: "<green>Thêm Hành Động"
+    cancel: "<red>Hủy"
+
+    action_val_hint_edit: "<yellow>Nhấn để nhập giá trị mới"
+    action_val_hint_loc: "<yellow>Nhấn để thêm vị trí hiện tại"
+    action_val_hint_loc_replace: "<yellow>Chuột Phải để thay thế bằng vị trí hiện tại"
+    action_val_hint_loc_clear: "<red>Shift-Phải để xóa danh sách"
+    action_type_cant_edit: "<red>Không thể đổi loại hành động sau khi tạo"
+
+  chat:
+    input_start:
+      - "<green>Vui lòng nhập giá trị vào kênh chat."
+      - "<gray>Gõ <red>cancel<gray> để hủy."
+      - "<gray>Gõ <yellow>here<gray> để lấy tọa độ hiện tại."
+    input_cancel: "<red>Đã hủy nhập."
+    input_here: "<green>Đã dùng tọa độ: <loc>"
+    session_expired: "<red>Phiên làm việc hết hạn."
+    save_error: "<red>Lỗi lưu file: <error>"
+    saved: "<green>Đã lưu file thành công!"
+    created: "<green>Đã tạo file dungeon mới: <file>"
+    template_set: "<green>Đã đặt map mẫu là: <world>"
+    public_toggled: "<yellow>Trạng thái Public: <status>"
+    condition_val_hint_check: "<yellow>Nhập điều kiện PAPI (vd: %player_level% >= 10)"
+    condition_val_hint_msg: "<yellow>Nhập tin nhắn khi không đạt điều kiện"
+    format_tier_error: "<red>Sai định dạng! Dùng: <giây> <số_lượng>"
+    tier_added: "<green>Đã thêm mốc: <time>s -> <amount> rương"
+    update_val: "<green>Đã cập nhật <key>: <val>"
+    number_error: "<red>Giá trị phải là số!"
+    reward_added: "<green>Đã thêm phần thưởng mới!"
+    type_changed: "<green>Đã đổi loại thành <type>"
+    item_set_hand: "<green>Đã lấy item trên tay: <item>"
+    hand_empty: "<red>Bạn phải cầm item trên tay!"
+    loc_cleared: "<yellow>Đã xóa danh sách tọa độ."
+    update_loc: "<green>Đã cập nhật tọa độ: <loc>"

@@ -1,0 +1,194 @@
+package net.danh.sinceDungeon;
+
+import com.mojang.brigadier.arguments.StringArgumentType;
+import io.papermc.paper.command.brigadier.Commands;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.danh.sinceDungeon.editor.EditorGUI;
+import net.danh.sinceDungeon.editor.EditorListener;
+import net.danh.sinceDungeon.editor.EditorManager;
+import net.danh.sinceDungeon.manager.DungeonListener;
+import net.danh.sinceDungeon.manager.DungeonManager;
+import net.danh.sinceDungeon.reward.RewardGUI;
+import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ConfigUtils;
+import net.danh.sinceDungeon.utils.WorldUtils;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jspecify.annotations.NonNull;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public final class SinceDungeon extends JavaPlugin {
+    private static SinceDungeon plugin;
+    private MiniMessage miniMessage;
+
+    private ConfigUtils configFile;
+    private ConfigUtils messagesFile;
+
+    private DungeonManager dungeonManager;
+    private EditorManager editorManager;
+    private EditorListener editorListener;
+
+    public static SinceDungeon getPlugin() {
+        return plugin;
+    }
+
+    @Override
+    public void onLoad() {
+        plugin = this;
+    }
+
+    @Override
+    public void onEnable() {
+        miniMessage = MiniMessage.miniMessage();
+
+        // 1. Load Configs
+        configFile = new ConfigUtils(this, "config.yml");
+        messagesFile = new ConfigUtils(this, "messages.yml");
+
+        // 2. Initialize Managers
+        dungeonManager = new DungeonManager(this);
+        editorManager = new EditorManager(this);
+        editorListener = new EditorListener(this);
+
+        // 3. Register Listeners
+        List<Listener> listeners = new ArrayList<>();
+        listeners.add(new DungeonListener(this));
+        listeners.add(editorListener);
+        listeners.add(new RewardGUI(this));
+        listeners.add(new EditorGUI(this));
+        registerListeners(listeners.toArray(new Listener[0]));
+
+        // 4. Register Commands
+        registerCommands();
+
+        // 5. Cleanup Stuck Worlds (Async Startup)
+        cleanUpStuckWorlds();
+
+        getLogger().info("SinceDungeon enabled successfully!");
+    }
+
+    @Override
+    public void onDisable() {
+        // [TEST CASE: Server Stop/Reload]
+        // Đảm bảo tất cả game đang chạy bị dừng và world được xóa/unload
+        if (dungeonManager != null) {
+            dungeonManager.stopAllGames();
+        }
+
+        Bukkit.getScheduler().cancelTasks(this);
+
+        if (configFile != null) configFile.save();
+        if (messagesFile != null) messagesFile.save();
+
+        getLogger().info("SinceDungeon disabled!");
+    }
+
+    public void reloadFiles() {
+        if (configFile != null) configFile.reload();
+        if (messagesFile != null) messagesFile.reload();
+        if (dungeonManager != null) dungeonManager.reload();
+        getLogger().info("Configuration and Dungeons reloaded.");
+    }
+
+    /**
+     * [TEST CASE: Server Crash Recovery]
+     * Dọn dẹp các world bị kẹt do server crash lần trước
+     */
+    private void cleanUpStuckWorlds() {
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            File container = Bukkit.getWorldContainer();
+            File[] files = container.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    // Kiểm tra folder world có khớp định dạng dungeon không
+                    // Format: PlayerName_TemplateID_UUID
+                    // Regex: Chứa ít nhất 2 dấu gạch dưới và là thư mục
+                    if (file.isDirectory() && file.getName().matches(".*_.*_.*")) {
+                        getLogger().info("[Cleanup] Phát hiện world rác: " + file.getName() + ". Đang xóa...");
+                        WorldUtils.deleteWorld(file);
+                    }
+                }
+            }
+        });
+    }
+
+    private void registerListeners(Listener @NonNull ... listeners) {
+        for (Listener l : listeners) getServer().getPluginManager().registerEvents(l, this);
+    }
+
+    private void registerCommands() {
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            // Admin Command
+            event.registrar().register(Commands.literal("sincedungeon")
+                    .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
+                    .then(Commands.literal("reload")
+                            .executes(ctx -> {
+                                reloadFiles();
+                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+                                return 1;
+                            })
+                    )
+                    .build(), "SinceDungeon Admin"
+            );
+
+            // User Command
+            event.registrar().register(Commands.literal("dungeon")
+                    .then(Commands.literal("join")
+                            .then(Commands.argument("name", StringArgumentType.word())
+                                    .executes(ctx -> {
+                                        if (ctx.getSource().getExecutor() instanceof Player p)
+                                            dungeonManager.joinDungeon(p, StringArgumentType.getString(ctx, "name"));
+                                        return 1;
+                                    })
+                            )
+                    )
+                    .then(Commands.literal("leave")
+                            .executes(ctx -> {
+                                if (ctx.getSource().getExecutor() instanceof Player p)
+                                    dungeonManager.quitDungeon(p);
+                                return 1;
+                            })
+                    )
+                    .then(Commands.literal("editor")
+                            .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
+                            .executes(ctx -> {
+                                if (ctx.getSource().getExecutor() instanceof Player p)
+                                    editorManager.openEditor(p);
+                                return 1;
+                            })
+                    )
+                    .build(), "SinceDungeon Player"
+            );
+        });
+    }
+
+    public MiniMessage getMiniMessage() {
+        return miniMessage;
+    }
+
+    public ConfigUtils getMessagesFile() {
+        return messagesFile;
+    }
+
+    public ConfigUtils getConfigFile() {
+        return configFile;
+    }
+
+    public DungeonManager getDungeonManager() {
+        return dungeonManager;
+    }
+
+    public EditorManager getEditorManager() {
+        return editorManager;
+    }
+
+    public EditorListener getEditorListener() {
+        return editorListener;
+    }
+}

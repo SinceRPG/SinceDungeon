@@ -1,0 +1,14 @@
+# Main Configuration for SinceDungeon
+
+# Debug mode: Bật lên để xem log chi tiết khi gặp lỗi
+debug: false
+
+dungeon:
+  # Thời gian đếm ngược (giây) trước khi bắt đầu dungeon
+  lobby-countdown: 10
+  # Thư mục chứa các map mẫu (nằm trong thư mục gốc của server)
+  template-folder: "dungeons"
+
+editor:
+  # Item dùng để điều hướng trong Editor GUI
+  nav-item: ARROW

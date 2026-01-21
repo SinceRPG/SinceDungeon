@@ -1,0 +1,97 @@
+# Name of the world folder in your main server directory to use as a template
+template-world: "dungeon_map_v1"
+
+# If true, anyone can join via GUI. If false, only admins or specific triggers can join.
+public: true
+
+# Conditions required to enter the dungeon
+# Uses PlaceholderAPI
+conditions:
+  - check: "%player_level% >= 5"
+    msg: "You must be at least level 5 to enter!"
+  - check: "%vault_eco_balance% >= 100"
+    msg: "You need 100 gold to enter this dungeon!"
+
+# Rewards based on completion time (Time in seconds : Chest Count)
+# If finished in 300s (5m) -> Get 3 rewards
+# If finished in 600s (10m) -> Get 2 rewards
+# Default -> 1 reward
+rewards:
+  tiers:
+    300: 3
+    600: 2
+    9999: 1
+
+  # The pool of possible rewards
+  pool:
+    - type: ITEM
+      value: "DIAMOND:2"
+      chance: 50.0
+      name: "<b:aqua>Rare Diamonds"
+      lore:
+        - "<gray>Shiny!"
+    - type: COMMAND
+      value: "eco give %player% 500"
+      chance: 30.0
+      name: "<gold>500 Gold"
+      lore:
+        - "<gray>Currency reward"
+    - type: MMOITEM
+      value: "SWORD:CUTLASS:1"
+      chance: 10.0
+      name: "<red>Pirate Sword"
+      lore:
+        - "<gray>A rare weapon"
+    - type: ITEM
+      value: "GOLDEN_APPLE:5"
+      chance: 100.0
+      name: "<yellow>Snacks"
+
+# Dungeon Stages (Executed in order)
+stages:
+  # --- STAGE 1: Clear the entrance ---
+  1:
+    actions:
+      - type: SPAWN_WAVE
+        mob: ZOMBIE
+        amount: 5
+        locations:
+          - "10,65,10"
+          - "12,65,10"
+          - "10,65,12"
+      - type: SPAWN_WAVE
+        mob: SKELETON
+        amount: 3
+        locations:
+          - "15,65,15"
+
+  # --- STAGE 2: Parkour & Reach Checkpoint ---
+  2:
+    actions:
+      - type: REACH_LOCATION
+        target: "50,70,50"
+        radius: 3.0
+
+  # --- STAGE 3: Break the Gate & Loot ---
+  3:
+    actions:
+      # Players must break the block at 'trigger' to remove the wall defined by corner1 & corner2
+      - type: BREAK_WALL
+        trigger: "51,71,51"
+        corner1: "50,70,55"
+        corner2: "55,75,55"
+      - type: LOOT_CHEST
+        location: "60,72,60"
+        items:
+          11: "DIAMOND:1"
+          13: "IRON_INGOT:5"
+          15: "MMOITEMS:CONSUMABLE:MANGO:2"
+
+  # --- STAGE 4: Final Boss ---
+  4:
+    actions:
+      - type: MYTHIC_WAVE
+        mob: "SkeletonKing"
+        amount: 1
+        locations:
+          - "100,65,100"
