@@ -8,6 +8,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,13 +22,17 @@ import java.io.File;
 import java.util.*;
 
 public class EditorGUI implements Listener {
+
     private final SinceDungeon plugin;
 
     public EditorGUI(SinceDungeon plugin) {
         this.plugin = plugin;
     }
 
-    // --- UTILS ---
+    // =================================================================================
+    //                                     UTILS
+    // =================================================================================
+
     private String getMsg(String key) {
         return plugin.getMessagesFile().getString("editor." + key);
     }
@@ -88,7 +93,9 @@ public class EditorGUI implements Listener {
         return String.format("%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
     }
 
-    // --- GUI OPENERS ---
+    // =================================================================================
+    //                                  GUI OPENERS
+    // =================================================================================
 
     public void openMainMenu(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.main")));
@@ -137,33 +144,23 @@ public class EditorGUI implements Listener {
         session.setLastMenuOpener(player -> openConditionList(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.conditions")));
 
-        List<?> conditions = session.getConfig().getList("conditions");
-        if (conditions == null) conditions = new ArrayList<>();
+        ConfigurationSection sec = session.getConfig().getConfigurationSection("conditions");
+        if (sec != null) {
+            int index = 0;
+            for (String key : sec.getKeys(false)) {
+                String nameStr = sec.getString(key + ".name", key);
+                String check = sec.getString(key + ".check", "???");
+                String msg = sec.getString(key + ".msg", "Mặc định");
 
-        int index = 0;
-        for (Object obj : conditions) {
-            String check = "???";
-            String msg = "Mặc định";
+                String displayName = getMsg("items.condition_item").replace("<index>", nameStr);
+                List<String> lore = new ArrayList<>();
+                for (String s : plugin.getMessagesFile().getStringList("editor.items.condition_lore"))
+                    lore.add(s.replace("<check>", check).replace("<msg>", msg));
 
-            if (obj instanceof String) {
-                check = (String) obj;
-            } else if (obj instanceof Map) {
-                // [FIXED] Lấy thủ công để tránh lỗi getOrDefault
-                Map<?, ?> map = (Map<?, ?>) obj;
-                Object cVal = map.get("check");
-                Object mVal = map.get("msg");
-
-                check = (cVal != null) ? cVal.toString() : "???";
-                msg = (mVal != null) ? mVal.toString() : "Mặc định";
+                inv.setItem(index++, makeItem(Material.NAME_TAG, displayName, lore));
             }
-
-            String name = getMsg("items.condition_item").replace("<index>", String.valueOf(index + 1));
-            List<String> lore = new ArrayList<>();
-            for (String s : plugin.getMessagesFile().getStringList("editor.items.condition_lore"))
-                lore.add(s.replace("<check>", check).replace("<msg>", msg));
-
-            inv.setItem(index++, makeItem(Material.NAME_TAG, name, lore));
         }
+
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_condition"), null));
         inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
         p.openInventory(inv);
@@ -202,18 +199,21 @@ public class EditorGUI implements Listener {
     public void openRewardPool(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardPool(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.reward_pool")));
-        List<Map<?, ?>> pool = session.getConfig().getMapList("rewards.pool");
-        int index = 0;
-        for (Map<?, ?> raw : pool) {
-            Map<String, Object> map = (Map<String, Object>) raw;
-            String type = (String) map.getOrDefault("type", "UNKNOWN");
-            String val = (String) map.getOrDefault("value", "???");
-            String name = getMsg("items.pool_item").replace("<index>", String.valueOf(index + 1));
-            List<String> lore = new ArrayList<>();
-            for (String s : plugin.getMessagesFile().getStringList("editor.items.pool_lore"))
-                lore.add(s.replace("<type>", type).replace("<val>", val));
-            inv.setItem(index++, makeItem(Material.BUNDLE, name, lore));
+
+        ConfigurationSection pool = session.getConfig().getConfigurationSection("rewards.pool");
+        if (pool != null) {
+            int index = 0;
+            for (String key : pool.getKeys(false)) {
+                String type = pool.getString(key + ".type", "UNKNOWN");
+                String val = pool.getString(key + ".value", "???");
+                String name = getMsg("items.pool_item").replace("<index>", key);
+                List<String> lore = new ArrayList<>();
+                for (String s : plugin.getMessagesFile().getStringList("editor.items.pool_lore"))
+                    lore.add(s.replace("<type>", type).replace("<val>", val));
+                inv.setItem(index++, makeItem(Material.BUNDLE, name, lore));
+            }
         }
+
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_pool_item"), null));
         inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
         p.openInventory(inv);
@@ -221,23 +221,19 @@ public class EditorGUI implements Listener {
 
     public void openRewardEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardEditor(player, session));
-        int idx = session.getCurrentRewardIndex();
-        List<Map<?, ?>> pool = session.getConfig().getMapList("rewards.pool");
-        if (idx < 0 || idx >= pool.size()) {
+        String key = session.getCurrentRewardKey();
+        if (key == null) {
             openRewardPool(p, session);
             return;
         }
 
-        Map<?, ?> rawAny = pool.get(idx);
-        Map<String, Object> raw = new HashMap<>();
-        for (Map.Entry<?, ?> e : rawAny.entrySet()) raw.put(e.getKey().toString(), e.getValue());
+        String path = "rewards.pool." + key;
+        String type = session.getConfig().getString(path + ".type", "ITEM");
+        String value = session.getConfig().getString(path + ".value", "AIR:1");
+        double chance = session.getConfig().getDouble(path + ".chance", 100.0);
+        String displayName = session.getConfig().getString(path + ".name", "<gray>Mặc định");
 
-        String type = (String) raw.getOrDefault("type", "ITEM");
-        String value = (String) raw.getOrDefault("value", "AIR:1");
-        double chance = (raw.get("chance") instanceof Number) ? ((Number) raw.get("chance")).doubleValue() : 100.0;
-        String displayName = (String) raw.getOrDefault("name", "<gray>Mặc định");
-
-        String title = getMsg("title.edit_reward").replace("<index>", String.valueOf(idx + 1));
+        String title = getMsg("title.edit_reward").replace("<index>", key);
         Inventory inv = Bukkit.createInventory(null, 27, MiniMessage.miniMessage().deserialize(title));
 
         List<String> tLore = new ArrayList<>();
@@ -291,17 +287,20 @@ public class EditorGUI implements Listener {
         session.setLastMenuOpener(player -> openActionList(player, session));
         String title = getMsg("title.actions").replace("<stage>", session.getCurrentStage());
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(title));
-        List<Map<?, ?>> actions = session.getConfig().getMapList("stages." + session.getCurrentStage() + ".actions");
-        int index = 0;
-        for (Map<?, ?> raw : actions) {
-            Map<String, Object> map = (Map<String, Object>) raw;
-            String type = (String) map.getOrDefault("type", "UNKNOWN");
-            String name = getMsg("items.action_item").replace("<index>", String.valueOf(index + 1));
-            List<String> lore = new ArrayList<>();
-            for (String s : plugin.getMessagesFile().getStringList("editor.items.action_lore"))
-                lore.add(s.replace("<type>", type));
-            inv.setItem(index++, makeItem(Material.PAPER, name, lore));
+
+        ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
+        if (sec != null) {
+            int index = 0;
+            for (String key : sec.getKeys(false)) {
+                String type = sec.getString(key + ".type", "UNKNOWN");
+                String name = getMsg("items.action_item").replace("<index>", key);
+                List<String> lore = new ArrayList<>();
+                for (String s : plugin.getMessagesFile().getStringList("editor.items.action_lore"))
+                    lore.add(s.replace("<type>", type));
+                inv.setItem(index++, makeItem(Material.PAPER, name, lore));
+            }
         }
+
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_action"), null));
         inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
         p.openInventory(inv);
@@ -309,23 +308,25 @@ public class EditorGUI implements Listener {
 
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
-        String title = getMsg("title.edit_action").replace("<index>", String.valueOf(session.getCurrentActionIndex() + 1));
+        String title = getMsg("title.edit_action").replace("<index>", session.getCurrentActionKey());
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(title));
-        List<Map<?, ?>> list = session.getConfig().getMapList("stages." + session.getCurrentStage() + ".actions");
-        if (session.getCurrentActionIndex() >= list.size()) {
+
+        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey();
+        ConfigurationSection sec = session.getConfig().getConfigurationSection(path);
+
+        if (sec == null) {
             openActionList(p, session);
             return;
         }
 
-        Map<?, ?> rawMap = list.get(session.getCurrentActionIndex());
         int slot = 0;
-        for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
-            String key = entry.getKey().toString();
-            String val = entry.getValue().toString();
+        for (String key : sec.getKeys(false)) {
+            String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
             String hint = getMsg("items.action_val_hint_edit");
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
-            boolean isList = val.startsWith("[");
+            boolean isList = sec.isList(key);
+
             if (key.equals("type")) {
                 icon = Material.BARRIER;
                 hint = getMsg("items.action_type_cant_edit");
@@ -335,8 +336,14 @@ public class EditorGUI implements Listener {
                 icon = Material.COMPASS;
                 hint = isList ? getMsg("items.action_val_hint_loc") + " | " + getMsg("items.action_val_hint_loc_clear") : getMsg("items.action_val_hint_loc_replace");
             }
+
+            if (isList) {
+                val = sec.getStringList(key).toString();
+            }
+
             inv.setItem(slot++, makeItem(icon, "<gold>" + key, Arrays.asList("<gray>Value: <white>" + val, hint)));
         }
+
         inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
         p.openInventory(inv);
     }
@@ -345,13 +352,16 @@ public class EditorGUI implements Listener {
         Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.select_type")));
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
-            inv.addItem(makeItem(meta.icon, type, Collections.singletonList("<gray>" + meta.description)));
+            inv.addItem(makeItem(meta.icon(), type, Collections.singletonList("<gray>" + meta.description())));
         }
         inv.setItem(45, makeItem(Material.ARROW, getMsg("items.cancel"), null));
         p.openInventory(inv);
     }
 
-    // --- EVENT HANDLING ---
+    // =================================================================================
+    //                                  EVENT HANDLING
+    // =================================================================================
+
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
@@ -405,7 +415,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 3. CONDITIONS
+        // 3. CONDITIONS (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.conditions", null)) {
             e.setCancelled(true);
             int slot = e.getRawSlot();
@@ -414,43 +424,38 @@ public class EditorGUI implements Listener {
                 plugin.getEditorListener().startListening(p);
                 EditorSession fs = session;
                 fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                    Map<String, String> newCond = new HashMap<>();
-                    newCond.put("check", val);
-                    newCond.put("msg", "Điều kiện chưa đạt!");
-
-                    List<Object> list = (List<Object>) fs.getConfig().getList("conditions");
-                    if (list == null) list = new ArrayList<>();
-                    list.add(newCond);
-
-                    fs.getConfig().set("conditions", list);
+                    String newKey = "cond_" + System.currentTimeMillis();
+                    fs.getConfig().set("conditions." + newKey + ".check", val);
+                    fs.getConfig().set("conditions." + newKey + ".msg", "Condition Failed");
+                    fs.getConfig().set("conditions." + newKey + ".name", "Condition " + newKey);
                     openConditionList(p, fs);
                 });
             } else if (slot == 45) { // BACK
                 openDungeonMenu(p, session);
             } else if (cur.getType() == Material.NAME_TAG) { // ITEM
-                int idx = slot;
-                List<Object> list = (List<Object>) session.getConfig().getList("conditions");
-                if (list != null && idx < list.size()) {
-                    if (e.isShiftClick() && e.isRightClick()) { // DEL
-                        list.remove(idx);
-                        session.getConfig().set("conditions", list);
-                        openConditionList(p, session);
-                    } else if (e.isRightClick()) { // EDIT MSG
-                        sendMessage(p, "condition_val_hint_msg");
-                        plugin.getEditorListener().startListening(p);
-                        EditorSession fs = session;
-                        fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                            updateCondition(fs, idx, "msg", val.equalsIgnoreCase("null") ? null : val);
-                            openConditionList(p, fs);
-                        });
-                    } else { // EDIT CHECK
-                        sendMessage(p, "condition_val_hint_check");
-                        plugin.getEditorListener().startListening(p);
-                        EditorSession fs = session;
-                        fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                            updateCondition(fs, idx, "check", val);
-                            openConditionList(p, fs);
-                        });
+                ConfigurationSection sec = session.getConfig().getConfigurationSection("conditions");
+                if (sec != null) {
+                    List<String> keys = new ArrayList<>(sec.getKeys(false));
+                    if (slot < keys.size()) {
+                        String key = keys.get(slot);
+                        if (e.isShiftClick() && e.isRightClick()) { // DEL
+                            session.getConfig().set("conditions." + key, null);
+                            openConditionList(p, session);
+                        } else if (e.isRightClick()) { // EDIT MSG
+                            sendMessage(p, "condition_val_hint_msg");
+                            plugin.getEditorListener().startListening(p);
+                            session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
+                                session.getConfig().set("conditions." + key + ".msg", val);
+                                openConditionList(p, session);
+                            });
+                        } else { // EDIT CHECK
+                            sendMessage(p, "condition_val_hint_check");
+                            plugin.getEditorListener().startListening(p);
+                            session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
+                                session.getConfig().set("conditions." + key + ".check", val);
+                                openConditionList(p, session);
+                            });
+                        }
                     }
                 }
             }
@@ -494,7 +499,7 @@ public class EditorGUI implements Listener {
                 String timeStr = name.replaceAll("[^0-9]", "");
                 if (e.isRightClick()) {
                     session.getConfig().set("rewards.tiers." + timeStr, null);
-                    p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
+                    p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openRewardTiers(p, session);
                 } else {
                     sendMessage(p, "action_val_hint_edit");
@@ -516,39 +521,39 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 6. REWARD POOL
+        // 6. REWARD POOL (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.reward_pool", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) { // ADD
-                List<Map<?, ?>> pool = session.getConfig().getMapList("rewards.pool");
-                Map<String, Object> newR = new HashMap<>();
-                newR.put("type", "ITEM");
-                newR.put("value", "DIAMOND:1");
-                newR.put("chance", 100.0);
-                pool.add(newR);
-                session.getConfig().set("rewards.pool", pool);
+                String newKey = "reward_" + System.currentTimeMillis();
+                session.getConfig().set("rewards.pool." + newKey + ".type", "ITEM");
+                session.getConfig().set("rewards.pool." + newKey + ".value", "DIAMOND:1");
+                session.getConfig().set("rewards.pool." + newKey + ".chance", 100.0);
                 sendMessage(p, "reward_added");
                 openRewardPool(p, session);
             } else if (e.getRawSlot() == 45) { // BACK
                 openRewardMenu(p, session);
             } else if (cur.getType() == Material.BUNDLE) { // CLICK
-                int idx = e.getRawSlot();
-                if (e.isShiftClick() && e.isRightClick()) { // DEL
-                    List<Map<?, ?>> pool = session.getConfig().getMapList("rewards.pool");
-                    if (idx < pool.size()) {
-                        pool.remove(idx);
-                        session.getConfig().set("rewards.pool", pool);
-                        openRewardPool(p, session);
+                ConfigurationSection pool = session.getConfig().getConfigurationSection("rewards.pool");
+                if (pool != null) {
+                    List<String> keys = new ArrayList<>(pool.getKeys(false));
+                    int idx = e.getRawSlot();
+                    if (idx < keys.size()) {
+                        String key = keys.get(idx);
+                        if (e.isShiftClick() && e.isRightClick()) { // DEL
+                            session.getConfig().set("rewards.pool." + key, null);
+                            openRewardPool(p, session);
+                        } else { // EDIT
+                            session.setCurrentRewardKey(key);
+                            openRewardEditor(p, session);
+                        }
                     }
-                } else { // EDIT
-                    session.setCurrentRewardIndex(idx);
-                    openRewardEditor(p, session);
                 }
             }
             return;
         }
 
-        // 7. REWARD EDITOR
+        // 7. REWARD EDITOR (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.edit_reward", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 18) {
@@ -556,15 +561,25 @@ public class EditorGUI implements Listener {
                 return;
             }
 
+            String currentKey = session.getCurrentRewardKey();
+            String path = "rewards.pool." + currentKey;
+
             if (e.getRawSlot() == 10) { // TYPE
-                updateRewardData(session, "type", null);
+                String currentType = session.getConfig().getString(path + ".type", "ITEM");
+                String nextType = switch (currentType) {
+                    case "ITEM" -> "COMMAND";
+                    case "COMMAND" -> "MMOITEM";
+                    default -> "ITEM";
+                };
+                session.getConfig().set(path + ".type", nextType);
+                sendMessage(p, "type_changed", "<type>", nextType);
                 openRewardEditor(p, session);
             } else if (e.getRawSlot() == 12) { // VALUE
                 if (e.isRightClick()) {
                     ItemStack hand = p.getInventory().getItemInMainHand();
                     if (hand.getType() != Material.AIR) {
                         String val = hand.getType().name() + ":" + hand.getAmount();
-                        updateRewardData(session, "value", val);
+                        session.getConfig().set(path + ".value", val);
                         sendMessage(p, "item_set_hand", "<item>", val);
                         openRewardEditor(p, session);
                     } else sendMessage(p, "hand_empty");
@@ -573,7 +588,7 @@ public class EditorGUI implements Listener {
                 plugin.getEditorListener().startListening(p);
                 EditorSession fs = session;
                 fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                    updateRewardData(fs, "value", val);
+                    fs.getConfig().set(path + ".value", val);
                     sendMessage(p, "update_val", "<key>", "Value", "<val>", val);
                     new EditorGUI(plugin).openRewardEditor(p, fs);
                 });
@@ -583,7 +598,7 @@ public class EditorGUI implements Listener {
                 fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     try {
                         double chance = Double.parseDouble(val);
-                        updateRewardData(fs, "chance", chance);
+                        fs.getConfig().set(path + ".chance", chance);
                         new EditorGUI(plugin).openRewardEditor(p, fs);
                     } catch (Exception ex) {
                         sendMessage(p, "number_error");
@@ -594,7 +609,7 @@ public class EditorGUI implements Listener {
                 plugin.getEditorListener().startListening(p);
                 EditorSession fs = session;
                 fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                    updateRewardData(fs, "name", val);
+                    fs.getConfig().set(path + ".name", val);
                     new EditorGUI(plugin).openRewardEditor(p, fs);
                 });
             }
@@ -619,29 +634,32 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 9. ACTION LIST
+        // 9. ACTION LIST (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.actions", "<stage>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
             else if (e.getRawSlot() == 45) openStageList(p, session);
             else if (cur.getType() == Material.PAPER) {
-                int slot = e.getRawSlot();
-                if (e.isShiftClick()) {
-                    List<Map<?, ?>> list = session.getConfig().getMapList("stages." + session.getCurrentStage() + ".actions");
-                    if (slot < list.size()) {
-                        list.remove(slot);
-                        session.getConfig().set("stages." + session.getCurrentStage() + ".actions", list);
-                        openActionList(p, session);
+                ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
+                if (sec != null) {
+                    List<String> keys = new ArrayList<>(sec.getKeys(false));
+                    int slot = e.getRawSlot();
+                    if (slot < keys.size()) {
+                        String key = keys.get(slot);
+                        if (e.isShiftClick()) {
+                            session.getConfig().set("stages." + session.getCurrentStage() + ".actions." + key, null);
+                            openActionList(p, session);
+                        } else {
+                            session.setCurrentActionKey(key);
+                            openActionEditor(p, session);
+                        }
                     }
-                } else {
-                    session.setCurrentActionIndex(slot);
-                    openActionEditor(p, session);
                 }
             }
             return;
         }
 
-        // 10. SELECT TYPE
+        // 10. SELECT TYPE (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.select_type", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
@@ -651,23 +669,21 @@ public class EditorGUI implements Listener {
             String type = getPlainText(cur.getItemMeta().displayName());
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             if (meta == null) return;
-            Map<String, Object> newAction = new HashMap<>();
-            newAction.put("type", type);
-            for (Map.Entry<String, Object> entry : meta.defaults.entrySet()) {
-                Object val = entry.getValue();
-                if (val instanceof List) val = new ArrayList<>((List<?>) val);
-                else if (val instanceof Map) val = new HashMap<>((Map<?, ?>) val);
-                newAction.put(entry.getKey(), val);
+
+            String newKey = type.toLowerCase() + "_" + System.currentTimeMillis();
+            String path = "stages." + session.getCurrentStage() + ".actions." + newKey;
+
+            session.getConfig().set(path + ".type", type);
+            for (Map.Entry<String, Object> entry : meta.defaults().entrySet()) {
+                session.getConfig().set(path + "." + entry.getKey(), entry.getValue());
             }
-            List<Map<?, ?>> list = session.getConfig().getMapList("stages." + session.getCurrentStage() + ".actions");
-            list.add(newAction);
-            session.getConfig().set("stages." + session.getCurrentStage() + ".actions", list);
-            session.setCurrentActionIndex(list.size() - 1);
+
+            session.setCurrentActionKey(newKey);
             openActionEditor(p, session);
             return;
         }
 
-        // 11. ACTION EDITOR
+        // 11. ACTION EDITOR (UPDATED FOR KEYS)
         if (isTitle(titleComp, "title.edit_action", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
@@ -679,16 +695,29 @@ public class EditorGUI implements Listener {
             String key = getPlainText(cur.getItemMeta().displayName());
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
 
+            String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
+
             if (isLocation) {
                 if (e.isShiftClick() && e.isRightClick()) {
-                    updateActionValue(session, key, null, false);
+                    // Clear list if it is a list, or set null/default if value
+                    if (session.getConfig().isList(fullPath)) {
+                        session.getConfig().set(fullPath, new ArrayList<>());
+                    } else {
+                        session.getConfig().set(fullPath, null);
+                    }
                     sendMessage(p, "loc_cleared");
                     openActionEditor(p, session);
                     return;
                 }
                 if (e.isRightClick()) {
                     String locStr = locToString(p.getLocation());
-                    updateActionValue(session, key, locStr, true);
+                    if (session.getConfig().isList(fullPath)) {
+                        List<String> list = session.getConfig().getStringList(fullPath);
+                        list.add(locStr);
+                        session.getConfig().set(fullPath, list);
+                    } else {
+                        session.getConfig().set(fullPath, locStr);
+                    }
                     sendMessage(p, "update_loc", "<loc>", locStr);
                     openActionEditor(p, session);
                     return;
@@ -698,101 +727,30 @@ public class EditorGUI implements Listener {
             plugin.getEditorListener().startListening(p);
             EditorSession fs = session;
             fs.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
-                updateActionValue(fs, key, val, false);
-                sendMessage(p, "update_val", "<key>", key, "<val>", val);
-                new EditorGUI(plugin).openActionEditor(p, fs);
-            });
-        }
-    }
-
-    // --- LOGIC HELPERS ---
-
-    // [FIXED] Xử lý Map thủ công để tránh lỗi putAll
-    private void updateCondition(EditorSession session, int index, String key, String value) {
-        List<Object> list = (List<Object>) session.getConfig().getList("conditions");
-        if (list == null) return;
-
-        Object obj = list.get(index);
-        Map<String, Object> map = new HashMap<>();
-
-        if (obj instanceof String) {
-            map.put("check", obj);
-            map.put("msg", null);
-        } else if (obj instanceof Map) {
-            Map<?, ?> raw = (Map<?, ?>) obj;
-            for (Map.Entry<?, ?> entry : raw.entrySet()) {
-                map.put(entry.getKey().toString(), entry.getValue());
-            }
-        }
-
-        map.put(key, value);
-        list.set(index, map);
-        session.getConfig().set("conditions", list);
-    }
-
-    private void updateRewardData(EditorSession session, String key, Object value) {
-        List<Map<?, ?>> pool = session.getConfig().getMapList("rewards.pool");
-        int idx = session.getCurrentRewardIndex();
-        if (idx < 0 || idx >= pool.size()) return;
-
-        Map<String, Object> map = new HashMap<>();
-        for (Map.Entry<?, ?> e : pool.get(idx).entrySet()) map.put(e.getKey().toString(), e.getValue());
-
-        if (key.equals("type") && value == null) {
-            String current = (String) map.getOrDefault("type", "ITEM");
-            String next = switch (current) {
-                case "ITEM" -> "COMMAND";
-                case "COMMAND" -> "MMOITEM";
-                default -> "ITEM";
-            };
-            map.put("type", next);
-            sendMessage(session.getPlayer(), "type_changed", "<type>", next);
-        } else {
-            map.put(key, value);
-        }
-
-        pool.set(idx, map);
-        session.getConfig().set("rewards.pool", pool);
-    }
-
-    private void updateActionValue(EditorSession session, String key, Object value, boolean appendList) {
-        String path = "stages." + session.getCurrentStage() + ".actions";
-        List<Map<?, ?>> list = session.getConfig().getMapList(path);
-        int idx = session.getCurrentActionIndex();
-
-        if (idx < list.size()) {
-            Map<String, Object> map = new HashMap<>();
-            for (Map.Entry<?, ?> e : list.get(idx).entrySet()) map.put(e.getKey().toString(), e.getValue());
-
-            if (value instanceof String && !appendList) {
+                Object finalVal = val;
+                // Try parse numbers
                 try {
-                    value = Integer.parseInt((String) value);
-                } catch (Exception e) {
+                    finalVal = Integer.parseInt(val);
+                } catch (Exception e1) {
                     try {
-                        value = Double.parseDouble((String) value);
+                        finalVal = Double.parseDouble(val);
                     } catch (Exception ignored) {
                     }
                 }
-            }
 
-            if (appendList || key.equals("locations") || key.equals("locs")) {
-                Object rawList = map.get(key);
-                List<String> locs;
-                if (rawList instanceof List) locs = new ArrayList<>((List<String>) rawList);
-                else locs = new ArrayList<>();
-
-                if (value == null) locs.clear();
-                else if (appendList) locs.add(value.toString());
-                else {
-                    locs.clear();
-                    locs.add(value.toString());
+                // If existing value is a list, add to it. Otherwise replace.
+                if (fs.getConfig().isList(fullPath)) {
+                    List<String> list = fs.getConfig().getStringList(fullPath);
+                    if (val.equalsIgnoreCase("clear")) list.clear();
+                    else list.add(val);
+                    fs.getConfig().set(fullPath, list);
+                } else {
+                    fs.getConfig().set(fullPath, finalVal);
                 }
-                map.put(key, locs);
-            } else {
-                map.put(key, value);
-            }
-            list.set(idx, map);
-            session.getConfig().set(path, list);
+
+                sendMessage(p, "update_val", "<key>", key, "<val>", val);
+                new EditorGUI(plugin).openActionEditor(p, fs);
+            });
         }
     }
 }

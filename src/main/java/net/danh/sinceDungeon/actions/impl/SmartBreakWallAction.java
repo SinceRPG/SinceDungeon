@@ -4,6 +4,8 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -22,17 +24,25 @@ public class SmartBreakWallAction extends DungeonAction {
 
     @Override
     public void start(DungeonGame game) {
-        // Passive action
+        // Có thể thêm hint bằng particle ở vị trí trigger
+        Location loc = new Location(game.getWorld(), trigger.getX() + 0.5, trigger.getY() + 0.5, trigger.getZ() + 0.5);
+        // Logic particle có thể thêm ở Tickable nếu muốn
     }
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof BlockBreakEvent e) {
+            if (!e.getPlayer().getUniqueId().equals(game.getPlayer().getUniqueId())) return;
+
             Block b = e.getBlock();
-            if (b.getX() == trigger.getBlockX() && b.getY() == trigger.getBlockY() && b.getZ() == trigger.getBlockZ()) {
-                e.setCancelled(true);
-                b.setType(Material.AIR);
+            if (b.getWorld().equals(game.getWorld()) &&
+                    b.getX() == trigger.getBlockX() &&
+                    b.getY() == trigger.getBlockY() &&
+                    b.getZ() == trigger.getBlockZ()) {
+
+                e.setDropItems(false); // Không rơi item của block trigger
                 removeWall(game);
+
                 this.completed = true;
                 game.sendMessage("action.wall_break");
             }
@@ -53,6 +63,7 @@ public class SmartBreakWallAction extends DungeonAction {
         }
 
         Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
-        game.getWorld().createExplosion(center, 2F, false);
+        game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
+        game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
     }
 }

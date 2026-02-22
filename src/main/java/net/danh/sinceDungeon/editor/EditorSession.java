@@ -15,23 +15,21 @@ public class EditorSession {
     private final File file;
     private final YamlConfiguration config;
 
-    // --- STATES ---
+    // --- STATES (Changed to Keys) ---
     private String currentStage = null;
-    private int currentActionIndex = -1;
-    private int currentRewardIndex = -1;
+    private String currentActionKey = null;
+    private String currentRewardKey = null;
+    private String currentConditionKey = null;
 
     // --- MEMORY & NAVIGATION ---
     private InputType currentInput = InputType.NONE;
     private EditorCallback inputCallback = null;
-
-    // Lưu hàm mở menu cuối cùng để reopen khi chat xong/chat lỗi
     private Consumer<Player> lastMenuOpener = null;
 
     public EditorSession(SinceDungeon plugin, Player player, File file) {
         this.plugin = plugin;
         this.player = player;
         this.file = file;
-        // Load config vào bộ nhớ. Mọi thay đổi set() sẽ nằm ở đây cho đến khi save()
         if (file != null && file.exists()) {
             this.config = YamlConfiguration.loadConfiguration(file);
         } else {
@@ -47,35 +45,27 @@ public class EditorSession {
             if (msg != null) player.sendMessage(MiniMessage.miniMessage().deserialize(msg));
             player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_ANVIL_USE, 1f, 1f);
         } catch (IOException e) {
-            String msg = plugin.getMessagesFile().getString("editor.chat.save_error");
-            if (msg != null)
-                player.sendMessage(MiniMessage.miniMessage().deserialize(msg.replace("<error>", e.getMessage())));
+            player.sendMessage(MiniMessage.miniMessage().deserialize("<red>Save Error: " + e.getMessage()));
             e.printStackTrace();
         }
     }
 
-    // --- INPUT HANDLING ---
+    // Input Handling (Unchanged)
     public void awaitInput(InputType type, EditorCallback callback) {
         this.currentInput = type;
         this.inputCallback = callback;
     }
 
     public void completeInput(String value) {
-        if (inputCallback != null) {
-            inputCallback.onInput(value);
-        }
-        // Sau khi input xong, đưa về trạng thái NONE nhưng KHÔNG xóa callback ngay
-        // để tránh lỗi logic, callback sẽ được ghi đè ở lần await tiếp theo.
+        if (inputCallback != null) inputCallback.onInput(value);
         this.currentInput = InputType.NONE;
     }
 
     public void reopenLastMenu() {
-        if (lastMenuOpener != null && player.isOnline()) {
-            lastMenuOpener.accept(player);
-        }
+        if (lastMenuOpener != null && player.isOnline()) lastMenuOpener.accept(player);
     }
 
-    // --- GETTERS & SETTERS ---
+    // Getters & Setters
     public Player getPlayer() {
         return player;
     }
@@ -96,20 +86,28 @@ public class EditorSession {
         this.currentStage = stage;
     }
 
-    public int getCurrentActionIndex() {
-        return currentActionIndex;
+    public String getCurrentActionKey() {
+        return currentActionKey;
     }
 
-    public void setCurrentActionIndex(int index) {
-        this.currentActionIndex = index;
+    public void setCurrentActionKey(String key) {
+        this.currentActionKey = key;
     }
 
-    public int getCurrentRewardIndex() {
-        return currentRewardIndex;
+    public String getCurrentRewardKey() {
+        return currentRewardKey;
     }
 
-    public void setCurrentRewardIndex(int index) {
-        this.currentRewardIndex = index;
+    public void setCurrentRewardKey(String key) {
+        this.currentRewardKey = key;
+    }
+
+    public String getCurrentConditionKey() {
+        return currentConditionKey;
+    }
+
+    public void setCurrentConditionKey(String key) {
+        this.currentConditionKey = key;
     }
 
     public InputType getInputType() {

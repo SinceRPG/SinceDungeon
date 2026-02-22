@@ -3,7 +3,6 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,54 +10,90 @@ import org.bukkit.block.Chest;
 import org.bukkit.event.Event;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class LootChestAction extends DungeonAction {
     private final Vector chestLocation;
-    private final Map<Integer, String> itemsConfig;
+    private final Map<Integer, String> dynamicItemsConfig = new HashMap<>();
+    private final Map<Integer, ItemStack> cachedVanillaItems = new HashMap<>();
     private boolean isOpened = false;
 
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
         this.chestLocation = location;
-        this.itemsConfig = itemsConfig;
+
+        for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
+            String data = entry.getValue();
+            if (data.toUpperCase().startsWith("MMOITEMS")) {
+                dynamicItemsConfig.put(entry.getKey(), data);
+            } else {
+                ItemStack is = parseVanilla(data);
+                if (is != null) {
+                    cachedVanillaItems.put(entry.getKey(), is);
+                }
+            }
+        }
     }
 
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
-        Location loc = new Location(game.getWorld(), chestLocation.getX(), chestLocation.getY(), chestLocation.getZ());
+        Location loc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
         Block b = loc.getBlock();
-        b.setType(Material.CHEST);
+        b.setType(Material.CHEST); // Đặt block thành rương
 
         if (b.getState() instanceof Chest chest) {
-            chest.getInventory().clear();
-            for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
-                ItemStack item = parseItem(entry.getValue());
-                if (item != null) {
-                    chest.getInventory().setItem(entry.getKey(), item);
+            Inventory inv = chest.getInventory(); // Dùng getInventory() an toàn hơn
+            inv.clear();
+
+            // 1. Vanilla Items (Clone ra để không bị lỗi reference)
+            for (Map.Entry<Integer, ItemStack> entry : cachedVanillaItems.entrySet()) {
+                if (isValidSlot(entry.getKey(), inv)) {
+                    inv.setItem(entry.getKey(), entry.getValue().clone());
                 }
             }
+
+            // 2. MMOItems
+            for (Map.Entry<Integer, String> entry : dynamicItemsConfig.entrySet()) {
+                ItemStack item = parseDynamic(entry.getValue());
+                if (item != null && isValidSlot(entry.getKey(), inv)) {
+                    inv.setItem(entry.getKey(), item);
+                }
+            }
+
+            chest.update();
+
             game.sendMessage("action.chest_appear");
         }
     }
 
-    private ItemStack parseItem(String data) {
+    private boolean isValidSlot(int slot, Inventory inv) {
+        return slot >= 0 && slot < inv.getSize();
+    }
+
+    private ItemStack parseVanilla(String data) {
         try {
             String[] parts = data.split(":");
             if (parts.length < 2) return null;
+            Material mat = Material.matchMaterial(parts[0]);
+            if (mat != null) {
+                return new ItemStack(mat, Integer.parseInt(parts[1]));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-            if (parts[0].equalsIgnoreCase("MMOITEMS")) {
-                if (parts.length >= 4 && Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    return MMOItemsHook.getMMOItem(parts[1], parts[2], Integer.parseInt(parts[3]));
-                }
-            } else {
-                Material mat = Material.matchMaterial(parts[0]);
-                if (mat != null) {
-                    return new ItemStack(mat, Integer.parseInt(parts[1]));
-                }
+    private ItemStack parseDynamic(String data) {
+        try {
+            String[] parts = data.split(":");
+            if (parts.length >= 4 && parts[0].equalsIgnoreCase("MMOITEMS")) {
+                return MMOItemsHook.getMMOItem(parts[1], parts[2], Integer.parseInt(parts[3]));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,13 +111,14 @@ public class LootChestAction extends DungeonAction {
                 game.sendMessage("action.chest_found");
             }
         } else if (event instanceof InventoryCloseEvent e) {
-            if (e.getInventory().getHolder() instanceof Chest chest) {
+            Inventory inv = e.getInventory();
+            if (inv.getHolder() instanceof Chest chest) {
                 if (isTargetChest(chest.getBlock())) {
-                    if (isInventoryEmpty(e.getInventory())) {
+                    if (isInventoryEmpty(inv)) {
                         this.completed = true;
                         game.sendMessage("action.loot_complete");
-                        // Remove chest after loot
                         chest.getBlock().setType(Material.AIR);
+                        game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
                     } else {
                         game.sendMessage("action.chest_not_empty");
                     }
@@ -98,7 +134,7 @@ public class LootChestAction extends DungeonAction {
                 && b.getZ() == chestLocation.getBlockZ();
     }
 
-    private boolean isInventoryEmpty(org.bukkit.inventory.Inventory inv) {
+    private boolean isInventoryEmpty(Inventory inv) {
         for (ItemStack item : inv.getContents()) {
             if (item != null && item.getType() != Material.AIR) return false;
         }

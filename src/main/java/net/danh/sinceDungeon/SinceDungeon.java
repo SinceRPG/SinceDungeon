@@ -3,6 +3,7 @@ package net.danh.sinceDungeon;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.editor.EditorGUI;
 import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
@@ -50,11 +51,15 @@ public final class SinceDungeon extends JavaPlugin {
         // 1. Load Configs
         configFile = new ConfigUtils(this, "config.yml");
         messagesFile = new ConfigUtils(this, "messages.yml");
+        new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         // 2. Initialize Managers
         dungeonManager = new DungeonManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
+
+        // [API] Khởi tạo API
+        SinceDungeonAPI.init(this);
 
         // 3. Register Listeners
         List<Listener> listeners = new ArrayList<>();
@@ -101,21 +106,18 @@ public final class SinceDungeon extends JavaPlugin {
      * Dọn dẹp các world bị kẹt do server crash lần trước
      */
     private void cleanUpStuckWorlds() {
-        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-            File container = Bukkit.getWorldContainer();
-            File[] files = container.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    // Kiểm tra folder world có khớp định dạng dungeon không
-                    // Format: PlayerName_TemplateID_UUID
-                    // Regex: Chứa ít nhất 2 dấu gạch dưới và là thư mục
-                    if (file.isDirectory() && file.getName().matches(".*_.*_.*")) {
-                        getLogger().info("[Cleanup] Phát hiện world rác: " + file.getName() + ". Đang xóa...");
-                        WorldUtils.deleteWorld(file);
-                    }
+        // Chạy đồng bộ lúc bật server là an toàn nhất vì người chơi chưa vào
+        File container = Bukkit.getWorldContainer();
+        File[] files = container.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                // Regex: Folder có đúng 2 dấu gạch dưới (VD: Player_map1_1234abcd)
+                if (file.isDirectory() && file.getName().matches("^[^_]+_[^_]+_[^_]+$")) {
+                    getLogger().info("[Cleanup] Phát hiện world rác từ lần sập trước: " + file.getName() + ". Đang dọn dẹp...");
+                    WorldUtils.deleteWorld(file);
                 }
             }
-        });
+        }
     }
 
     private void registerListeners(Listener @NonNull ... listeners) {

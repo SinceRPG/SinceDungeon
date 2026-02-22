@@ -13,10 +13,7 @@ import org.bukkit.event.Event;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
@@ -48,9 +45,15 @@ public class DungeonGame {
     }
 
     private void parseStages() {
-        for (List<Map<String, Object>> rawStage : template.rawStages()) {
+        // template.stages() is now Map<Integer, List<Map<String, Object>>>
+        // We need to sort them to ensure order
+        List<Integer> keys = new ArrayList<>(template.stages().keySet());
+        Collections.sort(keys);
+
+        for (Integer key : keys) {
+            List<Map<String, Object>> rawActions = template.stages().get(key);
             List<DungeonAction> actions = new ArrayList<>();
-            for (Map<String, Object> map : rawStage) {
+            for (Map<String, Object> map : rawActions) {
                 String type = (String) map.get("type");
                 if (type != null) {
                     DungeonAction action = plugin.getDungeonManager().createAction(type, map);
@@ -186,6 +189,7 @@ public class DungeonGame {
 
         for (DungeonAction action : stages.get(index)) {
             try {
+                action.announceStart(this);
                 action.start(this);
             } catch (Exception e) {
                 // [TEST CASE: Config Error]

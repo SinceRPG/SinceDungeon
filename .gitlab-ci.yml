@@ -2,7 +2,7 @@ image: gradle:8-jdk21
 
 variables:
   # Thay thế URL Webhook của bạn vào đây
-  DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1459559029180465389/V33G3HEFpb4thBgw4AUMoOs7IpSFqqXdvIddUIQnxga3QX5IJBQFvlcGM8OXzvlPbQLA"
+  DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_?thread_id=1475129559530864852"
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   # URL ảnh icon nhỏ ở góc và ảnh lớn bên phải (Thumbnail)
   # Bạn nên thay link này bằng link logo plugin của bạn (đuôi .png/.jpg)

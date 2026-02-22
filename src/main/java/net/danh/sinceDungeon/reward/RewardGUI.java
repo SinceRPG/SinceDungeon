@@ -18,6 +18,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -108,6 +109,22 @@ public class RewardGUI implements Listener {
 
         RewardSessionManager.addSession(p, new RewardSession(chestCount, template));
         p.openInventory(inv);
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        RewardSession session = RewardSessionManager.getSession(p);
+        if (session != null && session.getChestCount() > 0) {
+            int remaining = session.getChestCount();
+            for (int i = 0; i < remaining; i++) {
+                List<DungeonReward> pool = session.getTemplate().rewardPool();
+                if (pool != null && !pool.isEmpty()) {
+                    giveReward(p, pool.get(new Random().nextInt(pool.size())));
+                }
+            }
+            RewardSessionManager.removeSession(p);
+        }
     }
 
     @EventHandler

@@ -8,6 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashSet;
 import java.util.List;
@@ -85,6 +86,18 @@ public class EditorListener implements Listener {
                 }
             }
         });
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        if (chatLock.contains(p.getUniqueId())) {
+            chatLock.remove(p.getUniqueId());
+            EditorSession session = plugin.getEditorManager().getSession(p);
+            if (session != null) {
+                session.completeInput("cancel"); // Hủy thao tác nhập an toàn
+            }
+        }
     }
 
     private void reopenSessionMenu(EditorSession session) {

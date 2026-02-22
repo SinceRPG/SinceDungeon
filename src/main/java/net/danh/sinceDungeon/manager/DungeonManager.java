@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.actions.impl.*;
 import net.danh.sinceDungeon.system.PAPIHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -42,29 +43,37 @@ public class DungeonManager {
         return actionMeta.get(type.toUpperCase());
     }
 
-    public DungeonAction createAction(String type, Map<?, ?> rawData) {
+    // [CHANGED] Nhận trực tiếp Map<String, Object>, bỏ logic convert cũ
+    public DungeonAction createAction(String type, Map<String, Object> data) {
         if (type == null) return null;
         ActionParser parser = actionParsers.get(type.toUpperCase());
 
-        Map<String, Object> data = new HashMap<>();
-        if (rawData != null) {
-            for (Map.Entry<?, ?> entry : rawData.entrySet()) {
-                data.put(entry.getKey().toString(), entry.getValue());
-            }
-        }
+        try {// 1. Tạo Action từ Parser gốc
+            DungeonAction action = parser != null ? parser.parse(data) : null;
 
-        try {
-            return parser != null ? parser.parse(data) : null;
+            // 2. [NEW] Tự động nạp start_message nếu có
+            if (action != null && data.containsKey("start_message")) {
+                Object msgObj = data.get("start_message");
+                List<String> msgs = new ArrayList<>();
+
+                if (msgObj instanceof String) {
+                    msgs.add((String) msgObj);
+                } else if (msgObj instanceof List) {
+                    msgs.addAll((List<String>) msgObj);
+                }
+                action.setStartMessages(msgs);
+            }
+
+            return action;
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to create action " + type + ": " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void registerDefaultActions() {
-        // Helper để lấy string từ config cho gọn
-        // Nếu không tìm thấy trong config sẽ dùng fallback mặc định (tiếng Anh/Việt)
-
         // 1. SPAWN_WAVE
         Map<String, Object> spawnDefaults = new HashMap<>();
         spawnDefaults.put("mob", "ZOMBIE");
@@ -79,12 +88,9 @@ public class DungeonManager {
                     } catch (IllegalArgumentException e) {
                         mob = EntityType.ZOMBIE;
                     }
-                    int amount = (Integer) map.getOrDefault("amount", 1);
+                    int amount = getInt(map.get("amount"), 1);
                     List<String> l = (List<String>) map.get("locations");
-                    List<Vector> v = new ArrayList<>();
-                    if (l != null) {
-                        for (String s : l) v.add(DungeonLoader.parseVector(s));
-                    }
+                    List<Vector> v = parseLocList(l);
                     return new SpawnWaveAction(mob, amount, v);
                 }, Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
@@ -98,9 +104,7 @@ public class DungeonManager {
         registerAction("REACH_LOCATION", map -> {
                     String targetStr = (String) map.getOrDefault("target", "0,0,0");
                     Vector target = DungeonLoader.parseVector(targetStr);
-                    double radius = 3.0;
-                    Object rObj = map.getOrDefault("radius", 3.0);
-                    if (rObj instanceof Number) radius = ((Number) rObj).doubleValue();
+                    double radius = getDouble(map.get("radius"), 3.0);
 
                     return new ReachLocationAction(target, radius);
                 }, Material.COMPASS,
@@ -116,23 +120,38 @@ public class DungeonManager {
                     String locStr = (String) map.getOrDefault("location", "0,0,0");
                     Vector loc = DungeonLoader.parseVector(locStr);
                     Map<Integer, String> itemsConfig = new HashMap<>();
+
                     Object itemsObj = map.get("items");
-                    if (itemsObj instanceof Map) {
-                        Map<?, ?> m = (Map<?, ?>) itemsObj;
-                        for (Map.Entry<?, ?> e : m.entrySet()) {
+
+                    // TRƯỜNG HỢP 1: ConfigurationSection (Chuẩn Bukkit)
+                    if (itemsObj instanceof ConfigurationSection) {
+                        ConfigurationSection section = (ConfigurationSection) itemsObj;
+                        for (String key : section.getKeys(false)) {
                             try {
-                                int slot = Integer.parseInt(e.getKey().toString());
-                                String rawData = e.getValue().toString();
-                                itemsConfig.put(slot, rawData);
+                                int slot = Integer.parseInt(key);
+                                String val = section.getString(key);
+                                if (val != null) itemsConfig.put(slot, val);
                             } catch (Exception ignored) {
                             }
                         }
                     }
+                    // TRƯỜNG HỢP 2: Map (Đề phòng)
+                    else if (itemsObj instanceof Map) {
+                        Map<?, ?> m = (Map<?, ?>) itemsObj;
+                        for (Map.Entry<?, ?> entry : m.entrySet()) {
+                            try {
+                                int slot = Integer.parseInt(entry.getKey().toString());
+                                String val = entry.getValue().toString();
+                                itemsConfig.put(slot, val);
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+
                     return new LootChestAction(loc, itemsConfig);
                 }, Material.CHEST,
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults);
-
         // 4. BREAK_WALL
         Map<String, Object> wallDefaults = new HashMap<>();
         wallDefaults.put("trigger", "0,0,0");
@@ -155,16 +174,40 @@ public class DungeonManager {
 
         registerAction("MYTHIC_WAVE", map -> {
                     List<String> l = (List<String>) map.get("locations");
-                    List<Vector> v = new ArrayList<>();
-                    if (l != null) {
-                        for (String s : l) v.add(DungeonLoader.parseVector(s));
-                    }
-                    int amount = (Integer) map.getOrDefault("amount", 1);
+                    List<Vector> v = parseLocList(l);
+                    int amount = getInt(map.get("amount"), 1);
                     String mob = (String) map.getOrDefault("mob", "SkeletonKing");
                     return new MythicMobWaveAction(mob, amount, v);
                 }, Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults);
+    }
+
+    // --- Helper Methods ---
+    private int getInt(Object obj, int def) {
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        try {
+            return Integer.parseInt(obj.toString());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private double getDouble(Object obj, double def) {
+        if (obj instanceof Number) return ((Number) obj).doubleValue();
+        try {
+            return Double.parseDouble(obj.toString());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private List<Vector> parseLocList(List<String> list) {
+        List<Vector> v = new ArrayList<>();
+        if (list != null) {
+            for (String s : list) v.add(DungeonLoader.parseVector(s));
+        }
+        return v;
     }
 
     public void reload() {
@@ -278,15 +321,6 @@ public class DungeonManager {
         activeGames.remove(uuid);
     }
 
-    public static class ActionMeta {
-        public final Material icon;
-        public final String description;
-        public final Map<String, Object> defaults;
-
-        public ActionMeta(Material icon, String description, Map<String, Object> defaults) {
-            this.icon = icon;
-            this.description = description;
-            this.defaults = defaults;
-        }
+    public record ActionMeta(Material icon, String description, Map<String, Object> defaults) {
     }
 }

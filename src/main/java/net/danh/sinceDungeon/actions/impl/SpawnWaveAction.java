@@ -30,16 +30,28 @@ public class SpawnWaveAction extends DungeonAction {
     @Override
     public void start(DungeonGame game) {
         int count = 0;
+        if (locations.isEmpty()) {
+            this.completed = true;
+            return;
+        }
+
         for (int i = 0; i < amount; i++) {
             Vector vec = locations.get(i % locations.size());
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
-            // Spawn in center of block
-            Entity ent = game.getWorld().spawnEntity(loc.add(0.5, 0, 0.5), type);
-            if (ent instanceof LivingEntity) {
+
+            // Spawn mob
+            Entity ent = game.getWorld().spawnEntity(loc.add(0.5, 0, 0.5), type); // +0.5 để mob đứng giữa block
+            if (ent instanceof LivingEntity living) {
+                living.setRemoveWhenFarAway(false); // Quan trọng: Không cho despawn
+                living.setPersistent(true);        // Quan trọng: Lưu giữ entity
+
                 mobIds.add(ent.getUniqueId());
                 count++;
+            } else {
+                ent.remove(); // Nếu không phải LivingEntity (vd: Thuyền, Xe mỏ) thì xóa cho nhẹ
             }
         }
+
         if (count == 0) {
             this.completed = true;
         } else {

@@ -3,7 +3,6 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
-import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
 public class ReachLocationAction extends DungeonAction implements Tickable {
@@ -22,13 +21,17 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
-        Location loc = game.getPlayer().getLocation();
-        // Ensure player is in the correct world
+        org.bukkit.Location loc = game.getPlayer().getLocation();
         if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld())) {
-            double distSq = Math.pow(loc.getX() - target.getX(), 2) +
-                    Math.pow(loc.getY() - target.getY(), 2) +
-                    Math.pow(loc.getZ() - target.getZ(), 2);
-            if (distSq <= radiusSq) {
+
+            // Tính khoảng cách 2D (X và Z)
+            double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
+                    Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
+
+            // Trục Y cho phép sai số chênh lệch cao/thấp 2 block
+            double yDiff = Math.abs(loc.getY() - target.getY());
+
+            if (distSq2D <= radiusSq && yDiff <= 2.5) {
                 this.completed = true;
                 game.sendMessage("action.reach_complete");
             }

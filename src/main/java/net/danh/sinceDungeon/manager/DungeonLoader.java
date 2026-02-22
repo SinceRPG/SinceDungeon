@@ -22,30 +22,30 @@ public class DungeonLoader {
         String world = config.getString("template-world");
         if (world == null) return null;
 
-        // [NEW] Đọc biến Public (Mặc định false)
         boolean isPublic = config.getBoolean("public", false);
 
-        // [CHANGE] Đọc Conditions (Hỗ trợ cả String và Map)
+        // Load Conditions
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
-        List<?> rawConds = config.getList("conditions");
-        if (rawConds != null) {
-            for (Object obj : rawConds) {
-                if (obj instanceof String) {
-                    // Format cũ: - "%papi% >= 100"
-                    conditions.add(new DungeonTemplate.Condition((String) obj, null));
-                } else if (obj instanceof Map) {
-                    // Format mới: - check: "..." msg: "..."
-                    Map<?, ?> map = (Map<?, ?>) obj;
-                    String check = (String) map.get("check");
-                    String msg = (String) map.get("msg");
+        ConfigurationSection condSec = config.getConfigurationSection("conditions");
+        if (condSec != null) {
+            for (String key : condSec.getKeys(false)) {
+                // Tối ưu: Dùng ConfigurationSection trực tiếp
+                ConfigurationSection c = condSec.getConfigurationSection(key);
+                if (c != null) {
+                    String check = c.getString("check");
                     if (check != null) {
-                        conditions.add(new DungeonTemplate.Condition(check, msg));
+                        conditions.add(new DungeonTemplate.Condition(
+                                key,
+                                c.getString("name", key),
+                                check,
+                                c.getString("msg")
+                        ));
                     }
                 }
             }
         }
 
-        // Đọc Rewards
+        // Load Tiers
         Map<Integer, Integer> tiers = new HashMap<>();
         ConfigurationSection tierSec = config.getConfigurationSection("rewards.tiers");
         if (tierSec != null) {
@@ -57,42 +57,54 @@ public class DungeonLoader {
             }
         }
 
+        // Load Rewards
         List<DungeonReward> rewards = new ArrayList<>();
-        List<Map<?, ?>> pool = config.getMapList("rewards.pool");
-        for (Map<?, ?> map : pool) {
-            Map<String, Object> data = (Map<String, Object>) map;
-            String type = (String) data.get("type");
-            String value = (String) data.get("value");
-            String name = (String) data.get("name");
-            List<String> lore = (List<String>) data.get("lore");
-            double chance = data.containsKey("chance") ? ((Number) data.get("chance")).doubleValue() : 100.0;
+        ConfigurationSection poolSec = config.getConfigurationSection("rewards.pool");
+        if (poolSec != null) {
+            for (String key : poolSec.getKeys(false)) {
+                ConfigurationSection itemSec = poolSec.getConfigurationSection(key);
+                if (itemSec == null) continue;
 
-            if (type != null && value != null) {
-                rewards.add(new DungeonReward(type, value, chance, name, lore));
+                String type = itemSec.getString("type");
+                String value = itemSec.getString("value");
+                // Skip if invalid
+                if (type == null || value == null) continue;
+
+                rewards.add(new DungeonReward(
+                        type,
+                        value,
+                        itemSec.getDouble("chance", 100.0),
+                        itemSec.getString("name"),
+                        itemSec.getStringList("lore")
+                ));
             }
         }
 
-        // Đọc Stages
-        List<List<Map<String, Object>>> stages = new ArrayList<>();
+        // [CORE] Load Stages & Actions
+        // Sử dụng getValues(false) để giữ nguyên cấu trúc ConfigurationSection cho các node con
+        Map<Integer, List<Map<String, Object>>> stages = new HashMap<>();
         ConfigurationSection stageSec = config.getConfigurationSection("stages");
-        if (stageSec != null) {
-            // Sort stages by ID just in case
-            List<String> keys = new ArrayList<>(stageSec.getKeys(false));
-            keys.sort((a, b) -> {
-                try {
-                    return Integer.compare(Integer.parseInt(a), Integer.parseInt(b));
-                } catch (Exception e) {
-                    return a.compareTo(b);
-                }
-            });
 
-            for (String key : keys) {
-                List<Map<?, ?>> actions = stageSec.getMapList(key + ".actions");
-                List<Map<String, Object>> stageActions = new ArrayList<>();
-                for (Map<?, ?> action : actions) {
-                    stageActions.add((Map<String, Object>) action);
+        if (stageSec != null) {
+            for (String stageKey : stageSec.getKeys(false)) {
+                try {
+                    int stageNum = Integer.parseInt(stageKey);
+                    ConfigurationSection actionSec = stageSec.getConfigurationSection(stageKey + ".actions");
+                    List<Map<String, Object>> actionList = new ArrayList<>();
+
+                    if (actionSec != null) {
+                        for (String actionKey : actionSec.getKeys(false)) {
+                            if (actionSec.isConfigurationSection(actionKey)) {
+                                ConfigurationSection specificAction = actionSec.getConfigurationSection(actionKey);
+                                if (specificAction != null)
+                                    actionList.add(specificAction.getValues(false));
+                            }
+                        }
+                    }
+                    stages.put(stageNum, actionList);
+                } catch (NumberFormatException e) {
+                    plugin.getLogger().warning("Invalid stage key in " + id + ": " + stageKey);
                 }
-                stages.add(stageActions);
             }
         }
 

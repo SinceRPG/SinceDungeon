@@ -5,22 +5,18 @@ import org.bukkit.entity.Player;
 
 public class PAPIHook {
     public static boolean checkCondition(Player p, String condition) {
-        String parsed = PlaceholderAPI.setPlaceholders(p, condition);
-        String[] operators = {">=", "<=", "==", "!=", ">", "<"};
-        String operator = null;
+        if (condition == null || !condition.contains(";")) return false;
 
-        for (String op : operators) {
-            if (parsed.contains(op)) {
-                operator = op;
-                break;
-            }
-        }
+        // [CHANGED] Format: %placeholder%;operator;value
+        String[] parts = condition.split(";");
+        if (parts.length < 3) return false;
 
-        if (operator == null) return true;
+        String leftRaw = parts[0];
+        String operator = parts[1];
+        String rightRaw = parts[2];
 
-        String[] parts = parsed.split(operator);
-        String left = parts[0].trim();
-        String right = parts[1].trim();
+        String left = PlaceholderAPI.setPlaceholders(p, leftRaw).trim();
+        String right = PlaceholderAPI.setPlaceholders(p, rightRaw).trim();
 
         try {
             double v1 = Double.parseDouble(left);
@@ -40,11 +36,14 @@ public class PAPIHook {
                     return v1 != v2;
             }
         } catch (NumberFormatException e) {
+            // String comparison
             switch (operator) {
                 case "==":
                     return left.equals(right);
                 case "!=":
                     return !left.equals(right);
+                case "equalsIgnoreCase":
+                    return left.equalsIgnoreCase(right);
             }
         }
         return false;
