@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.editor;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,7 +28,8 @@ public class EditorManager implements Listener {
 
     public void startEditing(Player p, String filename) {
         if (!filename.matches("^[a-zA-Z0-9_\\-]+$")) {
-            p.sendMessage(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<red>Tên file không hợp lệ! Vui lòng không dùng ký tự đặc biệt."));
+            String msg = plugin.getMessagesFile().getString("editor.chat.invalid_filename");
+            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
             return;
         }
         if (!filename.endsWith(".yml")) filename += ".yml";

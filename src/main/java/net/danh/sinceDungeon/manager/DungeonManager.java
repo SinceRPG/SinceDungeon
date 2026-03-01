@@ -290,7 +290,8 @@ public class DungeonManager {
             plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
             e.printStackTrace();
             activeGames.remove(p.getUniqueId());
-            p.sendMessage(ColorUtils.parseWithPrefix("<red>Lỗi khởi tạo dungeon."));
+            String msg = plugin.getMessagesFile().getString("error.init_failed");
+            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
     }
 

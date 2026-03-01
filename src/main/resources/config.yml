@@ -12,3 +12,14 @@ dungeon:
 editor:
   # Item dùng để điều hướng trong Editor GUI
   nav-item: ARROW
+
+# [MỚI] Cấu hình âm thanh cho toàn bộ plugin
+sounds:
+  lobby_countdown: "block.note_block.pling"
+  game_start: "entity.ender_dragon.growl"
+  stage_start: "block.note_block.chime"
+  stage_complete: "entity.player.levelup"
+  editor_click: "ui.button.click"
+  editor_save: "block.anvil.use"
+  reward_reveal: "entity.player.levelup"
+  reward_claim: "entity.item.pickup"

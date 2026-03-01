@@ -7,7 +7,6 @@ import net.danh.sinceDungeon.manager.DungeonTemplate;
 import net.danh.sinceDungeon.system.MMOItemsHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -52,7 +51,7 @@ public class RewardGUI implements Listener {
         String guiTitle = getPlainText(titleComp);
         String rawConfig = getConfig().getString("reward.gui_title");
         if (rawConfig == null) return false;
-        String configPlain = getPlainText(MiniMessage.miniMessage().deserialize(rawConfig));
+        String configPlain = getPlainText(ColorUtils.parse(rawConfig));
         return guiTitle.equals(configPlain);
     }
 
@@ -68,7 +67,7 @@ public class RewardGUI implements Listener {
 
     private void playSound(Player p, String key) {
         try {
-            String soundName = getConfig().getString("reward.sounds." + key);
+            String soundName = plugin.getConfigFile().getString("reward.sounds." + key);
             if (soundName != null) {
                 p.playSound(p.getLocation(), soundName, 1f, 1f);
             }
@@ -86,12 +85,12 @@ public class RewardGUI implements Listener {
         ItemMeta meta = item.getItemMeta();
 
         String name = getConfig().getString(path + ".name");
-        if (name != null) meta.displayName(MiniMessage.miniMessage().deserialize("<!i>" + name));
+        if (name != null) meta.displayName(ColorUtils.parse("<!i>" + name));
 
         List<String> loreRaw = getConfig().getStringList(path + ".lore");
         List<Component> lore = new ArrayList<>();
         for (String line : loreRaw) {
-            lore.add(MiniMessage.miniMessage().deserialize("<!i>" + line.replace("<count>", String.valueOf(chestCount))));
+            lore.add(ColorUtils.parse("<!i>" + line.replace("<count>", String.valueOf(chestCount))));
         }
         meta.lore(lore);
         item.setItemMeta(meta);
@@ -102,7 +101,7 @@ public class RewardGUI implements Listener {
 
     public void openRewardGUI(Player p, int chestCount, DungeonTemplate template) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
-        Inventory inv = Bukkit.createInventory(null, getGuiSize(), MiniMessage.miniMessage().deserialize(titleStr));
+        Inventory inv = Bukkit.createInventory(null, getGuiSize(), ColorUtils.parse(titleStr));
 
         ItemStack btn = createIcon("button", chestCount);
         inv.setItem(getButtonSlot(), btn);
@@ -132,15 +131,24 @@ public class RewardGUI implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!isRewardGui(e.getView().title())) return;
 
-        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+        // [SỬA LỖI]: Chặn Shift-Click từ dưới lên trên
+        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY && e.getClickedInventory() == e.getView().getBottomInventory()) {
+            e.setCancelled(true);
+            return;
+        }
+
+        // [SỬA LỖI]: Chặn bấm phím số (1-9) để trộm đồ từ GUI
+        if (e.getAction() == InventoryAction.HOTBAR_SWAP || e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD) {
             e.setCancelled(true);
             return;
         }
 
         if (e.getClickedInventory() == null || e.getClickedInventory() == e.getView().getBottomInventory()) return;
 
+        // Xử lý click trong GUI
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
-            e.setCancelled(true);
+            e.setCancelled(true); // Luôn luôn cancel để không cho lấy item ra
+
             RewardSession session = RewardSessionManager.getSession(p);
             if (session == null) {
                 p.closeInventory();
@@ -177,7 +185,7 @@ public class RewardGUI implements Listener {
                     }
                     String msg = getMsg("auto_claim");
                     if (msg != null)
-                        p.sendMessage(MiniMessage.miniMessage().deserialize(msg.replace("<count>", String.valueOf(remaining))));
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<count>", String.valueOf(remaining))));
                     playSound(p, "claim");
                 }
                 RewardSessionManager.removeSession(p);
@@ -213,7 +221,7 @@ public class RewardGUI implements Listener {
         }
         if (session.getChestCount() <= 0) {
             String msg = getMsg("claimed_all");
-            if (msg != null) p.sendMessage(MiniMessage.miniMessage().deserialize(msg));
+            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
             Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
         }
     }
@@ -228,7 +236,7 @@ public class RewardGUI implements Listener {
             String displayName = reward.displayName();
             String msg = getMsg("received_custom");
             if (displayName != null && msg != null) {
-                p.sendMessage(MiniMessage.miniMessage().deserialize(msg.replace("<item>", displayName)));
+                p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
             }
         } else if (type.equalsIgnoreCase("ITEM")) {
             try {
@@ -240,13 +248,13 @@ public class RewardGUI implements Listener {
                 if (!left.isEmpty()) {
                     for (ItemStack drop : left.values()) p.getWorld().dropItem(p.getLocation(), drop);
                     String fullMsg = getMsg("inventory_full");
-                    if (fullMsg != null) p.sendMessage(MiniMessage.miniMessage().deserialize(fullMsg));
+                    if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
                 }
                 String displayName = reward.displayName();
                 if (displayName == null || displayName.isEmpty()) displayName = mat.name() + " x" + amount;
                 String msg = getMsg("received_item");
                 if (msg != null)
-                    p.sendMessage(MiniMessage.miniMessage().deserialize(msg.replace("<item>", displayName)));
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
             } catch (Exception ignored) {
             }
         } else if (type.equalsIgnoreCase("MMOITEM")) {
@@ -262,7 +270,7 @@ public class RewardGUI implements Listener {
                     if (!left.isEmpty()) {
                         for (ItemStack drop : left.values()) p.getWorld().dropItem(p.getLocation(), drop);
                         String fullMsg = getMsg("inventory_full");
-                        if (fullMsg != null) p.sendMessage(MiniMessage.miniMessage().deserialize(fullMsg));
+                        if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
                     }
                     String displayName = reward.displayName();
                     if (displayName == null) {
@@ -279,7 +287,7 @@ public class RewardGUI implements Listener {
                     }
                     String msg = getMsg("received_item");
                     if (msg != null)
-                        p.sendMessage(MiniMessage.miniMessage().deserialize(msg.replace("<item>", displayName)));
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
                 }
             } catch (Exception ignored) {
             }

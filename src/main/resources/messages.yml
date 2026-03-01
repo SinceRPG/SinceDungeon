@@ -11,7 +11,7 @@ game:
   finish: "<gold><b>DUNGEON HOÀN THÀNH!</b>"
   completion_time: "<gray>Thời gian hoàn thành: <green><time>s"
   no_reward: "<red>Rất tiếc, bạn không đạt đủ điều kiện nhận thưởng."
-  death: "<red>Bạn đã bị hạ gục! Dungeon thất bại." # [MỚI]
+  death: "<red>Bạn đã bị hạ gục! Dungeon thất bại."
 
 lobby:
   preparing: "<yellow>Đang khởi tạo thế giới dungeon..."
@@ -41,6 +41,7 @@ error:
   create_failed: "<red>Lỗi khởi tạo dungeon. Vui lòng báo admin."
   mythic_mob_not_found: "<red>Lỗi config: Không tìm thấy MythicMob <mob>."
   mob_spawn_fail: "<red>Lỗi spawn mob <mob>: <error>"
+  init_failed: "<red>Lỗi khởi tạo dungeon." # [MỚI]
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"
@@ -68,7 +69,19 @@ reward:
         - "<gray>Bên trong có gì nhỉ?"
 
 editor:
-  # [MỚI] Mô tả cho các hành động trong Editor
+  # [MỚI] Các từ khóa lặt vặt trong Editor (Tránh hardcode)
+  words:
+    not_set: "Chưa đặt"
+    true_word: "<green>BẬT"
+    false_word: "<red>TẮT"
+    default_word: "Mặc định"
+    unknown: "Không rõ"
+    chest_amount: "Số rương (<time>s)"
+    value: "Giá trị"
+    default_condition_msg: "Không đủ điều kiện"
+    default_condition_name: "Điều kiện <key>"
+    reward_default_name: "<gray>Mặc định"
+
   actions:
     spawn_wave: "Spawn quái vật Vanilla theo đợt"
     reach_location: "Yêu cầu người chơi đi tới tọa độ"
@@ -204,3 +217,5 @@ editor:
     hand_empty: "<red>Bạn phải cầm item trên tay!"
     loc_cleared: "<yellow>Đã xóa danh sách tọa độ."
     update_loc: "<green>Đã cập nhật tọa độ: <loc>"
+    invalid_filename: "<red>Tên file không hợp lệ! Vui lòng không dùng ký tự đặc biệt." # [MỚI]
+    input_error: "<red>Lỗi nhập liệu: <error>" # [MỚI]

@@ -2,8 +2,8 @@ package net.danh.sinceDungeon.editor;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.manager.DungeonManager;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -33,28 +33,37 @@ public class EditorGUI implements Listener {
     //                                     UTILS
     // =================================================================================
 
-    private String getMsg(String key) {
-        return plugin.getMessagesFile().getString("editor." + key);
+    private String getMsg(String path) {
+        return plugin.getMessagesFile().getString("editor." + path);
+    }
+
+    // Lấy các từ khóa lặt vặt (để không bị hardcode)
+    private String getWord(String key) {
+        return getMsg("words." + key);
     }
 
     private void sendMessage(Player p, String key, String... placeholders) {
         String msg = getMsg("chat." + key);
-        if (msg == null) return;
+        if (msg == null || msg.isEmpty()) return;
+
+        String prefix = plugin.getMessagesFile().getString("prefix", "");
+        msg = prefix + msg;
+
         for (int i = 0; i < placeholders.length; i += 2) {
-            msg = msg.replace(placeholders[i], placeholders[i + 1]);
+            msg = msg.replace(placeholders[i], (i + 1 < placeholders.length) ? placeholders[i + 1] : "");
         }
-        p.sendMessage(MiniMessage.miniMessage().deserialize(msg));
+        p.sendMessage(ColorUtils.parseWithPrefix(msg));
     }
 
     private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            if (nameRaw != null) meta.displayName(MiniMessage.miniMessage().deserialize("<!i>" + nameRaw));
+            if (nameRaw != null) meta.displayName(ColorUtils.parse("<!i>" + nameRaw));
             List<Component> lore = new ArrayList<>();
             if (loreRaw != null) {
                 for (String s : loreRaw) {
-                    lore.add(MiniMessage.miniMessage().deserialize("<!i>" + s));
+                    lore.add(ColorUtils.parse("<!i>" + s));
                 }
             }
             meta.lore(lore);
@@ -72,7 +81,7 @@ public class EditorGUI implements Listener {
         String rawConfig = getMsg(configKey);
         if (rawConfig == null) return false;
 
-        String configPlain = getPlainText(MiniMessage.miniMessage().deserialize(rawConfig));
+        String configPlain = getPlainText(ColorUtils.parse(rawConfig));
 
         if (placeholder == null) {
             return guiTitle.equals(configPlain);
@@ -93,12 +102,18 @@ public class EditorGUI implements Listener {
         return String.format("%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
     }
 
+    private Material getNavItem() {
+        String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
+        Material mat = Material.matchMaterial(navItemStr);
+        return mat != null ? mat : Material.ARROW;
+    }
+
     // =================================================================================
-    //                                  GUI OPENERS
+    //                                 GUI OPENERS
     // =================================================================================
 
     public void openMainMenu(Player p) {
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.main")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.main")));
         File folder = new File(plugin.getDataFolder(), "dungeons");
         if (folder.exists()) {
             File[] files = folder.listFiles((d, n) -> n.endsWith(".yml"));
@@ -115,11 +130,11 @@ public class EditorGUI implements Listener {
     public void openDungeonMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openDungeonMenu(player, session));
         String title = getMsg("title.dungeon").replace("<name>", session.getFile().getName());
-        Inventory inv = Bukkit.createInventory(null, 27, MiniMessage.miniMessage().deserialize(title));
+        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
 
-        String world = session.getConfig().getString("template-world", "Chưa đặt");
+        String world = session.getConfig().getString("template-world", getWord("not_set"));
         boolean isPublic = session.getConfig().getBoolean("public", false);
-        String publicStatus = isPublic ? "<green>TRUE" : "<red>FALSE";
+        String publicStatus = isPublic ? getWord("true_word") : getWord("false_word");
 
         List<String> wLore = new ArrayList<>();
         for (String s : plugin.getMessagesFile().getStringList("editor.items.world_template_lore"))
@@ -136,21 +151,22 @@ public class EditorGUI implements Listener {
         inv.setItem(16, makeItem(Material.DIAMOND_SWORD, getMsg("items.stages"), plugin.getMessagesFile().getStringList("editor.items.stages_lore")));
 
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save"), null));
-        inv.setItem(18, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
+
         p.openInventory(inv);
     }
 
     public void openConditionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openConditionList(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.conditions")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.conditions")));
 
         ConfigurationSection sec = session.getConfig().getConfigurationSection("conditions");
         if (sec != null) {
             int index = 0;
             for (String key : sec.getKeys(false)) {
                 String nameStr = sec.getString(key + ".name", key);
-                String check = sec.getString(key + ".check", "???");
-                String msg = sec.getString(key + ".msg", "Mặc định");
+                String check = sec.getString(key + ".check", getWord("unknown"));
+                String msg = sec.getString(key + ".msg", getWord("default_word"));
 
                 String displayName = getMsg("items.condition_item").replace("<index>", nameStr);
                 List<String> lore = new ArrayList<>();
@@ -162,22 +178,22 @@ public class EditorGUI implements Listener {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_condition"), null));
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openRewardMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardMenu(player, session));
-        Inventory inv = Bukkit.createInventory(null, 27, MiniMessage.miniMessage().deserialize(getMsg("title.rewards_main")));
+        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(getMsg("title.rewards_main")));
         inv.setItem(11, makeItem(Material.CLOCK, getMsg("items.reward_tiers_item"), null));
         inv.setItem(15, makeItem(Material.CHEST, getMsg("items.reward_pool_item"), null));
-        inv.setItem(18, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openRewardTiers(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardTiers(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.reward_tiers")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_tiers")));
         ConfigurationSection tiers = session.getConfig().getConfigurationSection("rewards.tiers");
         if (tiers != null) {
             List<String> keys = new ArrayList<>(tiers.getKeys(false));
@@ -192,20 +208,20 @@ public class EditorGUI implements Listener {
             }
         }
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_tier"), null));
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openRewardPool(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardPool(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.reward_pool")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_pool")));
 
         ConfigurationSection pool = session.getConfig().getConfigurationSection("rewards.pool");
         if (pool != null) {
             int index = 0;
             for (String key : pool.getKeys(false)) {
-                String type = pool.getString(key + ".type", "UNKNOWN");
-                String val = pool.getString(key + ".value", "???");
+                String type = pool.getString(key + ".type", getWord("unknown"));
+                String val = pool.getString(key + ".value", getWord("unknown"));
                 String name = getMsg("items.pool_item").replace("<index>", key);
                 List<String> lore = new ArrayList<>();
                 for (String s : plugin.getMessagesFile().getStringList("editor.items.pool_lore"))
@@ -215,7 +231,7 @@ public class EditorGUI implements Listener {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_pool_item"), null));
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
@@ -231,10 +247,10 @@ public class EditorGUI implements Listener {
         String type = session.getConfig().getString(path + ".type", "ITEM");
         String value = session.getConfig().getString(path + ".value", "AIR:1");
         double chance = session.getConfig().getDouble(path + ".chance", 100.0);
-        String displayName = session.getConfig().getString(path + ".name", "<gray>Mặc định");
+        String displayName = session.getConfig().getString(path + ".name", getWord("reward_default_name"));
 
         String title = getMsg("title.edit_reward").replace("<index>", key);
-        Inventory inv = Bukkit.createInventory(null, 27, MiniMessage.miniMessage().deserialize(title));
+        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
 
         List<String> tLore = new ArrayList<>();
         for (String s : plugin.getMessagesFile().getStringList("editor.items.reward_type_lore"))
@@ -256,13 +272,13 @@ public class EditorGUI implements Listener {
             nLore.add(s.replace("<val>", displayName));
         inv.setItem(16, makeItem(Material.NAME_TAG, getMsg("items.reward_name"), nLore));
 
-        inv.setItem(18, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openStageList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openStageList(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.stages")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.stages")));
         ConfigurationSection stages = session.getConfig().getConfigurationSection("stages");
         if (stages != null) {
             List<String> keys = new ArrayList<>(stages.getKeys(false));
@@ -279,20 +295,20 @@ public class EditorGUI implements Listener {
             }
         }
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage"), null));
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openActionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionList(player, session));
         String title = getMsg("title.actions").replace("<stage>", session.getCurrentStage());
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(title));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(title));
 
         ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
         if (sec != null) {
             int index = 0;
             for (String key : sec.getKeys(false)) {
-                String type = sec.getString(key + ".type", "UNKNOWN");
+                String type = sec.getString(key + ".type", getWord("unknown"));
                 String name = getMsg("items.action_item").replace("<index>", key);
                 List<String> lore = new ArrayList<>();
                 for (String s : plugin.getMessagesFile().getStringList("editor.items.action_lore"))
@@ -302,14 +318,14 @@ public class EditorGUI implements Listener {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_action"), null));
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action").replace("<index>", session.getCurrentActionKey());
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(title));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(title));
 
         String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey();
         ConfigurationSection sec = session.getConfig().getConfigurationSection(path);
@@ -341,25 +357,25 @@ public class EditorGUI implements Listener {
                 val = sec.getStringList(key).toString();
             }
 
-            inv.setItem(slot++, makeItem(icon, "<gold>" + key, Arrays.asList("<gray>Value: <white>" + val, hint)));
+            inv.setItem(slot++, makeItem(icon, "<gold>" + key, Arrays.asList("<gray>" + getWord("value") + ": <white>" + val, hint)));
         }
 
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.back"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
     public void openActionTypeSelector(Player p) {
-        Inventory inv = Bukkit.createInventory(null, 54, MiniMessage.miniMessage().deserialize(getMsg("title.select_type")));
+        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.select_type")));
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             inv.addItem(makeItem(meta.icon(), type, Collections.singletonList("<gray>" + meta.description())));
         }
-        inv.setItem(45, makeItem(Material.ARROW, getMsg("items.cancel"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
         p.openInventory(inv);
     }
 
     // =================================================================================
-    //                                  EVENT HANDLING
+    //                                EVENT HANDLING
     // =================================================================================
 
     @EventHandler
@@ -386,7 +402,6 @@ public class EditorGUI implements Listener {
             } else if (cur.getType() == Material.EMERALD_BLOCK) {
                 EditorSession tempSession = new EditorSession(plugin, p, null);
                 tempSession.setLastMenuOpener(this::openMainMenu);
-                // Sửa dòng này: truyền tempSession vào
                 plugin.getEditorListener().startListening(p, tempSession);
                 tempSession.awaitInput(EditorSession.InputType.CREATE_FILENAME, val -> plugin.getEditorManager().startEditing(p, val));
             }
@@ -419,7 +434,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 3. CONDITIONS (UPDATED FOR KEYS)
+        // 3. CONDITIONS
         if (isTitle(titleComp, "title.conditions", null)) {
             e.setCancelled(true);
             int slot = e.getRawSlot();
@@ -429,8 +444,8 @@ public class EditorGUI implements Listener {
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     String newKey = "cond_" + System.currentTimeMillis();
                     session.getConfig().set("conditions." + newKey + ".check", val);
-                    session.getConfig().set("conditions." + newKey + ".msg", "Condition Failed");
-                    session.getConfig().set("conditions." + newKey + ".name", "Condition " + newKey);
+                    session.getConfig().set("conditions." + newKey + ".msg", getWord("default_condition_msg"));
+                    session.getConfig().set("conditions." + newKey + ".name", getWord("default_condition_name").replace("<key>", newKey));
                     openConditionList(p, session);
                 });
             } else if (slot == 45) { // BACK
@@ -470,7 +485,7 @@ public class EditorGUI implements Listener {
             e.setCancelled(true);
             if (cur.getType() == Material.CLOCK) openRewardTiers(p, session);
             else if (cur.getType() == Material.CHEST) openRewardPool(p, session);
-            else if (cur.getType() == Material.ARROW) openDungeonMenu(p, session);
+            else if (e.getRawSlot() == 18) openDungeonMenu(p, session);
             return;
         }
 
@@ -510,7 +525,7 @@ public class EditorGUI implements Listener {
                         try {
                             int newAmount = Integer.parseInt(val);
                             session.getConfig().set("rewards.tiers." + timeStr, newAmount);
-                            sendMessage(p, "update_val", "<key>", "Số rương (" + timeStr + "s)", "<val>", val);
+                            sendMessage(p, "update_val", "<key>", getWord("chest_amount").replace("<time>", timeStr), "<val>", val);
                             openRewardTiers(p, session);
                         } catch (Exception ex) {
                             sendMessage(p, "number_error");
@@ -522,7 +537,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 6. REWARD POOL (UPDATED FOR KEYS)
+        // 6. REWARD POOL
         if (isTitle(titleComp, "title.reward_pool", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) { // ADD
@@ -554,7 +569,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 7. REWARD EDITOR (UPDATED FOR KEYS)
+        // 7. REWARD EDITOR
         if (isTitle(titleComp, "title.edit_reward", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 18) {
@@ -589,7 +604,7 @@ public class EditorGUI implements Listener {
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     session.getConfig().set(path + ".value", val);
-                    sendMessage(p, "update_val", "<key>", "Value", "<val>", val);
+                    sendMessage(p, "update_val", "<key>", getWord("value"), "<val>", val);
                     new EditorGUI(plugin).openRewardEditor(p, session);
                 });
             } else if (e.getRawSlot() == 14) { // CHANCE
@@ -641,7 +656,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 9. ACTION LIST (UPDATED FOR KEYS)
+        // 9. ACTION LIST
         if (isTitle(titleComp, "title.actions", "<stage>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
@@ -666,7 +681,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 10. SELECT TYPE (UPDATED FOR KEYS)
+        // 10. SELECT TYPE
         if (isTitle(titleComp, "title.select_type", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
@@ -690,7 +705,7 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 11. ACTION EDITOR (UPDATED FOR KEYS)
+        // 11. ACTION EDITOR
         if (isTitle(titleComp, "title.edit_action", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
@@ -706,7 +721,6 @@ public class EditorGUI implements Listener {
 
             if (isLocation) {
                 if (e.isShiftClick() && e.isRightClick()) {
-                    // Clear list if it is a list, or set null/default if value
                     if (session.getConfig().isList(fullPath)) {
                         session.getConfig().set(fullPath, new ArrayList<>());
                     } else {
@@ -746,17 +760,7 @@ public class EditorGUI implements Listener {
                         }
                     }
                 }
-                // Try parse numbers
-                try {
-                    finalVal = Integer.parseInt(val);
-                } catch (Exception e1) {
-                    try {
-                        finalVal = Double.parseDouble(val);
-                    } catch (Exception ignored) {
-                    }
-                }
 
-                // If existing value is a list, add to it. Otherwise replace.
                 if (session.getConfig().isList(fullPath)) {
                     List<String> list = session.getConfig().getStringList(fullPath);
                     if (val.equalsIgnoreCase("clear")) list.clear();

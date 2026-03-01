@@ -2,7 +2,7 @@ package net.danh.sinceDungeon.editor;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -11,8 +11,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +28,7 @@ public class EditorListener implements Listener {
 
     private void sendMsg(Player p, String key) {
         String s = plugin.getMessagesFile().getString("editor.chat." + key);
-        if (s != null) p.sendMessage(MiniMessage.miniMessage().deserialize(s));
+        if (s != null) p.sendMessage(ColorUtils.parseWithPrefix(s));
     }
 
     // Yêu cầu truyền trực tiếp EditorSession vào đây
@@ -38,7 +38,7 @@ public class EditorListener implements Listener {
 
         List<String> lines = plugin.getMessagesFile().getStringList("editor.chat.input_start");
         for (String line : lines) {
-            p.sendMessage(MiniMessage.miniMessage().deserialize(line));
+            p.sendMessage(ColorUtils.parseWithPrefix(line));
         }
     }
 
@@ -60,9 +60,11 @@ public class EditorListener implements Listener {
 
         if (msg.equalsIgnoreCase("here")) {
             org.bukkit.Location l = p.getLocation();
-            msg = String.format("%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
+            msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
+
             String m = plugin.getMessagesFile().getString("editor.chat.input_here");
-            if (m != null) p.sendMessage(MiniMessage.miniMessage().deserialize(m.replace("<loc>", msg)));
+            String prefix = plugin.getMessagesFile().getString("prefix", "");
+            if (m != null) p.sendMessage(ColorUtils.parseWithPrefix(prefix + m.replace("<loc>", msg)));
         }
 
         String finalValue = msg;
@@ -75,7 +77,9 @@ public class EditorListener implements Listener {
                 try {
                     session.completeInput(finalValue);
                 } catch (Exception ex) {
-                    p.sendMessage(MiniMessage.miniMessage().deserialize("<red>Lỗi nhập liệu: " + ex.getMessage()));
+                    String msg_error = plugin.getMessagesFile().getString("editor.chat.input_error");
+                    if (msg_error != null)
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg_error.replace("<error>", ex.getMessage())));
                     session.reopenLastMenu();
                 }
             }
