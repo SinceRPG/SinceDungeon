@@ -118,6 +118,11 @@ public class EditorSession {
         this.lastMenuOpener = opener;
     }
 
+    public void cancelInput() {
+        this.currentInput = InputType.NONE;
+        this.inputCallback = null;
+    }
+
     public enum InputType {NONE, CREATE_FILENAME, EDIT_VALUE}
 
     public interface EditorCallback {

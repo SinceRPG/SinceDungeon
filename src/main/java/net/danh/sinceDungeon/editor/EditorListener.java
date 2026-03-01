@@ -1,23 +1,25 @@
 package net.danh.sinceDungeon.editor;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
-    private final Set<UUID> chatLock = new HashSet<>();
+    // Đổi Set thành Map để giữ Session hiện tại
+    private final Map<UUID, EditorSession> activeInputs = new HashMap<>();
 
     public EditorListener(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -28,8 +30,9 @@ public class EditorListener implements Listener {
         if (s != null) p.sendMessage(MiniMessage.miniMessage().deserialize(s));
     }
 
-    public void startListening(Player p) {
-        chatLock.add(p.getUniqueId());
+    // Yêu cầu truyền trực tiếp EditorSession vào đây
+    public void startListening(Player p, EditorSession session) {
+        activeInputs.put(p.getUniqueId(), session);
         p.closeInventory();
 
         List<String> lines = plugin.getMessagesFile().getStringList("editor.chat.input_start");
@@ -39,34 +42,26 @@ public class EditorListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onChat(AsyncPlayerChatEvent e) {
+    public void onChat(AsyncChatEvent e) {
         Player p = e.getPlayer();
-        if (!chatLock.contains(p.getUniqueId())) return;
+        if (!activeInputs.containsKey(p.getUniqueId())) return;
 
         e.setCancelled(true);
-        chatLock.remove(p.getUniqueId());
+        // Lấy session ra và xóa khỏi map chờ
+        EditorSession session = activeInputs.remove(p.getUniqueId());
+        String msg = PlainTextComponentSerializer.plainText().serialize(e.message());
 
-        String msg = e.getMessage();
-        EditorSession session = plugin.getEditorManager().getSession(p);
-
-        // Trường hợp hủy hoặc chat sai: Quay về menu cũ
         if (msg.equalsIgnoreCase("cancel")) {
             sendMsg(p, "input_cancel");
             if (session != null) reopenSessionMenu(session);
             return;
         }
 
-        // Lấy tọa độ
         if (msg.equalsIgnoreCase("here")) {
             org.bukkit.Location l = p.getLocation();
             msg = String.format("%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
             String m = plugin.getMessagesFile().getString("editor.chat.input_here");
             if (m != null) p.sendMessage(MiniMessage.miniMessage().deserialize(m.replace("<loc>", msg)));
-        }
-
-        if (session == null) {
-            sendMsg(p, "session_expired");
-            return;
         }
 
         String finalValue = msg;
@@ -76,11 +71,9 @@ public class EditorListener implements Listener {
             if (type == EditorSession.InputType.CREATE_FILENAME) {
                 plugin.getEditorManager().startEditing(p, finalValue);
             } else if (type == EditorSession.InputType.EDIT_VALUE) {
-                // Try-catch ở đây để nếu input sai logic (vd nhập chữ vào chỗ số) thì không lỗi
                 try {
                     session.completeInput(finalValue);
                 } catch (Exception ex) {
-                    // Nếu lỗi trong quá trình xử lý input (vd parse int), báo lỗi và mở lại menu
                     p.sendMessage(MiniMessage.miniMessage().deserialize("<red>Lỗi nhập liệu: " + ex.getMessage()));
                     session.reopenLastMenu();
                 }
@@ -91,16 +84,13 @@ public class EditorListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
-        if (chatLock.contains(p.getUniqueId())) {
-            chatLock.remove(p.getUniqueId());
-            EditorSession session = plugin.getEditorManager().getSession(p);
-            if (session != null) {
-                session.completeInput("cancel"); // Hủy thao tác nhập an toàn
-            }
+        EditorSession session = activeInputs.remove(p.getUniqueId());
+        if (session != null) {
+            session.cancelInput();
         }
     }
 
     private void reopenSessionMenu(EditorSession session) {
-        Bukkit.getScheduler().runTask(plugin, () -> session.reopenLastMenu());
+        Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
     }
 }

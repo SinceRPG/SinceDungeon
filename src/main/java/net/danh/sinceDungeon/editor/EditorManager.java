@@ -26,6 +26,10 @@ public class EditorManager implements Listener {
     }
 
     public void startEditing(Player p, String filename) {
+        if (!filename.matches("^[a-zA-Z0-9_\\-]+$")) {
+            p.sendMessage(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize("<red>Tên file không hợp lệ! Vui lòng không dùng ký tự đặc biệt."));
+            return;
+        }
         if (!filename.endsWith(".yml")) filename += ".yml";
         File file = new File(plugin.getDataFolder(), "dungeons/" + filename);
 
