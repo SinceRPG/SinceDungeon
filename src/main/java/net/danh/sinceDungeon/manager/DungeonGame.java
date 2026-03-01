@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -22,6 +23,7 @@ public class DungeonGame {
     private final Location oldLocation;
     private final List<List<DungeonAction>> stages = new ArrayList<>();
     private final String worldName;
+    private boolean isStopping = false;
 
     private World dungeonWorld;
     private int currentStageIndex = 0;
@@ -40,7 +42,7 @@ public class DungeonGame {
 
         // [TEST CASE: Race Condition]
         // Sử dụng UUID ngẫu nhiên trong tên world để tránh trùng lặp nếu nhiều người chơi cùng lúc
-        this.worldName = player.getName() + "_" + template.id() + "_" + UUID.randomUUID().toString().substring(0, 8);
+        this.worldName = "SinceDungeon_" + player.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
         parseStages();
     }
 
@@ -82,21 +84,35 @@ public class DungeonGame {
         // [OPTIMIZATION] Async World Creation
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
                 .thenAccept(world -> {
-                    this.dungeonWorld = world;
+                    // SỬA LỖI: Chuyển logic tác động đến Bukkit API về Main Thread
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        this.dungeonWorld = world;
 
-                    // [OPTIMIZATION] Gamerules for Performance
-                    dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-                    dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-                    dungeonWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                    dungeonWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                    dungeonWorld.setAutoSave(false); // Quan trọng: Không autosave map rác
+                        // [OPTIMIZATION] Gamerules for Performance
+                        if (ServerVersion.isAtMost(1, 21, 10)) {
+                            dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+                            dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                            dungeonWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+                            dungeonWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                        } else if (ServerVersion.isAtLeast(1, 21, 11)) {
+                            dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
+                            dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                            dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                            dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+                        }
+                        dungeonWorld.setAutoSave(false);
 
-                    startCountdown();
+
+                        startCountdown();
+                    });
                 })
                 .exceptionally(ex -> {
-                    sendMessage("error.create_failed");
-                    plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
-                    plugin.getDungeonManager().removeGame(player.getUniqueId());
+                    // Exception block cũng nên được chạy trên Main Thread nếu có tác động đến game
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        sendMessage("error.create_failed");
+                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
+                        plugin.getDungeonManager().removeGame(player.getUniqueId());
+                    });
                     return null;
                 });
     }
@@ -257,10 +273,12 @@ public class DungeonGame {
     }
 
     public void stop(boolean teleport) {
+        if (isStopping) return;
+        isStopping = true;
         isRunning = false;
+
         if (tickTask != null) tickTask.cancel();
 
-        // Chỉ teleport nếu người chơi còn trong world dungeon
         if (teleport && player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {
             player.teleport(oldLocation);
         }

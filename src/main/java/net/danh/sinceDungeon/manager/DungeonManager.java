@@ -15,10 +15,11 @@ import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DungeonManager {
     private final SinceDungeon plugin;
-    private final Map<UUID, DungeonGame> activeGames = new HashMap<>();
+    private final Map<UUID, DungeonGame> activeGames = new ConcurrentHashMap<>();
     private final Map<String, DungeonTemplate> templates = new HashMap<>();
     private final Map<String, ActionParser> actionParsers = new HashMap<>();
     private final Map<String, ActionMeta> actionMeta = new HashMap<>();
@@ -43,15 +44,16 @@ public class DungeonManager {
         return actionMeta.get(type.toUpperCase());
     }
 
-    // [CHANGED] Nhận trực tiếp Map<String, Object>, bỏ logic convert cũ
+    // Nhận trực tiếp Map<String, Object>, bỏ logic convert cũ
     public DungeonAction createAction(String type, Map<String, Object> data) {
         if (type == null) return null;
         ActionParser parser = actionParsers.get(type.toUpperCase());
 
-        try {// 1. Tạo Action từ Parser gốc
+        try {
+            // 1. Tạo Action từ Parser gốc
             DungeonAction action = parser != null ? parser.parse(data) : null;
 
-            // 2. [NEW] Tự động nạp start_message nếu có
+            // 2. Tự động nạp start_message nếu có
             if (action != null && data.containsKey("start_message")) {
                 Object msgObj = data.get("start_message");
                 List<String> msgs = new ArrayList<>();
@@ -89,8 +91,10 @@ public class DungeonManager {
                         mob = EntityType.ZOMBIE;
                     }
                     int amount = getInt(map.get("amount"), 1);
-                    List<String> l = (List<String>) map.get("locations");
-                    List<Vector> v = parseLocList(l);
+
+                    // [ĐÃ SỬA]: Lấy locations an toàn
+                    List<Vector> v = parseLocList(map.get("locations"));
+
                     return new SpawnWaveAction(mob, amount, v);
                 }, Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
@@ -152,6 +156,7 @@ public class DungeonManager {
                 }, Material.CHEST,
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults);
+
         // 4. BREAK_WALL
         Map<String, Object> wallDefaults = new HashMap<>();
         wallDefaults.put("trigger", "0,0,0");
@@ -173,10 +178,12 @@ public class DungeonManager {
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("MYTHIC_WAVE", map -> {
-                    List<String> l = (List<String>) map.get("locations");
-                    List<Vector> v = parseLocList(l);
+                    // [ĐÃ SỬA]: Lấy locations an toàn
+                    List<Vector> v = parseLocList(map.get("locations"));
+
                     int amount = getInt(map.get("amount"), 1);
                     String mob = (String) map.getOrDefault("mob", "SkeletonKing");
+
                     return new MythicMobWaveAction(mob, amount, v);
                 }, Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
@@ -202,10 +209,13 @@ public class DungeonManager {
         }
     }
 
-    private List<Vector> parseLocList(List<String> list) {
+    // [ĐÃ SỬA]: Đọc list an toàn, không sợ bị ClassCastException
+    private List<Vector> parseLocList(Object obj) {
         List<Vector> v = new ArrayList<>();
-        if (list != null) {
-            for (String s : list) v.add(DungeonLoader.parseVector(s));
+        if (obj instanceof List) {
+            for (Object s : (List<?>) obj) v.add(DungeonLoader.parseVector(s.toString()));
+        } else if (obj instanceof String) {
+            v.add(DungeonLoader.parseVector((String) obj));
         }
         return v;
     }

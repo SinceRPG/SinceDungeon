@@ -15,11 +15,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
     // Đổi Set thành Map để giữ Session hiện tại
-    private final Map<UUID, EditorSession> activeInputs = new HashMap<>();
+    private final Map<UUID, EditorSession> activeInputs = new ConcurrentHashMap<>();
 
     public EditorListener(SinceDungeon plugin) {
         this.plugin = plugin;

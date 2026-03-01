@@ -1,7 +1,9 @@
 package net.danh.sinceDungeon.actions.impl;
 
 import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -15,7 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class SpawnWaveAction extends DungeonAction {
+public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
@@ -25,6 +27,22 @@ public class SpawnWaveAction extends DungeonAction {
         this.type = type;
         this.amount = amount;
         this.locations = locations;
+    }
+
+    @Override
+    public void onTick(DungeonGame game) {
+        if (completed) return;
+
+        mobIds.removeIf(uuid -> {
+            org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
+            // Xóa khỏi danh sách nếu quái vật null, không hợp lệ hoặc đã chết
+            return ent == null || !ent.isValid() || ent.isDead();
+        });
+
+        if (mobIds.isEmpty()) {
+            this.completed = true;
+            game.sendMessage("action.kill_complete");
+        }
     }
 
     @Override

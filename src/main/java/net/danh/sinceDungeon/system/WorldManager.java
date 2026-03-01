@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.utils.WorldUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
@@ -71,6 +72,10 @@ public class WorldManager {
     public static void unloadAndDeleteWorld(SinceDungeon plugin, World world) {
         if (world == null) return;
         File folder = world.getWorldFolder();
+
+        for (Player p : world.getPlayers()) {
+            p.teleport(Bukkit.getWorlds().getFirst().getSpawnLocation());
+        }
 
         // 1. Unload ở Main Thread (Bắt buộc)
         if (Bukkit.unloadWorld(world, false)) {

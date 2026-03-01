@@ -203,6 +203,7 @@ public class RewardGUI implements Listener {
     }
 
     private void claimReward(Player p, Inventory inv, int slot, RewardSession session) {
+        if (session.getChestCount() <= 0) return;
         session.decreaseChestCount();
         inv.setItem(slot, new ItemStack(Material.AIR));
         playSound(p, "claim");

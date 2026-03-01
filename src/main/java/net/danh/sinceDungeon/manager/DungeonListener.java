@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.manager;
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -61,20 +62,17 @@ public class DungeonListener implements Listener {
         plugin.getDungeonManager().quitDungeon(e.getPlayer());
     }
 
-    // [TEST CASE: Player Escapes via Command]
-    // Nếu người chơi dùng lệnh /spawn hoặc teleport ra khỏi world dungeon -> Hủy game
+
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        // Nếu game tồn tại nhưng world hiện tại KHÔNG PHẢI world của game -> Đã thoát
         if (game != null && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + " left dungeon world via teleport. Stopping game.");
-            game.stop(false); // False vì player đã ở world khác rồi, ko cần tp
+            game.stop(false);
         }
     }
 
-    // [TEST CASE: Death]
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getEntity();
@@ -90,7 +88,10 @@ public class DungeonListener implements Listener {
             String deathMsg = plugin.getMessagesFile().getString("game.death");
             if (deathMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(deathMsg));
 
-            game.stop(false);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                p.spigot().respawn();
+                game.stop(true);
+            }, 1L);
         }
     }
 }

@@ -112,8 +112,8 @@ public final class SinceDungeon extends JavaPlugin {
         if (files != null) {
             for (File file : files) {
                 // Regex: Folder có đúng 2 dấu gạch dưới (VD: Player_map1_1234abcd)
-                if (file.isDirectory() && file.getName().matches("^[^_]+_[^_]+_[^_]+$")) {
-                    getLogger().info("[Cleanup] Phát hiện world rác từ lần sập trước: " + file.getName() + ". Đang dọn dẹp...");
+                if (file.isDirectory() && file.getName().startsWith("SinceDungeon_")) {
+                    getLogger().info("[Cleanup] Phát hiện world rác: " + file.getName() + ". Đang dọn dẹp...");
                     WorldUtils.deleteWorld(file);
                 }
             }
