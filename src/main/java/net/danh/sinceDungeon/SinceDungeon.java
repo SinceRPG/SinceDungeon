@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
+import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
@@ -42,6 +43,7 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
+        getLogger().info("Server version: " + ServerVersion.getNmsVersion() + " | " + ServerVersion.getMajor() + "." + ServerVersion.getMinor() + "." + ServerVersion.getPatch());
     }
 
     @Override

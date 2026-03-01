@@ -8,14 +8,17 @@ public class ServerVersion {
     private static int patch = 0;
 
     private static String nmsVersion = "";
+    private static int revisionNumber = 0; // Thêm từ MythicLib
+
     private static boolean isPaper = false;
     private static boolean isFolia = false;
 
     static {
-        // 1. Phân tích Semantic Version siêu chuẩn từ getBukkitVersion()
-        // Dữ liệu mẫu: "1.21.11-R0.1-SNAPSHOT" hoặc "26.1.0-R0.1" (Trong tương lai)
+        // ==========================================
+        // 1. LẤY PHIÊN BẢN THEO CHUẨN SEMANTIC (Major.Minor.Patch)
+        // ==========================================
         try {
-            String versionString = Bukkit.getBukkitVersion().split("-")[0]; // Lấy "1.21.11"
+            String versionString = Bukkit.getBukkitVersion().split("-")[0]; // VD: "1.21.1"
             String[] parts = versionString.split("\\.");
 
             if (parts.length > 0) major = Integer.parseInt(parts[0]);
@@ -25,16 +28,9 @@ public class ServerVersion {
             Bukkit.getLogger().warning("[SinceDungeon] Không thể phân tích phiên bản máy chủ!");
         }
 
-        // 2. Lấy NMS Version string (Dành cho 1.8 -> 1.20.4 Spigot)
-        // Lưu ý: Từ Paper 1.20.5+, nó sẽ trả về "craftbukkit" (không còn v1_20_R4)
-        try {
-            String packageName = Bukkit.getServer().getClass().getPackage().getName();
-            nmsVersion = packageName.substring(packageName.lastIndexOf('.') + 1);
-        } catch (Exception e) {
-            nmsVersion = "UNKNOWN";
-        }
-
-        // 3. Kiểm tra nền tảng (PaperMC)
+        // ==========================================
+        // 2. KIỂM TRA NỀN TẢNG (Paper & Folia)
+        // ==========================================
         try {
             Class.forName("com.destroystokyo.paper.PaperConfig");
             isPaper = true;
@@ -46,13 +42,57 @@ public class ServerVersion {
             }
         }
 
-        // 4. Kiểm tra nền tảng đa luồng Folia (Các server to bây giờ rất hay dùng)
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             isFolia = true;
         } catch (ClassNotFoundException ignored) {
         }
+
+        // ==========================================
+        // 3. LOGIC LẤY NMS REVISION CỦA MYTHICLIB (Tích hợp mới)
+        // ==========================================
+        revisionNumber = findRevisionNumber();
+
+        if (revisionNumber != 0) {
+            // Cấu trúc lại chuỗi NMS chuẩn (VD: v1_20_R4)
+            nmsVersion = "v" + major + "_" + minor + "_R" + revisionNumber;
+        } else {
+            // Dành cho Paper 1.20.5+ (Đã loại bỏ hoàn toàn hệ thống Revision)
+            nmsVersion = "craftbukkit";
+        }
     }
+
+    /**
+     * Thuật toán tìm Revision Number mượn từ MythicLib.
+     * Xử lý được cả thay đổi breaking changes của Spigot 1.20.5+.
+     */
+    private static int findRevisionNumber() {
+        // Cách 1: Dành cho Spigot / Paper < 1.20.5 (Dựa vào tên package)
+        try {
+            String packageName = Bukkit.getServer().getClass().getPackage().getName();
+            String revString = packageName.split("\\.")[3]; // VD lấy ra "v1_20_R4"
+            // Tách chữ R và lấy số (4)
+            return Integer.parseInt(revString.split("_")[2].replaceAll("[^0-9]", ""));
+        } catch (Throwable ignored) {
+        }
+
+        // Cách 2: Dành cho Spigot 1.20.5+ (Brute-force quét class CraftServer)
+        for (int i = 1; i <= 10; i++) {
+            try {
+                String candidate = "v" + major + "_" + minor + "_R" + i;
+                Class.forName("org.bukkit.craftbukkit." + candidate + ".CraftServer");
+                return i;
+            } catch (Throwable ignored) {
+            }
+        }
+
+        // CÁch 3: Paper 1.20.5+ (Không còn dùng Revision Number nữa)
+        return 0;
+    }
+
+    // ==========================================
+    // CÁC HÀM GETTER VÀ KIỂM TRA PHIÊN BẢN (Giữ nguyên của bạn)
+    // ==========================================
 
     public static int getMajor() {
         return major;
@@ -66,8 +106,18 @@ public class ServerVersion {
         return patch;
     }
 
+    /**
+     * Trả về tên phiên bản NMS (VD: "v1_20_R4" hoặc "craftbukkit")
+     */
     public static String getNmsVersion() {
         return nmsVersion;
+    }
+
+    /**
+     * Trả về số Revision (VD: bản R4 thì trả về 4)
+     */
+    public static int getRevisionNumber() {
+        return revisionNumber;
     }
 
     public static boolean isPaper() {
@@ -78,11 +128,6 @@ public class ServerVersion {
         return isFolia;
     }
 
-    /**
-     * Kiểm tra tương lai (Hỗ trợ cấu trúc VD: 26.1.0)
-     * VD: isAtLeast(26, 1, 0) -> Kiểm tra xem có từ bản 26.1.0 trở lên không
-     * VD: isAtLeast(1, 21, 11) -> Kiểm tra xem có từ bản 1.21.11 trở lên không
-     */
     public static boolean isAtLeast(int reqMajor, int reqMinor, int reqPatch) {
         if (major > reqMajor) return true;
         if (major == reqMajor) {
@@ -94,10 +139,6 @@ public class ServerVersion {
         return false;
     }
 
-    /**
-     * Kiểm tra xem phiên bản có NHỎ HƠN HOẶC BẰNG mức yêu cầu không.
-     * VD: isAtMost(1, 21, 10) -> True nếu là 1.21.10 trở xuống
-     */
     public static boolean isAtMost(int reqMajor, int reqMinor, int reqPatch) {
         if (major < reqMajor) return true;
         if (major == reqMajor) {
@@ -109,26 +150,14 @@ public class ServerVersion {
         return false;
     }
 
-    /**
-     * Dùng tắt cho chuẩn Minecraft 1.x hiện hành.
-     * VD: isAtLeast(21) -> True nếu là 1.21.0 trở lên
-     */
     public static boolean isAtLeast(int reqMinor) {
         return isAtLeast(1, reqMinor, 0);
     }
 
-    /**
-     * Dùng tắt cho chuẩn Minecraft 1.x hiện hành (Tới Patch).
-     * VD: isAtLeast(20, 4) -> True nếu là 1.20.4 trở lên
-     */
     public static boolean isAtLeast(int reqMinor, int reqPatch) {
         return isAtLeast(1, reqMinor, reqPatch);
     }
 
-    /**
-     * Kiểm tra chính xác 1 phiên bản cụ thể
-     * VD: isExactly(1, 21, 11) -> Chỉ chạy khi đúng là bản 1.21.11
-     */
     public static boolean isExactly(int reqMajor, int reqMinor, int reqPatch) {
         return major == reqMajor && minor == reqMinor && patch == reqPatch;
     }
