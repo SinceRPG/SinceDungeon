@@ -13,6 +13,8 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
@@ -342,7 +344,7 @@ public class EditorGUI implements Listener {
             else if (key.equals("mob")) icon = Material.CREEPER_HEAD;
             else if (isLocation) {
                 icon = Material.COMPASS;
-                hint = isList ? getMsg("items.action_val_hint_loc") + " | " + getMsg("items.action_val_hint_loc_clear") : getMsg("items.action_val_hint_loc_replace");
+                hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
             }
 
             if (isList) {
@@ -392,35 +394,35 @@ public class EditorGUI implements Listener {
         boolean isEditorMenu = session != null || isTitle(titleComp, "title.main", null);
         if (!isEditorMenu) return;
 
-        if (e.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY ||
-                e.getClick() == org.bukkit.event.inventory.ClickType.DOUBLE_CLICK ||
-                e.getClick() == org.bukkit.event.inventory.ClickType.SWAP_OFFHAND ||
-                e.getAction() == org.bukkit.event.inventory.InventoryAction.HOTBAR_SWAP ||
-                e.getAction() == org.bukkit.event.inventory.InventoryAction.MOVE_TO_OTHER_INVENTORY ||
-                e.getAction() == org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR) {
+        if (e.getClick() == ClickType.NUMBER_KEY ||
+                e.getClick() == ClickType.DOUBLE_CLICK ||
+                e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
         }
+
+
+        if (e.getClickedInventory() != e.getView().getTopInventory()) {
+            if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+                e.setCancelled(true);
+            }
+            return;
+        }
+
+        e.setCancelled(true);
 
         ItemStack cur = e.getCurrentItem();
         if (cur == null || cur.getType() == Material.AIR) return;
 
-        if (e.getClickedInventory() != e.getView().getTopInventory()) {
-            e.setCancelled(true);
-            return;
-        }
-
+        // ================= MAIN MENU =================
         if (isTitle(titleComp, "title.main", null)) {
-            e.setCancelled(true);
             if (cur.getType() == Material.PAPER) {
                 String name = getPlainText(cur.getItemMeta().displayName());
                 manager.startEditing(p, name);
             } else if (cur.getType() == Material.EMERALD_BLOCK) {
                 EditorSession tempSession = new EditorSession(plugin, p, null);
                 tempSession.setLastMenuOpener(this::openMainMenu);
-                // [ĐÃ SỬA] Nạp config trước
                 tempSession.awaitInput(EditorSession.InputType.CREATE_FILENAME, "create_filename", val -> plugin.getEditorManager().startEditing(p, val));
-                // Khởi chạy listener sau
                 plugin.getEditorListener().startListening(p, tempSession);
             }
             return;
@@ -428,8 +430,8 @@ public class EditorGUI implements Listener {
 
         if (session == null) return;
 
+        // ================= DUNGEON MENU =================
         if (isTitle(titleComp, "title.dungeon", "<name>")) {
-            e.setCancelled(true);
             int slot = e.getRawSlot();
             if (slot == 10) {
                 session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_world_name", val -> {
@@ -451,8 +453,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= CONDITIONS LIST =================
         if (isTitle(titleComp, "title.conditions", null)) {
-            e.setCancelled(true);
             int slot = e.getRawSlot();
             if (slot == 49) {
                 session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
@@ -471,16 +473,16 @@ public class EditorGUI implements Listener {
                     List<String> keys = new ArrayList<>(sec.getKeys(false));
                     if (slot < keys.size()) {
                         String key = keys.get(slot);
-                        if (e.isShiftClick() && e.isRightClick()) {
+                        if (e.getClick() == ClickType.SHIFT_RIGHT) {
                             session.getConfig().set("conditions." + key, null);
                             openConditionList(p, session);
-                        } else if (e.isRightClick()) {
+                        } else if (e.getClick() == ClickType.RIGHT) {
                             session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_condition_msg", val -> {
                                 session.getConfig().set("conditions." + key + ".msg", val);
                                 openConditionList(p, session);
                             });
                             plugin.getEditorListener().startListening(p, session);
-                        } else {
+                        } else if (e.getClick() == ClickType.LEFT) {
                             session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
                                 session.getConfig().set("conditions." + key + ".check", val);
                                 openConditionList(p, session);
@@ -493,16 +495,16 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= REWARDS MAIN =================
         if (isTitle(titleComp, "title.rewards_main", null)) {
-            e.setCancelled(true);
             if (cur.getType() == Material.CLOCK) openRewardTiers(p, session);
             else if (cur.getType() == Material.CHEST) openRewardPool(p, session);
             else if (e.getRawSlot() == 18) openDungeonMenu(p, session);
             return;
         }
 
+        // ================= REWARD TIERS =================
         if (isTitle(titleComp, "title.reward_tiers", null)) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 49) {
                 session.awaitInput(EditorSession.InputType.EDIT_TIER, "edit_tier", val -> {
                     try {
@@ -524,11 +526,12 @@ public class EditorGUI implements Listener {
             } else if (cur.getType() == Material.CLOCK) {
                 String name = getPlainText(cur.getItemMeta().displayName());
                 String timeStr = name.replaceAll("[^0-9]", "");
-                if (e.isRightClick()) {
+
+                if (e.getClick() == ClickType.RIGHT) {
                     session.getConfig().set("rewards.tiers." + timeStr, null);
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openRewardTiers(p, session);
-                } else {
+                } else if (e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_number", val -> {
                         try {
                             int newAmount = Integer.parseInt(val);
@@ -546,8 +549,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= REWARD POOL =================
         if (isTitle(titleComp, "title.reward_pool", null)) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 49) {
                 String newKey = "reward_" + System.currentTimeMillis();
                 session.getConfig().set("rewards.pool." + newKey + ".type", "ITEM");
@@ -564,10 +567,10 @@ public class EditorGUI implements Listener {
                     int idx = e.getRawSlot();
                     if (idx < keys.size()) {
                         String key = keys.get(idx);
-                        if (e.isShiftClick() && e.isRightClick()) {
+                        if (e.getClick() == ClickType.SHIFT_RIGHT) {
                             session.getConfig().set("rewards.pool." + key, null);
                             openRewardPool(p, session);
-                        } else {
+                        } else if (e.getClick() == ClickType.LEFT) {
                             session.setCurrentRewardKey(key);
                             openRewardEditor(p, session);
                         }
@@ -577,8 +580,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= EDIT REWARD ITEM =================
         if (isTitle(titleComp, "title.edit_reward", "<index>")) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 18) {
                 openRewardPool(p, session);
                 return;
@@ -588,7 +591,7 @@ public class EditorGUI implements Listener {
             String path = "rewards.pool." + currentKey;
             String currentType = session.getConfig().getString(path + ".type", "ITEM");
 
-            if (e.getRawSlot() == 10) {
+            if (e.getRawSlot() == 10 && e.getClick() == ClickType.LEFT) {
                 String nextType = switch (currentType) {
                     case "ITEM" -> "COMMAND";
                     case "COMMAND" -> "MMOITEM";
@@ -598,7 +601,7 @@ public class EditorGUI implements Listener {
                 sendMessage(p, "type_changed", "<type>", nextType);
                 openRewardEditor(p, session);
             } else if (e.getRawSlot() == 12) {
-                if (e.isRightClick()) {
+                if (e.getClick() == ClickType.RIGHT) {
                     ItemStack hand = p.getInventory().getItemInMainHand();
                     if (hand.getType() != Material.AIR) {
                         String val = hand.getType().name() + ":" + hand.getAmount();
@@ -607,14 +610,15 @@ public class EditorGUI implements Listener {
                         openRewardEditor(p, session);
                     } else sendMessage(p, "hand_empty");
                     return;
+                } else if (e.getClick() == ClickType.LEFT) {
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_value_" + currentType.toLowerCase(), val -> {
+                        session.getConfig().set(path + ".value", val);
+                        sendMessage(p, "update_val", "<key>", getWord("value"), "<val>", val);
+                        new EditorGUI(plugin).openRewardEditor(p, session);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
                 }
-                session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_value_" + currentType.toLowerCase(), val -> {
-                    session.getConfig().set(path + ".value", val);
-                    sendMessage(p, "update_val", "<key>", getWord("value"), "<val>", val);
-                    new EditorGUI(plugin).openRewardEditor(p, session);
-                });
-                plugin.getEditorListener().startListening(p, session);
-            } else if (e.getRawSlot() == 14) {
+            } else if (e.getRawSlot() == 14 && e.getClick() == ClickType.LEFT) {
                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                     try {
                         double chance = Double.parseDouble(val);
@@ -626,7 +630,7 @@ public class EditorGUI implements Listener {
                     }
                 });
                 plugin.getEditorListener().startListening(p, session);
-            } else if (e.getRawSlot() == 16) {
+            } else if (e.getRawSlot() == 16 && e.getClick() == ClickType.LEFT) {
                 session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_name", val -> {
                     session.getConfig().set(path + ".name", val);
                     new EditorGUI(plugin).openRewardEditor(p, session);
@@ -636,8 +640,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= STAGES =================
         if (isTitle(titleComp, "title.stages", null)) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 49) {
                 ConfigurationSection sec = session.getConfig().getConfigurationSection("stages");
                 int next = 1;
@@ -662,8 +666,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= ACTIONS LIST =================
         if (isTitle(titleComp, "title.actions", "<stage>")) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
             else if (e.getRawSlot() == 45) openStageList(p, session);
             else if (cur.getType() == Material.PAPER) {
@@ -673,10 +677,10 @@ public class EditorGUI implements Listener {
                     int slot = e.getRawSlot();
                     if (slot < keys.size()) {
                         String key = keys.get(slot);
-                        if (e.isShiftClick()) {
+                        if (e.getClick() == ClickType.SHIFT_RIGHT) {
                             session.getConfig().set("stages." + session.getCurrentStage() + ".actions." + key, null);
                             openActionList(p, session);
-                        } else {
+                        } else if (e.getClick() == ClickType.LEFT) {
                             session.setCurrentActionKey(key);
                             openActionEditor(p, session);
                         }
@@ -686,8 +690,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= SELECT ACTION TYPE =================
         if (isTitle(titleComp, "title.select_type", null)) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 45) {
                 openActionList(p, session);
                 return;
@@ -709,8 +713,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= EDIT ACTION =================
         if (isTitle(titleComp, "title.edit_action", "<index>")) {
-            e.setCancelled(true);
             if (e.getRawSlot() == 45) {
                 openActionList(p, session);
                 return;
@@ -733,7 +737,7 @@ public class EditorGUI implements Listener {
             }
 
             if (isLocation) {
-                if (e.isShiftClick() && e.isRightClick()) {
+                if (e.getClick() == ClickType.SHIFT_RIGHT) {
                     if (isList) {
                         session.getConfig().set(fullPath, new ArrayList<>());
                     } else {
@@ -742,8 +746,7 @@ public class EditorGUI implements Listener {
                     sendMessage(p, "loc_cleared");
                     openActionEditor(p, session);
                     return;
-                }
-                if (e.isRightClick()) {
+                } else if (e.getClick() == ClickType.RIGHT) {
                     String locStr = locToString(p.getLocation());
                     if (isList) {
                         List<String> list = session.getConfig().getStringList(fullPath);
@@ -758,36 +761,38 @@ public class EditorGUI implements Listener {
                 }
             }
 
-            String promptKey = "edit_action_" + key.toLowerCase();
+            if (e.getClick() == ClickType.LEFT) {
+                String promptKey = "edit_action_" + key.toLowerCase();
 
-            session.awaitInput(inputType, promptKey, val -> {
-                Object finalVal = val;
-                if (val.equalsIgnoreCase("true")) finalVal = true;
-                else if (val.equalsIgnoreCase("false")) finalVal = false;
-                else {
-                    try {
-                        finalVal = Integer.parseInt(val);
-                    } catch (Exception e1) {
+                session.awaitInput(inputType, promptKey, val -> {
+                    Object finalVal = val;
+                    if (val.equalsIgnoreCase("true")) finalVal = true;
+                    else if (val.equalsIgnoreCase("false")) finalVal = false;
+                    else {
                         try {
-                            finalVal = Double.parseDouble(val);
-                        } catch (Exception ignored) {
+                            finalVal = Integer.parseInt(val);
+                        } catch (Exception e1) {
+                            try {
+                                finalVal = Double.parseDouble(val);
+                            } catch (Exception ignored) {
+                            }
                         }
                     }
-                }
 
-                if (isList) {
-                    List<String> list = session.getConfig().getStringList(fullPath);
-                    if (val.equalsIgnoreCase("clear")) list.clear();
-                    else list.add(val);
-                    session.getConfig().set(fullPath, list);
-                } else {
-                    session.getConfig().set(fullPath, finalVal);
-                }
+                    if (isList) {
+                        List<String> list = session.getConfig().getStringList(fullPath);
+                        if (val.equalsIgnoreCase("clear")) list.clear();
+                        else list.add(val);
+                        session.getConfig().set(fullPath, list);
+                    } else {
+                        session.getConfig().set(fullPath, finalVal);
+                    }
 
-                sendMessage(p, "update_val", "<key>", key, "<val>", val);
-                new EditorGUI(plugin).openActionEditor(p, session);
-            });
-            plugin.getEditorListener().startListening(p, session);
+                    sendMessage(p, "update_val", "<key>", key, "<val>", val);
+                    new EditorGUI(plugin).openActionEditor(p, session);
+                });
+                plugin.getEditorListener().startListening(p, session);
+            }
         }
     }
 }

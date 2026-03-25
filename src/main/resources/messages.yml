@@ -134,16 +134,16 @@ editor:
     select_type: "<b>Chọn Loại Hành Động</b>"
     edit_action: "<b>Sửa Hành Động #<index></b>"
   items:
-    click_edit: "<yellow>Nhấn để sửa"
+    click_edit: "<yellow>Chuột Trái: Sửa"
     create_new: "<green><b>Tạo Dungeon Mới</b>"
     world_template: "<yellow>Map Mẫu"
     world_template_lore:
       - "<gray>Hiện tại: <white><world>"
-      - "<yellow>Nhấn để đổi"
+      - "<yellow>Chuột Trái: Nhập tên map mới"
     public_status: "<yellow>Trạng thái Public"
     public_status_lore:
       - "<gray>Hiện tại: <status>"
-      - "<yellow>Nhấn để bật/tắt"
+      - "<yellow>Chuột Trái: Bật/Tắt"
     conditions: "<yellow>Điều kiện vào"
     conditions_lore:
       - "<gray>Chỉnh sửa điều kiện tham gia"
@@ -170,34 +170,34 @@ editor:
     tier_lore:
       - "<gray>Số rương: <white><amount>"
       - ""
-      - "<yellow>Chuột Trái: Sửa"
-      - "<red>Chuột Phải: Xóa"
+      - "<yellow>Chuột Trái: Sửa số lượng"
+      - "<red>Chuột Phải: Xóa mốc"
     add_tier: "<green>Thêm Mốc"
     pool_item: "<yellow>Thưởng #<index>"
     pool_lore:
       - "<gray>Loại: <white><type>"
       - "<gray>Giá trị: <white><val>"
       - ""
-      - "<yellow>Nhấn để sửa"
+      - "<yellow>Chuột Trái: Sửa phần thưởng"
       - "<red>Shift-Phải: Xóa"
     add_pool_item: "<green>Thêm Phần Thưởng"
     reward_type: "<yellow>Loại"
     reward_type_lore:
       - "<gray>Hiện tại: <white><type>"
-      - "<yellow>Nhấn để đổi (ITEM/COMMAND/MMOITEM)"
+      - "<yellow>Chuột Trái: Đổi (ITEM/COMMAND/MMOITEM)"
     reward_value: "<yellow>Giá trị"
     reward_value_lore:
       - "<gray>Hiện tại: <white><val>"
-      - "<yellow>Chuột Trái: Nhập tay"
+      - "<yellow>Chuột Trái: Nhập tay vào Chat"
       - "<yellow>Chuột Phải: Lấy item trên tay"
     reward_chance: "<yellow>Tỉ lệ"
     reward_chance_lore:
       - "<gray>Hiện tại: <white><val>%"
-      - "<yellow>Nhấn để sửa"
+      - "<yellow>Chuột Trái: Sửa tỉ lệ"
     reward_name: "<yellow>Tên hiển thị"
     reward_name_lore:
       - "<gray>Hiện tại: <white><val>"
-      - "<yellow>Nhấn để sửa"
+      - "<yellow>Chuột Trái: Sửa tên hiển thị"
     stage_item: "<yellow>Giai đoạn <stage>"
     stage_lore:
       - "<gray>Nhấn để sửa các hành động"
@@ -206,14 +206,13 @@ editor:
     action_lore:
       - "<gray>Loại: <white><type>"
       - ""
-      - "<yellow>Nhấn để sửa"
-      - "<red>Shift-Chuột: Xóa"
+      - "<yellow>Chuột Trái: Sửa hành động"
+      - "<red>Shift-Phải: Xóa hành động này"
     add_action: "<green>Thêm Hành Động"
     cancel: "<red>Hủy"
-    action_val_hint_edit: "<yellow>Nhấn để nhập giá trị mới"
-    action_val_hint_loc: "<yellow>Nhấn để thêm vị trí hiện tại"
-    action_val_hint_loc_replace: "<yellow>Chuột Phải để thay thế bằng vị trí hiện tại"
-    action_val_hint_loc_clear: "<red>Shift-Phải để xóa danh sách"
+    action_val_hint_edit: "<yellow>Chuột Trái: Nhập giá trị mới"
+    action_val_hint_loc_single: "<yellow>Trái: Nhập tay | Phải: Lấy vị trí đứng | <red>Shift-Phải: Xóa"
+    action_val_hint_loc_list: "<yellow>Trái: Nhập tay | Phải: Lấy vị trí đứng | <red>Shift-Phải: Xóa sạch list"
     action_type_cant_edit: "<red>Không thể đổi loại hành động sau khi tạo"
   input:
     title_main: "<gold><bold>NHẬP LIỆU"
