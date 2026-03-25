@@ -8,7 +8,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
-import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.Vector;
 
 public class SmartBreakWallAction extends DungeonAction {
@@ -24,23 +25,26 @@ public class SmartBreakWallAction extends DungeonAction {
 
     @Override
     public void start(DungeonGame game) {
-        // Có thể thêm hint bằng particle ở vị trí trigger
+        // Gợi ý cho người chơi (Tùy chọn)
         Location loc = new Location(game.getWorld(), trigger.getX() + 0.5, trigger.getY() + 0.5, trigger.getZ() + 0.5);
-        // Logic particle có thể thêm ở Tickable nếu muốn
     }
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        if (event instanceof BlockBreakEvent e) {
+        // Thay BlockBreakEvent bằng PlayerInteractEvent (Chuột trái) để xuyên qua WorldGuard
+        if (event instanceof PlayerInteractEvent e) {
+            if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
             if (!e.getPlayer().getUniqueId().equals(game.getPlayer().getUniqueId())) return;
+            if (!e.hasBlock()) return;
 
-            Block b = e.getBlock();
+            Block b = e.getClickedBlock();
             if (b.getWorld().equals(game.getWorld()) &&
                     b.getX() == trigger.getBlockX() &&
                     b.getY() == trigger.getBlockY() &&
                     b.getZ() == trigger.getBlockZ()) {
 
-                e.setDropItems(false); // Không rơi item của block trigger
+                // Chủ động biến block trigger thành khí (Vì sự kiện đập block thông thường đã bị chặn)
+                b.setType(Material.AIR);
                 removeWall(game);
 
                 this.completed = true;

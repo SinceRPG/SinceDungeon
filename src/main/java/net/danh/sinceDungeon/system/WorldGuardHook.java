@@ -18,10 +18,15 @@ public class WorldGuardHook {
 
             GlobalProtectedRegion global = new GlobalProtectedRegion("__global__");
 
-            // Chặn đập phá, đặt block, pvp, spawn quái tự nhiên
+            // Chặn đập phá, đặt block, pvp
             global.setFlag(Flags.BLOCK_BREAK, StateFlag.State.DENY);
             global.setFlag(Flags.BLOCK_PLACE, StateFlag.State.DENY);
             global.setFlag(Flags.PVP, StateFlag.State.DENY);
+
+            // Chặn vụ nổ phá hoại kiến trúc/mạch của dungeon
+            global.setFlag(Flags.CREEPER_EXPLOSION, StateFlag.State.DENY);
+            global.setFlag(Flags.OTHER_EXPLOSION, StateFlag.State.DENY);
+            global.setFlag(Flags.GHAST_FIREBALL, StateFlag.State.DENY);
 
             // Cho phép mở rương, dùng cửa/nút
             global.setFlag(Flags.USE, StateFlag.State.ALLOW);

@@ -8,6 +8,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.event.Event;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
@@ -47,7 +48,7 @@ public class LootChestAction extends DungeonAction {
         b.setType(Material.CHEST); // Đặt block thành rương
 
         if (b.getState() instanceof Chest chest) {
-            Inventory inv = chest.getInventory(); // Dùng getInventory() an toàn hơn
+            Inventory inv = chest.getInventory();
             inv.clear();
 
             // 1. Vanilla Items (Clone ra để không bị lỗi reference)
@@ -66,7 +67,6 @@ public class LootChestAction extends DungeonAction {
             }
 
             chest.update();
-
             game.sendMessage("action.chest_appear");
         }
     }
@@ -104,7 +104,10 @@ public class LootChestAction extends DungeonAction {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
+            // Chặn đấm rương gây nhầm lẫn tin nhắn
+            if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if (!e.hasBlock()) return;
+
             Block b = e.getClickedBlock();
             if (isTargetChest(b) && !isOpened) {
                 isOpened = true;
