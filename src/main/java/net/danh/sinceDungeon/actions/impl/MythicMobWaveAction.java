@@ -78,9 +78,13 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
+
         spawnedMobIds.removeIf(uuid -> {
             org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
-            return ent == null || !ent.isValid() || ent.isDead();
+            if (ent != null) {
+                return ent.isDead() || !ent.isValid();
+            }
+            return false;
         });
 
         if (spawnedMobIds.isEmpty()) {

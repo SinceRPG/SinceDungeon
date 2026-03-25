@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -62,7 +63,6 @@ public class DungeonListener implements Listener {
         plugin.getDungeonManager().quitDungeon(e.getPlayer());
     }
 
-
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
@@ -73,7 +73,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getEntity();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());

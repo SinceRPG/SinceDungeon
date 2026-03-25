@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.List;
@@ -19,7 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
-    // Đổi Set thành Map để giữ Session hiện tại
     private final Map<UUID, EditorSession> activeInputs = new ConcurrentHashMap<>();
 
     public EditorListener(SinceDungeon plugin) {
@@ -31,7 +31,6 @@ public class EditorListener implements Listener {
         if (s != null) p.sendMessage(ColorUtils.parseWithPrefix(s));
     }
 
-    // Yêu cầu truyền trực tiếp EditorSession vào đây
     public void startListening(Player p, EditorSession session) {
         activeInputs.put(p.getUniqueId(), session);
         p.closeInventory();
@@ -48,7 +47,6 @@ public class EditorListener implements Listener {
         if (!activeInputs.containsKey(p.getUniqueId())) return;
 
         e.setCancelled(true);
-        // Lấy session ra và xóa khỏi map chờ
         EditorSession session = activeInputs.remove(p.getUniqueId());
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message());
 
@@ -84,6 +82,17 @@ public class EditorListener implements Listener {
                 }
             }
         });
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCommand(PlayerCommandPreprocessEvent e) {
+        Player p = e.getPlayer();
+        if (activeInputs.containsKey(p.getUniqueId())) {
+            // Tự động hủy phiên nhập liệu để tránh bị kẹt trạng thái
+            EditorSession session = activeInputs.remove(p.getUniqueId());
+            sendMsg(p, "input_cancel");
+            if (session != null) reopenSessionMenu(session);
+        }
     }
 
     @EventHandler
