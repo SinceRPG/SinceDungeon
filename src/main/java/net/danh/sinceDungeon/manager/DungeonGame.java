@@ -97,7 +97,6 @@ public class DungeonGame {
 
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-
                     if (isStopping || !player.isOnline()) {
                         WorldManager.unloadAndDeleteWorld(plugin, world);
                         return;
@@ -140,13 +139,11 @@ public class DungeonGame {
                     cancel();
                     return;
                 }
-
                 if (count <= 0) {
                     enterDungeon();
                     cancel();
                     return;
                 }
-
                 sendMessage("lobby.countdown", "<time>", String.valueOf(count));
                 playConfigSound("lobby_countdown", 1f, 2f);
                 count--;
@@ -307,9 +304,7 @@ public class DungeonGame {
             if (targetLoc.getWorld() == null) {
                 targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             }
-
             if (player.isInsideVehicle()) player.leaveVehicle();
-
             player.teleport(targetLoc);
         }
 
@@ -319,6 +314,27 @@ public class DungeonGame {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 WorldManager.unloadAndDeleteWorld(plugin, w);
             }, 20L);
+        }
+
+        plugin.getDungeonManager().removeGame(player.getUniqueId());
+    }
+
+    public void forceShutdown() {
+        isRunning = false;
+        if (tickTask != null) tickTask.cancel();
+
+        if (player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {
+            Location targetLoc = oldLocation;
+            if (targetLoc.getWorld() == null) {
+                targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
+            }
+            if (player.isInsideVehicle()) player.leaveVehicle();
+            player.teleport(targetLoc);
+        }
+
+        if (dungeonWorld != null) {
+            WorldManager.forceUnloadAndDelete(plugin, dungeonWorld);
+            dungeonWorld = null;
         }
 
         plugin.getDungeonManager().removeGame(player.getUniqueId());

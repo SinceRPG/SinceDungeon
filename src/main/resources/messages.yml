@@ -4,6 +4,9 @@ admin:
   reload: "<green>Đã tải lại toàn bộ file cấu hình và dungeon."
   invalid_player: "<red>Không tìm thấy người chơi này."
   in_editor: "<red>Bạn đang trong chế độ chỉnh sửa! Vui lòng gõ <yellow>cancel<red> vào chat để hủy trước khi dùng lệnh."
+  mmoitems:
+    not_installed: "<red>Lỗi hệ thống: Không thể trao vật phẩm MMOItems vì Plugin chưa được cài đặt."
+    not_found: "<red>Lỗi hệ thống: Không tìm thấy vật phẩm MMOItems <type>:<id>"
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"

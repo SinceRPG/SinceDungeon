@@ -20,4 +20,8 @@ public class RewardSessionManager {
     public static void removeSession(Player p) {
         sessions.remove(p.getUniqueId());
     }
+
+    public static void clearAll() {
+        sessions.clear();
+    }
 }

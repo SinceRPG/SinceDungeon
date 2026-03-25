@@ -167,7 +167,9 @@ public class RewardGUI implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!isRewardGui(e.getView().title())) return;
 
-        if (e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
+        if (e.getClick() == ClickType.NUMBER_KEY ||
+                e.getClick() == ClickType.DOUBLE_CLICK ||
+                e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
         }
@@ -288,7 +290,10 @@ public class RewardGUI implements Listener {
             } catch (Exception ignored) {
             }
         } else if (type.equalsIgnoreCase("MMOITEM")) {
-            if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) return;
+            if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {
+                p.sendMessage(ColorUtils.parseWithPrefix(SinceDungeon.getPlugin().getMessagesFile().getString("admin.mmoitems.not_installed")));
+                return;
+            }
             try {
                 String[] parts = val.split(":");
                 String mType = parts[0];
@@ -310,6 +315,8 @@ public class RewardGUI implements Listener {
                         }
                     }
                     handleItemDrop(p, item, displayName);
+                } else {
+                    p.sendMessage(ColorUtils.parseWithPrefix(SinceDungeon.getPlugin().getMessagesFile().getString("admin.mmoitems.not_found").replace("<type>", mType).replace("<id>", mId)));
                 }
             } catch (Exception ignored) {
             }
@@ -320,6 +327,7 @@ public class RewardGUI implements Listener {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
             Location dropLoc = p.getLocation();
+
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
                 dropLoc = game.getOldLocation();

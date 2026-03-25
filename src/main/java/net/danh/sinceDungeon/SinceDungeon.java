@@ -11,6 +11,7 @@ import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
 import net.danh.sinceDungeon.reward.RewardGUI;
+import net.danh.sinceDungeon.reward.RewardSessionManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -84,6 +85,8 @@ public final class SinceDungeon extends JavaPlugin {
         if (dungeonManager != null) {
             dungeonManager.stopAllGames();
         }
+
+        RewardSessionManager.clearAll();
 
         Bukkit.getScheduler().cancelTasks(this);
 

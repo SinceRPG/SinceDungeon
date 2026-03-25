@@ -44,16 +44,13 @@ public class DungeonManager {
         return actionMeta.get(type.toUpperCase());
     }
 
-    // Nhận trực tiếp Map<String, Object>, bỏ logic convert cũ
     public DungeonAction createAction(String type, Map<String, Object> data) {
         if (type == null) return null;
         ActionParser parser = actionParsers.get(type.toUpperCase());
 
         try {
-            // 1. Tạo Action từ Parser gốc
             DungeonAction action = parser != null ? parser.parse(data) : null;
 
-            // 2. Tự động nạp start_message nếu có
             if (action != null && data.containsKey("start_message")) {
                 Object msgObj = data.get("start_message");
                 List<String> msgs = new ArrayList<>();
@@ -76,7 +73,6 @@ public class DungeonManager {
 
     @SuppressWarnings("unchecked")
     private void registerDefaultActions() {
-        // 1. SPAWN_WAVE
         Map<String, Object> spawnDefaults = new HashMap<>();
         spawnDefaults.put("mob", "ZOMBIE");
         spawnDefaults.put("amount", 1);
@@ -91,16 +87,12 @@ public class DungeonManager {
                         mob = EntityType.ZOMBIE;
                     }
                     int amount = getInt(map.get("amount"), 1);
-
-                    // [ĐÃ SỬA]: Lấy locations an toàn
                     List<Vector> v = parseLocList(map.get("locations"));
-
                     return new SpawnWaveAction(mob, amount, v);
                 }, Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults);
 
-        // 2. REACH_LOCATION
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
         reachDefaults.put("radius", 3.0);
@@ -109,13 +101,11 @@ public class DungeonManager {
                     String targetStr = (String) map.getOrDefault("target", "0,0,0");
                     Vector target = DungeonLoader.parseVector(targetStr);
                     double radius = getDouble(map.get("radius"), 3.0);
-
                     return new ReachLocationAction(target, radius);
                 }, Material.COMPASS,
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults);
 
-        // 3. LOOT_CHEST
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
         chestDefaults.put("items", new HashMap<>());
@@ -127,7 +117,6 @@ public class DungeonManager {
 
                     Object itemsObj = map.get("items");
 
-                    // TRƯỜNG HỢP 1: ConfigurationSection (Chuẩn Bukkit)
                     if (itemsObj instanceof ConfigurationSection) {
                         ConfigurationSection section = (ConfigurationSection) itemsObj;
                         for (String key : section.getKeys(false)) {
@@ -138,9 +127,7 @@ public class DungeonManager {
                             } catch (Exception ignored) {
                             }
                         }
-                    }
-                    // TRƯỜNG HỢP 2: Map (Đề phòng)
-                    else if (itemsObj instanceof Map) {
+                    } else if (itemsObj instanceof Map) {
                         Map<?, ?> m = (Map<?, ?>) itemsObj;
                         for (Map.Entry<?, ?> entry : m.entrySet()) {
                             try {
@@ -157,7 +144,6 @@ public class DungeonManager {
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults);
 
-        // 4. BREAK_WALL
         Map<String, Object> wallDefaults = new HashMap<>();
         wallDefaults.put("trigger", "0,0,0");
         wallDefaults.put("corner1", "0,0,0");
@@ -171,26 +157,21 @@ public class DungeonManager {
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults);
 
-        // 5. MYTHIC_WAVE
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", "SkeletonKing");
         mmDefaults.put("amount", 1);
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("MYTHIC_WAVE", map -> {
-                    // [ĐÃ SỬA]: Lấy locations an toàn
                     List<Vector> v = parseLocList(map.get("locations"));
-
                     int amount = getInt(map.get("amount"), 1);
                     String mob = (String) map.getOrDefault("mob", "SkeletonKing");
-
                     return new MythicMobWaveAction(mob, amount, v);
                 }, Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults);
     }
 
-    // --- Helper Methods ---
     private int getInt(Object obj, int def) {
         if (obj instanceof Number) return ((Number) obj).intValue();
         try {
@@ -209,7 +190,6 @@ public class DungeonManager {
         }
     }
 
-    // [ĐÃ SỬA]: Đọc list an toàn, không sợ bị ClassCastException
     private List<Vector> parseLocList(Object obj) {
         List<Vector> v = new ArrayList<>();
         if (obj instanceof List) {
@@ -311,7 +291,7 @@ public class DungeonManager {
 
     public void stopAllGames() {
         for (DungeonGame game : new ArrayList<>(activeGames.values())) {
-            game.stop(true);
+            game.forceShutdown();
         }
         activeGames.clear();
     }

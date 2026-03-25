@@ -17,6 +17,11 @@ import java.util.concurrent.CompletableFuture;
 public class WorldManager {
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
+        World templateW = Bukkit.getWorld(templateName);
+        if (templateW != null) {
+            templateW.save();
+        }
+
         return CompletableFuture.supplyAsync(() -> {
             File source = new File(Bukkit.getWorldContainer(), templateName);
             File target = new File(Bukkit.getWorldContainer(), instanceId);
@@ -91,6 +96,22 @@ public class WorldManager {
             });
         } else {
             plugin.getLogger().warning("Could not unload world: " + world.getName() + " (Bukkit refused - Players or chunks might be stuck).");
+        }
+    }
+
+    public static void forceUnloadAndDelete(SinceDungeon plugin, World world) {
+        if (world == null) return;
+        File folder = world.getWorldFolder();
+
+        for (Player p : world.getPlayers()) {
+            p.teleport(Bukkit.getWorlds().get(0).getSpawnLocation());
+        }
+
+        if (Bukkit.unloadWorld(world, false)) {
+            plugin.getLogger().info("Force unloaded dungeon world: " + world.getName());
+            WorldUtils.deleteWorld(folder);
+        } else {
+            plugin.getLogger().severe("CRITICAL: Failed to force-unload world " + world.getName() + " during shutdown!");
         }
     }
 }

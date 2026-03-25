@@ -30,15 +30,10 @@ public class EditorGUI implements Listener {
         this.plugin = plugin;
     }
 
-    // =================================================================================
-    //                                     UTILS
-    // =================================================================================
-
     private String getMsg(String path) {
         return plugin.getMessagesFile().getString("editor." + path);
     }
 
-    // Lấy các từ khóa lặt vặt (để không bị hardcode)
     private String getWord(String key) {
         return getMsg("words." + key);
     }
@@ -108,10 +103,6 @@ public class EditorGUI implements Listener {
         Material mat = Material.matchMaterial(navItemStr);
         return mat != null ? mat : Material.ARROW;
     }
-
-    // =================================================================================
-    //                                 GUI OPENERS
-    // =================================================================================
 
     public void openMainMenu(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.main")));
@@ -375,10 +366,6 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    // =================================================================================
-    //                                EVENT HANDLING
-    // =================================================================================
-
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
         if (e.getWhoClicked() instanceof Player) {
@@ -402,13 +389,14 @@ public class EditorGUI implements Listener {
         EditorSession session = manager.getSession(p);
         Component titleComp = e.getView().title();
 
-        // Kiểm tra xem có đang ở trong giao diện của Editor không
         boolean isEditorMenu = session != null || isTitle(titleComp, "title.main", null);
         if (!isEditorMenu) return;
 
-        // Chặn các thao tác gian lận/gây lỗi GUI
-        if (e.getClick() == org.bukkit.event.inventory.ClickType.DOUBLE_CLICK ||
+        // [ĐÃ SỬA TẬN GỐC]: Chặn luôn phím số (1-9) và HOTBAR_SWAP để không cho người chơi tráo đồ từ Editor vào túi đồ
+        if (e.getClick() == org.bukkit.event.inventory.ClickType.NUMBER_KEY ||
+                e.getClick() == org.bukkit.event.inventory.ClickType.DOUBLE_CLICK ||
                 e.getClick() == org.bukkit.event.inventory.ClickType.SWAP_OFFHAND ||
+                e.getAction() == org.bukkit.event.inventory.InventoryAction.HOTBAR_SWAP ||
                 e.getAction() == org.bukkit.event.inventory.InventoryAction.MOVE_TO_OTHER_INVENTORY ||
                 e.getAction() == org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR) {
             e.setCancelled(true);
@@ -423,7 +411,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 1. MAIN LIST
         if (isTitle(titleComp, "title.main", null)) {
             e.setCancelled(true);
             if (cur.getType() == Material.PAPER) {
@@ -440,18 +427,17 @@ public class EditorGUI implements Listener {
 
         if (session == null) return;
 
-        // 2. DASHBOARD
         if (isTitle(titleComp, "title.dungeon", "<name>")) {
             e.setCancelled(true);
             int slot = e.getRawSlot();
-            if (slot == 10) { // World
+            if (slot == 10) {
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     session.getConfig().set("template-world", val);
                     sendMessage(p, "template_set", "<world>", val);
                     openDungeonMenu(p, session);
                 });
-            } else if (slot == 20) { // Public Toggle
+            } else if (slot == 20) {
                 boolean current = session.getConfig().getBoolean("public", false);
                 session.getConfig().set("public", !current);
                 sendMessage(p, "public_toggled", "<status>", String.valueOf(!current));
@@ -464,11 +450,10 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 3. CONDITIONS
         if (isTitle(titleComp, "title.conditions", null)) {
             e.setCancelled(true);
             int slot = e.getRawSlot();
-            if (slot == 49) { // ADD
+            if (slot == 49) {
                 sendMessage(p, "condition_val_hint_check");
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
@@ -478,25 +463,25 @@ public class EditorGUI implements Listener {
                     session.getConfig().set("conditions." + newKey + ".name", getWord("default_condition_name").replace("<key>", newKey));
                     openConditionList(p, session);
                 });
-            } else if (slot == 45) { // BACK
+            } else if (slot == 45) {
                 openDungeonMenu(p, session);
-            } else if (cur.getType() == Material.NAME_TAG) { // ITEM
+            } else if (cur.getType() == Material.NAME_TAG) {
                 ConfigurationSection sec = session.getConfig().getConfigurationSection("conditions");
                 if (sec != null) {
                     List<String> keys = new ArrayList<>(sec.getKeys(false));
                     if (slot < keys.size()) {
                         String key = keys.get(slot);
-                        if (e.isShiftClick() && e.isRightClick()) { // DEL
+                        if (e.isShiftClick() && e.isRightClick()) {
                             session.getConfig().set("conditions." + key, null);
                             openConditionList(p, session);
-                        } else if (e.isRightClick()) { // EDIT MSG
+                        } else if (e.isRightClick()) {
                             sendMessage(p, "condition_val_hint_msg");
                             plugin.getEditorListener().startListening(p, session);
                             session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                                 session.getConfig().set("conditions." + key + ".msg", val);
                                 openConditionList(p, session);
                             });
-                        } else { // EDIT CHECK
+                        } else {
                             sendMessage(p, "condition_val_hint_check");
                             plugin.getEditorListener().startListening(p, session);
                             session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
@@ -510,7 +495,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 4. REWARDS MENU
         if (isTitle(titleComp, "title.rewards_main", null)) {
             e.setCancelled(true);
             if (cur.getType() == Material.CLOCK) openRewardTiers(p, session);
@@ -519,10 +503,9 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 5. REWARD TIERS
         if (isTitle(titleComp, "title.reward_tiers", null)) {
             e.setCancelled(true);
-            if (e.getRawSlot() == 49) { // ADD
+            if (e.getRawSlot() == 49) {
                 sendMessage(p, "format_tier_error");
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
@@ -539,7 +522,7 @@ public class EditorGUI implements Listener {
                         new EditorGUI(plugin).openRewardTiers(p, session);
                     }
                 });
-            } else if (e.getRawSlot() == 45) { // BACK
+            } else if (e.getRawSlot() == 45) {
                 openRewardMenu(p, session);
             } else if (cur.getType() == Material.CLOCK) {
                 String name = getPlainText(cur.getItemMeta().displayName());
@@ -567,29 +550,28 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 6. REWARD POOL
         if (isTitle(titleComp, "title.reward_pool", null)) {
             e.setCancelled(true);
-            if (e.getRawSlot() == 49) { // ADD
+            if (e.getRawSlot() == 49) {
                 String newKey = "reward_" + System.currentTimeMillis();
                 session.getConfig().set("rewards.pool." + newKey + ".type", "ITEM");
                 session.getConfig().set("rewards.pool." + newKey + ".value", "DIAMOND:1");
                 session.getConfig().set("rewards.pool." + newKey + ".chance", 100.0);
                 sendMessage(p, "reward_added");
                 openRewardPool(p, session);
-            } else if (e.getRawSlot() == 45) { // BACK
+            } else if (e.getRawSlot() == 45) {
                 openRewardMenu(p, session);
-            } else if (cur.getType() == Material.BUNDLE) { // CLICK
+            } else if (cur.getType() == Material.BUNDLE) {
                 ConfigurationSection pool = session.getConfig().getConfigurationSection("rewards.pool");
                 if (pool != null) {
                     List<String> keys = new ArrayList<>(pool.getKeys(false));
                     int idx = e.getRawSlot();
                     if (idx < keys.size()) {
                         String key = keys.get(idx);
-                        if (e.isShiftClick() && e.isRightClick()) { // DEL
+                        if (e.isShiftClick() && e.isRightClick()) {
                             session.getConfig().set("rewards.pool." + key, null);
                             openRewardPool(p, session);
-                        } else { // EDIT
+                        } else {
                             session.setCurrentRewardKey(key);
                             openRewardEditor(p, session);
                         }
@@ -599,7 +581,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 7. REWARD EDITOR
         if (isTitle(titleComp, "title.edit_reward", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 18) {
@@ -610,7 +591,7 @@ public class EditorGUI implements Listener {
             String currentKey = session.getCurrentRewardKey();
             String path = "rewards.pool." + currentKey;
 
-            if (e.getRawSlot() == 10) { // TYPE
+            if (e.getRawSlot() == 10) {
                 String currentType = session.getConfig().getString(path + ".type", "ITEM");
                 String nextType = switch (currentType) {
                     case "ITEM" -> "COMMAND";
@@ -620,7 +601,7 @@ public class EditorGUI implements Listener {
                 session.getConfig().set(path + ".type", nextType);
                 sendMessage(p, "type_changed", "<type>", nextType);
                 openRewardEditor(p, session);
-            } else if (e.getRawSlot() == 12) { // VALUE
+            } else if (e.getRawSlot() == 12) {
                 if (e.isRightClick()) {
                     ItemStack hand = p.getInventory().getItemInMainHand();
                     if (hand.getType() != Material.AIR) {
@@ -637,7 +618,7 @@ public class EditorGUI implements Listener {
                     sendMessage(p, "update_val", "<key>", getWord("value"), "<val>", val);
                     new EditorGUI(plugin).openRewardEditor(p, session);
                 });
-            } else if (e.getRawSlot() == 14) { // CHANCE
+            } else if (e.getRawSlot() == 14) {
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     try {
@@ -649,7 +630,7 @@ public class EditorGUI implements Listener {
                         new EditorGUI(plugin).openRewardEditor(p, session);
                     }
                 });
-            } else if (e.getRawSlot() == 16) { // NAME
+            } else if (e.getRawSlot() == 16) {
                 plugin.getEditorListener().startListening(p, session);
                 session.awaitInput(EditorSession.InputType.EDIT_VALUE, val -> {
                     session.getConfig().set(path + ".name", val);
@@ -659,7 +640,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 8. STAGES
         if (isTitle(titleComp, "title.stages", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) {
@@ -686,7 +666,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 9. ACTION LIST
         if (isTitle(titleComp, "title.actions", "<stage>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
@@ -711,7 +690,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 10. SELECT TYPE
         if (isTitle(titleComp, "title.select_type", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
@@ -735,7 +713,6 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // 11. ACTION EDITOR
         if (isTitle(titleComp, "title.edit_action", "<index>")) {
             e.setCancelled(true);
             if (e.getRawSlot() == 45) {
