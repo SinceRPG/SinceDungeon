@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
+import net.danh.sinceDungeon.manager.MythicListener;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
@@ -50,31 +51,29 @@ public final class SinceDungeon extends JavaPlugin {
     public void onEnable() {
         miniMessage = MiniMessage.miniMessage();
 
-        // 1. Load Configs
         configFile = new ConfigUtils(this, "config.yml");
         messagesFile = new ConfigUtils(this, "messages.yml");
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
-        // 2. Initialize Managers
         dungeonManager = new DungeonManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
 
-        // [API] Khởi tạo API
         SinceDungeonAPI.init(this);
 
-        // 3. Register Listeners
         List<Listener> listeners = new ArrayList<>();
         listeners.add(new DungeonListener(this));
         listeners.add(editorListener);
         listeners.add(new RewardGUI(this));
         listeners.add(new EditorGUI(this));
+
+        if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+            listeners.add(new MythicListener(this));
+        }
+
         registerListeners(listeners.toArray(new Listener[0]));
 
-        // 4. Register Commands
         registerCommands();
-
-        // 5. Cleanup Stuck Worlds (Async Startup)
         cleanUpStuckWorlds();
 
         getLogger().info("SinceDungeon enabled successfully!");
@@ -82,8 +81,6 @@ public final class SinceDungeon extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // [TEST CASE: Server Stop/Reload]
-        // Đảm bảo tất cả game đang chạy bị dừng và world được xóa/unload
         if (dungeonManager != null) {
             dungeonManager.stopAllGames();
         }
@@ -103,17 +100,11 @@ public final class SinceDungeon extends JavaPlugin {
         getLogger().info("Configuration and Dungeons reloaded.");
     }
 
-    /**
-     * [TEST CASE: Server Crash Recovery]
-     * Dọn dẹp các world bị kẹt do server crash lần trước
-     */
     private void cleanUpStuckWorlds() {
-        // Chạy đồng bộ lúc bật server là an toàn nhất vì người chơi chưa vào
         File container = Bukkit.getWorldContainer();
         File[] files = container.listFiles();
         if (files != null) {
             for (File file : files) {
-                // Regex: Folder có đúng 2 dấu gạch dưới (VD: Player_map1_1234abcd)
                 if (file.isDirectory() && file.getName().startsWith("SinceDungeon_")) {
                     getLogger().info("[Cleanup] Phát hiện world rác: " + file.getName() + ". Đang dọn dẹp...");
                     WorldUtils.deleteWorld(file);
@@ -128,7 +119,6 @@ public final class SinceDungeon extends JavaPlugin {
 
     private void registerCommands() {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            // Admin Command
             event.registrar().register(Commands.literal("sincedungeon")
                     .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                     .then(Commands.literal("reload")
@@ -141,7 +131,6 @@ public final class SinceDungeon extends JavaPlugin {
                     .build(), "SinceDungeon Admin"
             );
 
-            // User Command
             event.registrar().register(Commands.literal("dungeon")
                     .then(Commands.literal("join")
                             .then(Commands.argument("name", StringArgumentType.word())

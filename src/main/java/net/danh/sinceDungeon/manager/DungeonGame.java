@@ -170,7 +170,9 @@ public class DungeonGame {
         isPreparing = false;
         isRunning = true;
 
-        WorldGuardHook.applyDungeonFlags(dungeonWorld);
+        if (Bukkit.getPluginManager().isPluginEnabled("WorldGuard")) {
+            WorldGuardHook.applyDungeonFlags(dungeonWorld);
+        }
 
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         player.teleport(spawnLoc);

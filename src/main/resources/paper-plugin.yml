@@ -8,19 +8,19 @@ dependencies:
   server:
     PlaceholderAPI:
       load: BEFORE
-      required: true
+      required: false
     MMOItems:
       load: BEFORE
-      required: true
+      required: false
     MythicLib:
       load: BEFORE
-      required: true
+      required: false
     WorldGuard:
       load: BEFORE
-      required: true
+      required: false
     MythicMobs:
       load: BEFORE
-      required: true
+      required: false
 permissions:
   SinceDungeon.admin:
     description: Admin permission for SinceDungeon

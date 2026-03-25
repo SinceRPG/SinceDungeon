@@ -1,6 +1,5 @@
 package net.danh.sinceDungeon.manager;
 
-import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
@@ -51,11 +50,6 @@ public class DungeonListener implements Listener {
     @EventHandler
     public void onKill(EntityDeathEvent e) {
         if (e.getEntity().getKiller() != null) pass(e.getEntity().getKiller(), e);
-    }
-
-    @EventHandler
-    public void onMMDeath(MythicMobDeathEvent e) {
-        if (e.getKiller() instanceof Player p) pass(p, e);
     }
 
     @EventHandler

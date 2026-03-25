@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -45,20 +46,18 @@ public class LootChestAction extends DungeonAction {
         if (game.getWorld() == null) return;
         Location loc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
         Block b = loc.getBlock();
-        b.setType(Material.CHEST); // Đặt block thành rương
+        b.setType(Material.CHEST);
 
         if (b.getState() instanceof Chest chest) {
             Inventory inv = chest.getInventory();
             inv.clear();
 
-            // 1. Vanilla Items (Clone ra để không bị lỗi reference)
             for (Map.Entry<Integer, ItemStack> entry : cachedVanillaItems.entrySet()) {
                 if (isValidSlot(entry.getKey(), inv)) {
                     inv.setItem(entry.getKey(), entry.getValue().clone());
                 }
             }
 
-            // 2. MMOItems
             for (Map.Entry<Integer, String> entry : dynamicItemsConfig.entrySet()) {
                 ItemStack item = parseDynamic(entry.getValue());
                 if (item != null && isValidSlot(entry.getKey(), inv)) {
@@ -67,6 +66,7 @@ public class LootChestAction extends DungeonAction {
             }
 
             chest.update();
+
             game.sendMessage("action.chest_appear");
         }
     }
@@ -93,9 +93,12 @@ public class LootChestAction extends DungeonAction {
         try {
             String[] parts = data.split(":");
             if (parts.length >= 4 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                return MMOItemsHook.getMMOItem(parts[1], parts[2], Integer.parseInt(parts[3]));
+                // Kiểm tra an toàn trước khi gọi Hook
+                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+                    return MMOItemsHook.getMMOItem(parts[1], parts[2], Integer.parseInt(parts[3]));
+                }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) { // Dùng Throwable để bắt NoClassDefFoundError nếu phát sinh
             e.printStackTrace();
         }
         return null;
@@ -104,7 +107,6 @@ public class LootChestAction extends DungeonAction {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
-            // Chặn đấm rương gây nhầm lẫn tin nhắn
             if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if (!e.hasBlock()) return;
 
