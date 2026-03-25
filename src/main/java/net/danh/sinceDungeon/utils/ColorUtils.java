@@ -14,10 +14,14 @@ public class ColorUtils {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([a-fA-F0-9]{6})");
 
-    // [FIX BIÊN DỊCH] Đồng bộ hoàn toàn sử dụng @NotNull của Jetbrains (Chuẩn Spigot/Paper)
     public static @NotNull Component parse(@NotNull String input) {
         String safeInput = convertLegacyToMiniMessage(input);
-        return MINI_MESSAGE.deserialize(safeInput);
+        try {
+            return MINI_MESSAGE.deserialize(safeInput);
+        } catch (Exception e) {
+            SinceDungeon.getPlugin().getLogger().warning("Lỗi cú pháp màu sắc/MiniMessage ở đoạn text: '" + input + "'. Vui lòng kiểm tra lại file messages.yml!");
+            return Component.text(input);
+        }
     }
 
     public static @NotNull Component parseWithPrefix(@NotNull String input) {

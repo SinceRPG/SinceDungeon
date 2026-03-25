@@ -24,12 +24,10 @@ public class DungeonLoader {
 
         boolean isPublic = config.getBoolean("public", false);
 
-        // Load Conditions
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
         if (condSec != null) {
             for (String key : condSec.getKeys(false)) {
-                // Tối ưu: Dùng ConfigurationSection trực tiếp
                 ConfigurationSection c = condSec.getConfigurationSection(key);
                 if (c != null) {
                     String check = c.getString("check");
@@ -45,7 +43,6 @@ public class DungeonLoader {
             }
         }
 
-        // Load Tiers
         Map<Integer, Integer> tiers = new HashMap<>();
         ConfigurationSection tierSec = config.getConfigurationSection("rewards.tiers");
         if (tierSec != null) {
@@ -57,7 +54,6 @@ public class DungeonLoader {
             }
         }
 
-        // Load Rewards
         List<DungeonReward> rewards = new ArrayList<>();
         ConfigurationSection poolSec = config.getConfigurationSection("rewards.pool");
         if (poolSec != null) {
@@ -67,7 +63,6 @@ public class DungeonLoader {
 
                 String type = itemSec.getString("type");
                 String value = itemSec.getString("value");
-                // Skip if invalid
                 if (type == null || value == null) continue;
 
                 rewards.add(new DungeonReward(
@@ -80,8 +75,6 @@ public class DungeonLoader {
             }
         }
 
-        // [CORE] Load Stages & Actions
-        // Sử dụng getValues(false) để giữ nguyên cấu trúc ConfigurationSection cho các node con
         Map<Integer, List<Map<String, Object>>> stages = new HashMap<>();
         ConfigurationSection stageSec = config.getConfigurationSection("stages");
 
@@ -113,9 +106,13 @@ public class DungeonLoader {
 
     public static Vector parseVector(String s) {
         try {
-            String[] split = s.split(",");
+            String cleanString = s.replace(" ", "");
+            String[] split = cleanString.split(",");
+            if (split.length < 3) throw new IllegalArgumentException("Thiếu tọa độ XYZ");
+
             return new Vector(Double.parseDouble(split[0]), Double.parseDouble(split[1]), Double.parseDouble(split[2]));
         } catch (Exception e) {
+            SinceDungeon.getPlugin().getLogger().warning("Lỗi phân tích tọa độ Vector: '" + s + "'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại file Config Map!");
             return new Vector(0, 0, 0);
         }
     }
