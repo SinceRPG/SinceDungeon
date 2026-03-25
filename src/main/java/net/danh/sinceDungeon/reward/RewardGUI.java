@@ -124,7 +124,12 @@ public class RewardGUI implements Listener {
         ItemStack btn = createIcon("button", chestCount);
         inv.setItem(getButtonSlot(), btn);
 
-        RewardSessionManager.addSession(p, new RewardSession(chestCount, template));
+        RewardSession session = RewardSessionManager.getSession(p);
+        if (session == null) {
+            session = new RewardSession(chestCount, template);
+            RewardSessionManager.addSession(p, session);
+        }
+
         p.openInventory(inv);
     }
 

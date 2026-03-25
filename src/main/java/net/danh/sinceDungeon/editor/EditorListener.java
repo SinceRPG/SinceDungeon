@@ -88,10 +88,9 @@ public class EditorListener implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
         if (activeInputs.containsKey(p.getUniqueId())) {
-            // Tự động hủy phiên nhập liệu để tránh bị kẹt trạng thái
-            EditorSession session = activeInputs.remove(p.getUniqueId());
-            sendMsg(p, "input_cancel");
-            if (session != null) reopenSessionMenu(session);
+            e.setCancelled(true);
+            String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>Bạn đang trong chế độ chỉnh sửa! Vui lòng gõ <yellow>cancel<red> vào chat để hủy trước khi dùng lệnh.");
+            p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
     }
 

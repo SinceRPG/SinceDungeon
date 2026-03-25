@@ -278,7 +278,18 @@ public class DungeonGame {
         isRunning = false;
         if (tickTask != null) tickTask.cancel();
 
-        player.teleport(oldLocation);
+        if (finalChestCount > 0) {
+            net.danh.sinceDungeon.reward.RewardSessionManager.addSession(player,
+                    new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+        }
+
+        Location targetLoc = oldLocation;
+        if (targetLoc.getWorld() == null) {
+            targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
+            plugin.getLogger().warning("World gốc của " + player.getName() + " không tồn tại. Đưa về Spawn mặc định.");
+        }
+
+        player.teleport(targetLoc);
         sendMessage("game.completion_time", "<time>", String.valueOf(finalElapsed));
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -302,7 +313,11 @@ public class DungeonGame {
         if (tickTask != null) tickTask.cancel();
 
         if (teleport && player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {
-            player.teleport(oldLocation);
+            Location targetLoc = oldLocation;
+            if (targetLoc.getWorld() == null) {
+                targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
+            }
+            player.teleport(targetLoc);
         }
 
         if (dungeonWorld != null) {

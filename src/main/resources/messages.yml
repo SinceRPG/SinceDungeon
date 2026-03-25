@@ -3,6 +3,7 @@ prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» 
 admin:
   reload: "<green>Đã tải lại toàn bộ file cấu hình và dungeon."
   invalid_player: "<red>Không tìm thấy người chơi này."
+  in_editor: "<red>Bạn đang trong chế độ chỉnh sửa! Vui lòng gõ <yellow>cancel<red> vào chat để hủy trước khi dùng lệnh."
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"
