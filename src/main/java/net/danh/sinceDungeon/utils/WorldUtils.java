@@ -10,16 +10,11 @@ import java.util.EnumSet;
 
 public class WorldUtils {
 
-    // Danh sách file không copy (để tránh lỗi world UID)
     private static final ArrayList<String> IGNORE_FILES = new ArrayList<>(Arrays.asList("uid.dat", "session.lock"));
 
-    /**
-     * Copy world sử dụng Java NIO (Nhanh hơn IO truyền thống)
-     */
     public static boolean copyWorld(File source, File target) {
         if (!source.exists()) return false;
         try {
-            // Sử dụng Files.walkFileTree để duyệt cây thư mục hiệu quả
             Files.walkFileTree(source.toPath(), EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -34,7 +29,6 @@ public class WorldUtils {
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    // Bỏ qua các file trong danh sách đen
                     if (IGNORE_FILES.contains(file.getFileName().toString())) {
                         return FileVisitResult.CONTINUE;
                     }
@@ -49,28 +43,32 @@ public class WorldUtils {
         }
     }
 
-    /**
-     * Xóa world đệ quy an toàn
-     */
+    // [TỐI ƯU CỰC MẠNH]: Cố gắng xóa mọi file có thể, bỏ qua ngoại lệ cục bộ để không hủy ngang tiến trình
     public static boolean deleteWorld(File path) {
         if (!path.exists()) return true;
         try {
             Files.walkFileTree(path.toPath(), new SimpleFileVisitor<Path>() {
                 @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    Files.delete(file);
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    try {
+                        Files.delete(file);
+                    } catch (IOException ignored) {
+                        // Bỏ qua các file cứng đầu bị OS khóa tạm thời (thường là session.lock)
+                    }
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                    Files.delete(dir);
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
+                    try {
+                        Files.delete(dir);
+                    } catch (IOException ignored) {
+                    }
                     return FileVisitResult.CONTINUE;
                 }
             });
-            return true; // Xóa thành công
+            return !path.exists();
         } catch (IOException e) {
-            e.printStackTrace();
             return false;
         }
     }

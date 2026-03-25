@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Locale;
 import java.util.function.Consumer;
 
@@ -40,15 +41,15 @@ public class EditorSession {
         }
     }
 
-    // [TỐI ƯU HIỆU SUẤT] Lưu file Async để tránh giật lag TPS
     public void save() {
         if (file == null) return;
 
+        String yamlData = config.saveToString();
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                config.save(file);
+                Files.writeString(file.toPath(), yamlData);
 
-                // Trả về Main Thread để gửi tin nhắn và âm thanh (Bắt buộc API Bukkit)
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     String msg = plugin.getMessagesFile().getString("editor.chat.saved");
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));

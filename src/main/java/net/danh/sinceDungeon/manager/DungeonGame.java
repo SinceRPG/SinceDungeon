@@ -136,16 +136,17 @@ public class DungeonGame {
 
             @Override
             public void run() {
-                if (!player.isOnline()) {
-                    stop(false);
+                if (isStopping || !player.isOnline()) {
                     cancel();
                     return;
                 }
+
                 if (count <= 0) {
                     enterDungeon();
                     cancel();
                     return;
                 }
+
                 sendMessage("lobby.countdown", "<time>", String.valueOf(count));
                 playConfigSound("lobby_countdown", 1f, 2f);
                 count--;
@@ -276,6 +277,8 @@ public class DungeonGame {
             plugin.getLogger().warning("World gốc của " + player.getName() + " không tồn tại. Đưa về Spawn mặc định.");
         }
 
+        if (player.isInsideVehicle()) player.leaveVehicle();
+
         player.teleport(targetLoc);
         sendMessage("game.completion_time", "<time>", String.valueOf(finalElapsed));
 
@@ -304,6 +307,9 @@ public class DungeonGame {
             if (targetLoc.getWorld() == null) {
                 targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             }
+
+            if (player.isInsideVehicle()) player.leaveVehicle();
+
             player.teleport(targetLoc);
         }
 
