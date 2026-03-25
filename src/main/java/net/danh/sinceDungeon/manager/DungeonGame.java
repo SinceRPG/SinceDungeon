@@ -75,38 +75,19 @@ public class DungeonGame {
 
     private void playConfigSound(String key, float volume, float pitch) {
         String soundName = plugin.getConfigFile().getString("sounds." + key);
-        org.bukkit.Sound sound = getSound(soundName);
-        if (sound != null) {
-            player.playSound(player.getLocation(), sound, volume, pitch);
-        }
-    }
-
-    private org.bukkit.Sound getSound(String soundName) {
-        if (soundName == null || soundName.trim().isEmpty()) return null;
+        if (soundName == null || soundName.trim().isEmpty()) return;
         soundName = soundName.trim();
         if (soundName.startsWith("minecraft:")) soundName = soundName.substring(10);
 
-        if (ServerVersion.isAtLeast(1, 21, 3)) {
-            try {
-                NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
-                if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
-                Sound sound = org.bukkit.Registry.SOUND_EVENT.get(key);
-                if (sound != null) return sound;
-                return (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
-            } catch (Throwable ignored) {
-            }
-        } else {
-            try {
-                return org.bukkit.Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
-            } catch (IllegalArgumentException e1) {
-                try {
-                    String legacyName = soundName.replace(".", "_").toUpperCase(java.util.Locale.ROOT);
-                    return org.bukkit.Sound.valueOf(legacyName);
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+        try {
+            NamespacedKey nkey = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
+            if (nkey == null) nkey = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
+            Sound sound = org.bukkit.Registry.SOUND_EVENT.get(nkey);
+            if (sound == null) sound = (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
+
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        } catch (Throwable ignored) {
         }
-        return null;
     }
 
     public void startLobby() {
@@ -116,6 +97,12 @@ public class DungeonGame {
 
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+
+                    if (isStopping || !player.isOnline()) {
+                        WorldManager.unloadAndDeleteWorld(plugin, world);
+                        return;
+                    }
+
                     this.dungeonWorld = world;
 
                     if (ServerVersion.isAtMost(1, 21, 10)) {
@@ -321,8 +308,11 @@ public class DungeonGame {
         }
 
         if (dungeonWorld != null) {
-            WorldManager.unloadAndDeleteWorld(plugin, dungeonWorld);
+            World w = dungeonWorld;
             dungeonWorld = null;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                WorldManager.unloadAndDeleteWorld(plugin, w);
+            }, 20L);
         }
 
         plugin.getDungeonManager().removeGame(player.getUniqueId());

@@ -44,7 +44,7 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
-        getLogger().info("Server version: " + ServerVersion.getNmsVersion() + " | " + ServerVersion.getMajor() + "." + ServerVersion.getMinor() + "." + ServerVersion.getPatch());
+        getLogger().info("Running natively for Paper 1.21+ | Version: " + ServerVersion.getMajor() + "." + ServerVersion.getMinor() + "." + ServerVersion.getPatch());
     }
 
     @Override
