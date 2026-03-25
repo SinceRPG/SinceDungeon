@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -379,19 +380,48 @@ public class EditorGUI implements Listener {
     // =================================================================================
 
     @EventHandler
+    public void onInventoryDrag(InventoryDragEvent e) {
+        if (e.getWhoClicked() instanceof Player) {
+            EditorSession session = plugin.getEditorManager().getSession((Player) e.getWhoClicked());
+            if (session != null || isTitle(e.getView().title(), "title.main", null)) {
+                for (int slot : e.getRawSlots()) {
+                    if (slot < e.getView().getTopInventory().getSize()) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-
-        ItemStack cur = e.getCurrentItem();
-        if (cur == null || cur.getType() == Material.AIR) return;
-        if (e.getClickedInventory() != e.getView().getTopInventory()) {
-            e.setCancelled(true);
-            return;
-        }
 
         EditorManager manager = plugin.getEditorManager();
         EditorSession session = manager.getSession(p);
         Component titleComp = e.getView().title();
+
+        // Kiểm tra xem có đang ở trong giao diện của Editor không
+        boolean isEditorMenu = session != null || isTitle(titleComp, "title.main", null);
+        if (!isEditorMenu) return;
+
+        // Chặn các thao tác gian lận/gây lỗi GUI
+        if (e.getClick() == org.bukkit.event.inventory.ClickType.DOUBLE_CLICK ||
+                e.getClick() == org.bukkit.event.inventory.ClickType.SWAP_OFFHAND ||
+                e.getAction() == org.bukkit.event.inventory.InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                e.getAction() == org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR) {
+            e.setCancelled(true);
+            return;
+        }
+
+        ItemStack cur = e.getCurrentItem();
+        if (cur == null || cur.getType() == Material.AIR) return;
+
+        if (e.getClickedInventory() != e.getView().getTopInventory()) {
+            e.setCancelled(true);
+            return;
+        }
 
         // 1. MAIN LIST
         if (isTitle(titleComp, "title.main", null)) {

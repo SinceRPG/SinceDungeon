@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class DungeonAction {
-    protected boolean completed = false;
+    public boolean completed = false;
     private List<String> startMessages = new ArrayList<>();
 
     public abstract void start(DungeonGame game);

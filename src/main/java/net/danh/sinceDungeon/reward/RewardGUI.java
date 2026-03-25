@@ -14,9 +14,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -34,7 +32,6 @@ public class RewardGUI implements Listener {
         this.plugin = plugin;
     }
 
-    // --- HELPER METHODS ---
     private FileConfiguration getConfig() {
         return plugin.getMessagesFile().getConfig();
     }
@@ -97,8 +94,6 @@ public class RewardGUI implements Listener {
         return item;
     }
 
-    // --- LOGIC ---
-
     public void openRewardGUI(Player p, int chestCount, DungeonTemplate template) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
         Inventory inv = Bukkit.createInventory(null, getGuiSize(), ColorUtils.parse(titleStr));
@@ -126,26 +121,41 @@ public class RewardGUI implements Listener {
         }
     }
 
+    // [BỊT LỖ HỔNG] Chặn kéo thả item vào/ra GUI
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent e) {
+        if (isRewardGui(e.getView().title())) {
+            for (int slot : e.getRawSlots()) {
+                if (slot < e.getView().getTopInventory().getSize()) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+        }
+    }
+
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!isRewardGui(e.getView().title())) return;
 
-        // [SỬA LỖI]: Chặn Shift-Click từ dưới lên trên
-        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY && e.getClickedInventory() == e.getView().getBottomInventory()) {
+        // [BỊT LỖ HỔNG] Chặn triệt để các hành vi gian lận
+        if (e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
         }
 
-        // [SỬA LỖI]: Chặn bấm phím số (1-9) để trộm đồ từ GUI
-        if (e.getAction() == InventoryAction.HOTBAR_SWAP || e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD) {
+        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                e.getAction() == InventoryAction.HOTBAR_SWAP ||
+                e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD ||
+                e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
             e.setCancelled(true);
             return;
         }
 
-        if (e.getClickedInventory() == null || e.getClickedInventory() == e.getView().getBottomInventory()) return;
+        if (e.getClickedInventory() == null) return;
 
-        // Xử lý click trong GUI
+        // Xử lý click trong GUI trên
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
             e.setCancelled(true); // Luôn luôn cancel để không cho lấy item ra
 

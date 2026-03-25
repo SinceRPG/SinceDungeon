@@ -231,7 +231,9 @@ public class DungeonGame {
                     try {
                         ((Tickable) action).onTick(this);
                     } catch (Exception e) {
-                        plugin.getLogger().warning("Tick error in action: " + e.getMessage());
+                        plugin.getLogger().warning("[Chống Crash] Lỗi khi chạy tick của Action: " + action.getClass().getSimpleName() + " - " + e.getMessage());
+                        // Có thể cân nhắc force complete action lỗi để game tiếp tục:
+                        action.completed = true;
                     }
                 }
                 if (!action.isCompleted()) allCompleted = false;

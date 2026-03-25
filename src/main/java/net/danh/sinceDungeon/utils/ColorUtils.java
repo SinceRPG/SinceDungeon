@@ -5,7 +5,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,18 +14,18 @@ public class ColorUtils {
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([a-fA-F0-9]{6})");
 
-    public static @NonNull Component parse(@NotNull String input) {
+    // [FIX BIÊN DỊCH] Đồng bộ hoàn toàn sử dụng @NotNull của Jetbrains (Chuẩn Spigot/Paper)
+    public static @NotNull Component parse(@NotNull String input) {
         String safeInput = convertLegacyToMiniMessage(input);
         return MINI_MESSAGE.deserialize(safeInput);
     }
 
-    public static @NonNull Component parseWithPrefix(@NotNull String input) {
+    public static @NotNull Component parseWithPrefix(@NotNull String input) {
         String prefix = SinceDungeon.getPlugin().getMessagesFile().getString("prefix", "");
         return parse(prefix + input);
     }
 
-    // [NEW] Phương thức chuyển Component thành String thường
-    public static @NonNull String toPlainText(@NotNull Component component) {
+    public static @NotNull String toPlainText(@NotNull Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
     }
 

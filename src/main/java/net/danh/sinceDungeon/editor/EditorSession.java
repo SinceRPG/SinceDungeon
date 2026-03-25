@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.editor;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
+import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -19,13 +20,11 @@ public class EditorSession {
     private final File file;
     private final YamlConfiguration config;
 
-    // --- STATES (Changed to Keys) ---
     private String currentStage = null;
     private String currentActionKey = null;
     private String currentRewardKey = null;
     private String currentConditionKey = null;
 
-    // --- MEMORY & NAVIGATION ---
     private InputType currentInput = InputType.NONE;
     private EditorCallback inputCallback = null;
     private Consumer<Player> lastMenuOpener = null;
@@ -41,64 +40,56 @@ public class EditorSession {
         }
     }
 
+    // [TỐI ƯU HIỆU SUẤT] Lưu file Async để tránh giật lag TPS
     public void save() {
         if (file == null) return;
-        try {
-            config.save(file);
-            String msg = plugin.getMessagesFile().getString("editor.chat.saved");
-            if (msg != null) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-            // Lấy âm thanh từ config.yml an toàn
-            String soundName = plugin.getConfigFile().getString("sounds.editor_save");
-            Sound sound = getSound(soundName);
-            if (sound != null) {
-                player.playSound(player.getLocation(), sound, 1f, 1f);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                config.save(file);
+
+                // Trả về Main Thread để gửi tin nhắn và âm thanh (Bắt buộc API Bukkit)
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    String msg = plugin.getMessagesFile().getString("editor.chat.saved");
+                    if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
+
+                    String soundName = plugin.getConfigFile().getString("sounds.editor_save");
+                    Sound sound = getSound(soundName);
+                    if (sound != null && player.isOnline()) {
+                        player.playSound(player.getLocation(), sound, 1f, 1f);
+                    }
+                });
+            } catch (IOException e) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    String errorMsg = plugin.getMessagesFile().getString("editor.chat.save_error");
+                    if (errorMsg != null && player.isOnline())
+                        player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
+                });
+                plugin.getLogger().severe("Lỗi khi lưu Dungeon: " + e.getMessage());
             }
-        } catch (IOException e) {
-            String errorMsg = plugin.getMessagesFile().getString("editor.chat.save_error");
-            if (errorMsg != null)
-                player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
-            e.printStackTrace();
-        }
+        });
     }
 
     private org.bukkit.Sound getSound(String soundName) {
         if (soundName == null || soundName.trim().isEmpty()) return null;
         soundName = soundName.trim();
-
-        // Bỏ tiền tố "minecraft:" nếu người dùng lỡ copy thừa
         if (soundName.startsWith("minecraft:")) {
             soundName = soundName.substring(10);
         }
 
-        // ==========================================
-        // 1. DÀNH CHO SERVER MỚI (>= 1.21.3)
-        // ==========================================
         if (ServerVersion.isAtLeast(1, 21, 3)) {
             try {
-                // Cách 1: Ưu tiên dùng Registry chuẩn (Giả sử họ nhập kiểu mới: block.note_block.pling)
                 NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
                 if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
-
                 Sound sound = org.bukkit.Registry.SOUND_EVENT.get(key);
                 if (sound != null) return sound;
-
-                // Cách 2: Tự Parse Lên (Họ nhập kiểu cũ: BLOCK_NOTE_BLOCK_PLING)
-                // Bukkit vẫn giữ các biến tĩnh (static fields) để tương thích ngược, ta dùng Reflection để gọi:
                 return (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
             } catch (Throwable ignored) {
             }
-        }
-
-        // ==========================================
-        // 2. DÀNH CHO SERVER CŨ (< 1.21.3)
-        // ==========================================
-        else {
+        } else {
             try {
-                // Giả sử họ nhập chuẩn cũ: BLOCK_NOTE_BLOCK_PLING
                 return org.bukkit.Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
             } catch (IllegalArgumentException e1) {
-                // Tự Parse Xuống: Họ nhập chuẩn mới (block.note_block.pling), ta tự chuyển dấu "." thành "_"
                 try {
                     String legacyName = soundName.replace(".", "_").toUpperCase(java.util.Locale.ROOT);
                     return org.bukkit.Sound.valueOf(legacyName);
@@ -106,11 +97,9 @@ public class EditorSession {
                 }
             }
         }
-
         return null;
     }
 
-    // Input Handling (Unchanged)
     public void awaitInput(InputType type, EditorCallback callback) {
         this.currentInput = type;
         this.inputCallback = callback;
@@ -125,7 +114,6 @@ public class EditorSession {
         if (lastMenuOpener != null && player.isOnline()) lastMenuOpener.accept(player);
     }
 
-    // Getters & Setters
     public Player getPlayer() {
         return player;
     }
