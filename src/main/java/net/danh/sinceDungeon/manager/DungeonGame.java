@@ -33,7 +33,6 @@ public class DungeonGame {
     private BukkitTask tickTask;
     private long startTime;
 
-    // Cờ ngăn chặn vòng lặp gọi hàm stop() vô tận
     private boolean isStopping = false;
 
     public DungeonGame(SinceDungeon plugin, Player player, DungeonTemplate template) {
@@ -41,8 +40,6 @@ public class DungeonGame {
         this.player = player;
         this.template = template;
         this.oldLocation = player.getLocation();
-
-        // [ĐÃ VÁ LỖI]: Chuẩn hóa tên world để Regex dọn rác không bị sai nếu tên người chơi có dấu "_"
         this.worldName = "SinceDungeon_" + player.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
         parseStages();
     }
@@ -65,7 +62,6 @@ public class DungeonGame {
         }
     }
 
-    // Lấy tin nhắn từ messages.yml và xử lý Placeholder
     public void sendMessage(String key, String... placeholders) {
         String msg = plugin.getMessagesFile().getString(key);
         String prefix = plugin.getMessagesFile().getString("prefix", "");
@@ -77,7 +73,6 @@ public class DungeonGame {
         player.sendMessage(ColorUtils.parse(prefix + msg));
     }
 
-    // Lấy âm thanh từ config.yml
     private void playConfigSound(String key, float volume, float pitch) {
         String soundName = plugin.getConfigFile().getString("sounds." + key);
         org.bukkit.Sound sound = getSound(soundName);
@@ -89,40 +84,21 @@ public class DungeonGame {
     private org.bukkit.Sound getSound(String soundName) {
         if (soundName == null || soundName.trim().isEmpty()) return null;
         soundName = soundName.trim();
+        if (soundName.startsWith("minecraft:")) soundName = soundName.substring(10);
 
-        // Bỏ tiền tố "minecraft:" nếu người dùng lỡ copy thừa
-        if (soundName.startsWith("minecraft:")) {
-            soundName = soundName.substring(10);
-        }
-
-        // ==========================================
-        // 1. DÀNH CHO SERVER MỚI (>= 1.21.3)
-        // ==========================================
         if (ServerVersion.isAtLeast(1, 21, 3)) {
             try {
-                // Cách 1: Ưu tiên dùng Registry chuẩn (Giả sử họ nhập kiểu mới: block.note_block.pling)
                 NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
                 if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
-
                 Sound sound = org.bukkit.Registry.SOUND_EVENT.get(key);
                 if (sound != null) return sound;
-
-                // Cách 2: Tự Parse Lên (Họ nhập kiểu cũ: BLOCK_NOTE_BLOCK_PLING)
-                // Bukkit vẫn giữ các biến tĩnh (static fields) để tương thích ngược, ta dùng Reflection để gọi:
                 return (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
             } catch (Throwable ignored) {
             }
-        }
-
-        // ==========================================
-        // 2. DÀNH CHO SERVER CŨ (< 1.21.3)
-        // ==========================================
-        else {
+        } else {
             try {
-                // Giả sử họ nhập chuẩn cũ: BLOCK_NOTE_BLOCK_PLING
                 return org.bukkit.Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
             } catch (IllegalArgumentException e1) {
-                // Tự Parse Xuống: Họ nhập chuẩn mới (block.note_block.pling), ta tự chuyển dấu "." thành "_"
                 try {
                     String legacyName = soundName.replace(".", "_").toUpperCase(java.util.Locale.ROOT);
                     return org.bukkit.Sound.valueOf(legacyName);
@@ -130,7 +106,6 @@ public class DungeonGame {
                 }
             }
         }
-
         return null;
     }
 
@@ -143,7 +118,6 @@ public class DungeonGame {
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
                     this.dungeonWorld = world;
 
-                    // Gamerules tối ưu Performance
                     if (ServerVersion.isAtMost(1, 21, 10)) {
                         dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
                         dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
@@ -231,9 +205,7 @@ public class DungeonGame {
                     try {
                         ((Tickable) action).onTick(this);
                     } catch (Exception e) {
-                        plugin.getLogger().warning("[Chống Crash] Lỗi khi chạy tick của Action: " + action.getClass().getSimpleName() + " - " + e.getMessage());
-                        // Có thể cân nhắc force complete action lỗi để game tiếp tục:
-                        action.completed = true;
+                        plugin.getLogger().warning("Tick error in action: " + e.getMessage());
                     }
                 }
                 if (!action.isCompleted()) allCompleted = false;
@@ -244,6 +216,9 @@ public class DungeonGame {
     }
 
     private void startStage(int index) {
+        // [ĐÃ SỬA] Chặn start lại Task nếu Dungeon đã kết thúc/người chơi Quit khi đang delay
+        if (!isRunning) return;
+
         if (index >= stages.size()) {
             finishDungeon();
             return;
@@ -318,7 +293,6 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false), 100L);
     }
 
-    // [ĐÃ VÁ LỖI]: Cờ isStopping ngăn sập server khi teleport kích hoạt event
     public void stop(boolean teleport) {
         if (isStopping) return;
         isStopping = true;

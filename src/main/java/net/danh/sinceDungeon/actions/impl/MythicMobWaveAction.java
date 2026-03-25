@@ -6,6 +6,7 @@ import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import io.lumine.mythic.core.mobs.ActiveMob;
 import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class MythicMobWaveAction extends DungeonAction {
+public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
     private final List<Vector> locations;
@@ -50,6 +51,10 @@ public class MythicMobWaveAction extends DungeonAction {
         for (int i = 0; i < amount; i++) {
             Vector vec = locations.get(i % locations.size());
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            double offsetX = (Math.random() - 0.5) * 1.5;
+            double offsetZ = (Math.random() - 0.5) * 1.5;
+            loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+
             try {
                 ActiveMob am = mob.spawn(BukkitAdapter.adapt(loc), 1);
                 if (am != null) {
@@ -67,6 +72,20 @@ public class MythicMobWaveAction extends DungeonAction {
             game.sendMessage("action.mythic_wave_complete");
         } else {
             game.sendMessage("action.mythic_wave_start", "<amount>", String.valueOf(count), "<mob>", mobName);
+        }
+    }
+
+    @Override
+    public void onTick(DungeonGame game) {
+        if (completed) return;
+        spawnedMobIds.removeIf(uuid -> {
+            org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
+            return ent == null || !ent.isValid() || ent.isDead();
+        });
+
+        if (spawnedMobIds.isEmpty()) {
+            this.completed = true;
+            game.sendMessage("action.mythic_wave_complete");
         }
     }
 

@@ -35,7 +35,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
         mobIds.removeIf(uuid -> {
             org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
-            // Xóa khỏi danh sách nếu quái vật null, không hợp lệ hoặc đã chết
             return ent == null || !ent.isValid() || ent.isDead();
         });
 
@@ -57,16 +56,18 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             Vector vec = locations.get(i % locations.size());
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
 
-            // Spawn mob
-            Entity ent = game.getWorld().spawnEntity(loc.add(0.5, 0, 0.5), type); // +0.5 để mob đứng giữa block
+           double offsetX = (Math.random() - 0.5) * 1.5;
+            double offsetZ = (Math.random() - 0.5) * 1.5;
+
+            Entity ent = game.getWorld().spawnEntity(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ), type);
             if (ent instanceof LivingEntity living) {
-                living.setRemoveWhenFarAway(false); // Quan trọng: Không cho despawn
-                living.setPersistent(true);        // Quan trọng: Lưu giữ entity
+                living.setRemoveWhenFarAway(false);
+                living.setPersistent(true);
 
                 mobIds.add(ent.getUniqueId());
                 count++;
             } else {
-                ent.remove(); // Nếu không phải LivingEntity (vd: Thuyền, Xe mỏ) thì xóa cho nhẹ
+                ent.remove();
             }
         }
 

@@ -94,6 +94,27 @@ public class RewardGUI implements Listener {
         return item;
     }
 
+    private DungeonReward getRandomReward(List<DungeonReward> pool) {
+        if (pool == null || pool.isEmpty()) return null;
+
+        double totalWeight = 0.0;
+        for (DungeonReward reward : pool) {
+            totalWeight += reward.chance();
+        }
+
+        if (totalWeight <= 0) return pool.get(new Random().nextInt(pool.size()));
+
+        double random = new Random().nextDouble() * totalWeight;
+        double currentWeight = 0.0;
+        for (DungeonReward reward : pool) {
+            currentWeight += reward.chance();
+            if (random <= currentWeight) {
+                return reward;
+            }
+        }
+        return pool.get(0);
+    }
+
     public void openRewardGUI(Player p, int chestCount, DungeonTemplate template) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
         Inventory inv = Bukkit.createInventory(null, getGuiSize(), ColorUtils.parse(titleStr));
@@ -114,14 +135,14 @@ public class RewardGUI implements Listener {
             for (int i = 0; i < remaining; i++) {
                 List<DungeonReward> pool = session.getTemplate().rewardPool();
                 if (pool != null && !pool.isEmpty()) {
-                    giveReward(p, pool.get(new Random().nextInt(pool.size())));
+                    DungeonReward reward = getRandomReward(pool);
+                    if (reward != null) giveReward(p, reward);
                 }
             }
             RewardSessionManager.removeSession(p);
         }
     }
 
-    // [BỊT LỖ HỔNG] Chặn kéo thả item vào/ra GUI
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
         if (isRewardGui(e.getView().title())) {
@@ -139,7 +160,6 @@ public class RewardGUI implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!isRewardGui(e.getView().title())) return;
 
-        // [BỊT LỖ HỔNG] Chặn triệt để các hành vi gian lận
         if (e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
@@ -155,9 +175,8 @@ public class RewardGUI implements Listener {
 
         if (e.getClickedInventory() == null) return;
 
-        // Xử lý click trong GUI trên
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
-            e.setCancelled(true); // Luôn luôn cancel để không cho lấy item ra
+            e.setCancelled(true);
 
             RewardSession session = RewardSessionManager.getSession(p);
             if (session == null) {
@@ -190,7 +209,8 @@ public class RewardGUI implements Listener {
                     for (int i = 0; i < remaining; i++) {
                         List<DungeonReward> pool = session.getTemplate().rewardPool();
                         if (pool != null && !pool.isEmpty()) {
-                            giveReward(p, pool.get(new Random().nextInt(pool.size())));
+                            DungeonReward reward = getRandomReward(pool);
+                            if (reward != null) giveReward(p, reward);
                         }
                     }
                     String msg = getMsg("auto_claim");
@@ -225,10 +245,13 @@ public class RewardGUI implements Listener {
         session.decreaseChestCount();
         inv.setItem(slot, new ItemStack(Material.AIR));
         playSound(p, "claim");
+
         List<DungeonReward> pool = session.getTemplate().rewardPool();
         if (pool != null && !pool.isEmpty()) {
-            giveReward(p, pool.get(new Random().nextInt(pool.size())));
+            DungeonReward reward = getRandomReward(pool);
+            if (reward != null) giveReward(p, reward);
         }
+
         if (session.getChestCount() <= 0) {
             String msg = getMsg("claimed_all");
             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
