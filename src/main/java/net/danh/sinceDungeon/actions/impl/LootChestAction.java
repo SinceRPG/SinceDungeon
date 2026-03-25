@@ -43,7 +43,7 @@ public class LootChestAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return "<gold>Mở rương tiếp tế để đi tiếp";
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.loot_chest", "<gold>Mở rương tiếp tế để đi tiếp");
     }
 
     @Override
@@ -89,7 +89,8 @@ public class LootChestAction extends DungeonAction {
                 return new ItemStack(mat, amount);
             }
         } catch (Exception e) {
-            SinceDungeon.getPlugin().getLogger().warning("Không thể đọc vật phẩm Vanilla: " + data);
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vanilla_parse_fail", "Không thể đọc vật phẩm Vanilla: <data>");
+            SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
         }
         return null;
     }
@@ -103,11 +104,13 @@ public class LootChestAction extends DungeonAction {
                     int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
                     return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
                 } else {
-                    SinceDungeon.getPlugin().getLogger().warning("Cần MMOItems để tạo vật phẩm: " + data);
+                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_missing", "Cần MMOItems để tạo vật phẩm: <data>");
+                    SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
                 }
             }
         } catch (Throwable e) {
-            SinceDungeon.getPlugin().getLogger().warning("Không thể đọc vật phẩm MMOItems: " + data);
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Không thể đọc vật phẩm MMOItems: <data>");
+            SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
         }
         return null;
     }

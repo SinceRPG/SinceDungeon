@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.actions.impl;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Location;
@@ -25,7 +26,7 @@ public class SmartBreakWallAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return "<aqua>Tìm và phá vỡ Khối đá phong ấn";
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.break_wall", "<aqua>Tìm và phá vỡ Khối đá phong ấn");
     }
 
     @Override

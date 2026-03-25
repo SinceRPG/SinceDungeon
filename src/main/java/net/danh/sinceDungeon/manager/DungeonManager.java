@@ -74,19 +74,19 @@ public class DungeonManager {
     @SuppressWarnings("unchecked")
     private void registerDefaultActions() {
         Map<String, Object> spawnDefaults = new HashMap<>();
-        spawnDefaults.put("mob", "ZOMBIE");
-        spawnDefaults.put("amount", 1);
+        spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
+        spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
         spawnDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("SPAWN_WAVE", map -> {
-                    String mobStr = String.valueOf(map.getOrDefault("mob", "ZOMBIE"));
+                    String mobStr = String.valueOf(map.getOrDefault("mob", spawnDefaults.get("mob")));
                     EntityType mob;
                     try {
                         mob = EntityType.valueOf(mobStr.toUpperCase());
                     } catch (IllegalArgumentException e) {
                         mob = EntityType.ZOMBIE;
                     }
-                    int amount = getInt(map.get("amount"), 1);
+                    int amount = getInt(map.get("amount"), (int) spawnDefaults.get("amount"));
                     List<Vector> v = parseLocList(map.get("locations"));
                     return new SpawnWaveAction(mob, amount, v);
                 }, Material.ZOMBIE_HEAD,
@@ -95,12 +95,12 @@ public class DungeonManager {
 
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
-        reachDefaults.put("radius", 3.0);
+        reachDefaults.put("radius", plugin.getConfigFile().getDouble("action-defaults.reach_location.radius", 3.0));
 
         registerAction("REACH_LOCATION", map -> {
                     String targetStr = String.valueOf(map.getOrDefault("target", "0,0,0"));
                     Vector target = DungeonLoader.parseVector(targetStr);
-                    double radius = getDouble(map.get("radius"), 3.0);
+                    double radius = getDouble(map.get("radius"), (double) reachDefaults.get("radius"));
                     return new ReachLocationAction(target, radius);
                 }, Material.COMPASS,
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
@@ -158,14 +158,14 @@ public class DungeonManager {
                 wallDefaults);
 
         Map<String, Object> mmDefaults = new HashMap<>();
-        mmDefaults.put("mob", "SkeletonKing");
-        mmDefaults.put("amount", 1);
+        mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
+        mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("MYTHIC_WAVE", map -> {
                     List<Vector> v = parseLocList(map.get("locations"));
-                    int amount = getInt(map.get("amount"), 1);
-                    String mob = String.valueOf(map.getOrDefault("mob", "SkeletonKing"));
+                    int amount = getInt(map.get("amount"), (int) mmDefaults.get("amount"));
+                    String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     return new MythicMobWaveAction(mob, amount, v);
                 }, Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),

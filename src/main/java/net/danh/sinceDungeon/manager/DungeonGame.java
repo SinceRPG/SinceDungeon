@@ -56,7 +56,8 @@ public class DungeonGame {
         this.oldExp = player.getExp();
         this.oldLevel = player.getLevel();
 
-        this.worldName = "SinceDungeon_" + player.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        this.worldName = prefix + player.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
         parseStages();
     }
 
@@ -110,9 +111,10 @@ public class DungeonGame {
         if (isPreparing || isRunning) return;
         isPreparing = true;
 
-        // [UX]: Gửi Title loading hoành tráng
+        String titleMain = plugin.getMessagesFile().getString("game.title.loading_main", "<yellow><bold>ĐANG TẢI...");
+        String titleSub = plugin.getMessagesFile().getString("game.title.loading_sub", "<gray>Vui lòng chờ trong giây lát");
         Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
-        Title title = Title.title(ColorUtils.parse("<yellow><bold>ĐANG TẢI..."), ColorUtils.parse("<gray>Vui lòng chờ trong giây lát"), times);
+        Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
         player.showTitle(title);
 
         sendMessage("lobby.preparing");
@@ -160,9 +162,11 @@ public class DungeonGame {
                     return;
                 }
 
-                // [UX]: Hiệu ứng đếm ngược giữa màn hình
+                String titleMain = plugin.getMessagesFile().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
+                String titleSub = plugin.getMessagesFile().getString("game.title.countdown_sub", "<gold>Chuẩn bị chiến đấu!");
+
                 Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
-                Title title = Title.title(ColorUtils.parse("<red><bold>" + count), ColorUtils.parse("<gold>Chuẩn bị chiến đấu!"), times);
+                Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
                 player.showTitle(title);
 
                 sendMessage("lobby.countdown", "<time>", String.valueOf(count));
@@ -190,8 +194,10 @@ public class DungeonGame {
         player.teleportAsync(spawnLoc).thenAccept(success -> {
             if (success && player.isOnline()) {
 
+                String titleMain = plugin.getMessagesFile().getString("game.title.start_main", "<red><bold>BẮT ĐẦU!");
+                String titleSub = plugin.getMessagesFile().getString("game.title.start_sub", "<white>Chúc may mắn");
                 Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500));
-                Title title = Title.title(ColorUtils.parse("<red><bold>BẮT ĐẦU!"), ColorUtils.parse("<white>Chúc may mắn"), times);
+                Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
                 player.showTitle(title);
 
                 sendMessage("game.start");
@@ -219,9 +225,9 @@ public class DungeonGame {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
         boolean allCompleted = true;
-
-        // [UX]: Tạo chuỗi HUD để thông báo nhiệm vụ liên tục cho người chơi
         StringBuilder objectiveText = new StringBuilder();
+
+        String objSeparator = plugin.getMessagesFile().getString("game.hud.objective_separator", " <dark_gray>| ");
 
         for (DungeonAction action : stages.get(currentStageIndex)) {
             if (!action.isCompleted()) {
@@ -233,18 +239,17 @@ public class DungeonGame {
                     }
                 }
 
-                // Gắn thông tin mục tiêu vào HUD
                 if (!action.isCompleted()) {
                     allCompleted = false;
-                    if (!objectiveText.isEmpty()) objectiveText.append(" <dark_gray>| ");
+                    if (!objectiveText.isEmpty()) objectiveText.append(objSeparator);
                     objectiveText.append(action.getObjectiveText());
                 }
             }
         }
 
-        // [UX]: Bắn Actionbar liên tục mỗi 0.2s để cập nhật mục tiêu
         if (!allCompleted && !objectiveText.isEmpty()) {
-            player.sendActionBar(ColorUtils.parse("<gold><bold>MỤC TIÊU: <reset>" + objectiveText));
+            String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>MỤC TIÊU: <reset>");
+            player.sendActionBar(ColorUtils.parse(objPrefix + objectiveText));
         }
 
         if (allCompleted) checkCompletion();
@@ -290,7 +295,6 @@ public class DungeonGame {
         if (stageCompleting) return;
         stageCompleting = true;
 
-        // [UX]: Xóa HUD khi qua màn để tránh bị rối mắt
         player.sendActionBar(ColorUtils.parse(" "));
 
         sendMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
@@ -331,14 +335,15 @@ public class DungeonGame {
         Location targetLoc = oldLocation;
         if (targetLoc.getWorld() == null) {
             targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
-            plugin.getLogger().warning("World gốc của " + player.getName() + " không tồn tại. Đưa về Spawn mặc định.");
         }
 
         if (player.isInsideVehicle()) player.leaveVehicle();
 
-        // [UX]: Hiệu ứng kết thúc
+        String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>HOÀN THÀNH!");
+        String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Thời gian: <time> giây").replace("<time>", String.valueOf(finalElapsed));
         Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
-        Title title = Title.title(ColorUtils.parse("<green><bold>HOÀN THÀNH!"), ColorUtils.parse("<yellow>Thời gian: " + finalElapsed + " giây"), times);
+        Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
+
         player.showTitle(title);
         player.sendActionBar(ColorUtils.parse(" "));
 
@@ -368,8 +373,6 @@ public class DungeonGame {
         isRunning = false;
 
         if (tickTask != null) tickTask.cancel();
-
-        // [UX]: Xóa HUD nếu thoát giữa chừng
         if (player.isOnline()) player.sendActionBar(ColorUtils.parse(" "));
 
         if (teleport && player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {

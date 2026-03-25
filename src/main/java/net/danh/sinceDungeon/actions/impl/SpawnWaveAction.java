@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.actions.impl;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
@@ -31,7 +32,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return "<yellow>Tiêu diệt <red>" + type.name() + " <gray>(Còn: " + spawnedMobs.size() + ")";
+        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.spawn_wave", "<yellow>Tiêu diệt <red><mob> <gray>(Còn: <remain>)");
+        return base.replace("<mob>", type.name()).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
     @Override

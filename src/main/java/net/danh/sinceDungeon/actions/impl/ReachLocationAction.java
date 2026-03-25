@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.actions.impl;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
@@ -16,7 +17,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return "<green>Di chuyển đến tọa độ được yêu cầu";
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.reach_location", "<green>Di chuyển đến tọa độ được yêu cầu");
     }
 
     @Override

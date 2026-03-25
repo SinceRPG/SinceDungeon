@@ -8,12 +8,14 @@ dungeon:
   lobby-countdown: 10
   # Thư mục chứa các map mẫu (nằm trong thư mục gốc của server)
   template-folder: "dungeons"
+  # Tiền tố tên thế giới khi tạo dungeon
+  world-prefix: "SinceDungeon_"
 
 editor:
   # Item dùng để điều hướng trong Editor GUI
   nav-item: ARROW
 
-# [MỚI] Cấu hình âm thanh cho toàn bộ plugin
+# Cấu hình âm thanh cho toàn bộ plugin
 sounds:
   lobby_countdown: "block.note_block.pling"
   game_start: "entity.ender_dragon.growl"
@@ -23,3 +25,14 @@ sounds:
   editor_save: "block.anvil.use"
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
+
+# Cấu hình giá trị mặc định khi tạo Action mới
+action-defaults:
+  spawn_wave:
+    mob: "ZOMBIE"
+    amount: 1
+  reach_location:
+    radius: 3.0
+  mythic_wave:
+    mob: "SkeletonKing"
+    amount: 1

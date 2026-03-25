@@ -5,6 +5,7 @@ import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
 import io.lumine.mythic.core.mobs.ActiveMob;
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
@@ -33,7 +34,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return "<dark_red>Đánh bại Boss <red>" + internalName + " <gray>(Còn: " + spawnedMobs.size() + ")";
+        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.mythic_wave", "<dark_red>Đánh bại Boss <red><mob> <gray>(Còn: <remain>)");
+        return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
     @Override

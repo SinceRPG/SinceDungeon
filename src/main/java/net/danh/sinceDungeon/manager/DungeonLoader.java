@@ -112,7 +112,8 @@ public class DungeonLoader {
 
             return new Vector(Double.parseDouble(split[0]), Double.parseDouble(split[1]), Double.parseDouble(split[2]));
         } catch (Exception e) {
-            SinceDungeon.getPlugin().getLogger().warning("Lỗi phân tích tọa độ Vector: '" + s + "'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại file Config Map!");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vector_parse_fail", "Lỗi phân tích tọa độ Vector: '<data>'");
+            SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", s));
             return new Vector(0, 0, 0);
         }
     }
