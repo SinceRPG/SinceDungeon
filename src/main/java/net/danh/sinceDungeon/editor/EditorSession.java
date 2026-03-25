@@ -48,6 +48,8 @@ public class EditorSession {
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
+                file.getParentFile().mkdirs();
+
                 Files.writeString(file.toPath(), yamlData);
 
                 Bukkit.getScheduler().runTask(plugin, () -> {

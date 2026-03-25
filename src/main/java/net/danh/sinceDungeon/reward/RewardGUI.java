@@ -138,19 +138,30 @@ public class RewardGUI implements Listener {
         p.openInventory(inv);
     }
 
+    public void forceClaimAll(Player p, RewardSession session) {
+        int remaining = session.getChestCount();
+        if (remaining <= 0) return;
+
+        for (int i = 0; i < remaining; i++) {
+            List<DungeonReward> pool = session.getTemplate().rewardPool();
+            if (pool != null && !pool.isEmpty()) {
+                DungeonReward reward = getRandomReward(pool);
+                if (reward != null) giveReward(p, reward);
+            }
+        }
+
+        String msg = getMsg("auto_claim");
+        if (msg != null) {
+            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<count>", String.valueOf(remaining))));
+        }
+    }
+
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         RewardSession session = RewardSessionManager.getSession(p);
         if (session != null && session.getChestCount() > 0) {
-            int remaining = session.getChestCount();
-            for (int i = 0; i < remaining; i++) {
-                List<DungeonReward> pool = session.getTemplate().rewardPool();
-                if (pool != null && !pool.isEmpty()) {
-                    DungeonReward reward = getRandomReward(pool);
-                    if (reward != null) giveReward(p, reward);
-                }
-            }
+            forceClaimAll(p, session);
             RewardSessionManager.removeSession(p);
         }
     }
@@ -219,17 +230,7 @@ public class RewardGUI implements Listener {
             if (e.getPlayer() instanceof Player p) {
                 RewardSession session = RewardSessionManager.getSession(p);
                 if (session != null && session.getChestCount() > 0) {
-                    int remaining = session.getChestCount();
-                    for (int i = 0; i < remaining; i++) {
-                        List<DungeonReward> pool = session.getTemplate().rewardPool();
-                        if (pool != null && !pool.isEmpty()) {
-                            DungeonReward reward = getRandomReward(pool);
-                            if (reward != null) giveReward(p, reward);
-                        }
-                    }
-                    String msg = getMsg("auto_claim");
-                    if (msg != null)
-                        p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<count>", String.valueOf(remaining))));
+                    forceClaimAll(p, session);
                     playSound(p, "claim");
                 }
                 RewardSessionManager.removeSession(p);

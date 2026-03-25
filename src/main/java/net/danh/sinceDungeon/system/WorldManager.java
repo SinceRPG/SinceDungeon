@@ -17,20 +17,38 @@ import java.util.concurrent.CompletableFuture;
 public class WorldManager {
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
-
+        CompletableFuture<World> finalFuture = new CompletableFuture<>();
         World templateW = Bukkit.getWorld(templateName);
 
+        boolean wasAutoSave = false;
+
         if (templateW != null) {
-            plugin.getLogger().warning("[An Toàn Dữ Liệu] Thế giới mẫu '" + templateName + "' đang hoạt động. Tiến hành Unload để mở khóa file hệ thống (Moonrise I/O)...");
-            Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
-            for (Player p : templateW.getPlayers()) {
-                p.teleport(safeLoc);
-                p.sendMessage("§cThế giới mẫu đang được hệ thống đóng gói để phục vụ người chơi đi Dungeon!");
+            templateW.save();
+            wasAutoSave = templateW.isAutoSave();
+            templateW.setAutoSave(false);
+
+            boolean hasPlayers = !templateW.getPlayers().isEmpty();
+            if (hasPlayers) {
+                Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
+                for (Player p : templateW.getPlayers()) {
+                    p.teleport(safeLoc);
+                }
             }
-            Bukkit.unloadWorld(templateW, true);
+            final boolean finalAutoSaveState = wasAutoSave;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                Bukkit.unloadWorld(templateW, true);
+                executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW, finalAutoSaveState);
+            }, hasPlayers ? 2L : 0L);
+
+        } else {
+            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, null, false);
         }
 
-        return CompletableFuture.supplyAsync(() -> {
+        return finalFuture;
+    }
+
+    private static void executeAsyncCopyAndLoad(SinceDungeon plugin, String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW, boolean finalAutoSaveState) {
+        CompletableFuture.supplyAsync(() -> {
             File source = new File(Bukkit.getWorldContainer(), templateName);
             File target = new File(Bukkit.getWorldContainer(), instanceId);
 
@@ -44,11 +62,9 @@ public class WorldManager {
             }
 
             new File(target, "uid.dat").delete();
-
             return instanceId;
-        }).thenCompose(id -> {
-            CompletableFuture<World> mainThreadFuture = new CompletableFuture<>();
 
+        }).thenAccept(id -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 try {
                     WorldCreator creator = new WorldCreator(id);
@@ -59,19 +75,20 @@ public class WorldManager {
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
                         world.setAutoSave(false);
-                        mainThreadFuture.complete(world);
+                        finalFuture.complete(world);
                     } else {
-                        mainThreadFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
+                        finalFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
                     }
                 } catch (Exception e) {
-                    mainThreadFuture.completeExceptionally(e);
+                    finalFuture.completeExceptionally(e);
                 }
+                if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
             });
 
-            return mainThreadFuture;
         }).exceptionally(ex -> {
-            plugin.getLogger().severe("[WorldManager] Lỗi nạp thế giới Dungeon: " + ex.getMessage());
+            plugin.getLogger().severe("[WorldManager] Lỗi tạo world dungeon: " + ex.getMessage());
             ex.printStackTrace();
+            finalFuture.completeExceptionally(ex);
             return null;
         });
     }
@@ -84,9 +101,9 @@ public class WorldManager {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) {
-                p.teleportAsync(safeLoc);
+                p.teleport(safeLoc);
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder), 10L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder), 1L);
         } else {
             performUnload(plugin, world, folder);
         }
@@ -94,15 +111,15 @@ public class WorldManager {
 
     private static void performUnload(SinceDungeon plugin, World world, File folder) {
         if (Bukkit.unloadWorld(world, false)) {
-            plugin.getLogger().info("Đã đóng Dungeon: " + world.getName());
+            plugin.getLogger().info("Unloaded dungeon world: " + world.getName());
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
-                    plugin.getLogger().warning("Không thể dọn dẹp sạch sẽ: " + folder.getName() + " (Hệ điều hành đang khóa file)");
+                    plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName());
                 }
             });
         } else {
-            plugin.getLogger().warning("Không thể Unload thế giới: " + world.getName() + " (Lỗi từ Bukkit Core).");
+            plugin.getLogger().warning("Could not unload world: " + world.getName());
         }
     }
 
@@ -115,10 +132,10 @@ public class WorldManager {
         }
 
         if (Bukkit.unloadWorld(world, false)) {
-            plugin.getLogger().info("Ép đóng Dungeon: " + world.getName());
+            plugin.getLogger().info("Force unloaded dungeon world: " + world.getName());
             WorldUtils.deleteWorld(folder);
         } else {
-            plugin.getLogger().severe("NGUY HIỂM: Không thể ép đóng thế giới " + world.getName() + " lúc tắt server!");
+            plugin.getLogger().severe("CRITICAL: Failed to force-unload world " + world.getName() + " during shutdown!");
         }
     }
 }

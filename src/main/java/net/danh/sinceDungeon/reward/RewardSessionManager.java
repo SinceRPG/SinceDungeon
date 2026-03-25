@@ -24,4 +24,8 @@ public class RewardSessionManager {
     public static void clearAll() {
         sessions.clear();
     }
+
+    public static Map<UUID, RewardSession> getSessions() {
+        return sessions;
+    }
 }

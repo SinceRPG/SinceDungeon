@@ -11,6 +11,7 @@ import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
 import net.danh.sinceDungeon.reward.RewardGUI;
+import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
@@ -26,6 +27,8 @@ import org.jspecify.annotations.NonNull;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
@@ -76,8 +79,6 @@ public final class SinceDungeon extends JavaPlugin {
 
         registerCommands();
         cleanUpStuckWorlds();
-
-        getLogger().info("SinceDungeon enabled successfully!");
     }
 
     @Override
@@ -86,13 +87,20 @@ public final class SinceDungeon extends JavaPlugin {
             dungeonManager.stopAllGames();
         }
 
+        RewardGUI rewardHelper = new RewardGUI(this);
+        for (Map.Entry<UUID, RewardSession> entry : RewardSessionManager.getSessions().entrySet()) {
+            Player p = Bukkit.getPlayer(entry.getKey());
+            if (p != null && p.isOnline()) {
+                rewardHelper.forceClaimAll(p, entry.getValue());
+                p.closeInventory();
+            }
+        }
+
         RewardSessionManager.clearAll();
         Bukkit.getScheduler().cancelTasks(this);
 
         if (configFile != null) configFile.save();
         if (messagesFile != null) messagesFile.save();
-
-        getLogger().info("SinceDungeon disabled!");
     }
 
     public void reloadFiles() {
@@ -150,10 +158,24 @@ public final class SinceDungeon extends JavaPlugin {
                                         if (ctx.getSource().getExecutor() instanceof Player p) {
                                             dungeonManager.joinDungeon(p, StringArgumentType.getString(ctx, "name"));
                                         } else {
-                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
+                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.join_dungeon.console_error")));
                                         }
                                         return 1;
                                     })
+                                    .then(Commands.argument("target", StringArgumentType.word())
+                                            .requires(s -> s.getSender().hasPermission("SinceDungeon.admin") || !(s.getSender() instanceof Player))
+                                            .executes(ctx -> {
+                                                String targetName = StringArgumentType.getString(ctx, "target");
+                                                Player target = Bukkit.getPlayerExact(targetName);
+                                                if (target != null) {
+                                                    dungeonManager.joinDungeon(target, StringArgumentType.getString(ctx, "name"));
+                                                } else {
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.join_dungeon.not_found_player")
+                                                            .replace("<player>", targetName)));
+                                                }
+                                                return 1;
+                                            })
+                                    )
                             )
                     )
                     .then(Commands.literal("leave")
