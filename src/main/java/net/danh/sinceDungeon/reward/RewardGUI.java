@@ -287,7 +287,9 @@ public class RewardGUI implements Listener {
                 int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
                 handleItemDrop(p, item, reward.displayName() == null || reward.displayName().isEmpty() ? mat.name() + " x" + amount : reward.displayName());
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                p.sendMessage(ColorUtils.parseWithPrefix(SinceDungeon.getPlugin().getMessagesFile().getString("admin.mmoitems.error").replace("<item>", val)));
+
             }
         } else if (type.equalsIgnoreCase("MMOITEM")) {
             if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {

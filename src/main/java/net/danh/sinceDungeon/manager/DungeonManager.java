@@ -79,7 +79,7 @@ public class DungeonManager {
         spawnDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("SPAWN_WAVE", map -> {
-                    String mobStr = (String) map.getOrDefault("mob", "ZOMBIE");
+                    String mobStr = String.valueOf(map.getOrDefault("mob", "ZOMBIE"));
                     EntityType mob;
                     try {
                         mob = EntityType.valueOf(mobStr.toUpperCase());
@@ -98,7 +98,7 @@ public class DungeonManager {
         reachDefaults.put("radius", 3.0);
 
         registerAction("REACH_LOCATION", map -> {
-                    String targetStr = (String) map.getOrDefault("target", "0,0,0");
+                    String targetStr = String.valueOf(map.getOrDefault("target", "0,0,0"));
                     Vector target = DungeonLoader.parseVector(targetStr);
                     double radius = getDouble(map.get("radius"), 3.0);
                     return new ReachLocationAction(target, radius);
@@ -111,7 +111,7 @@ public class DungeonManager {
         chestDefaults.put("items", new HashMap<>());
 
         registerAction("LOOT_CHEST", map -> {
-                    String locStr = (String) map.getOrDefault("location", "0,0,0");
+                    String locStr = String.valueOf(map.getOrDefault("location", "0,0,0"));
                     Vector loc = DungeonLoader.parseVector(locStr);
                     Map<Integer, String> itemsConfig = new HashMap<>();
 
@@ -150,9 +150,9 @@ public class DungeonManager {
         wallDefaults.put("corner2", "0,0,0");
 
         registerAction("BREAK_WALL", map -> new SmartBreakWallAction(
-                        DungeonLoader.parseVector((String) map.getOrDefault("trigger", "0,0,0")),
-                        DungeonLoader.parseVector((String) map.getOrDefault("corner1", "0,0,0")),
-                        DungeonLoader.parseVector((String) map.getOrDefault("corner2", "0,0,0"))
+                        DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0"))),
+                        DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0"))),
+                        DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")))
                 ), Material.IRON_PICKAXE,
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults);
@@ -165,7 +165,7 @@ public class DungeonManager {
         registerAction("MYTHIC_WAVE", map -> {
                     List<Vector> v = parseLocList(map.get("locations"));
                     int amount = getInt(map.get("amount"), 1);
-                    String mob = (String) map.getOrDefault("mob", "SkeletonKing");
+                    String mob = String.valueOf(map.getOrDefault("mob", "SkeletonKing"));
                     return new MythicMobWaveAction(mob, amount, v);
                 }, Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),

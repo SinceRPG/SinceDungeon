@@ -7,6 +7,7 @@ admin:
   mmoitems:
     not_installed: "<red>Lỗi hệ thống: Không thể trao vật phẩm MMOItems vì Plugin chưa được cài đặt."
     not_found: "<red>Lỗi hệ thống: Không tìm thấy vật phẩm MMOItems <type>:<id>"
+    error: "<red>Lỗi hệ thống: Vật phẩm <item> cấu hình sai tên hoặc không tồn tại trong server."
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"
