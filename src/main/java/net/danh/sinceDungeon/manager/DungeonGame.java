@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -21,6 +22,12 @@ public class DungeonGame {
     private final Player player;
     private final DungeonTemplate template;
     private final Location oldLocation;
+    private final GameMode oldGameMode;
+    private final double oldHealth;
+    private final int oldFoodLevel;
+    private final float oldExp;
+    private final int oldLevel;
+
     private final List<List<DungeonAction>> stages = new ArrayList<>();
     private final String worldName;
 
@@ -40,6 +47,12 @@ public class DungeonGame {
         this.player = player;
         this.template = template;
         this.oldLocation = player.getLocation();
+        this.oldGameMode = player.getGameMode();
+        this.oldHealth = player.getHealth();
+        this.oldFoodLevel = player.getFoodLevel();
+        this.oldExp = player.getExp();
+        this.oldLevel = player.getLevel();
+
         this.worldName = "SinceDungeon_" + player.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
         parseStages();
     }
@@ -95,38 +108,36 @@ public class DungeonGame {
         isPreparing = true;
         sendMessage("lobby.preparing");
 
-        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
-                .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (isStopping || !player.isOnline()) {
-                        WorldManager.unloadAndDeleteWorld(plugin, world);
-                        return;
-                    }
+        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (isStopping || !player.isOnline()) {
+                WorldManager.unloadAndDeleteWorld(plugin, world);
+                return;
+            }
 
-                    this.dungeonWorld = world;
+            this.dungeonWorld = world;
 
-                    if (ServerVersion.isAtMost(1, 21, 10)) {
-                        dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-                        dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-                        dungeonWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                        dungeonWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                    } else if (ServerVersion.isAtLeast(1, 21, 11)) {
-                        dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
-                        dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                        dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                        dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
-                    }
-                    dungeonWorld.setAutoSave(false);
+            if (ServerVersion.isAtMost(1, 21, 10)) {
+                dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+                dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                dungeonWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+                dungeonWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+            } else if (ServerVersion.isAtLeast(1, 21, 11)) {
+                dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
+                dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+            }
+            dungeonWorld.setAutoSave(false);
 
-                    startCountdown();
-                }))
-                .exceptionally(ex -> {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        sendMessage("error.create_failed");
-                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
-                        plugin.getDungeonManager().removeGame(player.getUniqueId());
-                    });
-                    return null;
-                });
+            startCountdown();
+        })).exceptionally(ex -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                sendMessage("error.create_failed");
+                plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
+                plugin.getDungeonManager().removeGame(player.getUniqueId());
+            });
+            return null;
+        });
     }
 
     private void startCountdown() {
@@ -160,26 +171,33 @@ public class DungeonGame {
         }
 
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
-        player.teleport(spawnLoc);
+
+        double maxHealth = player.getAttribute(Attribute.MAX_HEALTH) != null ? player.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
+        player.setHealth(maxHealth);
+        player.setFoodLevel(20);
         player.setGameMode(GameMode.SURVIVAL);
 
-        sendMessage("game.start");
-        playConfigSound("game_start", 0.5f, 1f);
-        this.startTime = System.currentTimeMillis();
+        player.teleportAsync(spawnLoc).thenAccept(success -> {
+            if (success && player.isOnline()) {
+                sendMessage("game.start");
+                playConfigSound("game_start", 0.5f, 1f);
+                this.startTime = System.currentTimeMillis();
 
-        tickTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!isRunning || !player.isOnline()) {
-                    cancel();
-                    stop(true);
-                    return;
-                }
-                runTick();
+                tickTask = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!isRunning || !player.isOnline()) {
+                            cancel();
+                            stop(true);
+                            return;
+                        }
+                        runTick();
+                    }
+                }.runTaskTimer(plugin, 20L, 20L);
+
+                startStage(0);
             }
-        }.runTaskTimer(plugin, 20L, 20L);
-
-        startStage(0);
+        });
     }
 
     private void runTick() {
@@ -247,6 +265,15 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(currentStageIndex + 1), 60L);
     }
 
+
+    private void restorePlayerState() {
+        if (!player.isOnline()) return;
+        player.setGameMode(oldGameMode);
+        double maxHealth = player.getAttribute(Attribute.MAX_HEALTH) != null ? player.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
+        player.setHealth(Math.min(oldHealth, maxHealth));
+        player.setFoodLevel(oldFoodLevel);
+    }
+
     private void finishDungeon() {
         sendMessage("game.finish");
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
@@ -264,8 +291,7 @@ public class DungeonGame {
         if (tickTask != null) tickTask.cancel();
 
         if (finalChestCount > 0) {
-            net.danh.sinceDungeon.reward.RewardSessionManager.addSession(player,
-                    new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+            net.danh.sinceDungeon.reward.RewardSessionManager.addSession(player, new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
         }
 
         Location targetLoc = oldLocation;
@@ -276,20 +302,25 @@ public class DungeonGame {
 
         if (player.isInsideVehicle()) player.leaveVehicle();
 
-        player.teleport(targetLoc);
-        sendMessage("game.completion_time", "<time>", String.valueOf(finalElapsed));
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (player.isOnline()) {
-                if (finalChestCount > 0) {
-                    new RewardGUI(plugin).openRewardGUI(player, finalChestCount, template);
-                } else {
-                    sendMessage("game.no_reward");
-                }
+        player.teleportAsync(targetLoc).thenAccept(success -> {
+            if (success && player.isOnline()) {
+                restorePlayerState();
+                sendMessage("game.completion_time", "<time>", String.valueOf(finalElapsed));
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        if (finalChestCount > 0) {
+                            new RewardGUI(plugin).openRewardGUI(player, finalChestCount, template);
+                        } else {
+                            sendMessage("game.no_reward");
+                        }
+                    }
+                }, 10L);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false), 100L);
             }
-        }, 10L);
-
-        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false), 100L);
+        });
     }
 
     public void stop(boolean teleport) {
@@ -305,7 +336,12 @@ public class DungeonGame {
                 targetLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             }
             if (player.isInsideVehicle()) player.leaveVehicle();
-            player.teleport(targetLoc);
+
+            player.teleportAsync(targetLoc).thenAccept(success -> {
+                if (success) restorePlayerState();
+            });
+        } else if (player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {
+            restorePlayerState();
         }
 
         if (dungeonWorld != null) {
@@ -330,6 +366,7 @@ public class DungeonGame {
             }
             if (player.isInsideVehicle()) player.leaveVehicle();
             player.teleport(targetLoc);
+            restorePlayerState();
         }
 
         if (dungeonWorld != null) {
