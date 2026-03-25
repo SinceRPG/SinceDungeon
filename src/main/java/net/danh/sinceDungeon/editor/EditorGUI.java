@@ -20,6 +20,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.util.*;
@@ -765,19 +766,7 @@ public class EditorGUI implements Listener {
                 String promptKey = "edit_action_" + key.toLowerCase();
 
                 session.awaitInput(inputType, promptKey, val -> {
-                    Object finalVal = val;
-                    if (val.equalsIgnoreCase("true")) finalVal = true;
-                    else if (val.equalsIgnoreCase("false")) finalVal = false;
-                    else {
-                        try {
-                            finalVal = Integer.parseInt(val);
-                        } catch (Exception e1) {
-                            try {
-                                finalVal = Double.parseDouble(val);
-                            } catch (Exception ignored) {
-                            }
-                        }
-                    }
+                    Object finalVal = getFinalVal(val);
 
                     if (isList) {
                         List<String> list = session.getConfig().getStringList(fullPath);
@@ -794,5 +783,22 @@ public class EditorGUI implements Listener {
                 plugin.getEditorListener().startListening(p, session);
             }
         }
+    }
+
+    private @NonNull Object getFinalVal(String val) {
+        Object finalVal = val;
+        if (val.equalsIgnoreCase("true")) finalVal = true;
+        else if (val.equalsIgnoreCase("false")) finalVal = false;
+        else {
+            try {
+                finalVal = Integer.parseInt(val);
+            } catch (Exception e1) {
+                try {
+                    finalVal = Double.parseDouble(val);
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return finalVal;
     }
 }
