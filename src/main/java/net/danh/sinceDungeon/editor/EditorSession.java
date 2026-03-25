@@ -49,7 +49,6 @@ public class EditorSession {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 file.getParentFile().mkdirs();
-
                 Files.writeString(file.toPath(), yamlData);
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -174,7 +173,9 @@ public class EditorSession {
         this.inputCallback = null;
     }
 
-    public enum InputType {NONE, CREATE_FILENAME, EDIT_VALUE}
+    public enum InputType {
+        NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK
+    }
 
     public interface EditorCallback {
         void onInput(String value);
