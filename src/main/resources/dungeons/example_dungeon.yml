@@ -1,109 +1,114 @@
-# Name of the world folder in your main server directory to use as a template
-template-world: "dungeon_map_v1"
+# 1. CÀI ĐẶT CHUNG (GENERAL SETTINGS)
+# Tên thư mục world mẫu nằm trong thư mục gốc của server (ngang hàng với world, world_nether...)
+template-world: "Dungeon_Template_Map"
 
-# If true, anyone can join via GUI. If false, only admins or specific triggers can join.
+# Cho phép tất cả người chơi tham gia? (Nếu false, chỉ Admin có quyền SinceDungeon.admin mới vào được)
 public: true
 
-# Conditions required to enter the dungeon
-# Uses PlaceholderAPI
-# Format mới: %placeholder%;operator;value
+# =======================================================
+# 2. ĐIỀU KIỆN THAM GIA (CONDITIONS)
+# Cú pháp check: %placeholder%;operator;value
+# Các operator hỗ trợ: >=, <=, >, <, ==, !=, equalsIgnoreCase
+# =======================================================
 conditions:
-  level_req:
-    name: "Yêu cầu cấp độ"
-    check: "%player_level%;>=;5"
-    msg: "You must be at least level 5 to enter!"
-  gold_req:
-    name: "Phí tham gia"
-    check: "%vault_eco_balance%;>=;100"
-    msg: "You need 100 gold to enter this dungeon!"
+  cond_level:
+    name: "Cấp độ tối thiểu"
+    check: "%player_level%;>=;10"
+    msg: "Bạn cần đạt cấp độ 10 để vào hầm ngục này!"
+  cond_money:
+    name: "Yêu cầu lệ phí"
+    check: "%vault_eco_balance%;>=;500"
+    msg: "Bạn cần có ít nhất 500$ trong tài khoản để mua vé vào cửa!"
 
-# Rewards based on completion time (Time in seconds : Chest Count)
+# =======================================================
+# 3. PHẦN THƯỞNG (REWARDS)
+# =======================================================
 rewards:
+  # Số lượng rương (chest) dựa trên thời gian hoàn thành (tính bằng giây)
+  # Ví dụ: Xong trước 5 phút (300s) được 3 rương, xong trước 10 phút (600s) được 2 rương...
   tiers:
-    300: 3
-    600: 2
-    9999: 1
+    '300': 3
+    '600': 2
+    '900': 1
 
-  # The pool of possible rewards (Converted to Section with Keys)
+  # Vòng quay phần thưởng (Reward Pool) cho mỗi rương mà người chơi mở
   pool:
-    reward_diamonds:
-      type: ITEM
-      value: "DIAMOND:2"
+    reward_1:
+      type: "ITEM"
+      value: "DIAMOND:5"
       chance: 50.0
-      name: "<b:aqua>Rare Diamonds"
+      name: "<#00ff00>Kim Cương Lấp Lánh"
       lore:
-        - "<gray>Shiny!"
-    reward_money:
-      type: COMMAND
-      value: "eco give %player% 500"
+        - "<gray>Phần thưởng cơ bản từ hầm ngục"
+        - "<yellow>Số lượng: 5"
+    reward_2:
+      type: "COMMAND"
+      value: "eco give %player% 1000"
       chance: 30.0
-      name: "<gold>500 Gold"
+      name: "<gold>1000 Tiền Thưởng"
       lore:
-        - "<gray>Currency reward"
-    reward_weapon:
-      type: MMOITEM
-      value: "SWORD:CUTLASS:1"
+        - "<gray>Túi tiền khổng lồ rơi ra từ quái vật"
+    reward_3:
+      type: "MMOITEM"
+      value: "SWORD:EPIC_SWORD:1" # Cú pháp: TYPE:ID:AMOUNT
       chance: 10.0
-      name: "<red>Pirate Sword"
+      name: "<#ff00ff>Thanh Gươm Thần Thoại"
       lore:
-        - "<gray>A rare weapon"
-    reward_food:
-      type: ITEM
-      value: "GOLDEN_APPLE:5"
-      chance: 100.0
-      name: "<yellow>Snacks"
+        - "<gray>Vũ khí hiếm cực kỳ mạnh mẽ"
+        - "<red>Tỷ lệ rớt: Rất thấp (10%)"
 
-# Dungeon Stages (Executed in order)
+# =======================================================
+# 4. CÁC GIAI ĐOẠN VÀ HÀNH ĐỘNG (STAGES & ACTIONS)
+# Hầm ngục sẽ chạy lần lượt từ Stage 1, 2, 3...
+# Mỗi Stage phải hoàn thành TẤT CẢ Actions bên trong mới qua Stage tiếp theo.
+# =======================================================
 stages:
-  # --- STAGE 1: Clear the entrance ---
-  1:
+  '1':
     actions:
-      wave_zombie:
-        type: SPAWN_WAVE
-        mob: ZOMBIE
+      action_reach_1:
+        type: "REACH_LOCATION"
+        target: "10.5, 65.0, -20.5" # Tọa độ X, Y, Z
+        radius: 5.0 # Bán kính hoàn thành
+        start_message:
+          - "<yellow>▶ <white>Tiến vào khu vực sảnh chính để đánh thức quái vật!"
+
+      action_spawn_1:
+        type: "SPAWN_WAVE"
+        mob: "ZOMBIE" # Tên quái Vanilla
         amount: 5
         locations:
-          - "10,65,10"
-          - "12,65,10"
-          - "10,65,12"
-      wave_skeleton:
-        type: SPAWN_WAVE
-        mob: SKELETON
-        amount: 3
-        locations:
-          - "15,65,15"
+          - "15.0, 65.0, -15.0"
+          - "5.0, 65.0, -25.0"
+        start_message:
+          - "<red>▶ <white>Bầy Zombie đã xuất hiện! Tiêu diệt chúng!"
 
-  # --- STAGE 2: Parkour & Reach Checkpoint ---
-  2:
+  '2':
     actions:
-      reach_checkpoint:
-        type: REACH_LOCATION
-        target: "50,70,50"
-        radius: 3.0
-
-  # --- STAGE 3: Break the Gate & Loot ---
-  3:
-    actions:
-      # Players must break the block at 'trigger' to remove the wall defined by corner1 & corner2
-      break_gate:
-        type: BREAK_WALL
-        trigger: "51,71,51"
-        corner1: "50,70,55"
-        corner2: "55,75,55"
-      loot_treasure:
-        type: LOOT_CHEST
-        location: "60,72,60"
+      action_chest_1:
+        type: "LOOT_CHEST"
+        location: "20.0, 65.0, -30.0"
         items:
-          11: "DIAMOND:1"
-          13: "IRON_INGOT:5"
-          15: "MMOITEMS:CONSUMABLE:MANGO:2"
+          '13': "APPLE:5" # Ô số 13 chứa 5 quả táo (Vanilla)
+          '14': "MMOITEMS:CONSUMABLE:HEALTH_POTION:2" # Ô 14 chứa 2 bình máu MMOItems
+        start_message:
+          - "<yellow>▶ <white>Tìm và thu thập vật phẩm trong rương tiếp tế!"
 
-  # --- STAGE 4: Final Boss ---
-  4:
+      action_break_wall:
+        type: "BREAK_WALL"
+        trigger: "25.0, 66.0, -30.0" # Tọa độ block cần click chuột trái để phá
+        corner1: "25.0, 65.0, -32.0" # Góc 1 của bức tường bị xóa
+        corner2: "25.0, 68.0, -28.0" # Góc 2 của bức tường bị xóa
+        start_message:
+          - "<yellow>▶ <white>Đập vỡ viên đá phong ấn (click trái) để phá hủy bức tường cản đường!"
+
+  '3':
     actions:
-      boss_fight:
-        type: MYTHIC_WAVE
-        mob: "SkeletonKing"
+      action_boss:
+        type: "MYTHIC_WAVE"
+        mob: "SkeletonKing" # Tên Internal Name của MythicMobs
         amount: 1
         locations:
-          - "100,65,100"
+          - "50.0, 65.0, -50.0"
+        start_message:
+          - "<dark_red>▶ <red>CẢNH BÁO: <white>Vua Hài Cốt đã thức tỉnh!"
+          - "<gray>Hãy tiêu diệt hắn để hoàn thành hầm ngục!"

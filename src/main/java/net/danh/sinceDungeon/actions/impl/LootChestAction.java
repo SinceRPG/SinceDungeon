@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.actions.impl;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
@@ -47,9 +48,10 @@ public class LootChestAction extends DungeonAction {
         Location loc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
         Block b = loc.getBlock();
         b.setType(Material.CHEST);
+        b.getState().update(true, false);
 
         if (b.getState() instanceof Chest chest) {
-            Inventory inv = chest.getInventory();
+            Inventory inv = chest.getBlockInventory();
             inv.clear();
 
             for (Map.Entry<Integer, ItemStack> entry : cachedVanillaItems.entrySet()) {
@@ -65,8 +67,6 @@ public class LootChestAction extends DungeonAction {
                 }
             }
 
-            chest.update();
-
             game.sendMessage("action.chest_appear");
         }
     }
@@ -77,29 +77,35 @@ public class LootChestAction extends DungeonAction {
 
     private ItemStack parseVanilla(String data) {
         try {
-            String[] parts = data.split(":");
-            if (parts.length < 2) return null;
+            String cleanData = data.replace(" ", "");
+            String[] parts = cleanData.split(":");
+            if (parts.length < 1) return null;
+
             Material mat = Material.matchMaterial(parts[0]);
             if (mat != null) {
-                return new ItemStack(mat, Integer.parseInt(parts[1]));
+                int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
+                return new ItemStack(mat, amount);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            SinceDungeon.getPlugin().getLogger().warning("Không thể đọc vật phẩm Vanilla: " + data);
         }
         return null;
     }
 
     private ItemStack parseDynamic(String data) {
         try {
-            String[] parts = data.split(":");
-            if (parts.length >= 4 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                // Kiểm tra an toàn trước khi gọi Hook
+            String cleanData = data.replace(" ", "");
+            String[] parts = cleanData.split(":");
+            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    return MMOItemsHook.getMMOItem(parts[1], parts[2], Integer.parseInt(parts[3]));
+                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
+                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
+                } else {
+                    SinceDungeon.getPlugin().getLogger().warning("Cần MMOItems để tạo vật phẩm: " + data);
                 }
             }
-        } catch (Throwable e) { // Dùng Throwable để bắt NoClassDefFoundError nếu phát sinh
-            e.printStackTrace();
+        } catch (Throwable e) {
+            SinceDungeon.getPlugin().getLogger().warning("Không thể đọc vật phẩm MMOItems: " + data);
         }
         return null;
     }
