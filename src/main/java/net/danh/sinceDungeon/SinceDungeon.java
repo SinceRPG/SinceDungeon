@@ -87,7 +87,6 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardSessionManager.clearAll();
-
         Bukkit.getScheduler().cancelTasks(this);
 
         if (configFile != null) configFile.save();
@@ -137,25 +136,44 @@ public final class SinceDungeon extends JavaPlugin {
             event.registrar().register(Commands.literal("dungeon")
                     .then(Commands.literal("join")
                             .then(Commands.argument("name", StringArgumentType.word())
+                                    .suggests((ctx, builder) -> {
+                                        String remaining = builder.getRemainingLowerCase();
+                                        for (String mapName : dungeonManager.getTemplates().keySet()) {
+                                            if (dungeonManager.getTemplates().get(mapName).isPublic())
+                                                if (mapName.toLowerCase().startsWith(remaining)) {
+                                                    builder.suggest(mapName);
+                                                }
+                                        }
+                                        return builder.buildFuture();
+                                    })
                                     .executes(ctx -> {
-                                        if (ctx.getSource().getExecutor() instanceof Player p)
+                                        if (ctx.getSource().getExecutor() instanceof Player p) {
                                             dungeonManager.joinDungeon(p, StringArgumentType.getString(ctx, "name"));
+                                        } else {
+                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
+                                        }
                                         return 1;
                                     })
                             )
                     )
                     .then(Commands.literal("leave")
                             .executes(ctx -> {
-                                if (ctx.getSource().getExecutor() instanceof Player p)
+                                if (ctx.getSource().getExecutor() instanceof Player p) {
                                     dungeonManager.quitDungeon(p);
+                                } else {
+                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
+                                }
                                 return 1;
                             })
                     )
                     .then(Commands.literal("editor")
                             .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                             .executes(ctx -> {
-                                if (ctx.getSource().getExecutor() instanceof Player p)
+                                if (ctx.getSource().getExecutor() instanceof Player p) {
                                     editorManager.openEditor(p);
+                                } else {
+                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
+                                }
                                 return 1;
                             })
                     )
