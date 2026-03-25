@@ -10,24 +10,33 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.util.Vector;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
     private final List<Vector> locations;
-    private final Set<UUID> spawnedMobIds = new HashSet<>();
+    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
     public MythicMobWaveAction(String internalName, int amount, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
         this.locations = locations;
+    }
+
+    static Location convertVector(DungeonGame game, int i, List<Vector> locations) {
+        Vector vec = locations.get(i % locations.size());
+        Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+        double offsetX = (Math.random() - 0.5) * 1.5;
+        double offsetZ = (Math.random() - 0.5) * 1.5;
+        return loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
     }
 
     @Override
@@ -49,16 +58,12 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         String mobName = internalName;
 
         for (int i = 0; i < amount; i++) {
-            Vector vec = locations.get(i % locations.size());
-            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
-            double offsetX = (Math.random() - 0.5) * 1.5;
-            double offsetZ = (Math.random() - 0.5) * 1.5;
-            loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+            Location finalLoc = convertVector(game, i, locations);
 
             try {
-                ActiveMob am = mob.spawn(BukkitAdapter.adapt(loc), 1);
+                ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), 1);
                 if (am != null) {
-                    spawnedMobIds.add(am.getEntity().getUniqueId());
+                    spawnedMobs.put(am.getEntity().getUniqueId(), finalLoc);
                     count++;
                     mobName = am.getDisplayName();
                 }
@@ -79,15 +84,19 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        spawnedMobIds.removeIf(uuid -> {
-            org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
+        spawnedMobs.entrySet().removeIf(entry -> {
+            UUID uuid = entry.getKey();
+            Location spawnLoc = entry.getValue();
+            Entity ent = Bukkit.getEntity(uuid);
+
             if (ent != null) {
                 return ent.isDead();
+            } else {
+                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
             }
-            return false;
         });
 
-        if (spawnedMobIds.isEmpty()) {
+        if (spawnedMobs.isEmpty()) {
             this.completed = true;
             game.sendMessage("action.mythic_wave_complete");
         }
@@ -96,12 +105,12 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof MythicMobDeathEvent e) {
-            if (spawnedMobIds.remove(e.getEntity().getUniqueId())) {
-                if (spawnedMobIds.isEmpty()) {
+            if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
+                if (spawnedMobs.isEmpty()) {
                     this.completed = true;
                     game.sendMessage("action.mythic_wave_complete");
                 } else {
-                    game.sendMessage("action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobIds.size()), "<mob>", e.getMob().getDisplayName());
+                    game.sendMessage("action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", e.getMob().getDisplayName());
                 }
             }
         }

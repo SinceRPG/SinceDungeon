@@ -12,16 +12,18 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
-    private final Set<UUID> mobIds = new HashSet<>();
+
+    // [ĐÃ SỬA]: Lưu trữ thêm Location để track Chunk, chống lỗi ClearLag
+    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
@@ -33,15 +35,19 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        mobIds.removeIf(uuid -> {
-            org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
+        spawnedMobs.entrySet().removeIf(entry -> {
+            UUID uuid = entry.getKey();
+            Location spawnLoc = entry.getValue();
+            Entity ent = Bukkit.getEntity(uuid);
+
             if (ent != null) {
                 return ent.isDead();
+            } else {
+                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
             }
-            return false;
         });
 
-        if (mobIds.isEmpty()) {
+        if (spawnedMobs.isEmpty()) {
             this.completed = true;
             game.sendMessage("action.kill_complete");
         }
@@ -56,18 +62,14 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
 
         for (int i = 0; i < amount; i++) {
-            Vector vec = locations.get(i % locations.size());
-            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            Location finalLoc = MythicMobWaveAction.convertVector(game, i, locations);
 
-            double offsetX = (Math.random() - 0.5) * 1.5;
-            double offsetZ = (Math.random() - 0.5) * 1.5;
-
-            Entity ent = game.getWorld().spawnEntity(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ), type);
+            Entity ent = game.getWorld().spawnEntity(finalLoc, type);
             if (ent instanceof LivingEntity living) {
                 living.setRemoveWhenFarAway(false);
                 living.setPersistent(true);
 
-                mobIds.add(ent.getUniqueId());
+                spawnedMobs.put(ent.getUniqueId(), finalLoc);
                 count++;
             } else {
                 ent.remove();
@@ -84,12 +86,12 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof EntityDeathEvent e) {
-            if (mobIds.remove(e.getEntity().getUniqueId())) {
-                if (mobIds.isEmpty()) {
+            if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
+                if (spawnedMobs.isEmpty()) {
                     this.completed = true;
                     game.sendMessage("action.kill_complete");
                 } else {
-                    game.sendMessage("action.kill_remain", "<amount>", String.valueOf(mobIds.size()));
+                    game.sendMessage("action.kill_remain", "<amount>", String.valueOf(spawnedMobs.size()));
                 }
             }
         }
