@@ -4,11 +4,10 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.reward.RewardGUI;
-import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ServerVersion;
+import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
@@ -16,6 +15,7 @@ import org.bukkit.event.Event;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.time.Duration;
 import java.util.*;
 
 public class DungeonGame {
@@ -109,6 +109,12 @@ public class DungeonGame {
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
+
+        // [UX]: Gửi Title loading hoành tráng
+        Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
+        Title title = Title.title(ColorUtils.parse("<yellow><bold>ĐANG TẢI..."), ColorUtils.parse("<gray>Vui lòng chờ trong giây lát"), times);
+        player.showTitle(title);
+
         sendMessage("lobby.preparing");
 
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
@@ -120,17 +126,11 @@ public class DungeonGame {
 
                     this.dungeonWorld = world;
 
-                    if (ServerVersion.isAtMost(1, 21, 10)) {
-                        dungeonWorld.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-                        dungeonWorld.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-                        dungeonWorld.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                        dungeonWorld.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                    } else if (ServerVersion.isAtLeast(1, 21, 11)) {
-                        dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
-                        dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                        dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                        dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
-                    }
+                    dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
+                    dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                    dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                    dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+                    dungeonWorld.setAutoSave(false);
 
                     startCountdown();
                 }))
@@ -159,6 +159,12 @@ public class DungeonGame {
                     cancel();
                     return;
                 }
+
+                // [UX]: Hiệu ứng đếm ngược giữa màn hình
+                Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
+                Title title = Title.title(ColorUtils.parse("<red><bold>" + count), ColorUtils.parse("<gold>Chuẩn bị chiến đấu!"), times);
+                player.showTitle(title);
+
                 sendMessage("lobby.countdown", "<time>", String.valueOf(count));
                 playConfigSound("lobby_countdown", 1f, 2f);
                 count--;
@@ -183,6 +189,11 @@ public class DungeonGame {
 
         player.teleportAsync(spawnLoc).thenAccept(success -> {
             if (success && player.isOnline()) {
+
+                Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500));
+                Title title = Title.title(ColorUtils.parse("<red><bold>BẮT ĐẦU!"), ColorUtils.parse("<white>Chúc may mắn"), times);
+                player.showTitle(title);
+
                 sendMessage("game.start");
                 playConfigSound("game_start", 0.5f, 1f);
                 this.startTime = System.currentTimeMillis();
@@ -208,6 +219,10 @@ public class DungeonGame {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
         boolean allCompleted = true;
+
+        // [UX]: Tạo chuỗi HUD để thông báo nhiệm vụ liên tục cho người chơi
+        StringBuilder objectiveText = new StringBuilder();
+
         for (DungeonAction action : stages.get(currentStageIndex)) {
             if (!action.isCompleted()) {
                 if (action instanceof Tickable) {
@@ -217,8 +232,19 @@ public class DungeonGame {
                         plugin.getLogger().warning("Tick error in action: " + e.getMessage());
                     }
                 }
-                if (!action.isCompleted()) allCompleted = false;
+
+                // Gắn thông tin mục tiêu vào HUD
+                if (!action.isCompleted()) {
+                    allCompleted = false;
+                    if (!objectiveText.isEmpty()) objectiveText.append(" <dark_gray>| ");
+                    objectiveText.append(action.getObjectiveText());
+                }
             }
+        }
+
+        // [UX]: Bắn Actionbar liên tục mỗi 0.2s để cập nhật mục tiêu
+        if (!allCompleted && !objectiveText.isEmpty()) {
+            player.sendActionBar(ColorUtils.parse("<gold><bold>MỤC TIÊU: <reset>" + objectiveText));
         }
 
         if (allCompleted) checkCompletion();
@@ -263,6 +289,10 @@ public class DungeonGame {
     private void checkCompletion() {
         if (stageCompleting) return;
         stageCompleting = true;
+
+        // [UX]: Xóa HUD khi qua màn để tránh bị rối mắt
+        player.sendActionBar(ColorUtils.parse(" "));
+
         sendMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
         playConfigSound("stage_complete", 1f, 1f);
 
@@ -295,7 +325,7 @@ public class DungeonGame {
 
         if (finalChestCount > 0) {
             net.danh.sinceDungeon.reward.RewardSessionManager.addSession(player,
-                    new RewardSession(finalChestCount, template));
+                    new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
         }
 
         Location targetLoc = oldLocation;
@@ -305,6 +335,12 @@ public class DungeonGame {
         }
 
         if (player.isInsideVehicle()) player.leaveVehicle();
+
+        // [UX]: Hiệu ứng kết thúc
+        Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
+        Title title = Title.title(ColorUtils.parse("<green><bold>HOÀN THÀNH!"), ColorUtils.parse("<yellow>Thời gian: " + finalElapsed + " giây"), times);
+        player.showTitle(title);
+        player.sendActionBar(ColorUtils.parse(" "));
 
         player.teleportAsync(targetLoc).thenAccept(success -> {
             if (success && player.isOnline()) {
@@ -332,6 +368,9 @@ public class DungeonGame {
         isRunning = false;
 
         if (tickTask != null) tickTask.cancel();
+
+        // [UX]: Xóa HUD nếu thoát giữa chừng
+        if (player.isOnline()) player.sendActionBar(ColorUtils.parse(" "));
 
         if (teleport && player.isOnline() && dungeonWorld != null && player.getWorld().equals(dungeonWorld)) {
             Location targetLoc = oldLocation;
@@ -371,6 +410,7 @@ public class DungeonGame {
 
             player.teleport(targetLoc);
             restorePlayerState();
+            player.sendActionBar(ColorUtils.parse(" "));
         }
 
         if (dungeonWorld != null) {

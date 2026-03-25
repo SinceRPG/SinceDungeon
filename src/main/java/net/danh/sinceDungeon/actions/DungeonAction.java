@@ -20,17 +20,16 @@ public abstract class DungeonAction {
         return completed;
     }
 
-    // [NEW] Setter cho Manager dùng
     public void setStartMessages(List<String> startMessages) {
         this.startMessages = startMessages;
     }
 
-    // [NEW] Helper để gửi tin nhắn (DungeonGame sẽ gọi cái này)
     public void announceStart(DungeonGame game) {
         if (startMessages == null || startMessages.isEmpty()) return;
         for (String line : startMessages) {
-            // Hỗ trợ màu sắc MiniMessage/Legacy
             game.getPlayer().sendMessage(ColorUtils.parse(line));
         }
     }
+
+    public abstract String getObjectiveText();
 }

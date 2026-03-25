@@ -28,7 +28,6 @@ public class LootChestAction extends DungeonAction {
 
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
         this.chestLocation = location;
-
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
             String data = entry.getValue();
             if (data.toUpperCase().startsWith("MMOITEMS")) {
@@ -40,6 +39,11 @@ public class LootChestAction extends DungeonAction {
                 }
             }
         }
+    }
+
+    @Override
+    public String getObjectiveText() {
+        return "<gold>Mở rương tiếp tế để đi tiếp";
     }
 
     @Override
@@ -66,7 +70,6 @@ public class LootChestAction extends DungeonAction {
                     inv.setItem(entry.getKey(), item);
                 }
             }
-
             game.sendMessage("action.chest_appear");
         }
     }
@@ -80,7 +83,6 @@ public class LootChestAction extends DungeonAction {
             String cleanData = data.replace(" ", "");
             String[] parts = cleanData.split(":");
             if (parts.length < 1) return null;
-
             Material mat = Material.matchMaterial(parts[0]);
             if (mat != null) {
                 int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;

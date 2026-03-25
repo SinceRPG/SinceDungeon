@@ -21,14 +21,17 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
-
-    // [ĐÃ SỬA]: Lưu trữ thêm Location để track Chunk, chống lỗi ClearLag
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
         this.amount = amount;
         this.locations = locations;
+    }
+
+    @Override
+    public String getObjectiveText() {
+        return "<yellow>Tiêu diệt <red>" + type.name() + " <gray>(Còn: " + spawnedMobs.size() + ")";
     }
 
     @Override
@@ -43,8 +46,11 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
+                if (spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4)) {
+                    return true;
+                }
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
@@ -62,7 +68,12 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
 
         for (int i = 0; i < amount; i++) {
-            Location finalLoc = MythicMobWaveAction.convertVector(game, i, locations);
+            Vector vec = locations.get(i % locations.size());
+            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+
+            double offsetX = (Math.random() - 0.5) * 1.5;
+            double offsetZ = (Math.random() - 0.5) * 1.5;
+            Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
 
             Entity ent = game.getWorld().spawnEntity(finalLoc, type);
             if (ent instanceof LivingEntity living) {

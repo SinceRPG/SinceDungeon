@@ -24,14 +24,17 @@ public class SmartBreakWallAction extends DungeonAction {
     }
 
     @Override
+    public String getObjectiveText() {
+        return "<aqua>Tìm và phá vỡ Khối đá phong ấn";
+    }
+
+    @Override
     public void start(DungeonGame game) {
-        // Gợi ý cho người chơi (Tùy chọn)
         Location loc = new Location(game.getWorld(), trigger.getX() + 0.5, trigger.getY() + 0.5, trigger.getZ() + 0.5);
     }
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        // Thay BlockBreakEvent bằng PlayerInteractEvent (Chuột trái) để xuyên qua WorldGuard
         if (event instanceof PlayerInteractEvent e) {
             if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
             if (!e.getPlayer().getUniqueId().equals(game.getPlayer().getUniqueId())) return;
@@ -43,7 +46,6 @@ public class SmartBreakWallAction extends DungeonAction {
                     b.getY() == trigger.getBlockY() &&
                     b.getZ() == trigger.getBlockZ()) {
 
-                // Chủ động biến block trigger thành khí (Vì sự kiện đập block thông thường đã bị chặn)
                 b.setType(Material.AIR);
                 removeWall(game);
 

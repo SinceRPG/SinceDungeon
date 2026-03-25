@@ -4,7 +4,9 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -33,6 +36,12 @@ public class EditorListener implements Listener {
     public void startListening(Player p, EditorSession session) {
         activeInputs.put(p.getUniqueId(), session);
         p.closeInventory();
+
+        // [UX]: Đánh thức sự chú ý của Admin bằng Title và Sound
+        p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f);
+        Title.Times times = Title.Times.times(Duration.ofMillis(100), Duration.ofSeconds(2), Duration.ofMillis(500));
+        Title title = Title.title(ColorUtils.parse("<gold><bold>NHẬP LIỆU"), ColorUtils.parse("<white>Hãy xem hướng dẫn ở khung Chat!"), times);
+        p.showTitle(title);
 
         String prefix = plugin.getMessagesFile().getString("prefix", "");
         p.sendMessage(ColorUtils.parse(prefix + "<yellow>=== CHẾ ĐỘ NHẬP LIỆU ==="));

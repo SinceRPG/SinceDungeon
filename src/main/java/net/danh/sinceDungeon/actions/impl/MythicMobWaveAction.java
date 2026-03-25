@@ -31,12 +31,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         this.locations = locations;
     }
 
-    static Location convertVector(DungeonGame game, int i, List<Vector> locations) {
-        Vector vec = locations.get(i % locations.size());
-        Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
-        double offsetX = (Math.random() - 0.5) * 1.5;
-        double offsetZ = (Math.random() - 0.5) * 1.5;
-        return loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+    @Override
+    public String getObjectiveText() {
+        return "<dark_red>Đánh bại Boss <red>" + internalName + " <gray>(Còn: " + spawnedMobs.size() + ")";
     }
 
     @Override
@@ -58,7 +55,11 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         String mobName = internalName;
 
         for (int i = 0; i < amount; i++) {
-            Location finalLoc = convertVector(game, i, locations);
+            Vector vec = locations.get(i % locations.size());
+            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            double offsetX = (Math.random() - 0.5) * 1.5;
+            double offsetZ = (Math.random() - 0.5) * 1.5;
+            Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
 
             try {
                 ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), 1);
@@ -92,8 +93,11 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
+                if (spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4)) {
+                    return true;
+                }
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
