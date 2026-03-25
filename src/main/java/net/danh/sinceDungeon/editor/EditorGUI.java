@@ -418,8 +418,10 @@ public class EditorGUI implements Listener {
             } else if (cur.getType() == Material.EMERALD_BLOCK) {
                 EditorSession tempSession = new EditorSession(plugin, p, null);
                 tempSession.setLastMenuOpener(this::openMainMenu);
+                // [ĐÃ SỬA] Nạp config trước
+                tempSession.awaitInput(EditorSession.InputType.CREATE_FILENAME, "create_filename", val -> plugin.getEditorManager().startEditing(p, val));
+                // Khởi chạy listener sau
                 plugin.getEditorListener().startListening(p, tempSession);
-                tempSession.awaitInput(EditorSession.InputType.CREATE_FILENAME, val -> plugin.getEditorManager().startEditing(p, val));
             }
             return;
         }
@@ -430,12 +432,12 @@ public class EditorGUI implements Listener {
             e.setCancelled(true);
             int slot = e.getRawSlot();
             if (slot == 10) {
-                plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_STRING, val -> {
+                session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_world_name", val -> {
                     session.getConfig().set("template-world", val);
                     sendMessage(p, "template_set", "<world>", val);
                     openDungeonMenu(p, session);
                 });
+                plugin.getEditorListener().startListening(p, session);
             } else if (slot == 20) {
                 boolean current = session.getConfig().getBoolean("public", false);
                 session.getConfig().set("public", !current);
@@ -453,15 +455,14 @@ public class EditorGUI implements Listener {
             e.setCancelled(true);
             int slot = e.getRawSlot();
             if (slot == 49) {
-                sendMessage(p, "condition_val_hint_check");
-                plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, val -> {
+                session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
                     String newKey = "cond_" + System.currentTimeMillis();
                     session.getConfig().set("conditions." + newKey + ".check", val);
                     session.getConfig().set("conditions." + newKey + ".msg", getWord("default_condition_msg"));
                     session.getConfig().set("conditions." + newKey + ".name", getWord("default_condition_name").replace("<key>", newKey));
                     openConditionList(p, session);
                 });
+                plugin.getEditorListener().startListening(p, session);
             } else if (slot == 45) {
                 openDungeonMenu(p, session);
             } else if (cur.getType() == Material.NAME_TAG) {
@@ -474,19 +475,17 @@ public class EditorGUI implements Listener {
                             session.getConfig().set("conditions." + key, null);
                             openConditionList(p, session);
                         } else if (e.isRightClick()) {
-                            sendMessage(p, "condition_val_hint_msg");
-                            plugin.getEditorListener().startListening(p, session);
-                            session.awaitInput(EditorSession.InputType.EDIT_STRING, val -> {
+                            session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_condition_msg", val -> {
                                 session.getConfig().set("conditions." + key + ".msg", val);
                                 openConditionList(p, session);
                             });
-                        } else {
-                            sendMessage(p, "condition_val_hint_check");
                             plugin.getEditorListener().startListening(p, session);
-                            session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, val -> {
+                        } else {
+                            session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
                                 session.getConfig().set("conditions." + key + ".check", val);
                                 openConditionList(p, session);
                             });
+                            plugin.getEditorListener().startListening(p, session);
                         }
                     }
                 }
@@ -505,8 +504,7 @@ public class EditorGUI implements Listener {
         if (isTitle(titleComp, "title.reward_tiers", null)) {
             e.setCancelled(true);
             if (e.getRawSlot() == 49) {
-                plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_TIER, val -> {
+                session.awaitInput(EditorSession.InputType.EDIT_TIER, "edit_tier", val -> {
                     try {
                         String[] parts = val.split(" ");
                         if (parts.length < 2) throw new Exception();
@@ -520,6 +518,7 @@ public class EditorGUI implements Listener {
                         new EditorGUI(plugin).openRewardTiers(p, session);
                     }
                 });
+                plugin.getEditorListener().startListening(p, session);
             } else if (e.getRawSlot() == 45) {
                 openRewardMenu(p, session);
             } else if (cur.getType() == Material.CLOCK) {
@@ -530,9 +529,7 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openRewardTiers(p, session);
                 } else {
-                    sendMessage(p, "action_val_hint_edit");
-                    plugin.getEditorListener().startListening(p, session);
-                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, val -> {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_number", val -> {
                         try {
                             int newAmount = Integer.parseInt(val);
                             session.getConfig().set("rewards.tiers." + timeStr, newAmount);
@@ -543,6 +540,7 @@ public class EditorGUI implements Listener {
                             new EditorGUI(plugin).openRewardTiers(p, session);
                         }
                     });
+                    plugin.getEditorListener().startListening(p, session);
                 }
             }
             return;
@@ -588,9 +586,9 @@ public class EditorGUI implements Listener {
 
             String currentKey = session.getCurrentRewardKey();
             String path = "rewards.pool." + currentKey;
+            String currentType = session.getConfig().getString(path + ".type", "ITEM");
 
             if (e.getRawSlot() == 10) {
-                String currentType = session.getConfig().getString(path + ".type", "ITEM");
                 String nextType = switch (currentType) {
                     case "ITEM" -> "COMMAND";
                     case "COMMAND" -> "MMOITEM";
@@ -610,15 +608,14 @@ public class EditorGUI implements Listener {
                     } else sendMessage(p, "hand_empty");
                     return;
                 }
-                plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_STRING, val -> {
+                session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_value_" + currentType.toLowerCase(), val -> {
                     session.getConfig().set(path + ".value", val);
                     sendMessage(p, "update_val", "<key>", getWord("value"), "<val>", val);
                     new EditorGUI(plugin).openRewardEditor(p, session);
                 });
-            } else if (e.getRawSlot() == 14) {
                 plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_NUMBER, val -> {
+            } else if (e.getRawSlot() == 14) {
+                session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                     try {
                         double chance = Double.parseDouble(val);
                         session.getConfig().set(path + ".chance", chance);
@@ -628,12 +625,13 @@ public class EditorGUI implements Listener {
                         new EditorGUI(plugin).openRewardEditor(p, session);
                     }
                 });
-            } else if (e.getRawSlot() == 16) {
                 plugin.getEditorListener().startListening(p, session);
-                session.awaitInput(EditorSession.InputType.EDIT_STRING, val -> {
+            } else if (e.getRawSlot() == 16) {
+                session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_name", val -> {
                     session.getConfig().set(path + ".name", val);
                     new EditorGUI(plugin).openRewardEditor(p, session);
                 });
+                plugin.getEditorListener().startListening(p, session);
             }
             return;
         }
@@ -760,8 +758,9 @@ public class EditorGUI implements Listener {
                 }
             }
 
-            plugin.getEditorListener().startListening(p, session);
-            session.awaitInput(inputType, val -> {
+            String promptKey = "edit_action_" + key.toLowerCase();
+
+            session.awaitInput(inputType, promptKey, val -> {
                 Object finalVal = val;
                 if (val.equalsIgnoreCase("true")) finalVal = true;
                 else if (val.equalsIgnoreCase("false")) finalVal = false;
@@ -788,6 +787,7 @@ public class EditorGUI implements Listener {
                 sendMessage(p, "update_val", "<key>", key, "<val>", val);
                 new EditorGUI(plugin).openActionEditor(p, session);
             });
+            plugin.getEditorListener().startListening(p, session);
         }
     }
 }

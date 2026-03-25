@@ -215,7 +215,6 @@ editor:
     action_val_hint_loc_replace: "<yellow>Chuột Phải để thay thế bằng vị trí hiện tại"
     action_val_hint_loc_clear: "<red>Shift-Phải để xóa danh sách"
     action_type_cant_edit: "<red>Không thể đổi loại hành động sau khi tạo"
-
   input:
     title_main: "<gold><bold>NHẬP LIỆU"
     title_sub: "<white>Hãy xem hướng dẫn ở khung Chat!"
@@ -223,30 +222,76 @@ editor:
     footer: "<yellow>====================="
     cancel_hint: "<gray>Gõ <red>cancel <gray>để hủy thao tác."
     prompts:
+      # Định dạng cho việc tạo tên file
       create_filename:
         - "<gray>Nhập tên cho Hầm ngục mới."
         - "<gray>Chỉ cho phép: <white>Chữ cái (a-z), Số (0-9), gạch ngang/dưới."
         - "<gray>Ví dụ: <green>ham_nguc_so_1"
+
+      # Định dạng khi thiết lập Tên World Mẫu
+      edit_world_name:
+        - "<gray>Nhập tên thư mục World mẫu (để copy thành Dungeon)."
+        - "<gray>Ví dụ: <green>Dungeon_Map_01"
+
+      # Định dạng cho Điều kiện tham gia
+      edit_condition_check:
+        - "<gray>Nhập điều kiện theo định dạng PAPI: <white>%placeholder%;toán_tử;giá_trị"
+        - "<gray>Toán tử hỗ trợ: <white>>=, <=, >, <, ==, !="
+        - "<gray>Ví dụ: <green>%vault_eco_balance%;>=;500"
+      edit_condition_msg:
+        - "<gray>Nhập tin nhắn hiển thị khi người chơi không đủ điều kiện."
+        - "<gray>Ví dụ: <red>Bạn không đủ 500$ để vào ải này!"
+
+      # Định dạng cho Phần Thưởng (Value)
+      edit_reward_value_item:
+        - "<gray>Nhập giá trị vật phẩm theo định dạng: <green>MATERIAL:AMOUNT"
+        - "<gray>Ví dụ: <white>DIAMOND:5 <gray>hoặc <white>EMERALD:10"
+      edit_reward_value_mmoitem:
+        - "<gray>Nhập vật phẩm MMOItems theo định dạng: <green>TYPE:ID:AMOUNT"
+        - "<gray>Ví dụ: <white>SWORD:FIERY_SWORD:1"
+      edit_reward_value_command:
+        - "<gray>Nhập lệnh sẽ chạy (Dùng <green>%player% <gray>cho tên người chơi)."
+        - "<gray>Ví dụ: <white>eco give %player% 1000"
+
+      # Định dạng cho Phần thưởng (Khác)
+      edit_reward_chance:
+        - "<gray>Nhập tỷ lệ phần trăm rơi ra phần thưởng này (0-100)."
+        - "<gray>Ví dụ: <white>50.5"
+      edit_reward_name:
+        - "<gray>Nhập tên hiển thị (cho Item) hoặc thông báo nhận thưởng."
+        - "<gray>Hỗ trợ màu sắc. Ví dụ: <green><bold>Kiếm Siêu Cấp"
+
+      # Định dạng chung cho Mốc Thời Gian (Tiers)
+      edit_tier:
+        - "<gray>Nhập Thời gian (giây) và Số rương, cách nhau bởi khoảng trắng."
+        - "<gray>Ví dụ: <green>300 3 <gray>(Hoàn thành trước 300s được 3 rương)"
+
+      # Định dạng cho Action (MythicMobs, Vanilla Mob, v.v)
+      edit_action_mob:
+        - "<gray>Nhập tên quái vật (Nếu MythicMobs thì nhập Internal Name, nếu Vanilla thì nhập EntityType)."
+        - "<gray>Ví dụ MythicMobs: <green>SkeletonKing"
+        - "<gray>Ví dụ Vanilla: <green>ZOMBIE"
+      edit_action_amount:
+        - "<gray>Nhập số lượng Mob muốn triệu hồi."
+        - "<gray>Ví dụ: <green>10"
+
+      # Fallback chung nếu hệ thống không tìm được prompt cụ thể
       edit_location:
         - "<gray>Nhập tọa độ theo định dạng: <white>X,Y,Z"
         - "<gray>Mẹo: Gõ <green>here <gray>để lấy tọa độ bạn đang đứng."
       edit_location_list:
         - "<gray>Nhập tọa độ <white>X,Y,Z <gray>để thêm vào danh sách."
         - "<gray>Mẹo: Gõ <green>here <gray>để lấy tọa độ bạn đang đứng."
-        - "<gray>Mẹo: Gõ <red>clear <gray>để xóa sạch danh sách tọa độ này."
+        - "<gray>Mẹo: Gõ <red>clear <gray>để xóa sạch danh sách."
       edit_number:
         - "<gray>Vui lòng nhập một <green>con số<gray>."
       edit_boolean:
         - "<gray>Vui lòng nhập <green>true <gray>hoặc <red>false<gray>."
-      edit_tier:
-        - "<gray>Nhập Thời gian và Số rương, cách nhau bởi khoảng trắng."
-        - "<gray>Ví dụ: <green>300 3 <gray>(Hoàn thành trước 300s được 3 rương)"
-      edit_condition_check:
-        - "<gray>Nhập điều kiện theo định dạng: <white>%placeholder%;toán_tử;giá_trị"
-        - "<gray>Ví dụ: <green>%vault_eco_balance%;>=;500"
       edit_list:
         - "<gray>Nhập văn bản/giá trị để thêm vào danh sách."
         - "<gray>Mẹo: Gõ <red>clear <gray>để xóa sạch danh sách này."
+      edit_string:
+        - "<gray>Vui lòng nhập văn bản hoặc cấu hình mới."
       default:
         - "<gray>Vui lòng nhập giá trị mới vào chat."
 

@@ -50,9 +50,16 @@ public class EditorListener implements Listener {
         String header = plugin.getMessagesFile().getString("editor.input.header", "<yellow>=== CHẾ ĐỘ NHẬP LIỆU ===");
         p.sendMessage(ColorUtils.parse(prefix + header));
 
-        // Kéo list động từ config thay vì hardcode switch/case
-        String promptKey = session.getInputType().name().toLowerCase();
-        List<String> prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + promptKey);
+        List<String> prompts = null;
+        if (session.getPromptKey() != null) {
+            prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + session.getPromptKey());
+        }
+
+        if (prompts == null || prompts.isEmpty()) {
+            String defaultTypeKey = session.getInputType().name().toLowerCase();
+            prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + defaultTypeKey);
+        }
+
         if (prompts == null || prompts.isEmpty()) {
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts.default");
         }

@@ -27,6 +27,7 @@ public class EditorSession {
     private String currentConditionKey = null;
 
     private InputType currentInput = InputType.NONE;
+    private String promptKey = null;
     private EditorCallback inputCallback = null;
     private Consumer<Player> lastMenuOpener = null;
 
@@ -102,14 +103,20 @@ public class EditorSession {
         return null;
     }
 
-    public void awaitInput(InputType type, EditorCallback callback) {
+    public void awaitInput(InputType type, String promptKey, EditorCallback callback) {
         this.currentInput = type;
+        this.promptKey = promptKey;
         this.inputCallback = callback;
+    }
+
+    public void awaitInput(InputType type, EditorCallback callback) {
+        awaitInput(type, null, callback);
     }
 
     public void completeInput(String value) {
         if (inputCallback != null) inputCallback.onInput(value);
         this.currentInput = InputType.NONE;
+        this.promptKey = null;
     }
 
     public void reopenLastMenu() {
@@ -164,12 +171,17 @@ public class EditorSession {
         return currentInput;
     }
 
+    public String getPromptKey() {
+        return promptKey;
+    }
+
     public void setLastMenuOpener(Consumer<Player> opener) {
         this.lastMenuOpener = opener;
     }
 
     public void cancelInput() {
         this.currentInput = InputType.NONE;
+        this.promptKey = null;
         this.inputCallback = null;
     }
 
