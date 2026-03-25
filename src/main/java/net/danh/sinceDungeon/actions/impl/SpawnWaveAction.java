@@ -56,7 +56,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             Vector vec = locations.get(i % locations.size());
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
 
-           double offsetX = (Math.random() - 0.5) * 1.5;
+            double offsetX = (Math.random() - 0.5) * 1.5;
             double offsetZ = (Math.random() - 0.5) * 1.5;
 
             Entity ent = game.getWorld().spawnEntity(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ), type);

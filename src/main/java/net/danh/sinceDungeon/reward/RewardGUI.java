@@ -3,12 +3,14 @@ package net.danh.sinceDungeon.reward;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import me.clip.placeholderapi.PlaceholderAPI;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonTemplate;
 import net.danh.sinceDungeon.system.MMOItemsHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -277,17 +279,7 @@ public class RewardGUI implements Listener {
                 Material mat = Material.valueOf(parts[0]);
                 int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
-                HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
-                if (!left.isEmpty()) {
-                    for (ItemStack drop : left.values()) p.getWorld().dropItem(p.getLocation(), drop);
-                    String fullMsg = getMsg("inventory_full");
-                    if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
-                }
-                String displayName = reward.displayName();
-                if (displayName == null || displayName.isEmpty()) displayName = mat.name() + " x" + amount;
-                String msg = getMsg("received_item");
-                if (msg != null)
-                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+                handleItemDrop(p, item, reward.displayName() == null || reward.displayName().isEmpty() ? mat.name() + " x" + amount : reward.displayName());
             } catch (Exception ignored) {
             }
         } else if (type.equalsIgnoreCase("MMOITEM")) {
@@ -299,12 +291,6 @@ public class RewardGUI implements Listener {
                 int amount = parts.length > 2 ? Integer.parseInt(parts[2]) : 1;
                 ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
                 if (item != null) {
-                    HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
-                    if (!left.isEmpty()) {
-                        for (ItemStack drop : left.values()) p.getWorld().dropItem(p.getLocation(), drop);
-                        String fullMsg = getMsg("inventory_full");
-                        if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
-                    }
                     String displayName = reward.displayName();
                     if (displayName == null) {
                         NBTItem nbtItem = NBTItem.get(item);
@@ -318,12 +304,28 @@ public class RewardGUI implements Listener {
                             }
                         }
                     }
-                    String msg = getMsg("received_item");
-                    if (msg != null)
-                        p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+                    handleItemDrop(p, item, displayName);
                 }
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private void handleItemDrop(Player p, ItemStack item, String displayName) {
+        HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
+        if (!left.isEmpty()) {
+            Location dropLoc = p.getLocation();
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
+                dropLoc = game.getOldLocation();
+            }
+
+            for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
+            String fullMsg = getMsg("inventory_full");
+            if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
+        }
+        String msg = getMsg("received_item");
+        if (msg != null)
+            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
     }
 }

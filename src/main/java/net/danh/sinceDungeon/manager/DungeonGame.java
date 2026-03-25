@@ -216,7 +216,6 @@ public class DungeonGame {
     }
 
     private void startStage(int index) {
-        // [ĐÃ SỬA] Chặn start lại Task nếu Dungeon đã kết thúc/người chơi Quit khi đang delay
         if (!isRunning) return;
 
         if (index >= stages.size()) {
@@ -318,5 +317,9 @@ public class DungeonGame {
 
     public Player getPlayer() {
         return player;
+    }
+
+    public Location getOldLocation() {
+        return oldLocation;
     }
 }
