@@ -61,7 +61,12 @@ public class RewardGUI implements Listener {
     }
 
     private int getButtonSlot() {
-        return getConfig().getInt("reward.settings.button_slot", 13);
+        int slot = getConfig().getInt("reward.settings.button_slot", 13);
+        int size = getGuiSize();
+        if (slot < 0 || slot >= size) {
+            return size / 2;
+        }
+        return slot;
     }
 
     private void playSound(Player p, String key) {
@@ -264,7 +269,10 @@ public class RewardGUI implements Listener {
         if (session.getChestCount() <= 0) {
             String msg = getMsg("claimed_all");
             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
-            Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
+            try {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
+            } catch (Exception ignored) {
+            }
         }
     }
 

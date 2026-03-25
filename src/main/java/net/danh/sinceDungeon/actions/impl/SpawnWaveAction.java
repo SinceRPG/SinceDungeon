@@ -36,7 +36,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         mobIds.removeIf(uuid -> {
             org.bukkit.entity.Entity ent = Bukkit.getEntity(uuid);
             if (ent != null) {
-                return ent.isDead() || !ent.isValid();
+                return ent.isDead();
             }
             return false;
         });

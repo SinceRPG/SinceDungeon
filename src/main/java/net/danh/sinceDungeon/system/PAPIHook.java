@@ -28,8 +28,11 @@ public class PAPIHook {
         String right = setPlaceholders(p, rightRaw).trim();
 
         try {
-            double v1 = Double.parseDouble(left);
-            double v2 = Double.parseDouble(right);
+            String cleanLeft = left.replace(",", "").replace(" ", "");
+            String cleanRight = right.replace(",", "").replace(" ", "");
+
+            double v1 = Double.parseDouble(cleanLeft);
+            double v2 = Double.parseDouble(cleanRight);
             switch (operator) {
                 case ">=":
                     return v1 >= v2;
