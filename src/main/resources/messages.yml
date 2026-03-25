@@ -47,6 +47,8 @@ error:
   mythic_mob_not_found: "<red>Lỗi config: Không tìm thấy MythicMob <mob>."
   mob_spawn_fail: "<red>Lỗi spawn mob <mob>: <error>"
   init_failed: "<red>Lỗi khởi tạo dungeon." # [MỚI]
+  can_not_teleport: "<red>Không thể dịch chuyển theo cách này trong Dungeon!"
+  can_not_drop: "<red>Không thể vứt vật phẩm trong Dungeon để tránh mất đồ!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"

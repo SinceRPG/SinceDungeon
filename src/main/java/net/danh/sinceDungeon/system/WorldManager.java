@@ -17,10 +17,16 @@ import java.util.concurrent.CompletableFuture;
 public class WorldManager {
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
+
         World templateW = Bukkit.getWorld(templateName);
+        boolean wasAutoSave = false;
         if (templateW != null) {
             templateW.save();
+            wasAutoSave = templateW.isAutoSave();
+            templateW.setAutoSave(false);
         }
+
+        final boolean finalWasAutoSave = wasAutoSave;
 
         return CompletableFuture.supplyAsync(() -> {
             File source = new File(Bukkit.getWorldContainer(), templateName);
@@ -62,6 +68,10 @@ public class WorldManager {
             });
 
             return mainThreadFuture;
+        }).whenComplete((world, ex) -> {
+            if (templateW != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> templateW.setAutoSave(finalWasAutoSave));
+            }
         }).exceptionally(ex -> {
             plugin.getLogger().severe("[WorldManager] Lỗi tạo world dungeon: " + ex.getMessage());
             ex.printStackTrace();
