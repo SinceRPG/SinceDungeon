@@ -20,12 +20,21 @@ import org.bukkit.util.Vector;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents an action that requires players to find and loot a specific chest.
+ */
 public class LootChestAction extends DungeonAction {
     private final Vector chestLocation;
     private final Map<Integer, String> dynamicItemsConfig = new HashMap<>();
     private final Map<Integer, ItemStack> cachedVanillaItems = new HashMap<>();
     private boolean isOpened = false;
 
+    /**
+     * Constructs a new LootChestAction.
+     *
+     * @param location    The vector location of the chest.
+     * @param itemsConfig The configuration map of items inside the chest.
+     */
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
         this.chestLocation = location;
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
@@ -43,7 +52,7 @@ public class LootChestAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.loot_chest", "<gold>Mở rương tiếp tế để đi tiếp");
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.loot_chest", "<gold>Loot the chest to proceed");
     }
 
     @Override
@@ -89,7 +98,7 @@ public class LootChestAction extends DungeonAction {
                 return new ItemStack(mat, amount);
             }
         } catch (Exception e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vanilla_parse_fail", "Không thể đọc vật phẩm Vanilla: <data>");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vanilla_parse_fail", "Cannot parse Vanilla item: <data>");
             SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
         }
         return null;
@@ -104,12 +113,12 @@ public class LootChestAction extends DungeonAction {
                     int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
                     return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
                 } else {
-                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_missing", "Cần MMOItems để tạo vật phẩm: <data>");
+                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_missing", "MMOItems is missing for item: <data>");
                     SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
                 }
             }
         } catch (Throwable e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Không thể đọc vật phẩm MMOItems: <data>");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Cannot parse MMOItems: <data>");
             SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
         }
         return null;

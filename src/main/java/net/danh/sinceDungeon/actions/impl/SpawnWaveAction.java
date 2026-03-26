@@ -18,12 +18,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents an action that spawns vanilla entity waves.
+ */
 public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
+    /**
+     * Constructs a new SpawnWaveAction.
+     *
+     * @param type      The vanilla entity type.
+     * @param amount    The amount of entities to spawn.
+     * @param locations The list of vector spawn locations.
+     */
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
         this.amount = amount;
@@ -32,7 +42,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.spawn_wave", "<yellow>Tiêu diệt <red><mob> <gray>(Còn: <remain>)");
+        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.spawn_wave", "<yellow>Eliminate <red><mob> <gray>(Remaining: <remain>)");
         return base.replace("<mob>", type.name()).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
@@ -48,11 +58,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                if (spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4)) {
-                    return true;
-                }
+                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
             }
-            return false;
         });
 
         if (spawnedMobs.isEmpty()) {

@@ -2,14 +2,17 @@ package net.danh.sinceDungeon.api.interfaces;
 
 import org.bukkit.entity.Player;
 
+/**
+ * Functional interface for custom condition processors.
+ */
 @FunctionalInterface
 public interface ConditionProcessor {
     /**
-     * Kiểm tra điều kiện của người chơi.
+     * Checks if the condition is met for the player.
      *
-     * @param player Người chơi cần kiểm tra
-     * @param value  Giá trị điều kiện từ config
-     * @return true nếu thỏa mãn, ngược lại false
+     * @param player The player to check.
+     * @param value  The condition value string from the config.
+     * @return True if the condition is met, false otherwise.
      */
     boolean check(Player player, String value);
 }

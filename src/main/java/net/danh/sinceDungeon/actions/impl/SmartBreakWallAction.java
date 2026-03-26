@@ -13,11 +13,21 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.Vector;
 
+/**
+ * Represents an action that breaks a defined wall structure when a trigger block is interacted with.
+ */
 public class SmartBreakWallAction extends DungeonAction {
     private final Vector trigger;
     private final Vector c1;
     private final Vector c2;
 
+    /**
+     * Constructs a new SmartBreakWallAction.
+     *
+     * @param trigger The vector location of the trigger block.
+     * @param c1      The first corner vector of the wall.
+     * @param c2      The second corner vector of the wall.
+     */
     public SmartBreakWallAction(Vector trigger, Vector c1, Vector c2) {
         this.trigger = trigger;
         this.c1 = c1;
@@ -26,7 +36,7 @@ public class SmartBreakWallAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.break_wall", "<aqua>Tìm và phá vỡ Khối đá phong ấn");
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.break_wall", "<aqua>Find and break the sealing block");
     }
 
     @Override
@@ -42,7 +52,7 @@ public class SmartBreakWallAction extends DungeonAction {
             if (!e.hasBlock()) return;
 
             Block b = e.getClickedBlock();
-            if (b.getWorld().equals(game.getWorld()) &&
+            if (b != null && b.getWorld().equals(game.getWorld()) &&
                     b.getX() == trigger.getBlockX() &&
                     b.getY() == trigger.getBlockY() &&
                     b.getZ() == trigger.getBlockZ()) {

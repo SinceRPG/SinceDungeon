@@ -4,11 +4,20 @@ import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+/**
+ * Event called when a specific stage inside a dungeon is completed.
+ */
 public class DungeonStageCompleteEvent extends Event {
     private static final HandlerList HANDLERS = new HandlerList();
     private final DungeonGame game;
     private final int stageIndex;
 
+    /**
+     * Constructs a new DungeonStageCompleteEvent.
+     *
+     * @param game       The dungeon game instance.
+     * @param stageIndex The index of the completed stage.
+     */
     public DungeonStageCompleteEvent(DungeonGame game, int stageIndex) {
         this.game = game;
         this.stageIndex = stageIndex;
@@ -18,10 +27,20 @@ public class DungeonStageCompleteEvent extends Event {
         return HANDLERS;
     }
 
+    /**
+     * Gets the dungeon game instance.
+     *
+     * @return The dungeon game.
+     */
     public DungeonGame getGame() {
         return game;
     }
 
+    /**
+     * Gets the index of the completed stage.
+     *
+     * @return The stage index.
+     */
     public int getStageIndex() {
         return stageIndex;
     }

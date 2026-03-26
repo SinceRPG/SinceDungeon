@@ -6,10 +6,19 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.util.Vector;
 
+/**
+ * Represents an action that requires the player to reach a specific coordinate.
+ */
 public class ReachLocationAction extends DungeonAction implements Tickable {
     private final Vector target;
     private final double radiusSq;
 
+    /**
+     * Constructs a new ReachLocationAction.
+     *
+     * @param target The target vector coordinate.
+     * @param radius The radius within which the location is considered reached.
+     */
     public ReachLocationAction(Vector target, double radius) {
         this.target = target;
         this.radiusSq = radius * radius;
@@ -17,7 +26,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.reach_location", "<green>Di chuyển đến tọa độ được yêu cầu");
+        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.reach_location", "<green>Move to the designated coordinates");
     }
 
     @Override

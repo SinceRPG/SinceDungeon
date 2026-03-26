@@ -2,14 +2,17 @@ package net.danh.sinceDungeon.api.interfaces;
 
 import org.bukkit.entity.Player;
 
+/**
+ * Functional interface for custom reward processors.
+ */
 @FunctionalInterface
 public interface RewardProcessor {
     /**
-     * Xử lý trao phần thưởng cho người chơi.
+     * Processes and grants a custom reward to a player.
      *
-     * @param player      Người chơi nhận thưởng
-     * @param value       Giá trị cấu hình từ config (vd: "DIAMOND:5" hoặc "give %player% 100")
-     * @param displayName Tên hiển thị của phần thưởng (nếu có)
+     * @param player      The player receiving the reward.
+     * @param value       The raw value string from the config.
+     * @param displayName The display name of the reward (nullable).
      */
     void giveReward(Player player, String value, String displayName);
 }

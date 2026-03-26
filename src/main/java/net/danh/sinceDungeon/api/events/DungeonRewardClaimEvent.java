@@ -6,12 +6,21 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
+/**
+ * Event called when a player claims a reward from a dungeon chest.
+ */
 public class DungeonRewardClaimEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
     private final Player player;
     private DungeonReward reward;
     private boolean isCancelled = false;
 
+    /**
+     * Constructs a new DungeonRewardClaimEvent.
+     *
+     * @param player The player claiming the reward.
+     * @param reward The reward object being claimed.
+     */
     public DungeonRewardClaimEvent(Player player, DungeonReward reward) {
         this.player = player;
         this.reward = reward;
@@ -21,16 +30,28 @@ public class DungeonRewardClaimEvent extends Event implements Cancellable {
         return HANDLERS;
     }
 
+    /**
+     * Gets the player claiming the reward.
+     *
+     * @return The player.
+     */
     public Player getPlayer() {
         return player;
     }
 
+    /**
+     * Gets the reward being claimed.
+     *
+     * @return The dungeon reward.
+     */
     public DungeonReward getReward() {
         return reward;
     }
 
     /**
-     * Cho phép plugin khác thay đổi phần thưởng trước khi trao.
+     * Sets a new reward to be granted instead.
+     *
+     * @param reward The new reward.
      */
     public void setReward(DungeonReward reward) {
         this.reward = reward;

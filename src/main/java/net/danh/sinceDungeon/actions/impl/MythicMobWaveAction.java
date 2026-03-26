@@ -20,12 +20,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Represents an action that spawns a wave of MythicMobs and requires the player to defeat them.
+ */
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
+    /**
+     * Constructs a new MythicMobWaveAction.
+     *
+     * @param internalName The internal name of the MythicMob.
+     * @param amount       The amount of mobs to spawn.
+     * @param locations    A list of vector locations for spawning.
+     */
     public MythicMobWaveAction(String internalName, int amount, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
@@ -34,7 +44,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.mythic_wave", "<dark_red>Đánh bại Boss <red><mob> <gray>(Còn: <remain>)");
+        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.mythic_wave", "<dark_red>Defeat Boss <red><mob> <gray>(Remaining: <remain>)");
         return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
@@ -95,11 +105,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                if (spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4)) {
-                    return true;
-                }
+                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
             }
-            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
