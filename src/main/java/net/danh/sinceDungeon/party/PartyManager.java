@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.party;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -136,9 +137,7 @@ public class PartyManager {
                 .orElse(candidates.stream().findFirst().orElse(null));
 
         if (newLeader != null) {
-            // VÁ LỖI LỜI MỜI MA: Đốt sạch lời mời của Trưởng nhóm cũ khi bàn giao quyền lực
             clearSentInvites(party.getLeader());
-
             party.setLeader(newLeader);
             String sysName = plugin.getConfigFile().getString("party.system-name", "System");
             sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
@@ -196,7 +195,6 @@ public class PartyManager {
     public void promoteMember(Party party, UUID newLeader) {
         if (party == null || !party.getMembers().contains(newLeader)) return;
         synchronized (party) {
-            // VÁ LỖI LỜI MỜI MA: Đốt sạch lời mời của Trưởng nhóm cũ khi giáng chức
             clearSentInvites(party.getLeader());
             party.setLeader(newLeader);
         }
@@ -217,14 +215,17 @@ public class PartyManager {
 
     public void sendPartyMessage(Party party, String sender, String message) {
         if (party == null || message.trim().isEmpty()) return;
-        String safeSender = MiniMessage.miniMessage().escapeTags(sender);
-        String safeMsg = MiniMessage.miniMessage().escapeTags(message);
 
-        String format = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>")
-                .replace("<sender>", safeSender)
-                .replace("<msg>", safeMsg);
+        String formatStr = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
 
-        Component finalComponent = MiniMessage.miniMessage().deserialize(format);
+        // BẢO MẬT TUYỆT ĐỐI (ANTI-INJECTION): Sử dụng Placeholder.unparsed để niêm phong chuỗi,
+        // Loại bỏ hoàn toàn nguy cơ người chơi lợi dụng các thẻ <click>, <hover> hay mã màu của hệ thống
+        Component finalComponent = MiniMessage.miniMessage().deserialize(
+                formatStr,
+                Placeholder.unparsed("sender", sender),
+                Placeholder.unparsed("msg", message)
+        );
+
         party.getMembers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) p.sendMessage(finalComponent);
@@ -251,14 +252,12 @@ public class PartyManager {
     }
 
     private void clearSentInvites(UUID sender) {
-        // VÁ LỖI RAM LEAK: Sử dụng iterator chuẩn xác để tháo gỡ các Map rỗng
         activeInvites.values().forEach(invites -> invites.remove(sender));
         activeInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 
     private void purgeExpiredInvites() {
         long now = System.currentTimeMillis();
-        // VÁ LỖI XUNG ĐỘT ĐA LUỒNG: Sử dụng removeIf an toàn cho Map 2 lớp
         activeInvites.entrySet().removeIf(entry -> {
             entry.getValue().entrySet().removeIf(inv -> now > inv.getValue());
             return entry.getValue().isEmpty();

@@ -159,16 +159,19 @@ public class DungeonListener implements Listener {
         if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
     }
 
-    @EventHandler(priority = EventPriority.LOW)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onAsyncChat(AsyncChatEvent e) {
         Player p = e.getPlayer();
         if (plugin.getPartyManager().isPartyChatEnabled(p.getUniqueId())) {
             PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             if (party != null) {
+                // Chặn dòng tin nhắn này không cho hiển thị ra Global Chat
                 e.setCancelled(true);
+
                 String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
                 plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
             } else {
+                // Tự dọn dẹp nếu người chơi bị kẹt trạng thái
                 plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
             }
         }

@@ -92,7 +92,6 @@ public class PartyCommand {
 
                                     if (party == null) {
                                         party = pm.createParty(p);
-                                        // VÁ LỖI NPE: Đảm bảo nếu tạo nhóm bị đụng độ đa luồng thì lấy lại nhóm từ RAM
                                         if (party == null) {
                                             party = pm.getParty(p.getUniqueId());
                                         } else {
@@ -100,7 +99,6 @@ public class PartyCommand {
                                         }
                                     }
 
-                                    // Chặn đứng NPE nếu vẫn có thứ gì đó ngoài tầm kiểm soát
                                     if (party == null) return 0;
 
                                     boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
@@ -304,6 +302,8 @@ public class PartyCommand {
                         )
                 )
 
+                // VÁ LỖI BẢO MẬT: Xóa bỏ khả năng truyền argument vào /party chat.
+                // Ép người chơi phải Toggle để sử dụng Chat thông thường, tôn trọng 100% các Plugin Mute (Essentials, LiteBans)
                 .then(Commands.literal("chat")
                         .executes(ctx -> {
                             Player p = (Player) ctx.getSource().getSender();
@@ -317,26 +317,6 @@ public class PartyCommand {
                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.chat_toggled").replace("<status>", state)));
                             return 1;
                         })
-                        .then(Commands.argument("message", StringArgumentType.greedyString())
-                                .executes(ctx -> {
-                                    Player p = (Player) ctx.getSource().getSender();
-                                    PartyManager.Party party = pm.getParty(p.getUniqueId());
-
-                                    if (party == null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
-                                        return 0;
-                                    }
-
-                                    String msg = StringArgumentType.getString(ctx, "message").trim();
-                                    if (msg.isEmpty()) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.empty_message", "<red>Please enter a message.")));
-                                        return 0;
-                                    }
-
-                                    pm.sendPartyMessage(party, p.getName(), msg);
-                                    return 1;
-                                })
-                        )
                 )
 
                 .then(Commands.literal("list").executes(ctx -> {
