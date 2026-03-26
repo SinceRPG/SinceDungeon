@@ -135,6 +135,12 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     Player p = (Player) ctx.getSource().getSender();
 
+                                    // VÁ LỖI DUPE PARTY: Khóa chặt mọi hành vi Accept nếu đã có Party
+                                    if (pm.getParty(p.getUniqueId()) != null) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
+                                        return 0;
+                                    }
+
                                     Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
                                     if (invites == null || invites.isEmpty()) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
@@ -302,8 +308,6 @@ public class PartyCommand {
                         )
                 )
 
-                // VÁ LỖI BẢO MẬT: Xóa bỏ khả năng truyền argument vào /party chat.
-                // Ép người chơi phải Toggle để sử dụng Chat thông thường, tôn trọng 100% các Plugin Mute (Essentials, LiteBans)
                 .then(Commands.literal("chat")
                         .executes(ctx -> {
                             Player p = (Player) ctx.getSource().getSender();

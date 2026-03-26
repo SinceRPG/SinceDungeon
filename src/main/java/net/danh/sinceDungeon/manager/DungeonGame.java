@@ -357,12 +357,11 @@ public class DungeonGame {
     }
 
     public void handlePlayerDisconnect(Player p) {
-        // VÁ LỖI MẤT TRẠNG THÁI GỐC: Trả lại máu, gamemode và đồ trước khi họ bị xóa sổ khỏi Instance.
         restorePlayerState(p);
 
         participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
-        savedStates.remove(p.getUniqueId()); // Tránh Leak RAM
+        savedStates.remove(p.getUniqueId());
 
         if (participants.isEmpty()) {
             stop(false, DungeonEndEvent.EndReason.FAILED);
@@ -450,7 +449,9 @@ public class DungeonGame {
     }
 
     public void restorePlayerState(Player p) {
-        if (!p.isOnline()) return;
+        // VÁ LỖI CỰC ĐỘ: Ép buộc can thiệp vào Player Object ngay cả khi isOnline() == false.
+        // Điều này đảm bảo Bukkit/Paper sẽ lưu chính xác lượng Máu, Potion, Gamemode cuối cùng
+        // vào file player.dat trước khi tiến trình Quit hoàn tất. Chống lỗi mất trạng thái vĩnh viễn.
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
             p.setGameMode(state.gameMode);

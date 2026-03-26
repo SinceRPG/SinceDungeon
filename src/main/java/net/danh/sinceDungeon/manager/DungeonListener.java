@@ -206,6 +206,9 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
+
+            // VÁ LỖI KHAI THÁC ITEM: Ép buộc giữ lại đồ và dọn dẹp điểm rơi (Drop Pool)
+            // Ngăn chặn hoàn toàn việc người khác có thể nhặt trộm hoặc hệ thống nhân bản lầm Item
             e.setKeepInventory(true);
             e.getDrops().clear();
             e.setDroppedExp(0);
@@ -214,16 +217,18 @@ public class DungeonListener implements Listener {
             game.broadcastMessage("game.death", "<player>", p.getName());
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                p.spigot().respawn();
+                if (p.isOnline()) { // Chặn rủi ro người chơi Quit ngay lúc vừa chết
+                    p.spigot().respawn();
 
-                String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+                    String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
 
-                if (deathAction.equalsIgnoreCase("FAIL")) {
-                    game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                } else {
-                    p.teleportAsync(game.getWorld().getSpawnLocation().add(0.5, 1, 0.5));
-                    p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
-                    p.setFoodLevel(20);
+                    if (deathAction.equalsIgnoreCase("FAIL")) {
+                        game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                    } else {
+                        p.teleportAsync(game.getWorld().getSpawnLocation().add(0.5, 1, 0.5));
+                        p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
+                        p.setFoodLevel(20);
+                    }
                 }
             }, 2L);
         }
