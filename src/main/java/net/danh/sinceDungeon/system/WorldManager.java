@@ -14,8 +14,19 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Manages physical creation, duplication, and destruction of temporary dungeon worlds.
+ */
 public class WorldManager {
 
+    /**
+     * Spawns an asynchronous task to duplicate and generate a temporary dungeon world.
+     *
+     * @param plugin       The main plugin instance.
+     * @param templateName The name of the root template folder.
+     * @param instanceId   The requested target instance world name.
+     * @return A CompletableFuture resulting in the loaded temporary Bukkit World.
+     */
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
         World templateW = Bukkit.getWorld(templateName);
@@ -86,13 +97,19 @@ public class WorldManager {
             });
 
         }).exceptionally(ex -> {
-            plugin.getLogger().severe("[WorldManager] Lỗi tạo world dungeon: " + ex.getMessage());
+            plugin.getLogger().severe("[WorldManager] Error generating dungeon world: " + ex.getMessage());
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
             return null;
         });
     }
 
+    /**
+     * Attempts to cleanly unload and delete the given world folder from the server.
+     *
+     * @param plugin The main plugin instance.
+     * @param world  The target world object to annihilate.
+     */
     public static void unloadAndDeleteWorld(SinceDungeon plugin, World world) {
         if (world == null) return;
         File folder = world.getWorldFolder();
@@ -123,6 +140,13 @@ public class WorldManager {
         }
     }
 
+    /**
+     * Forcefully evicts players, unloads the world instantly and deletes it synchronously.
+     * Should only be used upon emergency shutdowns.
+     *
+     * @param plugin The main plugin instance.
+     * @param world  The target world object.
+     */
     public static void forceUnloadAndDelete(SinceDungeon plugin, World world) {
         if (world == null) return;
         File folder = world.getWorldFolder();

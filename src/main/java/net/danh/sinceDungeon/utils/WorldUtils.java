@@ -8,10 +8,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+/**
+ * Advanced operations targeting system I/O, World duplication, and recursive cleanup logic.
+ */
 public class WorldUtils {
 
     private static final ArrayList<String> IGNORE_FILES = new ArrayList<>(Arrays.asList("uid.dat", "session.lock"));
 
+    /**
+     * Forcefully duplicates the entirety of a valid directory folder matching typical Bukkit formats.
+     *
+     * @param source Target folder to duplicate from.
+     * @param target End destination for contents.
+     * @return Boolean matching completion state.
+     */
     public static boolean copyWorld(File source, File target) {
         if (!source.exists()) return false;
         try {
@@ -43,7 +53,12 @@ public class WorldUtils {
         }
     }
 
-    // [TỐI ƯU CỰC MẠNH]: Cố gắng xóa mọi file có thể, bỏ qua ngoại lệ cục bộ để không hủy ngang tiến trình
+    /**
+     * Recursively executes forceful deletions on an entire system directory safely bypassing rigid system locks.
+     *
+     * @param path The origin path node to sever.
+     * @return Returns true upon a fully successful execution.
+     */
     public static boolean deleteWorld(File path) {
         if (!path.exists()) return true;
         try {
@@ -53,7 +68,6 @@ public class WorldUtils {
                     try {
                         Files.delete(file);
                     } catch (IOException ignored) {
-                        // Bỏ qua các file cứng đầu bị OS khóa tạm thời (thường là session.lock)
                     }
                     return FileVisitResult.CONTINUE;
                 }

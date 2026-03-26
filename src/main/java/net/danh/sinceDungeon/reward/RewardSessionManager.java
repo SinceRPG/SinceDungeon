@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Global cache storing active reward sessions mapped by player UUID.
+ */
 public class RewardSessionManager {
     private static final Map<UUID, RewardSession> sessions = new HashMap<>();
 

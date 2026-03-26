@@ -2,12 +2,20 @@ package net.danh.sinceDungeon.reward;
 
 import net.danh.sinceDungeon.manager.DungeonTemplate;
 
+/**
+ * Maintains the session state for a player actively opening reward chests.
+ */
 public class RewardSession {
     private final DungeonTemplate template;
-    // Không để final chestCount nữa vì cần thay đổi
     private int chestCount;
     private boolean revealed = false;
 
+    /**
+     * Constructs a new RewardSession.
+     *
+     * @param chestCount The initial count of chests available to claim.
+     * @param template   The template storing the pool data.
+     */
     public RewardSession(int chestCount, DungeonTemplate template) {
         this.chestCount = chestCount;
         this.template = template;
@@ -17,7 +25,9 @@ public class RewardSession {
         return chestCount;
     }
 
-    // [MỚI] Hàm giảm số lượng khi nhận quà
+    /**
+     * Decreases the available chest claim count by one.
+     */
     public void decreaseChestCount() {
         if (this.chestCount > 0) {
             this.chestCount--;

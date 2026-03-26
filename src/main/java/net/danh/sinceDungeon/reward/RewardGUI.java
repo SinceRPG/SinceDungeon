@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Handles the logic and interactions of the reward collection GUI.
+ */
 public class RewardGUI implements Listener {
     private final SinceDungeon plugin;
 
@@ -107,6 +110,13 @@ public class RewardGUI implements Listener {
         return pool.get(0);
     }
 
+    /**
+     * Opens the reward claiming GUI for a player.
+     *
+     * @param p          The player.
+     * @param chestCount The amount of chests available to claim.
+     * @param template   The dungeon template object containing the reward pools.
+     */
     public void openRewardGUI(Player p, int chestCount, DungeonTemplate template) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
         Inventory inv = Bukkit.createInventory(null, getGuiSize(), ColorUtils.parse(titleStr));
@@ -122,6 +132,12 @@ public class RewardGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Forces all remaining chests in a session to be claimed instantly.
+     *
+     * @param p       The player to receive the rewards.
+     * @param session The active reward session containing the data.
+     */
     public void forceClaimAll(Player p, RewardSession session) {
         int remaining = session.getChestCount();
         if (remaining <= 0) return;
@@ -252,20 +268,18 @@ public class RewardGUI implements Listener {
     }
 
     private void giveReward(Player p, DungeonReward reward) {
-        // [CẬP NHẬT LỚN] Kích hoạt Event trước khi phát thưởng để các plugin có thể hủy / thay đổi phần thưởng
         DungeonRewardClaimEvent claimEvent = new DungeonRewardClaimEvent(p, reward);
         Bukkit.getPluginManager().callEvent(claimEvent);
 
         if (claimEvent.isCancelled()) return;
         DungeonReward finalReward = claimEvent.getReward();
 
-        // Sử dụng Registry thay vì Hardcode if-else
         RewardProcessor processor = plugin.getDungeonManager().getRewardProcessor(finalReward.type());
 
         if (processor != null) {
             processor.giveReward(p, finalReward.value(), finalReward.displayName());
         } else {
-            plugin.getLogger().warning("Không tìm thấy RewardProcessor cho loại: " + finalReward.type());
+            plugin.getLogger().warning("No RewardProcessor found for type: " + finalReward.type());
         }
     }
 }

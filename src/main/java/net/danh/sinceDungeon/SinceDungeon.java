@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Main plugin class for SinceDungeon.
+ */
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
     private MiniMessage miniMessage;
@@ -41,6 +44,11 @@ public final class SinceDungeon extends JavaPlugin {
     private EditorManager editorManager;
     private EditorListener editorListener;
 
+    /**
+     * Returns the singleton plugin instance.
+     *
+     * @return The SinceDungeon JavaPlugin instance.
+     */
     public static SinceDungeon getPlugin() {
         return plugin;
     }
@@ -55,13 +63,10 @@ public final class SinceDungeon extends JavaPlugin {
     public void onEnable() {
         miniMessage = MiniMessage.miniMessage();
 
-        // 1. Tải Config chính trước
         configFile = new ConfigUtils(this, "config.yml");
 
-        // 2. Xuất sẵn các file ngôn ngữ mặc định (nếu có trong resources)
         extractDefaultLocales();
 
-        // 3. Tải ngôn ngữ dựa trên cấu hình
         setupLanguage();
 
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
@@ -99,7 +104,7 @@ public final class SinceDungeon extends JavaPlugin {
     }
 
     private void setupLanguage() {
-        String lang = configFile.getString("settings.locale", "vi");
+        String lang = configFile.getString("settings.locale", "en");
         messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
         getLogger().info("Loaded language file: messages_" + lang + ".yml");
     }
@@ -126,9 +131,12 @@ public final class SinceDungeon extends JavaPlugin {
         if (messagesFile != null) messagesFile.save();
     }
 
+    /**
+     * Reloads configurations and dungeon templates dynamically.
+     */
     public void reloadFiles() {
         if (configFile != null) configFile.reload();
-        setupLanguage(); // Cập nhật lại file ngôn ngữ nếu chủ server đổi locale
+        setupLanguage();
         if (dungeonManager != null) dungeonManager.reload();
         getLogger().info("Configuration, Language, and Dungeons reloaded.");
     }
@@ -139,7 +147,7 @@ public final class SinceDungeon extends JavaPlugin {
         if (files != null) {
             for (File file : files) {
                 if (file.isDirectory() && file.getName().startsWith("SinceDungeon_")) {
-                    getLogger().info("[Cleanup] Phát hiện world rác: " + file.getName() + ". Đang dọn dẹp...");
+                    getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing execution routines...");
                     WorldUtils.deleteWorld(file);
                 }
             }

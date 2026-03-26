@@ -1,25 +1,25 @@
 # Main Configuration for SinceDungeon
 
 settings:
-  # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải messages_<locale>.yml
+  # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
   locale: "vi"
 
-# Debug mode: Bật lên để xem log chi tiết khi gặp lỗi
+# Debug mode: Enable to view detailed logs when an error occurs
 debug: false
 
 dungeon:
-  # Thời gian đếm ngược (giây) trước khi bắt đầu dungeon
+  # Countdown time (in seconds) before the dungeon starts
   lobby-countdown: 10
-  # Thư mục chứa các map mẫu (nằm trong thư mục gốc của server)
+  # Folder containing template maps (located in the server's root plugin directory)
   template-folder: "dungeons"
-  # Tiền tố tên thế giới khi tạo dungeon
+  # World name prefix when generating a dungeon instance
   world-prefix: "SinceDungeon_"
 
 editor:
-  # Item dùng để điều hướng trong Editor GUI
+  # Item used for navigation in the Editor GUI
   nav-item: ARROW
 
-# Cấu hình âm thanh cho toàn bộ plugin
+# Sound configuration for the entire plugin
 sounds:
   lobby_countdown: "block.note_block.pling"
   game_start: "entity.ender_dragon.growl"
@@ -30,7 +30,7 @@ sounds:
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
 
-# Cấu hình giá trị mặc định khi tạo Action mới
+# Default values configuration when creating a new Action in the editor
 action-defaults:
   spawn_wave:
     mob: "ZOMBIE"

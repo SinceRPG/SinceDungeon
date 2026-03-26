@@ -2,35 +2,32 @@ package net.danh.sinceDungeon.utils;
 
 import org.bukkit.Bukkit;
 
+/**
+ * Identifies the running server software version, logic, and variants.
+ */
 public class ServerVersion {
     private static int major = 0;
     private static int minor = 0;
     private static int patch = 0;
 
     private static String nmsVersion = "";
-    private static int revisionNumber = 0; // Thêm từ MythicLib
+    private static int revisionNumber = 0;
 
     private static boolean isPaper = false;
     private static boolean isFolia = false;
 
     static {
-        // ==========================================
-        // 1. LẤY PHIÊN BẢN THEO CHUẨN SEMANTIC (Major.Minor.Patch)
-        // ==========================================
         try {
-            String versionString = Bukkit.getBukkitVersion().split("-")[0]; // VD: "1.21.1"
+            String versionString = Bukkit.getBukkitVersion().split("-")[0];
             String[] parts = versionString.split("\\.");
 
             if (parts.length > 0) major = Integer.parseInt(parts[0]);
             if (parts.length > 1) minor = Integer.parseInt(parts[1]);
             if (parts.length > 2) patch = Integer.parseInt(parts[2]);
         } catch (Exception e) {
-            Bukkit.getLogger().warning("[SinceDungeon] Không thể phân tích phiên bản máy chủ!");
+            Bukkit.getLogger().warning("[SinceDungeon] Cannot parse server build version!");
         }
 
-        // ==========================================
-        // 2. KIỂM TRA NỀN TẢNG (Paper & Folia)
-        // ==========================================
         try {
             Class.forName("com.destroystokyo.paper.PaperConfig");
             isPaper = true;
@@ -48,35 +45,23 @@ public class ServerVersion {
         } catch (ClassNotFoundException ignored) {
         }
 
-        // ==========================================
-        // 3. LOGIC LẤY NMS REVISION CỦA MYTHICLIB (Tích hợp mới)
-        // ==========================================
         revisionNumber = findRevisionNumber();
 
         if (revisionNumber != 0) {
-            // Cấu trúc lại chuỗi NMS chuẩn (VD: v1_20_R4)
             nmsVersion = "v" + major + "_" + minor + "_R" + revisionNumber;
         } else {
-            // Dành cho Paper 1.20.5+ (Đã loại bỏ hoàn toàn hệ thống Revision)
             nmsVersion = "craftbukkit";
         }
     }
 
-    /**
-     * Thuật toán tìm Revision Number mượn từ MythicLib.
-     * Xử lý được cả thay đổi breaking changes của Spigot 1.20.5+.
-     */
     private static int findRevisionNumber() {
-        // Cách 1: Dành cho Spigot / Paper < 1.20.5 (Dựa vào tên package)
         try {
             String packageName = Bukkit.getServer().getClass().getPackage().getName();
-            String revString = packageName.split("\\.")[3]; // VD lấy ra "v1_20_R4"
-            // Tách chữ R và lấy số (4)
+            String revString = packageName.split("\\.")[3];
             return Integer.parseInt(revString.split("_")[2].replaceAll("[^0-9]", ""));
         } catch (Throwable ignored) {
         }
 
-        // Cách 2: Dành cho Spigot 1.20.5+ (Brute-force quét class CraftServer)
         for (int i = 1; i <= 10; i++) {
             try {
                 String candidate = "v" + major + "_" + minor + "_R" + i;
@@ -86,13 +71,8 @@ public class ServerVersion {
             }
         }
 
-        // CÁch 3: Paper 1.20.5+ (Không còn dùng Revision Number nữa)
         return 0;
     }
-
-    // ==========================================
-    // CÁC HÀM GETTER VÀ KIỂM TRA PHIÊN BẢN (Giữ nguyên của bạn)
-    // ==========================================
 
     public static int getMajor() {
         return major;
@@ -107,15 +87,14 @@ public class ServerVersion {
     }
 
     /**
-     * Trả về tên phiên bản NMS (VD: "v1_20_R4" hoặc "craftbukkit")
+     * Gets the full NMS revision representation format.
+     *
+     * @return NMS structure string.
      */
     public static String getNmsVersion() {
         return nmsVersion;
     }
 
-    /**
-     * Trả về số Revision (VD: bản R4 thì trả về 4)
-     */
     public static int getRevisionNumber() {
         return revisionNumber;
     }

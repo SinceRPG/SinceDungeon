@@ -4,8 +4,18 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+/**
+ * Handles interactions with the PlaceholderAPI plugin.
+ */
 public class PAPIHook {
 
+    /**
+     * Parses a string containing PAPI placeholders into its true values.
+     *
+     * @param p    The player context.
+     * @param text The text containing placeholders.
+     * @return The evaluated string.
+     */
     public static String setPlaceholders(Player p, String text) {
         if (text == null) return "";
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
@@ -14,6 +24,14 @@ public class PAPIHook {
         return text;
     }
 
+    /**
+     * Evaluates a specific PAPI conditional string expression.
+     * Evaluates format: '%placeholder%;operator;value'
+     *
+     * @param p         The player context.
+     * @param condition The raw condition string to parse and check.
+     * @return True if the condition is successfully evaluated to true.
+     */
     public static boolean checkCondition(Player p, String condition) {
         if (condition == null || !condition.contains(";")) return false;
 

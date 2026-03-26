@@ -9,12 +9,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Utility wrapper for simplified YAML Configuration operations.
+ */
 public class ConfigUtils {
     private final SinceDungeon plugin;
     private final String name;
     private File file;
     private FileConfiguration config;
 
+    /**
+     * Generates or fetches a configuration file handle.
+     *
+     * @param plugin The parent plugin.
+     * @param name   The path and name of the internal plugin resource.
+     */
     public ConfigUtils(SinceDungeon plugin, String name) {
         this.plugin = plugin;
         this.name = name;
@@ -49,7 +58,6 @@ public class ConfigUtils {
     public void reload() {
         load();
     }
-
 
     public String getString(String path) {
         return config.getString(path, "");

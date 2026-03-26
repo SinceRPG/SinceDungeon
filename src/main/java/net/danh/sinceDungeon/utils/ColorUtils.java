@@ -9,30 +9,57 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Handles text coloring logic and MiniMessage serializations.
+ */
 public class ColorUtils {
 
     private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([a-fA-F0-9]{6})");
 
+    /**
+     * Safely deserializes a legacy string into a Kyori Adventure Component.
+     *
+     * @param input The text containing color codes.
+     * @return A parsed adventure Component.
+     */
     public static @NotNull Component parse(@NotNull String input) {
         String safeInput = convertLegacyToMiniMessage(input);
         try {
             return MINI_MESSAGE.deserialize(safeInput);
         } catch (Exception e) {
-            SinceDungeon.getPlugin().getLogger().warning("Lỗi cú pháp màu sắc/MiniMessage ở đoạn text: '" + input + "'. Vui lòng kiểm tra lại file messages.yml!");
+            SinceDungeon.getPlugin().getLogger().warning("MiniMessage Syntax Error in string: '" + input + "'. Please verify your messages configuration!");
             return Component.text(input);
         }
     }
 
+    /**
+     * Automatically prepends the plugin prefix and deserializes into an adventure Component.
+     *
+     * @param input The base text.
+     * @return The parsed Component.
+     */
     public static @NotNull Component parseWithPrefix(@NotNull String input) {
         String prefix = SinceDungeon.getPlugin().getMessagesFile().getString("prefix", "");
         return parse(prefix + input);
     }
 
+    /**
+     * Cleans up an adventure component into raw plaintext.
+     *
+     * @param component The formatted component.
+     * @return Raw plaintext data.
+     */
     public static @NotNull String toPlainText(@NotNull Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
     }
 
+    /**
+     * Normalizes old bukkit ampersand-based and hex tags into pure MiniMessage tags.
+     *
+     * @param text The legacy text.
+     * @return Clean MiniMessage string.
+     */
     public static String convertLegacyToMiniMessage(String text) {
         if (text == null) return "";
 
