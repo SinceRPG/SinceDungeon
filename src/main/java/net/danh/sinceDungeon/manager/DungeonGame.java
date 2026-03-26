@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.manager;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
 import net.danh.sinceDungeon.system.WorldGuardHook;
@@ -23,10 +24,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Represents an active dungeon game session running for a player or party.
- * Optimized for zero-waste garbage collection loops and strict thread safety.
- */
 public class DungeonGame {
     private final SinceDungeon plugin;
     private final Player initiator;
@@ -47,14 +44,6 @@ public class DungeonGame {
     private BukkitTask tickTask;
     private long startTime;
 
-    /**
-     * Constructs a new DungeonGame.
-     *
-     * @param plugin       The plugin instance.
-     * @param initiator    The player who initiated the dungeon.
-     * @param participants The set of players joining the instance.
-     * @param template     The template used to structure the dungeon.
-     */
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> participants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiator = initiator;
@@ -88,9 +77,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Starts the lobby phase, asynchronously generating the world and teleporting participants.
-     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
@@ -98,30 +84,28 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", 200, 3000, 500);
         broadcastMessage("lobby.preparing");
 
-        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
-                .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (isStopping) {
-                        WorldManager.unloadAndDeleteWorld(plugin, world);
-                        return;
-                    }
+        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (isStopping) {
+                WorldManager.unloadAndDeleteWorld(plugin, world);
+                return;
+            }
 
-                    this.dungeonWorld = world;
-                    dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
-                    dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                    dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                    dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
-                    dungeonWorld.setAutoSave(false);
+            this.dungeonWorld = world;
+            dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
+            dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+            dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
+            dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+            dungeonWorld.setAutoSave(false);
 
-                    startCountdown();
-                }))
-                .exceptionally(ex -> {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        broadcastMessage("error.create_failed");
-                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
-                        stop(true);
-                    });
-                    return null;
-                });
+            startCountdown();
+        })).exceptionally(ex -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                broadcastMessage("error.create_failed");
+                plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
+                stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
+            });
+            return null;
+        });
     }
 
     private void startCountdown() {
@@ -314,8 +298,7 @@ public class DungeonGame {
             }
 
             if (finalChestCount > 0) {
-                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p,
-                        new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
@@ -343,18 +326,26 @@ public class DungeonGame {
                 }
             });
         }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false), 100L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 100L);
     }
 
     /**
-     * Gracefully stops the dungeon session and executes strict resource finalization.
-     *
-     * @param teleport Whether to teleport players back to their original locations.
+     * Tương thích ngược: Dừng game mặc định với lý do FORCE_STOPPED.
      */
     public void stop(boolean teleport) {
+        stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
+    }
+
+    /**
+     * Dừng Dungeon và phát ra tín hiệu DungeonEndEvent với lý do cụ thể.
+     */
+    public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
         isRunning = false;
+
+        // Gọi API Event
+        Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
 
         if (tickTask != null) tickTask.cancel();
 
@@ -383,7 +374,6 @@ public class DungeonGame {
             World w = dungeonWorld;
             dungeonWorld = null;
 
-            // Resource Finalization: Explicit entity removal before unload
             for (Entity entity : w.getEntities()) {
                 if (!(entity instanceof Player)) entity.remove();
             }
@@ -395,6 +385,9 @@ public class DungeonGame {
     public void forceShutdown() {
         isStopping = true;
         isRunning = false;
+
+        Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
+
         if (tickTask != null) tickTask.cancel();
 
         for (Player p : participants) {
@@ -427,18 +420,10 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Backward compatibility alias for older actions. Routes to broadcastMessage.
-     */
     public void sendMessage(String key, String... placeholders) {
         broadcastMessage(key, placeholders);
     }
 
-    /**
-     * Gets the set of all players participating in this dungeon instance.
-     *
-     * @return Set of participants.
-     */
     public Set<Player> getParticipants() {
         return participants;
     }

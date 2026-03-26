@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.manager;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.party.PartyManager.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
@@ -143,7 +144,7 @@ public class DungeonListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        if (game != null) game.stop(true);
+        if (game != null) game.stop(true); // Default là FORCE_STOPPED nếu quit ngang
 
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
@@ -178,7 +179,8 @@ public class DungeonListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 game.restorePlayerState(p);
                 p.spigot().respawn();
-                game.stop(true);
+                // Báo hiệu Dungeon thất bại
+                game.stop(true, DungeonEndEvent.EndReason.FAILED);
             }, 1L);
         }
     }

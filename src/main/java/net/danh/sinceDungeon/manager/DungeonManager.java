@@ -41,8 +41,6 @@ public class DungeonManager {
         this.plugin = plugin;
         registerDefaultActions();
         registerDefaultProcessors();
-
-        // Khởi động đồng bộ một lần duy nhất lúc bật Server để đảm bảo mọi map sẵn sàng trước khi player vào
         loadTemplatesAsync().join();
     }
 
@@ -298,11 +296,6 @@ public class DungeonManager {
         return v;
     }
 
-    /**
-     * Tải lại toàn bộ hệ thống bất đồng bộ, không làm giật Lag Server
-     *
-     * @return CompletableFuture hoàn thành khi quá trình tải kết thúc
-     */
     public CompletableFuture<Void> reload() {
         stopAllGames();
         templates.clear();
@@ -311,9 +304,6 @@ public class DungeonManager {
         });
     }
 
-    /**
-     * Đọc toàn bộ Map song song bằng CompletableFuture
-     */
     private CompletableFuture<Void> loadTemplatesAsync() {
         File folder = new File(plugin.getDataFolder(), "dungeons");
         if (!folder.exists()) folder.mkdirs();
@@ -336,7 +326,6 @@ public class DungeonManager {
             futures.add(future);
         }
 
-        // Đợi tất cả các task chạy đa luồng kết thúc
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
@@ -412,9 +401,12 @@ public class DungeonManager {
             }
         }
 
-        DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl);
+        // Cập nhật API: Truyền participants vào Event
+        DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
         Bukkit.getPluginManager().callEvent(startEvent);
-        if (startEvent.isCancelled()) return;
+
+        // Cập nhật: Kiểm tra nếu plugin khác đã kick hết người chơi ra khỏi queue
+        if (startEvent.isCancelled() || participants.isEmpty()) return;
 
         DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
 
