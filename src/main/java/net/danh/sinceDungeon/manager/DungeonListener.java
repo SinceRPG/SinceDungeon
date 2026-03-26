@@ -91,7 +91,6 @@ public class DungeonListener implements Listener {
     public void onInteractEntity(PlayerInteractEntityEvent e) { pass(e.getPlayer(), e); }
 
     // BẢO VỆ GỐC: Ngăn người chơi đập block nếu WorldGuard không hoạt động
-    // Đã sửa lại lỗi `cannot find symbol isPlaying(Player)`
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -101,7 +100,6 @@ public class DungeonListener implements Listener {
     }
 
     // BẢO VỆ GỐC: Ngăn người chơi đặt block trong Dungeon
-    // Đã sửa lại lỗi `cannot find symbol isPlaying(Player)`
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -117,12 +115,17 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
-        // NGĂN CHẶN FARM RÁC: Xóa rớt đồ và EXP của quái vật trong Dungeon
         if (!(e.getEntity() instanceof Player)) {
             String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
             if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-                e.getDrops().clear();
-                e.setDroppedExp(0);
+
+                // Đọc cài đặt từ config (mặc định là true nếu không thấy dòng config)
+                boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+
+                if (clearDrops) {
+                    e.getDrops().clear();
+                    e.setDroppedExp(0);
+                }
             }
         }
 

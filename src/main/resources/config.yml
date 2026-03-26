@@ -52,6 +52,11 @@ dungeon:
   # FAIL: Cả nhóm thất bại và bị đưa về sảnh ngay lập tức.
   death-action: "RESPAWN"
 
+  # Xóa vật phẩm và kinh nghiệm (EXP) mặc định rơi ra từ quái vật trong Dungeon?
+  # Clear default mob drops and EXP (like rotten flesh, bones, vanilla exp) inside the dungeon?
+  # Bật (true) để ngăn người chơi farm rác/exp. Tắt (false) nếu bạn muốn giữ lại hệ thống rơi đồ mặc định.
+  clear-mob-drops: true
+
 editor:
   # Item used for navigation in the Editor GUI
   # Vật phẩm dùng để điều hướng trong GUI Editor
