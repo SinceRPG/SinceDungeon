@@ -82,6 +82,8 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
+        plugin.getPartyManager().updatePlayerName(p);
+
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {

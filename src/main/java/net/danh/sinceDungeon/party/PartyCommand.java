@@ -69,7 +69,6 @@ public class PartyCommand {
 
                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
 
-                                    // VÁ LỖI LOGIC: Bắt rõ ràng việc tự mời bản thân
                                     if (target != null && target.equals(p)) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_self", "<red>You cannot invite yourself to the party!")));
                                         return 0;
@@ -120,7 +119,6 @@ public class PartyCommand {
                                         if (invites != null) {
                                             String remaining = builder.getRemainingLowerCase();
                                             invites.keySet().stream()
-                                                    // VÁ LỖI: Lấy trực tiếp từ Party để không gọi getOfflinePlayer gây lag
                                                     .map(id -> pm.getParty(id) != null ? pm.getParty(id).getMemberName(id) : null)
                                                     .filter(name -> name != null && name.toLowerCase().startsWith(remaining))
                                                     .forEach(builder::suggest);
@@ -195,7 +193,6 @@ public class PartyCommand {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         if (party != null && party.getLeader().equals(p.getUniqueId())) {
                                             String remaining = builder.getRemainingLowerCase();
-                                            // Sử dụng Name Cache tốc độ ánh sáng
                                             party.getMembers().stream()
                                                     .map(party::getMemberName)
                                                     .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
@@ -224,7 +221,13 @@ public class PartyCommand {
                                         }
                                     }
 
-                                    if (targetId == null || targetId.equals(p.getUniqueId())) {
+                                    // VÁ LỖI LOGIC: Bắt chính xác lỗi Promote bản thân
+                                    if (targetId != null && targetId.equals(p.getUniqueId())) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.promote_self", "<red>You are already the Party Leader!")));
+                                        return 0;
+                                    }
+
+                                    if (targetId == null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
                                         return 0;
                                     }
@@ -270,7 +273,13 @@ public class PartyCommand {
                                         }
                                     }
 
-                                    if (targetId == null || targetId.equals(p.getUniqueId())) {
+                                    // VÁ LỖI LOGIC: Bắt chính xác lỗi Kick bản thân
+                                    if (targetId != null && targetId.equals(p.getUniqueId())) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kick_self", "<red>You cannot kick yourself! Use /party leave.")));
+                                        return 0;
+                                    }
+
+                                    if (targetId == null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
                                         return 0;
                                     }

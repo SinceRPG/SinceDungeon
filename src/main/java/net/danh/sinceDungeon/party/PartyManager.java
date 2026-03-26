@@ -40,6 +40,14 @@ public class PartyManager {
         return activeInvites;
     }
 
+    // Cập nhật tên người chơi khi họ Join server (Chống Desync do đổi tên Premium)
+    public void updatePlayerName(Player p) {
+        Party party = getParty(p.getUniqueId());
+        if (party != null) {
+            party.updateMemberName(p);
+        }
+    }
+
     public void disbandParty(Party party) {
         if (party == null) return;
         party.getMembers().forEach(uuid -> {
@@ -82,9 +90,17 @@ public class PartyManager {
             return;
         }
 
-        UUID newLeader = party.getMembers().stream()
+        // TỐI ƯU CỰC ĐỘ: Lọc ra những người KHÁC trưởng nhóm cũ
+        Set<UUID> candidates = party.getMembers().stream()
                 .filter(id -> !id.equals(party.getLeader()))
-                .findFirst().orElse(null);
+                .collect(Collectors.toSet());
+
+        // ƯU TIÊN 1: Tìm người đang Online để tránh Party bị "Liệt"
+        UUID newLeader = candidates.stream()
+                .filter(id -> Bukkit.getPlayer(id) != null && Bukkit.getPlayer(id).isOnline())
+                .findFirst()
+                // ƯU TIÊN 2: Nếu tất cả đều Offline, chọn đại 1 người
+                .orElse(candidates.stream().findFirst().orElse(null));
 
         if (newLeader != null) {
             party.setLeader(newLeader);
@@ -129,23 +145,6 @@ public class PartyManager {
 
         activeInvites.remove(target.getUniqueId());
         return true;
-    }
-
-    public void electNewLeader(Party party) {
-        if (party == null || party.getMembers().size() <= 1) {
-            disbandParty(party);
-            return;
-        }
-
-        party.removeMember(party.getLeader());
-        activeParties.remove(party.getLeader());
-        partyChatToggled.remove(party.getLeader());
-
-        UUID newLeader = party.getMembers().iterator().next();
-        party.setLeader(newLeader);
-
-        String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
     }
 
     public void promoteMember(Party party, UUID newLeader) {
@@ -211,7 +210,6 @@ public class PartyManager {
         });
     }
 
-    // VÁ LỖI CỰC ĐỘ: Lưu kèm Tên (Name) để cấm gọi Bukkit.getOfflinePlayer() gây đứng Server!
     public static class Party {
         private final Map<UUID, String> members = new ConcurrentHashMap<>();
         private UUID leader;
@@ -233,8 +231,9 @@ public class PartyManager {
             return members.keySet();
         }
 
+        // Trả về tên từ Cache, tích hợp chuỗi Unknown chuẩn từ Config
         public String getMemberName(UUID uuid) {
-            return members.getOrDefault(uuid, "Unknown");
+            return members.getOrDefault(uuid, SinceDungeon.getPlugin().getMessagesFile().getString("party.unknown_player", "Unknown"));
         }
 
         public void addMember(Player p) {
@@ -243,6 +242,10 @@ public class PartyManager {
 
         public void removeMember(UUID uuid) {
             members.remove(uuid);
+        }
+
+        public void updateMemberName(Player p) {
+            members.put(p.getUniqueId(), p.getName());
         }
     }
 }
