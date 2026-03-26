@@ -100,6 +100,11 @@ public class DungeonGame {
                     dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
                     dungeonWorld.setAutoSave(false);
 
+                    // CHỐNG LOẠN KHÍ HẬU: Luôn đặt thời tiết đẹp và ban ngày lúc bắt đầu
+                    dungeonWorld.setTime(6000);
+                    dungeonWorld.setStorm(false);
+                    dungeonWorld.setThundering(false);
+
                     startCountdown();
                 }))
                 .exceptionally(ex -> {
@@ -279,6 +284,12 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(currentStageIndex + 1), 60L);
     }
 
+    private String formatTime(long seconds) {
+        long m = seconds / 60;
+        long s = seconds % 60;
+        return String.format("%02d:%02d", m, s);
+    }
+
     private void finishDungeon() {
         broadcastMessage("game.finish");
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
@@ -289,9 +300,8 @@ public class DungeonGame {
         }
 
         int finalElapsed = (int) elapsedSeconds;
+        String formattedTime = formatTime(finalElapsed);
 
-        // VÁ LỖI: Đặt isRunning = false ở đây sẽ báo hiệu cho hệ thống là Dungeon đã kết thúc
-        // Ngăn chặn sự kiện onWorldChange nhầm lẫn đây là hành vi "Bỏ trốn".
         isRunning = false;
 
         if (tickTask != null) tickTask.cancel();
@@ -320,16 +330,16 @@ public class DungeonGame {
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
             String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
-            String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time> seconds").replace("<time>", String.valueOf(finalElapsed));
+            String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
             p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))));
             p.sendActionBar(ColorUtils.parse(" "));
 
-            // VÁ LỖI CỰC ĐỘ: Fallback Teleport để tránh người chơi kẹt trạng thái vĩnh viễn
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     restorePlayerState(p);
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        if (p.isOnline()) {
+                        // BẢO MẬT: Kiểm tra xem người chơi còn sống không mới mở rương (Chống Ghost Inventory bug)
+                        if (p.isOnline() && !p.isDead()) {
                             if (finalChestCount > 0) {
                                 new net.danh.sinceDungeon.reward.RewardGUI(plugin).openRewardGUI(p, finalChestCount, template);
                             } else {
@@ -338,7 +348,6 @@ public class DungeonGame {
                         }
                     }, 10L);
                 } else if (p.isOnline()) {
-                    // CỨU CÁNH CUỐI CÙNG nếu Async Teleport bị hỏng do PaperMC/Chunk lỗi
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         p.teleport(targetLoc);
                         restorePlayerState(p);
@@ -463,7 +472,6 @@ public class DungeonGame {
         return participants;
     }
 
-    // THUỘC TÍNH MỚI: Cho phép các lớp khác kiểm tra xem Game có đang thực sự diễn ra hay không
     public boolean isRunning() {
         return isRunning;
     }

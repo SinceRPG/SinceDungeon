@@ -5,7 +5,11 @@ import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -89,8 +93,12 @@ public class EditorGUI implements Listener {
         if (folder.exists()) {
             File[] files = folder.listFiles((d, n) -> n.endsWith(".yml"));
             if (files != null) {
+                // CHỐNG TRÀN: Tránh đè lên các ô 45-53
+                int index = 0;
                 for (File f : files) {
+                    if (index >= 45) break;
                     inv.addItem(makeItem(Material.PAPER, "<yellow>" + f.getName().replace(".yml", ""), Collections.singletonList(getMsg("items.click_edit"))));
+                    index++;
                 }
             }
         }
@@ -135,6 +143,7 @@ public class EditorGUI implements Listener {
         if (sec != null) {
             int index = 0;
             for (String key : sec.getKeys(false)) {
+                if (index >= 45) break; // CHỐNG TRÀN
                 String nameStr = sec.getString(key + ".name", key);
                 String check = sec.getString(key + ".check", getWord("unknown"));
                 String msg = sec.getString(key + ".msg", getWord("default_word"));
@@ -169,13 +178,16 @@ public class EditorGUI implements Listener {
         if (tiers != null) {
             List<String> keys = new ArrayList<>(tiers.getKeys(false));
             keys.sort(Comparator.comparingInt(Integer::parseInt));
+            int index = 0;
             for (String key : keys) {
+                if (index >= 45) break; // CHỐNG TRÀN
                 int amount = tiers.getInt(key);
                 String name = getMsg("items.tier_item").replace("<time>", key);
                 List<String> lore = new ArrayList<>();
                 for (String s : plugin.getMessagesFile().getStringList("editor.items.tier_lore"))
                     lore.add(s.replace("<amount>", String.valueOf(amount)));
                 inv.addItem(makeItem(Material.CLOCK, name, lore));
+                index++;
             }
         }
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_tier"), null));
@@ -191,6 +203,7 @@ public class EditorGUI implements Listener {
         if (pool != null) {
             int index = 0;
             for (String key : pool.getKeys(false)) {
+                if (index >= 45) break; // CHỐNG TRÀN
                 String type = pool.getString(key + ".type", getWord("unknown"));
                 String val = pool.getString(key + ".value", getWord("unknown"));
                 String name = getMsg("items.pool_item").replace("<index>", key);
@@ -260,9 +273,12 @@ public class EditorGUI implements Listener {
                     return 0;
                 }
             }));
+            int index = 0;
             for (String key : keys) {
+                if (index >= 45) break; // CHỐNG TRÀN
                 String name = getMsg("items.stage_item").replace("<stage>", key);
                 inv.addItem(makeItem(Material.FILLED_MAP, name, plugin.getMessagesFile().getStringList("editor.items.stage_lore")));
+                index++;
             }
         }
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage"), null));
@@ -279,6 +295,7 @@ public class EditorGUI implements Listener {
         if (sec != null) {
             int index = 0;
             for (String key : sec.getKeys(false)) {
+                if (index >= 45) break; // CHỐNG TRÀN
                 String type = sec.getString(key + ".type", getWord("unknown"));
                 DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
 
@@ -314,6 +331,7 @@ public class EditorGUI implements Listener {
 
         int slot = 0;
         for (String key : sec.getKeys(false)) {
+            if (slot >= 45) break; // CHỐNG TRÀN CỤC BỘ
             String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
             String hint = getMsg("items.action_val_hint_edit");
@@ -352,7 +370,9 @@ public class EditorGUI implements Listener {
 
     public void openActionTypeSelector(Player p) {
         Inventory inv = Bukkit.createInventory(new EditorHolder(null, "SELECT_TYPE"), 54, ColorUtils.parse(getMsg("title.select_type")));
+        int index = 0;
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
+            if (index >= 45) break; // CHỐNG TRÀN
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             String displayName = (meta.displayName() != null) ? "<green><bold>" + meta.displayName() : "<green>" + type;
 
@@ -363,6 +383,7 @@ public class EditorGUI implements Listener {
             item.setItemMeta(im);
 
             inv.addItem(item);
+            index++;
         }
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
         p.openInventory(inv);

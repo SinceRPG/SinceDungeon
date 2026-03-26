@@ -128,15 +128,11 @@ public final class SinceDungeon extends JavaPlugin {
         if (messagesFile != null) messagesFile.save();
     }
 
-    /**
-     * Reloads configurations and dungeon templates dynamically and asynchronously.
-     */
     public void reloadFiles(CommandSender sender) {
         if (configFile != null) configFile.reload();
         setupLanguage();
 
         if (dungeonManager != null) {
-            // Khởi chạy bất đồng bộ đa luồng
             dungeonManager.reload().thenRun(() -> {
                 String msg = messagesFile.getString("admin.reload");
                 if (sender != null && msg != null) {
@@ -156,8 +152,10 @@ public final class SinceDungeon extends JavaPlugin {
         File container = Bukkit.getWorldContainer();
         File[] files = container.listFiles();
         if (files != null) {
+            // Đọc prefix linh hoạt để chống kẹt rác nếu Admin đổi tên trong config
+            String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
             for (File file : files) {
-                if (file.isDirectory() && file.getName().startsWith("SinceDungeon_")) {
+                if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
                     getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing execution routines...");
                     WorldUtils.deleteWorld(file);
                 }
@@ -175,7 +173,6 @@ public final class SinceDungeon extends JavaPlugin {
                     .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                     .then(Commands.literal("reload")
                             .executes(ctx -> {
-                                // Gửi sender vào để trả message sau khi Async hoàn tất
                                 reloadFiles(ctx.getSource().getSender());
                                 return 1;
                             })
