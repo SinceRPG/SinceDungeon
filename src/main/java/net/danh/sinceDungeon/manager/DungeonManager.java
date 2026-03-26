@@ -36,6 +36,7 @@ public class DungeonManager {
 
     private final Map<String, RewardProcessor> rewardProcessors = new ConcurrentHashMap<>();
     private final Map<String, ConditionProcessor> conditionProcessors = new ConcurrentHashMap<>();
+    private final Object joinLock = new Object();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -333,125 +334,126 @@ public class DungeonManager {
     }
 
     public void joinDungeon(Player p, String id) {
-        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-        Set<Player> participants = new HashSet<>();
+        synchronized (joinLock) {
+            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            Set<Player> participants = new HashSet<>();
 
-        int offlineCount = 0;
-        int deadCount = 0;
-        int farCount = 0;
+            int offlineCount = 0;
+            int deadCount = 0;
+            int farCount = 0;
 
-        if (party != null) {
-            if (!party.getLeader().equals(p.getUniqueId())) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
-                return;
-            }
-
-            double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
-
-            for (UUID uid : party.getMembers()) {
-                Player mem = Bukkit.getPlayer(uid);
-                if (mem == null || !mem.isOnline()) {
-                    offlineCount++;
-                } else if (mem.isDead()) {
-                    // VÁ LỖI LOGIC: Bắt chính xác trạng thái người đang "Ngỏm" (Dead) để báo tin chuẩn xác
-                    deadCount++;
-                } else {
-                    if (maxDist > 0 && (!mem.getWorld().equals(p.getWorld()) || mem.getLocation().distanceSquared(p.getLocation()) > maxDist * maxDist)) {
-                        farCount++;
-                    } else {
-                        participants.add(mem);
-                    }
-                }
-            }
-
-            if (offlineCount > 0) {
-                String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
-                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
-            }
-            if (deadCount > 0) {
-                String warnMsg = plugin.getMessagesFile().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
-                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(deadCount))));
-            }
-            if (farCount > 0) {
-                String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
-                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
-            }
-        } else {
-            participants.add(p);
-        }
-
-        // ... (phần code chặn người đang chơi và kiểm tra điều kiện giữ nguyên)
-        for (Player participant : participants) {
-            if (activeGames.containsKey(participant.getUniqueId())) {
-                String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
-                p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
-                return;
-            }
-        }
-
-        DungeonTemplate tmpl = templates.get(id);
-        if (tmpl == null) {
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", id)));
-            return;
-        }
-
-        if (!tmpl.isPublic() && !p.hasPermission("SinceDungeon.admin")) {
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.dungeon_maintenance")));
-            return;
-        }
-
-        for (Player participant : participants) {
-            for (DungeonTemplate.Condition cond : tmpl.conditions()) {
-                String req = cond.requirement();
-                String type = "PAPI";
-                String value = req;
-
-                if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
-                    String[] parts = req.split(":", 2);
-                    type = parts[0].toUpperCase();
-                    value = parts[1];
+            if (party != null) {
+                if (!party.getLeader().equals(p.getUniqueId())) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                    return;
                 }
 
-                ConditionProcessor processor = conditionProcessors.getOrDefault(type, conditionProcessors.get("PAPI"));
+                double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
 
-                if (processor != null && !processor.check(participant, value)) {
-                    if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
-                        participant.sendMessage(ColorUtils.parseWithPrefix("<red>" + cond.failMessage()));
+                for (UUID uid : party.getMembers()) {
+                    Player mem = Bukkit.getPlayer(uid);
+                    if (mem == null || !mem.isOnline()) {
+                        offlineCount++;
+                    } else if (mem.isDead()) {
+                        deadCount++;
                     } else {
-                        String msg = plugin.getMessagesFile().getString("error.condition_fail");
-                        if (msg != null)
-                            participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
+                        if (maxDist > 0 && (!mem.getWorld().equals(p.getWorld()) || mem.getLocation().distanceSquared(p.getLocation()) > maxDist * maxDist)) {
+                            farCount++;
+                        } else {
+                            participants.add(mem);
+                        }
                     }
+                }
 
-                    if (!participant.equals(p)) {
-                        String failMsg = plugin.getMessagesFile().getString("party.member_failed_condition", "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon.");
-                        p.sendMessage(ColorUtils.parseWithPrefix(failMsg.replace("<player>", participant.getName())));
-                    }
+                if (offlineCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
+                }
+                if (deadCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(deadCount))));
+                }
+                if (farCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
+                }
+            } else {
+                participants.add(p);
+            }
+
+            // VÁ LỖI NHÂN BẢN: Nhờ có Block synchronized bên trên, bước kiểm tra này tuyệt đối an toàn
+            for (Player participant : participants) {
+                if (activeGames.containsKey(participant.getUniqueId())) {
+                    String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
+                    p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
                     return;
                 }
             }
-        }
 
-        DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
-        Bukkit.getPluginManager().callEvent(startEvent);
-
-        if (startEvent.isCancelled() || participants.isEmpty()) return;
-
-        DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
-
-        for (Player participant : participants) {
-            activeGames.put(participant.getUniqueId(), game);
-        }
-
-        try {
-            game.startLobby();
-        } catch (Exception e) {
-            plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
-            e.printStackTrace();
-            for (Player participant : participants) {
-                activeGames.remove(participant.getUniqueId());
+            DungeonTemplate tmpl = templates.get(id);
+            if (tmpl == null) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", id)));
+                return;
             }
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.init_failed")));
+
+            if (!tmpl.isPublic() && !p.hasPermission("SinceDungeon.admin")) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.dungeon_maintenance")));
+                return;
+            }
+
+            for (Player participant : participants) {
+                for (DungeonTemplate.Condition cond : tmpl.conditions()) {
+                    String req = cond.requirement();
+                    String type = "PAPI";
+                    String value = req;
+
+                    if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
+                        String[] parts = req.split(":", 2);
+                        type = parts[0].toUpperCase();
+                        value = parts[1];
+                    }
+
+                    ConditionProcessor processor = conditionProcessors.getOrDefault(type, conditionProcessors.get("PAPI"));
+
+                    if (processor != null && !processor.check(participant, value)) {
+                        if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
+                            participant.sendMessage(ColorUtils.parseWithPrefix("<red>" + cond.failMessage()));
+                        } else {
+                            String msg = plugin.getMessagesFile().getString("error.condition_fail");
+                            if (msg != null)
+                                participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
+                        }
+
+                        if (!participant.equals(p)) {
+                            String failMsg = plugin.getMessagesFile().getString("party.member_failed_condition", "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon.");
+                            p.sendMessage(ColorUtils.parseWithPrefix(failMsg.replace("<player>", participant.getName())));
+                        }
+                        return;
+                    }
+                }
+            }
+
+            DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
+            Bukkit.getPluginManager().callEvent(startEvent);
+
+            if (startEvent.isCancelled() || participants.isEmpty()) return;
+
+            DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
+
+            for (Player participant : participants) {
+                activeGames.put(participant.getUniqueId(), game);
+            }
+
+            try {
+                game.startLobby();
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
+                e.printStackTrace();
+                for (Player participant : participants) {
+                    activeGames.remove(participant.getUniqueId());
+                }
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.init_failed")));
+            }
         }
     }
 

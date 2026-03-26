@@ -246,14 +246,14 @@ public class RewardGUI implements Listener {
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
             e.setCancelled(true);
 
-            RewardSession session = holder.getSession();
+            RewardSession session = holder.session();
             if (session == null) {
                 p.closeInventory();
                 return;
             }
 
             int slot = e.getRawSlot();
-            int page = holder.getPage();
+            int page = holder.page();
             ItemStack clicked = e.getCurrentItem();
 
             if (clicked == null || clicked.getType() == Material.AIR) return;
@@ -320,7 +320,7 @@ public class RewardGUI implements Listener {
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder holder && e.getPlayer() instanceof Player p) {
-            RewardSession session = holder.getSession();
+            RewardSession session = holder.session();
             if (session != null && session.getChestCount() > 0) {
                 forceClaimAll(p, session);
                 playSound(p, "claim");

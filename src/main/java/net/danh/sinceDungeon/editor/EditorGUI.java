@@ -499,9 +499,9 @@ public class EditorGUI implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorManager manager = plugin.getEditorManager();
-        final EditorSession session = holder.getSession(); // Đã dùng session lấy trực tiếp từ Holder thay vì dò map
-        String menuType = holder.getMenuType();
-        int page = holder.getPage();
+        final EditorSession session = holder.session(); // Đã dùng session lấy trực tiếp từ Holder thay vì dò map
+        String menuType = holder.menuType();
+        int page = holder.page();
         int slot = e.getRawSlot();
 
         // ================= MAIN MENU =================

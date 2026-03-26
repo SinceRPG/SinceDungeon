@@ -27,9 +27,8 @@ public class PartyManager {
 
     public Party createParty(Player leader) {
         Party party = new Party(leader);
-        // VÁ LỖI RACE CONDITION: Ngăn chặn 2 thread cùng tạo party đè lên nhau
         if (activeParties.putIfAbsent(leader.getUniqueId(), party) != null) {
-            return null;
+            return null; // Tranh chấp đa luồng: Nhóm đã được tạo ở 1 luồng khác
         }
         return party;
     }
@@ -51,58 +50,67 @@ public class PartyManager {
 
     public void disbandParty(Party party) {
         if (party == null) return;
-        party.getMembers().forEach(uuid -> {
-            activeParties.remove(uuid);
-            partyChatToggled.remove(uuid);
-            clearSentInvites(uuid);
-        });
+        synchronized (party) {
+            party.getMembers().forEach(uuid -> {
+                activeParties.remove(uuid);
+                partyChatToggled.remove(uuid);
+                clearSentInvites(uuid);
+            });
+        }
     }
 
     public void quitParty(UUID uuid) {
         Party party = getParty(uuid);
         if (party == null) return;
 
-        if (party.getLeader().equals(uuid)) {
-            passLeadership(party);
-        }
+        // VÁ LỖI CỰC ĐỘ: Khóa toàn bộ object nhóm để tránh việc 2 người cùng Quit gây đâm xe
+        synchronized (party) {
+            if (activeParties.get(party.getLeader()) != party) return; // Nhóm đã giải tán
 
-        party.removeMember(uuid);
-        activeParties.remove(uuid);
-        partyChatToggled.remove(uuid);
-        clearSentInvites(uuid);
+            if (party.getLeader().equals(uuid)) {
+                passLeadership(party);
+            }
 
-        // VÁ LỖI RAM LEAK: Nếu nhóm không còn ai, hoặc TẤT CẢ những người còn lại đều đang Offline -> Giải tán để cứu RAM!
-        if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
-            disbandParty(party);
+            party.removeMember(uuid);
+            activeParties.remove(uuid);
+            partyChatToggled.remove(uuid);
+            clearSentInvites(uuid);
+
+            if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
+                disbandParty(party);
+            }
         }
     }
 
     public void kickPlayer(Party party, UUID target) {
         if (party == null) return;
-        party.removeMember(target);
-        activeParties.remove(target);
-        partyChatToggled.remove(target);
-        activeInvites.remove(target);
-        clearSentInvites(target);
+        synchronized (party) {
+            party.removeMember(target);
+            activeParties.remove(target);
+            partyChatToggled.remove(target);
+            activeInvites.remove(target);
+            clearSentInvites(target);
 
-        if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
-            disbandParty(party);
+            if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
+                disbandParty(party);
+            }
         }
     }
 
-    // Xử lý riêng biệt khi người chơi rớt mạng để bảo tồn họ một cách an toàn
     public void handlePlayerDisconnect(Player p) {
         Party party = getParty(p.getUniqueId());
         if (party == null) return;
 
-        if (party.getLeader().equals(p.getUniqueId())) {
-            passLeadership(party);
-        }
+        synchronized (party) {
+            if (party.getLeader().equals(p.getUniqueId())) {
+                passLeadership(party);
+            }
 
-        removePlayerFromCache(p.getUniqueId());
+            removePlayerFromCache(p.getUniqueId());
 
-        if (!hasOnlineMembers(party)) {
-            disbandParty(party);
+            if (!hasOnlineMembers(party)) {
+                disbandParty(party);
+            }
         }
     }
 
@@ -166,8 +174,12 @@ public class PartyManager {
             return false;
         }
 
-        // VÁ LỖI RACE CONDITION: Đồng bộ hóa (Lock) đối tượng Party khi kiểm tra số lượng và thêm người
+        // VÁ LỖI BÓNG MA PHỤC SINH: Kiểm tra lại toàn diện bên trong vòng khóa
         synchronized (party) {
+            if (activeParties.get(party.getLeader()) != party) {
+                targetInvites.remove(leader);
+                return false; // Nhóm đã bị giải tán ở 1 mili-giây trước
+            }
             if (party.getMembers().size() >= maxMembers) {
                 targetInvites.remove(leader);
                 return false;
@@ -182,7 +194,9 @@ public class PartyManager {
 
     public void promoteMember(Party party, UUID newLeader) {
         if (party == null || !party.getMembers().contains(newLeader)) return;
-        party.setLeader(newLeader);
+        synchronized (party) {
+            party.setLeader(newLeader);
+        }
         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
         sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", party.getMemberName(newLeader)));
     }
@@ -200,8 +214,6 @@ public class PartyManager {
 
     public void sendPartyMessage(Party party, String sender, String message) {
         if (party == null || message.trim().isEmpty()) return;
-
-        // VÁ LỖI CHAT INJECTION: Khử mã độc MiniMessage cho cả Tên người gửi và Nội dung
         String safeSender = MiniMessage.miniMessage().escapeTags(sender);
         String safeMsg = MiniMessage.miniMessage().escapeTags(message);
 

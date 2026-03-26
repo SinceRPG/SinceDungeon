@@ -92,8 +92,16 @@ public class PartyCommand {
 
                                     if (party == null) {
                                         party = pm.createParty(p);
-                                        isAutoCreated = true;
+                                        // VÁ LỖI NPE: Đảm bảo nếu tạo nhóm bị đụng độ đa luồng thì lấy lại nhóm từ RAM
+                                        if (party == null) {
+                                            party = pm.getParty(p.getUniqueId());
+                                        } else {
+                                            isAutoCreated = true;
+                                        }
                                     }
+
+                                    // Chặn đứng NPE nếu vẫn có thứ gì đó ngoài tầm kiểm soát
+                                    if (party == null) return 0;
 
                                     boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
                                     if (sent) {
@@ -103,7 +111,6 @@ public class PartyCommand {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
                                         target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
-                                        // VÁ LỖI LOGIC: Hủy ngay nhóm vừa Auto-Create nếu lời mời thất bại
                                         if (isAutoCreated) pm.disbandParty(party);
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited", "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi.")));
                                     }
@@ -180,7 +187,6 @@ public class PartyCommand {
                     pm.quitParty(p.getUniqueId());
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
 
-                    // Nếu party vẫn tồn tại (tức là còn người bên trong)
                     if (pm.getParty(party.getLeader()) != null) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
