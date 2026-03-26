@@ -98,6 +98,10 @@ public class PartyManager {
     }
 
     public void handlePlayerDisconnect(Player p) {
+        // VÁ LỖI BỘ NHỚ: LUÔN LUÔN dọn dẹp Cache cá nhân của người chơi trước,
+        // cho dù họ có trong Party hay không, để ngăn rò rỉ RAM rác.
+        removePlayerFromCache(p.getUniqueId());
+
         Party party = getParty(p.getUniqueId());
         if (party == null) return;
 
@@ -105,8 +109,6 @@ public class PartyManager {
             if (party.getLeader().equals(p.getUniqueId())) {
                 passLeadership(party);
             }
-
-            removePlayerFromCache(p.getUniqueId());
 
             if (!hasOnlineMembers(party)) {
                 disbandParty(party);
@@ -148,14 +150,22 @@ public class PartyManager {
 
     public boolean invitePlayer(UUID leader, UUID target) {
         long timeoutSeconds = plugin.getConfigFile().getInt("party.invite-timeout", 60);
-        Map<UUID, Long> targetInvites = activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>());
 
-        if (targetInvites.containsKey(leader) && targetInvites.get(leader) > System.currentTimeMillis()) {
-            return false;
-        }
+        // VÁ LỖI ĐA LUỒNG: Sử dụng mảng atomic để lưu kết quả từ bên trong block compute
+        boolean[] success = new boolean[]{false};
 
-        targetInvites.put(leader, System.currentTimeMillis() + (timeoutSeconds * 1000L));
-        return true;
+        activeInvites.compute(target, (k, invites) -> {
+            if (invites == null) invites = new ConcurrentHashMap<>();
+            if (invites.containsKey(leader) && invites.get(leader) > System.currentTimeMillis()) {
+                success[0] = false;
+            } else {
+                invites.put(leader, System.currentTimeMillis() + (timeoutSeconds * 1000L));
+                success[0] = true;
+            }
+            return invites;
+        });
+
+        return success[0];
     }
 
     public boolean acceptInvite(Player target, UUID leader) {
@@ -218,8 +228,6 @@ public class PartyManager {
 
         String formatStr = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
 
-        // BẢO MẬT TUYỆT ĐỐI (ANTI-INJECTION): Sử dụng Placeholder.unparsed để niêm phong chuỗi,
-        // Loại bỏ hoàn toàn nguy cơ người chơi lợi dụng các thẻ <click>, <hover> hay mã màu của hệ thống
         Component finalComponent = MiniMessage.miniMessage().deserialize(
                 formatStr,
                 Placeholder.unparsed("sender", sender),
@@ -248,20 +256,18 @@ public class PartyManager {
 
     public void removePlayerFromCache(UUID uuid) {
         partyChatToggled.remove(uuid);
-        activeInvites.remove(uuid);
+        activeInvites.remove(uuid); // Dọn dẹp MAP triệt để khi Logout
     }
 
     private void clearSentInvites(UUID sender) {
+        // VÁ LỖI CỤT MAP: Không xóa Map rỗng để tránh "Đâm xe đa luồng" khi ai đó vừa vặn gửi Invite
         activeInvites.values().forEach(invites -> invites.remove(sender));
-        activeInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 
     private void purgeExpiredInvites() {
         long now = System.currentTimeMillis();
-        activeInvites.entrySet().removeIf(entry -> {
-            entry.getValue().entrySet().removeIf(inv -> now > inv.getValue());
-            return entry.getValue().isEmpty();
-        });
+        // VÁ LỖI CỤT MAP: Chỉ xóa lời mời hết hạn, tuyệt đối không gọi Map.removeIf() để tránh mất đồng bộ.
+        activeInvites.values().forEach(invites -> invites.entrySet().removeIf(inv -> now > inv.getValue()));
     }
 
     public static class Party {

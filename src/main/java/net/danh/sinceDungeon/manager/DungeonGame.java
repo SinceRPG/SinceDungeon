@@ -410,6 +410,9 @@ public class DungeonGame {
             }
         }
 
+        // VÁ LỖI RAM LEAK: Dọn sạch sẽ kho dữ liệu máu/đồ ngay khi Game dừng.
+        savedStates.clear();
+
         if (dungeonWorld != null) {
             World w = dungeonWorld;
             dungeonWorld = null;

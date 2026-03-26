@@ -28,8 +28,13 @@ public class PartyCommand {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
                         return 0;
                     }
-                    pm.createParty(p);
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.created")));
+                    PartyManager.Party party = pm.createParty(p);
+                    if (party != null) {
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.created")));
+                    } else {
+                        // Tình huống tranh chấp đa luồng cực hiếm
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
+                    }
                     return 1;
                 }))
 
@@ -135,7 +140,6 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     Player p = (Player) ctx.getSource().getSender();
 
-                                    // VÁ LỖI DUPE PARTY: Khóa chặt mọi hành vi Accept nếu đã có Party
                                     if (pm.getParty(p.getUniqueId()) != null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
                                         return 0;
