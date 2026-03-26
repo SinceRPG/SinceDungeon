@@ -18,18 +18,9 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 
-/**
- * Global listener routing Bukkit events to active dungeon instances.
- * Implements Ghost Rescue mechanisms and strict Friendly-Fire mitigation.
- */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
 
-    /**
-     * Constructs the DungeonListener.
-     *
-     * @param plugin The main plugin instance.
-     */
     public DungeonListener(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -42,12 +33,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Resolves the true attacker behind a damage event, tracing projectiles and explosives.
-     *
-     * @param damager The immediate entity causing damage.
-     * @return The Player responsible, or null.
-     */
     private Player getRealAttacker(Entity damager) {
         if (damager instanceof Player p) return p;
         if (damager instanceof Projectile proj && proj.getShooter() instanceof Player p) return p;
@@ -87,8 +72,8 @@ public class DungeonListener implements Listener {
             plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
-                    // Đã loại bỏ p.setHealth(0) và p.spigot().respawn() vì gây rớt đồ vô lý
-                    p.sendMessage(ColorUtils.parseWithPrefix("<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa."));
+                    String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa.");
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
                 }
             });
         }
@@ -149,13 +134,11 @@ public class DungeonListener implements Listener {
                 String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
                 plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
             } else {
-                // Failsafe if they are no longer in a party but toggle is stuck
                 plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
             }
         }
     }
 
-    // And Update your onQuit event:
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
@@ -166,7 +149,6 @@ public class DungeonListener implements Listener {
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
             plugin.getPartyManager().electNewLeader(party);
         }
-        // Ensure memory leaks do not occur for chat toggles / invites
         plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
     }
 

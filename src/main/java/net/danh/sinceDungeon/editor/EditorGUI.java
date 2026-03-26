@@ -5,10 +5,7 @@ import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,15 +17,12 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.util.*;
 
-/**
- * Handles all graphical user interfaces for the dungeon editor.
- * Secured with EditorHolder to prevent GUI Spoofing exploits.
- */
 public class EditorGUI implements Listener {
 
     private final SinceDungeon plugin;
@@ -326,7 +320,6 @@ public class EditorGUI implements Listener {
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
             boolean isList = sec.isList(key);
 
-            // Optimization: 'if' statement replaced with 'switch'
             switch (key) {
                 case "type":
                     icon = Material.BARRIER;
@@ -363,7 +356,13 @@ public class EditorGUI implements Listener {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             String displayName = (meta.displayName() != null) ? "<green><bold>" + meta.displayName() : "<green>" + type;
 
-            inv.addItem(makeItem(meta.icon(), displayName, Arrays.asList("<gray>" + meta.description(), "", "<yellow>Internal ID: <white>" + type)));
+            ItemStack item = makeItem(meta.icon(), displayName, Arrays.asList("<gray>" + meta.description(), "", "<yellow>Internal ID: <white>" + type));
+            ItemMeta im = item.getItemMeta();
+            NamespacedKey key = new NamespacedKey(plugin, "action_id");
+            im.getPersistentDataContainer().set(key, PersistentDataType.STRING, type);
+            item.setItemMeta(im);
+
+            inv.addItem(item);
         }
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
         p.openInventory(inv);
@@ -405,7 +404,6 @@ public class EditorGUI implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorManager manager = plugin.getEditorManager();
-        // Fix: session is now strictly final, removing the "Variable used in lambda expression should be final" warnings.
         final EditorSession session = manager.getSession(p);
         String menuType = holder.getMenuType();
 
@@ -425,7 +423,7 @@ public class EditorGUI implements Listener {
 
         // ================= SELECT ACTION TYPE =================
         if (menuType.equals("SELECT_TYPE")) {
-            EditorSession selSession = manager.getSession(p); // Recover via local var to preserve finality of outer session
+            EditorSession selSession = manager.getSession(p);
             if (selSession == null) return;
 
             if (e.getRawSlot() == 45) {
@@ -434,16 +432,10 @@ public class EditorGUI implements Listener {
             }
             String type = null;
             ItemMeta meta = cur.getItemMeta();
+            NamespacedKey key = new NamespacedKey(plugin, "action_id");
 
-            // Fix: NullPointerException warning resolved by strictly evaluating meta.hasLore() and null checking
-            if (meta != null && meta.hasLore() && meta.lore() != null) {
-                for (Component comp : meta.lore()) {
-                    String line = getPlainText(comp);
-                    if (line.contains("Internal ID:")) {
-                        type = line.split(":")[1].trim();
-                        break;
-                    }
-                }
+            if (meta != null && meta.getPersistentDataContainer().has(key, PersistentDataType.STRING)) {
+                type = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
             }
 
             if (type == null) return;
@@ -778,10 +770,11 @@ public class EditorGUI implements Listener {
 
                 session.awaitInput(inputType, promptKey, val -> {
                     Object finalVal = getFinalVal(val);
+                    String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
 
                     if (isList) {
                         List<String> list = session.getConfig().getStringList(fullPath);
-                        if (val.equalsIgnoreCase("clear")) list.clear();
+                        if (val.equalsIgnoreCase(clearKw)) list.clear();
                         else list.add(val);
                         session.getConfig().set(fullPath, list);
                     } else {

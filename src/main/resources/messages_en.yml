@@ -20,6 +20,7 @@ admin:
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"
     mmoitems_missing: "MMOItems is required to create item: <data>"
     vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
+  ghost_rescued: "<yellow>The system rescued you from a deleted or corrupted Dungeon instance."
 
 party:
   chat_format: "<aqua>[Party]</aqua> <green><sender></green><gray>: <white><msg>"
@@ -45,6 +46,9 @@ party:
   chat_toggled: "<yellow>Party Chat mode is now: <status>"
   start_aborted_condition: "<red>Dungeon start aborted! <player> does not meet the entry requirements."
   distance_warning: "<yellow>Warning: <count> member(s) are too far away and were left behind!"
+  offline: "Offline"
+  leader_suffix: " (Leader)"
+  member_failed_condition: "<red>Member <player> does not meet the condition. Aborting Dungeon entry."
 
 game:
   start: "<green>Dungeon has started! Good luck!"
@@ -142,6 +146,15 @@ editor:
     default_condition_msg: "Requirements not met"
     default_condition_name: "Condition <key>"
     reward_default_name: "<gray>Default"
+    cancel: "cancel"
+    here: "here"
+    clear: "clear"
+  actions_name:
+    spawn_wave: "Spawn Vanilla Mob"
+    reach_location: "Reach Checkpoint"
+    loot_chest: "Loot Treasure Chest"
+    break_wall: "Break Wall via Block"
+    mythic_wave: "Spawn Mythic Boss"
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"

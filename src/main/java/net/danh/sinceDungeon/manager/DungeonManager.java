@@ -24,10 +24,6 @@ import org.bukkit.util.Vector;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Core manager for handling active dungeon sessions, action registries, and processors.
- * Integrated with the Party System for high-concurrency group instance instantiation.
- */
 public class DungeonManager {
     private final SinceDungeon plugin;
     private final Map<UUID, DungeonGame> activeGames = new ConcurrentHashMap<>();
@@ -39,11 +35,6 @@ public class DungeonManager {
     private final Map<String, RewardProcessor> rewardProcessors = new ConcurrentHashMap<>();
     private final Map<String, ConditionProcessor> conditionProcessors = new ConcurrentHashMap<>();
 
-    /**
-     * Constructs the DungeonManager.
-     *
-     * @param plugin The main plugin instance.
-     */
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
         registerDefaultActions();
@@ -51,50 +42,22 @@ public class DungeonManager {
         loadTemplates();
     }
 
-    /**
-     * Registers a new dungeon template into memory.
-     *
-     * @param template The template to register.
-     */
     public void registerTemplate(DungeonTemplate template) {
         if (template != null && template.id() != null) templates.put(template.id(), template);
     }
 
-    /**
-     * Unregisters a dungeon template from memory.
-     *
-     * @param id The ID of the template.
-     */
     public void unregisterTemplate(String id) {
         templates.remove(id);
     }
 
-    /**
-     * Registers a custom reward processor.
-     *
-     * @param type      The reward identifier string.
-     * @param processor The processor logic interface.
-     */
     public void registerRewardProcessor(String type, RewardProcessor processor) {
         rewardProcessors.put(type.toUpperCase(), processor);
     }
 
-    /**
-     * Gets a registered reward processor.
-     *
-     * @param type The reward identifier string.
-     * @return The RewardProcessor if found, null otherwise.
-     */
     public RewardProcessor getRewardProcessor(String type) {
         return rewardProcessors.get(type.toUpperCase());
     }
 
-    /**
-     * Registers a custom condition processor.
-     *
-     * @param type      The condition identifier string.
-     * @param processor The processor logic interface.
-     */
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         conditionProcessors.put(type.toUpperCase(), processor);
     }
@@ -169,49 +132,20 @@ public class DungeonManager {
         if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
     }
 
-    /**
-     * Registers a custom action type in the system.
-     *
-     * @param type          The ID of the action.
-     * @param parser        The parser class.
-     * @param displayName   The display name for the editor.
-     * @param icon          The icon for the editor.
-     * @param description   The description.
-     * @param defaults      The default parameters.
-     * @param customPrompts Custom editing prompts.
-     */
     public void registerAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaults, Map<String, List<String>> customPrompts) {
         String key = type.toUpperCase();
         actionParsers.put(key, parser);
         actionMeta.put(key, new ActionMeta(displayName, icon, description, defaults, customPrompts != null ? customPrompts : new HashMap<>()));
     }
 
-    /**
-     * Gets all registered action types.
-     *
-     * @return Set of action string IDs.
-     */
     public Set<String> getRegisteredActions() {
         return actionMeta.keySet();
     }
 
-    /**
-     * Gets the metadata of a specific action.
-     *
-     * @param type The action ID.
-     * @return The ActionMeta record.
-     */
     public ActionMeta getActionMeta(String type) {
         return actionMeta.get(type.toUpperCase());
     }
 
-    /**
-     * Creates a DungeonAction instance from raw map data.
-     *
-     * @param type The type of action to create.
-     * @param data The map configuration data.
-     * @return The parsed DungeonAction, or null.
-     */
     public DungeonAction createAction(String type, Map<String, Object> data) {
         if (type == null) return null;
         ActionParser parser = actionParsers.get(type.toUpperCase());
@@ -251,7 +185,7 @@ public class DungeonManager {
                     int amount = getInt(map.get("amount"), (int) spawnDefaults.get("amount"));
                     List<Vector> v = parseLocList(map.get("locations"));
                     return new SpawnWaveAction(mob, amount, v);
-                }, "Spawn Vanilla Mob", Material.ZOMBIE_HEAD,
+                }, plugin.getMessagesFile().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
 
@@ -264,7 +198,7 @@ public class DungeonManager {
                     Vector target = DungeonLoader.parseVector(targetStr);
                     double radius = getDouble(map.get("radius"), (double) reachDefaults.get("radius"));
                     return new ReachLocationAction(target, radius);
-                }, "Reach Checkpoint", Material.COMPASS,
+                }, plugin.getMessagesFile().getString("editor.actions_name.reach_location", "Reach Checkpoint"), Material.COMPASS,
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
@@ -300,7 +234,7 @@ public class DungeonManager {
                     }
 
                     return new LootChestAction(loc, itemsConfig);
-                }, "Loot Treasure Chest", Material.CHEST,
+                }, plugin.getMessagesFile().getString("editor.actions_name.loot_chest", "Loot Treasure Chest"), Material.CHEST,
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
 
@@ -313,7 +247,7 @@ public class DungeonManager {
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")))
-                ), "Break Wall via Block", Material.IRON_PICKAXE,
+                ), plugin.getMessagesFile().getString("editor.actions_name.break_wall", "Break Wall via Block"), Material.IRON_PICKAXE,
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults, new HashMap<>());
 
@@ -327,7 +261,7 @@ public class DungeonManager {
                     int amount = getInt(map.get("amount"), (int) mmDefaults.get("amount"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     return new MythicMobWaveAction(mob, amount, v);
-                }, "Spawn Mythic Boss", Material.WITHER_SKELETON_SKULL,
+                }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
     }
@@ -360,9 +294,6 @@ public class DungeonManager {
         return v;
     }
 
-    /**
-     * Reloads all dungeon configurations and running states.
-     */
     public void reload() {
         stopAllGames();
         templates.clear();
@@ -388,12 +319,6 @@ public class DungeonManager {
         }
     }
 
-    /**
-     * Evaluates party membership and initiates the DungeonGame sequence for all eligible members.
-     *
-     * @param p  The player initiating the command.
-     * @param id The dungeon ID to join.
-     */
     public void joinDungeon(Player p, String id) {
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         Set<Player> participants = new HashSet<>();
@@ -408,9 +333,9 @@ public class DungeonManager {
             double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
             participants.addAll(plugin.getPartyManager().getEligibleMembers(party, maxDist));
 
-            // UX CẢI THIỆN: Báo cho Leader biết nếu có thành viên bị bỏ lại vì đứng quá xa
             if (participants.size() < originalPartySize) {
-                p.sendMessage(ColorUtils.parseWithPrefix("<yellow>Cảnh báo: Có " + (originalPartySize - participants.size()) + " thành viên đứng quá xa và sẽ không được kéo vào Dungeon!"));
+                String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
+                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(originalPartySize - participants.size()))));
             }
         } else {
             participants.add(p);
@@ -457,12 +382,9 @@ public class DungeonManager {
                             participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
                     }
 
-                    String abortMsg = plugin.getMessagesFile().getString("party.start_aborted_condition");
-                    if (abortMsg != null) {
-                        String finalMsg = abortMsg.replace("<player>", participant.getName());
-                        for (Player notify : participants) {
-                            if (notify.isOnline()) notify.sendMessage(ColorUtils.parseWithPrefix(finalMsg));
-                        }
+                    if (!participant.equals(p)) {
+                        String failMsg = plugin.getMessagesFile().getString("party.member_failed_condition", "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon.");
+                        p.sendMessage(ColorUtils.parseWithPrefix(failMsg.replace("<player>", participant.getName())));
                     }
                     return;
                 }
@@ -491,21 +413,10 @@ public class DungeonManager {
         }
     }
 
-    /**
-     * Forces a player to quit their active dungeon session.
-     *
-     * @param p The player.
-     */
     public void quitDungeon(Player p) {
         if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
     }
 
-    /**
-     * Dispatches global bukkit events to the specific dungeon game handled by a player.
-     *
-     * @param p     The player.
-     * @param event The Bukkit Event.
-     */
     public void dispatchEvent(Player p, Event event) {
         if (p == null) return;
         DungeonGame game = activeGames.get(p.getUniqueId());
@@ -514,9 +425,6 @@ public class DungeonManager {
         }
     }
 
-    /**
-     * Forcefully stops all running games. Used on server shutdown/reload.
-     */
     public void stopAllGames() {
         for (DungeonGame game : new HashSet<>(activeGames.values())) {
             game.forceShutdown();
@@ -540,9 +448,6 @@ public class DungeonManager {
         activeGames.remove(uuid);
     }
 
-    /**
-     * Represents the metadata configuration for editor display of custom actions.
-     */
     public record ActionMeta(String displayName, Material icon, String description, Map<String, Object> defaults,
                              Map<String, List<String>> customPrompts) {
     }

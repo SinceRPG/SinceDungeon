@@ -49,7 +49,7 @@ public class PartyCommand {
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     Bukkit.getOnlinePlayers().stream()
-                                            .filter(t -> pm.getParty(t.getUniqueId()) == null) // Don't suggest players already in a party
+                                            .filter(t -> pm.getParty(t.getUniqueId()) == null)
                                             .map(Player::getName)
                                             .filter(name -> name.toLowerCase().startsWith(remaining))
                                             .forEach(builder::suggest);
@@ -243,11 +243,14 @@ public class PartyCommand {
                         return 0;
                     }
 
+                    String offlineTxt = plugin.getMessagesFile().getString("party.offline", "Offline");
+                    String leaderSuffix = plugin.getMessagesFile().getString("party.leader_suffix", " (Leader)");
+
                     String members = party.getMembers().stream()
                             .map(Bukkit::getPlayer)
                             .map(t -> {
-                                if (t == null) return "Offline";
-                                return t.getUniqueId().equals(party.getLeader()) ? t.getName() + " (Leader)" : t.getName();
+                                if (t == null) return offlineTxt;
+                                return t.getUniqueId().equals(party.getLeader()) ? t.getName() + leaderSuffix : t.getName();
                             })
                             .collect(Collectors.joining(", "));
 

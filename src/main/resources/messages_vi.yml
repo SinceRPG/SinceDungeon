@@ -20,6 +20,7 @@ admin:
     mmoitems_parse_fail: "Không thể đọc vật phẩm MMOItems: <data>"
     mmoitems_missing: "Cần MMOItems để tạo vật phẩm: <data>"
     vector_parse_fail: "Lỗi phân tích tọa độ Vector: '<data>'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại file Config Map!"
+  ghost_rescued: "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa."
 
 party:
   chat_format: "<aqua>[Nhóm]</aqua> <green><sender></green><gray>: <white><msg>"
@@ -45,6 +46,9 @@ party:
   chat_toggled: "<yellow>Chế độ Chat Nhóm hiện đang: <status>"
   start_aborted_condition: "<red>Hủy vào Dungeon! Thành viên <player> không đáp ứng đủ điều kiện."
   distance_warning: "<yellow>Cảnh báo: Có <count> thành viên đứng quá xa nên đã bị bỏ lại!"
+  offline: "Ngoại tuyến"
+  leader_suffix: " (Trưởng nhóm)"
+  member_failed_condition: "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon."
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"
@@ -142,6 +146,15 @@ editor:
     default_condition_msg: "Không đủ điều kiện"
     default_condition_name: "Điều kiện <key>"
     reward_default_name: "<gray>Mặc định"
+    cancel: "huy"
+    here: "here"
+    clear: "clear"
+  actions_name:
+    spawn_wave: "Tạo Quái Vanilla"
+    reach_location: "Đến Trạm Kiểm Tra"
+    loot_chest: "Tạo Rương Báu"
+    break_wall: "Phá Tường Bằng Khối"
+    mythic_wave: "Tạo Boss Mythic"
   actions:
     spawn_wave: "Spawn quái vật Vanilla theo đợt"
     reach_location: "Yêu cầu người chơi đi tới tọa độ"
