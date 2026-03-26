@@ -1,27 +1,27 @@
+// PartyManager.java
 package net.danh.sinceDungeon.party;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Thread-safe management system for Party lifecycles, invitations, and active sessions.
- * Implements passive expiry for invitations to ensure zero memory leaks.
+ * Implements passive expiry for invitations and distance-based evaluations.
  */
 public class PartyManager {
 
     private final SinceDungeon plugin;
     private final Map<UUID, Party> activeParties = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> activeInvites = new ConcurrentHashMap<>();
-    private final BukkitTask cleanupTask;
 
     /**
      * Constructs the PartyManager and initializes the asynchronous cleanup loop.
@@ -30,7 +30,7 @@ public class PartyManager {
      */
     public PartyManager(SinceDungeon plugin) {
         this.plugin = plugin;
-        this.cleanupTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::purgeExpiredInvites, 1200L, 1200L);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::purgeExpiredInvites, 1200L, 1200L);
     }
 
     /**
@@ -64,9 +64,7 @@ public class PartyManager {
      */
     public void disbandParty(Party party) {
         if (party == null) return;
-        for (UUID member : party.getMembers()) {
-            activeParties.remove(member);
-        }
+        party.getMembers().forEach(activeParties::remove);
     }
 
     /**
@@ -77,7 +75,7 @@ public class PartyManager {
      */
     public void invitePlayer(UUID leader, UUID target) {
         activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>())
-                .put(leader, System.currentTimeMillis() + 60000L); // 60-second expiry
+                .put(leader, System.currentTimeMillis() + 60000L);
     }
 
     /**
@@ -90,13 +88,15 @@ public class PartyManager {
     public boolean acceptInvite(Player target, UUID leader) {
         Map<UUID, Long> targetInvites = activeInvites.get(target.getUniqueId());
         if (targetInvites == null || !targetInvites.containsKey(leader)) return false;
+
         if (System.currentTimeMillis() > targetInvites.get(leader)) {
             targetInvites.remove(leader);
             return false;
         }
 
         Party party = getParty(leader);
-        if (party == null || party.getMembers().size() >= plugin.getConfigFile().getInt("party.max-members", 4)) {
+        int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
+        if (party == null || party.getMembers().size() >= maxMembers) {
             return false;
         }
 
@@ -104,6 +104,43 @@ public class PartyManager {
         activeParties.put(target.getUniqueId(), party);
         targetInvites.remove(leader);
         return true;
+    }
+
+    /**
+     * Handles leader election when the current leader disconnects or leaves.
+     *
+     * @param party The party requiring a new leader.
+     */
+    public void electNewLeader(Party party) {
+        if (party == null || party.getMembers().size() <= 1) {
+            disbandParty(party);
+            return;
+        }
+
+        party.removeMember(party.getLeader());
+        activeParties.remove(party.getLeader());
+
+        UUID newLeader = party.getMembers().iterator().next();
+        party.setLeader(newLeader);
+        sendPartyMessage(party, "System", plugin.getMessagesFile().getString("party.new_leader").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
+    }
+
+    /**
+     * Retrieves all online members of a party within a specific radius of the leader.
+     *
+     * @param party  The party to evaluate.
+     * @param radius The maximum distance (0 for map-wide).
+     * @return A set of eligible online players.
+     */
+    public Set<Player> getEligibleMembers(Party party, double radius) {
+        Player leaderObj = Bukkit.getPlayer(party.getLeader());
+        if (leaderObj == null || !leaderObj.isOnline()) return Collections.emptySet();
+
+        return party.getMembers().stream()
+                .map(Bukkit::getPlayer)
+                .filter(p -> p != null && p.isOnline() && !p.isDead())
+                .filter(p -> radius <= 0 || (p.getWorld().equals(leaderObj.getWorld()) && p.getLocation().distanceSquared(leaderObj.getLocation()) <= radius * radius))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -128,16 +165,11 @@ public class PartyManager {
         });
     }
 
-    /**
-     * Asynchronous sweep to release memory held by expired invitations.
-     */
     private void purgeExpiredInvites() {
         long now = System.currentTimeMillis();
         activeInvites.forEach((target, invites) -> {
             invites.entrySet().removeIf(entry -> now > entry.getValue());
-            if (invites.isEmpty()) {
-                activeInvites.remove(target);
-            }
+            if (invites.isEmpty()) activeInvites.remove(target);
         });
     }
 
@@ -145,22 +177,32 @@ public class PartyManager {
      * Thread-safe data structure representing a group of players.
      */
     public static class Party {
-        private UUID leader;
         private final Set<UUID> members = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        private UUID leader;
 
         public Party(UUID leader) {
             this.leader = leader;
             this.members.add(leader);
         }
 
-        public UUID getLeader() { return leader; }
+        public UUID getLeader() {
+            return leader;
+        }
 
-        public void setLeader(UUID leader) { this.leader = leader; }
+        public void setLeader(UUID leader) {
+            this.leader = leader;
+        }
 
-        public Set<UUID> getMembers() { return members; }
+        public Set<UUID> getMembers() {
+            return members;
+        }
 
-        public void addMember(UUID uuid) { members.add(uuid); }
+        public void addMember(UUID uuid) {
+            members.add(uuid);
+        }
 
-        public void removeMember(UUID uuid) { members.remove(uuid); }
+        public void removeMember(UUID uuid) {
+            members.remove(uuid);
+        }
     }
 }

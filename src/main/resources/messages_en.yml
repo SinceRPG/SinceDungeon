@@ -25,6 +25,7 @@ party:
   chat_format: "<aqua>[Party]</aqua> <green><sender></green><gray>: <white><msg>"
   created: "<green>Party created successfully. Use /party invite <player> to add members."
   disbanded: "<yellow>The party has been disbanded."
+  new_leader: "<yellow><player> has been promoted to Party Leader!"
   already_in_party: "<red>You are already in a party."
   not_in_party: "<red>You are not in a party."
   not_leader: "<red>Only the party leader can do this."

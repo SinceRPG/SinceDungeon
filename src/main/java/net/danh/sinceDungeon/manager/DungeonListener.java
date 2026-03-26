@@ -5,11 +5,8 @@ import net.danh.sinceDungeon.party.PartyManager.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.AreaEffectCloud;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.*;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -35,7 +32,7 @@ public class DungeonListener implements Listener {
         this.plugin = plugin;
     }
 
-    private void pass(Player p, org.bukkit.event.Event e) {
+    private void pass(Player p, Event e) {
         if (p == null) return;
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
@@ -62,11 +59,10 @@ public class DungeonListener implements Listener {
         if (e.getEntity() instanceof Player victim) {
             Player attacker = getRealAttacker(e.getDamager());
 
-            // Friendly-Fire Mitigation
             if (attacker != null && !attacker.equals(victim)) {
                 Party party = plugin.getPartyManager().getParty(victim.getUniqueId());
                 if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
-                    boolean allowFF = plugin.getConfigFile().getConfig().getBoolean("party.allow-friendly-fire", false);
+                    boolean allowFF = plugin.getConfigFile().getBoolean("party.allow-friendly-fire");
                     if (!allowFF) {
                         e.setCancelled(true);
                         return;
@@ -77,9 +73,7 @@ public class DungeonListener implements Listener {
         }
 
         Player attacker = getRealAttacker(e.getDamager());
-        if (attacker != null) {
-            pass(attacker, e);
-        }
+        if (attacker != null) pass(attacker, e);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -87,12 +81,11 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
-        // Ghost Rescue Mechanism
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
-                if (success) {
-                    p.setHealth(0); // Force state reset if stuck
+                if (success && !p.isDead()) {
+                    p.setHealth(0);
                     p.spigot().respawn();
                 }
             });
@@ -148,13 +141,11 @@ public class DungeonListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        if (game != null) {
-            game.stop(true);
-        }
+        if (game != null) game.stop(true);
 
         Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
-            plugin.getPartyManager().disbandParty(party);
+            plugin.getPartyManager().electNewLeader(party);
         }
     }
 
@@ -163,7 +154,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && !p.getWorld().equals(game.getWorld())) {
-            plugin.getLogger().info(p.getName() + " left dungeon world via teleport. Triggering extraction.");
+            plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
             game.stop(false);
         }
     }
@@ -182,6 +173,7 @@ public class DungeonListener implements Listener {
             game.broadcastMessage("game.death", "<player>", p.getName());
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                game.restorePlayerState(p);
                 p.spigot().respawn();
                 game.stop(true);
             }, 1L);
@@ -200,10 +192,8 @@ public class DungeonListener implements Listener {
             if (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL ||
                     cause == consumableEffect ||
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND) {
-
                 e.setCancelled(true);
-                String msg = plugin.getMessagesFile().getString("error.can_not_teleport", "<red>Cannot teleport this way inside a Dungeon!");
-                p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_teleport")));
             }
         }
     }
@@ -215,8 +205,7 @@ public class DungeonListener implements Listener {
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             e.setCancelled(true);
-            String msg = plugin.getMessagesFile().getString("error.can_not_drop", "<red>Cannot drop items inside a Dungeon!");
-            p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
         }
     }
 }

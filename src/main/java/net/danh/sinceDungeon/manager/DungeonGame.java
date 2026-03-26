@@ -5,14 +5,13 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
-import net.danh.sinceDungeon.party.PartyManager.Party;
-import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -25,50 +24,49 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Represents an active dungeon game session running for a Party.
- * Completely re-engineered for concurrency, stage-injection, and multi-player state tracking.
+ * Represents an active dungeon game session running for a player or party.
+ * Optimized for zero-waste garbage collection loops and strict thread safety.
  */
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private final Party party;
+    private final Player initiator;
+    private final Set<Player> participants;
     private final DungeonTemplate template;
 
-    private final Map<UUID, PlayerState> originalStates = new ConcurrentHashMap<>();
-    private final List<CopyOnWriteArrayList<DungeonAction>> stages = new CopyOnWriteArrayList<>();
-    private final String worldName;
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
+    private final List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
 
+    private final String worldName;
     private World dungeonWorld;
-    private volatile int currentStageIndex = 0;
-    private volatile boolean isRunning = false;
-    private volatile boolean isPreparing = false;
-    private volatile boolean stageCompleting = false;
-    private volatile boolean isStopping = false;
+    private int currentStageIndex = 0;
+    private boolean isRunning = false;
+    private boolean isPreparing = false;
+    private boolean stageCompleting = false;
+    private boolean isStopping = false;
 
     private BukkitTask tickTask;
     private long startTime;
 
     /**
-     * Constructs a highly-concurrent DungeonGame instance for a Party.
+     * Constructs a new DungeonGame.
      *
-     * @param plugin   The plugin instance.
-     * @param party    The party engaging in the instance.
-     * @param template The structural template of the dungeon.
+     * @param plugin       The plugin instance.
+     * @param initiator    The player who initiated the dungeon.
+     * @param participants The set of players joining the instance.
+     * @param template     The template used to structure the dungeon.
      */
-    public DungeonGame(SinceDungeon plugin, Party party, DungeonTemplate template) {
+    public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> participants, DungeonTemplate template) {
         this.plugin = plugin;
-        this.party = party;
+        this.initiator = initiator;
+        this.participants = participants;
         this.template = template;
 
-        // Snapshot states for all online members
-        for (UUID uuid : party.getMembers()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline()) {
-                originalStates.put(uuid, new PlayerState(p));
-            }
+        for (Player p : participants) {
+            savedStates.put(p.getUniqueId(), new PlayerState(p));
         }
 
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        this.worldName = prefix + party.getLeader().toString().substring(0, 8) + "_" + System.currentTimeMillis() % 10000;
+        this.worldName = prefix + initiator.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
         parseStages();
     }
 
@@ -91,74 +89,18 @@ public class DungeonGame {
     }
 
     /**
-     * Injects a new action into a specific stage safely during runtime via CopyOnWriteArrayList.
-     *
-     * @param stageIndex The index of the stage.
-     * @param action     The action to inject.
-     */
-    public void injectAction(int stageIndex, DungeonAction action) {
-        if (stageIndex >= 0 && stageIndex < stages.size()) {
-            stages.get(stageIndex).add(action);
-
-            if (currentStageIndex == stageIndex && isRunning && !stageCompleting) {
-                action.announceStart(this);
-                action.start(this);
-            }
-        }
-    }
-
-    /**
-     * Sends a formatted message to all active party members inside the instance.
-     *
-     * @param key          The message key from the language file.
-     * @param placeholders An array of placeholders and values.
-     */
-    public void broadcastMessage(String key, String... placeholders) {
-        String msg = plugin.getMessagesFile().getString(key);
-        if (msg == null || msg.isEmpty()) return;
-
-        String prefix = plugin.getMessagesFile().getString("prefix", "");
-        for (int i = 0; i < placeholders.length; i += 2) {
-            msg = msg.replace(placeholders[i], (i + 1 < placeholders.length) ? placeholders[i + 1] : "");
-        }
-
-        final String finalMsg = prefix + msg;
-        forEachOnlinePlayer(p -> p.sendMessage(ColorUtils.parse(finalMsg)));
-    }
-
-    /**
-     * Executes a consumer function on all online players currently associated with this session.
-     * Prevents allocation of new collections during tick loops.
-     *
-     * @param action The consumer to execute.
-     */
-    public void forEachOnlinePlayer(java.util.function.Consumer<Player> action) {
-        for (UUID uuid : party.getMembers()) {
-            Player p = Bukkit.getPlayer(uuid);
-            if (p != null && p.isOnline() && (dungeonWorld == null || p.getWorld().equals(dungeonWorld))) {
-                action.accept(p);
-            }
-        }
-    }
-
-    /**
-     * Initiates asynchronous generation of the dungeon world and sequence logic.
+     * Starts the lobby phase, asynchronously generating the world and teleporting participants.
      */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
 
-        Title title = Title.title(
-                ColorUtils.parse(plugin.getMessagesFile().getString("game.title.loading_main", "<yellow><bold>LOADING...")),
-                ColorUtils.parse(plugin.getMessagesFile().getString("game.title.loading_sub", "<gray>Please wait a moment")),
-                Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))
-        );
-        forEachOnlinePlayer(p -> p.showTitle(title));
+        broadcastTitle("game.title.loading_main", "game.title.loading_sub", 200, 3000, 500);
         broadcastMessage("lobby.preparing");
 
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (isStopping || party.getMembers().isEmpty()) {
+                    if (isStopping) {
                         WorldManager.unloadAndDeleteWorld(plugin, world);
                         return;
                     }
@@ -175,7 +117,7 @@ public class DungeonGame {
                 .exceptionally(ex -> {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         broadcastMessage("error.create_failed");
-                        plugin.getLogger().severe("Dungeon world async creation failed: " + ex.getMessage());
+                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
                         stop(true);
                     });
                     return null;
@@ -200,9 +142,14 @@ public class DungeonGame {
 
                 String titleMain = plugin.getMessagesFile().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
                 String titleSub = plugin.getMessagesFile().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
-                Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO));
 
-                forEachOnlinePlayer(p -> p.showTitle(title));
+                for (Player p : participants) {
+                    if (p.isOnline()) {
+                        p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO)));
+                        playSound(p, "lobby_countdown", 1f, 2f);
+                    }
+                }
+
                 broadcastMessage("lobby.countdown", "<time>", String.valueOf(count));
                 count--;
             }
@@ -219,28 +166,25 @@ public class DungeonGame {
 
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
 
-        forEachOnlinePlayer(p -> {
-            if (p.isInsideVehicle()) p.leaveVehicle();
-            if (p.isDead()) p.spigot().respawn();
+        for (Player p : participants) {
+            if (!p.isOnline() || p.isDead()) continue;
 
-            double maxHealth = p.getAttribute(Attribute.MAX_HEALTH) != null ? p.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
-            p.setHealth(maxHealth);
-            p.setFoodLevel(20);
-            p.setGameMode(GameMode.SURVIVAL);
+            if (p.isInsideVehicle()) p.leaveVehicle();
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
-                if (success) {
-                    Title title = Title.title(
-                            ColorUtils.parse(plugin.getMessagesFile().getString("game.title.start_main", "<red><bold>START!")),
-                            ColorUtils.parse(plugin.getMessagesFile().getString("game.title.start_sub", "<white>Good luck")),
-                            Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500))
-                    );
-                    p.showTitle(title);
+                if (success && p.isOnline()) {
+                    AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
+                    p.setHealth(attr != null ? attr.getValue() : 20.0);
+                    p.setFoodLevel(20);
+                    p.setGameMode(GameMode.SURVIVAL);
                 }
             });
-        });
+        }
 
+        broadcastTitle("game.title.start_main", "game.title.start_sub", 200, 2000, 500);
         broadcastMessage("game.start");
+        participants.forEach(p -> playSound(p, "game_start", 0.5f, 1f));
+
         this.startTime = System.currentTimeMillis();
 
         tickTask = new BukkitRunnable() {
@@ -266,25 +210,29 @@ public class DungeonGame {
 
         for (DungeonAction action : stages.get(currentStageIndex)) {
             if (!action.isCompleted()) {
-                if (action instanceof Tickable) {
+                if (action instanceof Tickable tickable) {
                     try {
-                        ((Tickable) action).onTick(this);
+                        tickable.onTick(this);
                     } catch (Exception e) {
                         plugin.getLogger().warning("Tick error in action: " + e.getMessage());
                     }
                 }
+
                 if (!action.isCompleted()) {
                     allCompleted = false;
-                    if (!objectiveText.isEmpty()) objectiveText.append(objSeparator);
+                    if (objectiveText.length() > 0) objectiveText.append(objSeparator);
                     objectiveText.append(action.getObjectiveText());
                 }
             }
         }
 
-        if (!allCompleted && !objectiveText.isEmpty()) {
+        if (!allCompleted && objectiveText.length() > 0) {
             String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
-            final String barData = objPrefix + objectiveText;
-            forEachOnlinePlayer(p -> p.sendActionBar(ColorUtils.parse(barData)));
+            for (Player p : participants) {
+                if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
+                    p.sendActionBar(ColorUtils.parse(objPrefix + objectiveText));
+                }
+            }
         }
 
         if (allCompleted) checkCompletion();
@@ -301,22 +249,14 @@ public class DungeonGame {
         this.stageCompleting = false;
 
         broadcastMessage("game.stage_start", "<stage>", String.valueOf(index + 1));
+        participants.forEach(p -> playSound(p, "stage_start", 1f, 1f));
 
         for (DungeonAction action : stages.get(index)) {
-            try {
-                action.announceStart(this);
-                action.start(this);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error starting action in stage " + index + ": " + e.getMessage());
-            }
+            action.announceStart(this);
+            action.start(this);
         }
     }
 
-    /**
-     * Propagates Bukkit events to active actions.
-     *
-     * @param event The Bukkit event.
-     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -334,8 +274,12 @@ public class DungeonGame {
         if (stageCompleting) return;
         stageCompleting = true;
 
-        forEachOnlinePlayer(p -> p.sendActionBar(ColorUtils.parse(" ")));
+        participants.forEach(p -> {
+            if (p.isOnline()) p.sendActionBar(ColorUtils.parse(" "));
+        });
+
         broadcastMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
+        participants.forEach(p -> playSound(p, "stage_complete", 1f, 1f));
 
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
@@ -349,9 +293,7 @@ public class DungeonGame {
         int chestCount = 1;
 
         for (Map.Entry<Integer, Integer> entry : template.rewardTiers().entrySet()) {
-            if (elapsedSeconds <= entry.getKey()) {
-                chestCount = Math.max(chestCount, entry.getValue());
-            }
+            if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
         }
 
         int finalElapsed = (int) elapsedSeconds;
@@ -362,41 +304,52 @@ public class DungeonGame {
         Bukkit.getPluginManager().callEvent(finishEvent);
         int finalChestCount = finishEvent.getChestCount();
 
-        Title title = Title.title(
-                ColorUtils.parse(plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!")),
-                ColorUtils.parse(plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time> seconds").replace("<time>", String.valueOf(finalElapsed))),
-                Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))
-        );
+        String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
 
-        forEachOnlinePlayer(p -> {
-            p.showTitle(title);
-            p.sendActionBar(ColorUtils.parse(" "));
+        for (Player p : participants) {
+            if (!p.isOnline() || p.isDead()) continue;
 
-            if (finalChestCount > 0) {
-                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.equals(initiator)) {
+                continue;
             }
 
-            PlayerState state = originalStates.get(p.getUniqueId());
+            if (finalChestCount > 0) {
+                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p,
+                        new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+            }
+
+            if (p.isInsideVehicle()) p.leaveVehicle();
+
+            PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
+            String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
+            String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time> seconds").replace("<time>", String.valueOf(finalElapsed));
+            p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))));
+            p.sendActionBar(ColorUtils.parse(" "));
+
             p.teleportAsync(targetLoc).thenAccept(success -> {
-                if (success) {
-                    state.restore(p);
-                    if (finalChestCount > 0) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> new RewardGUI(plugin).openRewardGUI(p, finalChestCount, template), 10L);
-                    }
+                if (success && p.isOnline()) {
+                    restorePlayerState(p);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (p.isOnline()) {
+                            if (finalChestCount > 0) {
+                                new net.danh.sinceDungeon.reward.RewardGUI(plugin).openRewardGUI(p, finalChestCount, template);
+                            } else {
+                                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));
+                            }
+                        }
+                    }, 10L);
                 }
             });
-        });
-
+        }
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false), 100L);
     }
 
     /**
-     * Executes the secure shutdown and entity-sweep sequence.
-     * Prevents lock-contention by delaying world deletion.
+     * Gracefully stops the dungeon session and executes strict resource finalization.
      *
-     * @param teleport True if players need to be actively extracted.
+     * @param teleport Whether to teleport players back to their original locations.
      */
     public void stop(boolean teleport) {
         if (isStopping) return;
@@ -405,86 +358,127 @@ public class DungeonGame {
 
         if (tickTask != null) tickTask.cancel();
 
-        if (teleport && dungeonWorld != null) {
-            forEachOnlinePlayer(p -> {
-                if (p.isInsideVehicle()) p.leaveVehicle();
-                PlayerState state = originalStates.get(p.getUniqueId());
-                Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+        for (Player p : participants) {
+            plugin.getDungeonManager().removeGame(p.getUniqueId());
+            if (!p.isOnline()) continue;
 
-                p.teleportAsync(targetLoc).thenAccept(success -> {
-                    if (success) state.restore(p);
-                });
-                p.sendActionBar(ColorUtils.parse(" "));
-            });
+            p.sendActionBar(ColorUtils.parse(" "));
+
+            if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                if (teleport) {
+                    if (p.isInsideVehicle()) p.leaveVehicle();
+                    PlayerState state = savedStates.get(p.getUniqueId());
+                    Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+                    p.teleportAsync(targetLoc).thenAccept(success -> {
+                        if (success) restorePlayerState(p);
+                    });
+                } else {
+                    restorePlayerState(p);
+                }
+            }
         }
 
         if (dungeonWorld != null) {
             World w = dungeonWorld;
             dungeonWorld = null;
 
-            // Explicitly sweep entities to release handles before unload
-            for (Entity e : w.getEntities()) {
-                if (!(e instanceof Player)) e.remove();
+            // Resource Finalization: Explicit entity removal before unload
+            for (Entity entity : w.getEntities()) {
+                if (!(entity instanceof Player)) entity.remove();
             }
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                WorldManager.unloadAndDeleteWorld(plugin, w);
-            }, 40L); // 40-tick delay to allow OS file handles to clear
-        }
-
-        for (UUID uuid : party.getMembers()) {
-            plugin.getDungeonManager().removeGame(uuid);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> WorldManager.unloadAndDeleteWorld(plugin, w), 40L);
         }
     }
 
-    /**
-     * Forcefully shuts down the dungeon, ignoring normal checks.
-     */
     public void forceShutdown() {
-        stop(true);
+        isStopping = true;
+        isRunning = false;
+        if (tickTask != null) tickTask.cancel();
+
+        for (Player p : participants) {
+            plugin.getDungeonManager().removeGame(p.getUniqueId());
+            if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                if (p.isInsideVehicle()) p.leaveVehicle();
+                PlayerState state = savedStates.get(p.getUniqueId());
+                Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+                p.teleport(targetLoc);
+                restorePlayerState(p);
+                p.sendActionBar(ColorUtils.parse(" "));
+            }
+        }
+
+        if (dungeonWorld != null) {
+            WorldManager.forceUnloadAndDelete(plugin, dungeonWorld);
+            dungeonWorld = null;
+        }
     }
 
-    /**
-     * Gets the active world of this dungeon instance.
-     *
-     * @return The active World.
-     */
+    public void restorePlayerState(Player p) {
+        if (!p.isOnline()) return;
+        PlayerState state = savedStates.get(p.getUniqueId());
+        if (state != null) {
+            p.setGameMode(state.gameMode);
+            AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
+            double maxHealth = attr != null ? attr.getValue() : 20.0;
+            p.setHealth(Math.min(state.health, maxHealth));
+            p.setFoodLevel(state.foodLevel);
+        }
+    }
+
+    public void broadcastMessage(String key, String... placeholders) {
+        String msg = plugin.getMessagesFile().getString(key);
+        if (msg == null || msg.isEmpty()) return;
+
+        String prefix = plugin.getMessagesFile().getString("prefix", "");
+        for (int i = 0; i < placeholders.length; i += 2) {
+            msg = msg.replace(placeholders[i], (i + 1 < placeholders.length) ? placeholders[i + 1] : "");
+        }
+
+        String finalMsg = prefix + msg;
+        participants.forEach(p -> {
+            if (p.isOnline()) p.sendMessage(ColorUtils.parse(finalMsg));
+        });
+    }
+
+    public void broadcastTitle(String mainKey, String subKey, int fadeIn, int stay, int fadeOut) {
+        String main = plugin.getMessagesFile().getString(mainKey, "");
+        String sub = plugin.getMessagesFile().getString(subKey, "");
+        Title title = Title.title(ColorUtils.parse(main), ColorUtils.parse(sub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut)));
+        participants.forEach(p -> {
+            if (p.isOnline()) p.showTitle(title);
+        });
+    }
+
+    private void playSound(Player p, String key, float volume, float pitch) {
+        String soundName = plugin.getConfigFile().getString("sounds." + key);
+        if (soundName == null || soundName.trim().isEmpty()) return;
+        try {
+            p.playSound(p.getLocation(), soundName.replace("minecraft:", ""), volume, pitch);
+        } catch (Exception ignored) {
+        }
+    }
+
     public World getWorld() {
         return dungeonWorld;
     }
 
-    /**
-     * Gets the player running the dungeon.
-     *
-     * @return The player.
-     */
     public Player getPlayer() {
-        Player p = Bukkit.getPlayer(party.getLeader());
-        return p != null ? p : Bukkit.getPlayer(party.getMembers().iterator().next());
+        return initiator;
     }
 
-    /**
-     * Immutable snapshot of a player's entry state.
-     */
     private static class PlayerState {
-        public final Location location;
-        public final GameMode gameMode;
-        public final double health;
-        public final int foodLevel;
+        final Location location;
+        final GameMode gameMode;
+        final double health;
+        final int foodLevel;
 
-        public PlayerState(Player p) {
+        PlayerState(Player p) {
             this.location = p.getLocation();
             this.gameMode = p.getGameMode();
             this.health = p.getHealth();
             this.foodLevel = p.getFoodLevel();
-        }
-
-        public void restore(Player p) {
-            if (!p.isOnline()) return;
-            p.setGameMode(gameMode);
-            double maxHealth = p.getAttribute(Attribute.MAX_HEALTH) != null ? p.getAttribute(Attribute.MAX_HEALTH).getValue() : 20.0;
-            p.setHealth(Math.min(health, maxHealth));
-            p.setFoodLevel(foodLevel);
         }
     }
 }
