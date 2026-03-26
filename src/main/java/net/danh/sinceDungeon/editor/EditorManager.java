@@ -12,20 +12,38 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Manages editor sessions for players.
+ */
 public class EditorManager implements Listener {
     private final SinceDungeon plugin;
-    // Map lưu trữ session. Dữ liệu sẽ tồn tại ở đây dù tắt GUI.
     private final Map<UUID, EditorSession> sessions = new HashMap<>();
 
+    /**
+     * Constructs the EditorManager.
+     *
+     * @param plugin The main plugin instance.
+     */
     public EditorManager(SinceDungeon plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    /**
+     * Opens the main editor menu for a player.
+     *
+     * @param p The player.
+     */
     public void openEditor(Player p) {
         new EditorGUI(plugin).openMainMenu(p);
     }
 
+    /**
+     * Initiates the editing of a specific dungeon file.
+     *
+     * @param p        The player editing the dungeon.
+     * @param filename The name of the dungeon file.
+     */
     public void startEditing(Player p, String filename) {
         if (!filename.matches("^[a-zA-Z0-9_\\-]+$")) {
             String msg = plugin.getMessagesFile().getString("editor.chat.invalid_filename");
@@ -35,7 +53,6 @@ public class EditorManager implements Listener {
         if (!filename.endsWith(".yml")) filename += ".yml";
         File file = new File(plugin.getDataFolder(), "dungeons/" + filename);
 
-        // Tạo file vật lý nếu chưa có (để tránh lỗi FileNotFound)
         if (!file.exists()) {
             try {
                 file.getParentFile().mkdirs();
@@ -47,24 +64,26 @@ public class EditorManager implements Listener {
             }
         }
 
-        // Kiểm tra xem đã có session của file này chưa
         EditorSession current = sessions.get(p.getUniqueId());
 
-        // Nếu chưa có session, hoặc session cũ là của file khác -> Tạo mới
         if (current == null || !current.getFile().getName().equals(file.getName())) {
             current = new EditorSession(plugin, p, file);
             sessions.put(p.getUniqueId(), current);
         }
 
-        // Mở GUI từ session (cũ hoặc mới)
         new EditorGUI(plugin).openDungeonMenu(p, current);
     }
 
+    /**
+     * Gets the active editor session for a player.
+     *
+     * @param p The player.
+     * @return The active EditorSession, or null if none exists.
+     */
     public EditorSession getSession(Player p) {
         return sessions.get(p.getUniqueId());
     }
 
-    // Chỉ xóa session khi người chơi thoát server để giải phóng bộ nhớ
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         sessions.remove(e.getPlayer().getUniqueId());

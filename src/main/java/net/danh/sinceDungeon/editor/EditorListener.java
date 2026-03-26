@@ -22,10 +22,18 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Handles chat inputs during an active editor session.
+ */
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
     private final Map<UUID, EditorSession> activeInputs = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs the EditorListener.
+     *
+     * @param plugin The main plugin instance.
+     */
     public EditorListener(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -35,25 +43,30 @@ public class EditorListener implements Listener {
         if (s != null) p.sendMessage(ColorUtils.parseWithPrefix(s));
     }
 
+    /**
+     * Starts listening for chat inputs for the specified editor session.
+     *
+     * @param p       The player.
+     * @param session The editor session.
+     */
     public void startListening(Player p, EditorSession session) {
         activeInputs.put(p.getUniqueId(), session);
         p.closeInventory();
 
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f);
 
-        String titleMain = plugin.getMessagesFile().getString("editor.input.title_main", "<gold><bold>NHẬP LIỆU");
-        String titleSub = plugin.getMessagesFile().getString("editor.input.title_sub", "<white>Hãy xem hướng dẫn ở khung Chat!");
+        String titleMain = plugin.getMessagesFile().getString("editor.input.title_main", "<gold><bold>INPUT MODE");
+        String titleSub = plugin.getMessagesFile().getString("editor.input.title_sub", "<white>Check the chat for instructions!");
         Title.Times times = Title.Times.times(Duration.ofMillis(100), Duration.ofSeconds(2), Duration.ofMillis(500));
         Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
         p.showTitle(title);
 
         String prefix = plugin.getMessagesFile().getString("prefix", "");
-        String header = plugin.getMessagesFile().getString("editor.input.header", "<yellow>=== CHẾ ĐỘ NHẬP LIỆU ===");
+        String header = plugin.getMessagesFile().getString("editor.input.header", "<yellow>=== INPUT MODE ===");
         p.sendMessage(ColorUtils.parse(prefix + header));
 
         List<String> prompts = null;
 
-        // BƯỚC 1: Xử lý Custom Prompts từ API Custom Action
         if (session.getPromptKey() != null && session.getPromptKey().startsWith("edit_action_")) {
             String fieldName = session.getPromptKey().substring("edit_action_".length());
 
@@ -68,28 +81,24 @@ public class EditorListener implements Listener {
             }
         }
 
-        // BƯỚC 2: Fallback về messages.yml nếu plugin gốc không định nghĩa
         if (prompts == null && session.getPromptKey() != null) {
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + session.getPromptKey());
         }
 
-        // BƯỚC 3: Fallback dựa trên Input Type (String, Number, Boolean, v.v)
         if (prompts == null || prompts.isEmpty()) {
             String defaultTypeKey = session.getInputType().name().toLowerCase();
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + defaultTypeKey);
         }
 
-        // BƯỚC 4: Fallback mặc định an toàn tuyệt đối
         if (prompts == null || prompts.isEmpty()) {
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts.default");
         }
 
-        // Gửi dòng tin nhắn hướng dẫn ra chat
         for (String line : prompts) {
             p.sendMessage(ColorUtils.parse(line));
         }
 
-        String cancelHint = plugin.getMessagesFile().getString("editor.input.cancel_hint", "<gray>Gõ <red>cancel <gray>để hủy thao tác.");
+        String cancelHint = plugin.getMessagesFile().getString("editor.input.cancel_hint", "<gray>Type <red>cancel <gray>to abort.");
         p.sendMessage(ColorUtils.parse(cancelHint));
 
         String footer = plugin.getMessagesFile().getString("editor.input.footer", "<yellow>=====================");
@@ -146,7 +155,7 @@ public class EditorListener implements Listener {
         Player p = e.getPlayer();
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
-            String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>Bạn đang trong chế độ chỉnh sửa! Vui lòng gõ cancel.");
+            String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>You are in editor mode! Please type cancel.");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
     }

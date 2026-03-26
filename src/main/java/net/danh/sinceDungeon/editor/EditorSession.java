@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+/**
+ * Represents an active configuration editing session for a player.
+ */
 public class EditorSession {
     private final SinceDungeon plugin;
     private final Player player;
@@ -31,6 +34,13 @@ public class EditorSession {
     private EditorCallback inputCallback = null;
     private Consumer<Player> lastMenuOpener = null;
 
+    /**
+     * Constructs a new EditorSession.
+     *
+     * @param plugin The main plugin instance.
+     * @param player The player editing the file.
+     * @param file   The configuration file being edited.
+     */
     public EditorSession(SinceDungeon plugin, Player player, File file) {
         this.plugin = plugin;
         this.player = player;
@@ -42,6 +52,9 @@ public class EditorSession {
         }
     }
 
+    /**
+     * Saves the current configuration session to the disk asynchronously.
+     */
     public void save() {
         if (file == null) return;
 
@@ -68,7 +81,7 @@ public class EditorSession {
                     if (errorMsg != null && player.isOnline())
                         player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
                 });
-                plugin.getLogger().severe("Lỗi khi lưu Dungeon: " + e.getMessage());
+                plugin.getLogger().severe("Error saving Dungeon: " + e.getMessage());
             }
         });
     }
@@ -103,6 +116,13 @@ public class EditorSession {
         return null;
     }
 
+    /**
+     * Awaits input from the player via chat.
+     *
+     * @param type      The input type.
+     * @param promptKey The prompt key to display.
+     * @param callback  The callback to execute when input is received.
+     */
     public void awaitInput(InputType type, String promptKey, EditorCallback callback) {
         this.currentInput = type;
         this.promptKey = promptKey;
@@ -185,10 +205,16 @@ public class EditorSession {
         this.inputCallback = null;
     }
 
+    /**
+     * Enum defining the requested input type from the user.
+     */
     public enum InputType {
         NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK
     }
 
+    /**
+     * Callback interface for processing input results.
+     */
     public interface EditorCallback {
         void onInput(String value);
     }

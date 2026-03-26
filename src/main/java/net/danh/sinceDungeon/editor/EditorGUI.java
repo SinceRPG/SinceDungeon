@@ -25,10 +25,18 @@ import org.jspecify.annotations.NonNull;
 import java.io.File;
 import java.util.*;
 
+/**
+ * Handles all graphical user interfaces for the dungeon editor.
+ */
 public class EditorGUI implements Listener {
 
     private final SinceDungeon plugin;
 
+    /**
+     * Constructs the EditorGUI listener.
+     *
+     * @param plugin The main plugin instance.
+     */
     public EditorGUI(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -107,6 +115,11 @@ public class EditorGUI implements Listener {
         return mat != null ? mat : Material.ARROW;
     }
 
+    /**
+     * Opens the main menu of the editor.
+     *
+     * @param p The player viewing the menu.
+     */
     public void openMainMenu(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.main")));
         File folder = new File(plugin.getDataFolder(), "dungeons");
@@ -122,6 +135,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the specific dungeon configuration menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openDungeonMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openDungeonMenu(player, session));
         String title = getMsg("title.dungeon").replace("<name>", session.getFile().getName());
@@ -151,6 +170,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the condition list menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openConditionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openConditionList(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.conditions")));
@@ -177,6 +202,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the main rewards menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openRewardMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardMenu(player, session));
         Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(getMsg("title.rewards_main")));
@@ -186,6 +217,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the reward tiers menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openRewardTiers(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardTiers(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_tiers")));
@@ -207,6 +244,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the reward pool menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openRewardPool(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardPool(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_pool")));
@@ -230,6 +273,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the editor for a specific reward.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openRewardEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardEditor(player, session));
         String key = session.getCurrentRewardKey();
@@ -271,6 +320,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the stages list menu.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openStageList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openStageList(player, session));
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.stages")));
@@ -294,7 +349,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    // [CẬP NHẬT LỚN] Lấy tên hiển thị thay vì raw type name
+    /**
+     * Opens the action list menu for a specific stage.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openActionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionList(player, session));
         String title = getMsg("title.actions").replace("<stage>", session.getCurrentStage());
@@ -324,6 +384,12 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    /**
+     * Opens the editor for a specific action.
+     *
+     * @param p       The player viewing the menu.
+     * @param session The current editor session.
+     */
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action").replace("<index>", session.getCurrentActionKey());
@@ -366,14 +432,18 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    // [CẬP NHẬT LỚN] Lấy tên hiển thị custom từ ActionMeta
+    /**
+     * Opens the action type selector menu.
+     *
+     * @param p The player viewing the menu.
+     */
     public void openActionTypeSelector(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.select_type")));
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             String displayName = (meta.displayName() != null) ? "<green><bold>" + meta.displayName() : "<green>" + type;
 
-            inv.addItem(makeItem(meta.icon(), displayName, Arrays.asList("<gray>" + meta.description(), "", "<yellow>ID Tích Hợp: <white>" + type)));
+            inv.addItem(makeItem(meta.icon(), displayName, Arrays.asList("<gray>" + meta.description(), "", "<yellow>Internal ID: <white>" + type)));
         }
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
         p.openInventory(inv);
@@ -409,7 +479,6 @@ public class EditorGUI implements Listener {
             e.setCancelled(true);
             return;
         }
-
 
         if (e.getClickedInventory() != e.getView().getTopInventory()) {
             if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
@@ -705,12 +774,11 @@ public class EditorGUI implements Listener {
                 openActionList(p, session);
                 return;
             }
-            // Giải nén String Type ID ẩn trong List lore của GUI
             String type = null;
             if (cur.hasItemMeta() && cur.getItemMeta().hasLore()) {
                 for (Component comp : cur.getItemMeta().lore()) {
                     String line = getPlainText(comp);
-                    if (line.contains("ID Tích Hợp:")) {
+                    if (line.contains("Internal ID:")) {
                         type = line.split(":")[1].trim();
                         break;
                     }
