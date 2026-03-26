@@ -98,10 +98,11 @@ public class EditorListener implements Listener {
 
         e.setCancelled(true);
         EditorSession session = activeInputs.remove(p.getUniqueId());
+        // Cạo bỏ hoàn toàn khoảng trắng dư thừa
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
 
-        String cancelKw = plugin.getMessagesFile().getString("editor.words.cancel", "cancel");
-        String hereKw = plugin.getMessagesFile().getString("editor.words.here", "here");
+        String cancelKw = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").trim();
+        String hereKw = plugin.getMessagesFile().getString("editor.words.here", "here").trim();
 
         if (msg.equalsIgnoreCase(cancelKw)) {
             sendMsg(p, "input_cancel");
@@ -145,14 +146,14 @@ public class EditorListener implements Listener {
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
 
+            // Xử lý thông minh khoảng trắng cho các lệnh
             String cmd = e.getMessage().toLowerCase().trim();
 
-            // VÁ LỖI LOGIC: Bọc cứng từ khóa cấu hình vào dấu gạch chéo (/)
-            // Đảm bảo nếu config là "huy", người chơi gõ "/huy" sẽ hoạt động trơn tru.
-            String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase();
+            String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase().trim();
             String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
 
-            if (cmd.equals(cancelKw) || cmd.equals("/cancel")) {
+            // Cạo sạch khoảng trắng và kiểm tra linh hoạt
+            if (cmd.equals(cancelKw) || cmd.equals("/cancel") || cmd.startsWith(cancelKw + " ") || cmd.startsWith("/cancel ")) {
                 EditorSession session = activeInputs.remove(p.getUniqueId());
                 sendMsg(p, "input_cancel");
                 if (session != null) reopenSessionMenu(session);

@@ -4,10 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -23,17 +20,11 @@ public class WorldManager {
         boolean wasAutoSave = false;
 
         if (templateW != null) {
-            // TỐI ƯU CỰC ĐỘ: Ép lưu dữ liệu xuống ổ cứng (Save) thay vì Unload World.
-            // Điều này cho phép Admin tiếp tục xây dựng trong Map mẫu mà không bị Kick ra ngoài.
             templateW.save();
             wasAutoSave = templateW.isAutoSave();
-
-            // Tạm tắt AutoSave trong tích tắc để quá trình Copy file không bị hỏng (Corruption)
             templateW.setAutoSave(false);
 
             final boolean finalAutoSaveState = wasAutoSave;
-
-            // Tiến hành Copy Asynchronous ngay lập tức không cần trễ (delay)
             executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW, finalAutoSaveState);
         } else {
             executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, null, false);
@@ -56,7 +47,6 @@ public class WorldManager {
                 throw new RuntimeException("Failed to copy world files using WorldUtils.");
             }
 
-            // Xóa file UID để Bukkit nhận diện đây là một World hoàn toàn mới
             new File(target, "uid.dat").delete();
             return instanceId;
 
@@ -67,12 +57,22 @@ public class WorldManager {
                     creator.generatorSettings("");
                     creator.generateStructures(false);
 
-                    // Ngăn chặn giật Lag (TPS Drop) khi load chunk ở khu vực Spawn
                     if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
 
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
+                        // TỐI ƯU GỐC: Khóa chặn mọi GameRule ngay lập tức khi World vừa khởi tạo xong.
+                        // Đảm bảo không có lấy 1 tick nào để Vanilla Mobs hay thời tiết xấu lọt vào!
                         world.setAutoSave(false);
+                        world.setGameRule(GameRules.SPAWN_MOBS, false);
+                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                        world.setGameRule(GameRules.ADVANCE_TIME, false);
+
+                        world.setTime(6000);
+                        world.setStorm(false);
+                        world.setThundering(false);
+
                         finalFuture.complete(world);
                     } else {
                         finalFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
@@ -81,7 +81,6 @@ public class WorldManager {
                     finalFuture.completeExceptionally(e);
                 }
 
-                // Trả lại trạng thái AutoSave cho Map mẫu sau khi Copy xong
                 if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
             });
 

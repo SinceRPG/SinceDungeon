@@ -6,6 +6,8 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -18,22 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Represents an action that spawns vanilla entity waves.
- */
 public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
-    /**
-     * Constructs a new SpawnWaveAction.
-     *
-     * @param type      The vanilla entity type.
-     * @param amount    The amount of entities to spawn.
-     * @param locations The list of vector spawn locations.
-     */
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
         this.amount = amount;
@@ -88,6 +80,10 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (ent instanceof LivingEntity living) {
                 living.setRemoveWhenFarAway(false);
                 living.setPersistent(true);
+
+                // UX: Tạo hiệu ứng âm thanh và hạt Particle mây đen/lửa để người chơi biết quái vừa xuất hiện
+                game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
+                game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
 
                 spawnedMobs.put(ent.getUniqueId(), finalLoc);
                 count++;
