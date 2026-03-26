@@ -3,6 +3,8 @@ package net.danh.sinceDungeon.manager;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
+import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
@@ -78,6 +80,40 @@ public class DungeonGame {
             stages.add(actions);
         }
     }
+
+    // ============================ [API] GETTERS & SETTERS ============================
+    public DungeonTemplate getTemplate() {
+        return template;
+    }
+
+    public List<List<DungeonAction>> getStages() {
+        return stages;
+    }
+
+    public int getCurrentStageIndex() {
+        return currentStageIndex;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    /**
+     * Cho phép API ép hệ thống hoàn thành ngay lập tức Stage hiện tại (Bỏ qua quái/nhiệm vụ).
+     */
+    public void forceCompleteCurrentStage() {
+        if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
+
+        for (DungeonAction action : stages.get(currentStageIndex)) {
+            action.forceComplete();
+        }
+        checkCompletion();
+    }
+    // =================================================================================
 
     public void sendMessage(String key, String... placeholders) {
         String msg = plugin.getMessagesFile().getString(key);
@@ -300,6 +336,10 @@ public class DungeonGame {
         sendMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
         playConfigSound("stage_complete", 1f, 1f);
 
+        // --- GỌI SỰ KIỆN API STAGE COMPLETE ---
+        DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
+        Bukkit.getPluginManager().callEvent(stageEvent);
+
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(currentStageIndex + 1), 60L);
     }
 
@@ -321,11 +361,15 @@ public class DungeonGame {
             }
         }
 
-        int finalChestCount = chestCount;
         int finalElapsed = (int) elapsedSeconds;
 
         isRunning = false;
         if (tickTask != null) tickTask.cancel();
+
+        // --- GỌI SỰ KIỆN API FINISH DUNGEON ĐỂ CHO PHÉP SỬA CHEST COUNT ---
+        DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
+        Bukkit.getPluginManager().callEvent(finishEvent);
+        int finalChestCount = finishEvent.getChestCount();
 
         if (finalChestCount > 0) {
             net.danh.sinceDungeon.reward.RewardSessionManager.addSession(player,

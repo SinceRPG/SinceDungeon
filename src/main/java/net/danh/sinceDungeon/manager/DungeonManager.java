@@ -4,8 +4,10 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.ActionParser;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.impl.*;
+import net.danh.sinceDungeon.api.events.DungeonStartEvent;
 import net.danh.sinceDungeon.system.PAPIHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
@@ -29,6 +31,18 @@ public class DungeonManager {
         registerDefaultActions();
         loadTemplates();
     }
+
+    // ============ [API] ĐĂNG KÝ VÀ QUẢN LÝ TEMPLATE (MỚI) ============
+    public void registerTemplate(DungeonTemplate template) {
+        if (template != null && template.id() != null) {
+            templates.put(template.id(), template);
+        }
+    }
+
+    public void unregisterTemplate(String id) {
+        templates.remove(id);
+    }
+    // =================================================================
 
     public void registerAction(String type, ActionParser parser, Material icon, String description, Map<String, Object> defaults) {
         String key = type.toUpperCase();
@@ -259,6 +273,13 @@ public class DungeonManager {
                 }
                 return;
             }
+        }
+
+        // --- GỌI SỰ KIỆN DUNGEON START ĐỂ API CÓ THỂ HỦY (CANCEL) NẾU CẦN ---
+        DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl);
+        Bukkit.getPluginManager().callEvent(startEvent);
+        if (startEvent.isCancelled()) {
+            return; // Đã bị plugin khác chặn
         }
 
         DungeonGame game = new DungeonGame(plugin, p, tmpl);

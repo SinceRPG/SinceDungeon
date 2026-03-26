@@ -20,6 +20,10 @@ public abstract class DungeonAction {
         return completed;
     }
 
+    public void forceComplete() {
+        this.completed = true;
+    }
+
     public void setStartMessages(List<String> startMessages) {
         this.startMessages = startMessages;
     }
