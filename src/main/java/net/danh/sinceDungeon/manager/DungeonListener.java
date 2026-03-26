@@ -90,19 +90,42 @@ public class DungeonListener implements Listener {
     @EventHandler
     public void onInteractEntity(PlayerInteractEntityEvent e) { pass(e.getPlayer(), e); }
 
-    @EventHandler
-    public void onBreak(BlockBreakEvent e) { pass(e.getPlayer(), e); }
+    // BẢO VỆ GỐC: Ngăn người chơi đập block nếu WorldGuard không hoạt động
+    // Đã sửa lại lỗi `cannot find symbol isPlaying(Player)`
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBreak(BlockBreakEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            e.setCancelled(true);
+        }
+        pass(e.getPlayer(), e);
+    }
 
-    @EventHandler
-    public void onPlace(BlockPlaceEvent e) { pass(e.getPlayer(), e); }
+    // BẢO VỆ GỐC: Ngăn người chơi đặt block trong Dungeon
+    // Đã sửa lại lỗi `cannot find symbol isPlaying(Player)`
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlace(BlockPlaceEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            e.setCancelled(true);
+        }
+        pass(e.getPlayer(), e);
+    }
 
     @EventHandler
     public void onCloseInv(InventoryCloseEvent e) {
         if (e.getPlayer() instanceof Player p) pass(p, e);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
+        // NGĂN CHẶN FARM RÁC: Xóa rớt đồ và EXP của quái vật trong Dungeon
+        if (!(e.getEntity() instanceof Player)) {
+            String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+            if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+                e.getDrops().clear();
+                e.setDroppedExp(0);
+            }
+        }
+
         if (e.getEntity().getKiller() != null) pass(e.getEntity().getKiller(), e);
     }
 
@@ -136,7 +159,6 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
-        // VÁ LỖI: Giao phó cho DungeonGame xử lý 1 người chơi Disconnect thay vì Stop Game ngay
         if (game != null) {
             game.handlePlayerDisconnect(p);
         }
@@ -154,7 +176,7 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
-            game.handlePlayerDisconnect(p); // Rời map cũng coi như tự rời khỏi nhóm chinh phạt
+            game.handlePlayerDisconnect(p);
         }
     }
 
@@ -174,7 +196,6 @@ public class DungeonListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 p.spigot().respawn();
 
-                // VÁ LỖI UX: Kiểm tra Setting xem nên Đá cả nhóm ra ngoài hay Cho phép người chết hồi sinh chạy lại từ đầu
                 String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
 
                 if (deathAction.equalsIgnoreCase("FAIL")) {
@@ -184,7 +205,7 @@ public class DungeonListener implements Listener {
                     p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
                     p.setFoodLevel(20);
                 }
-            }, 2L); // 2 Ticks để vượt qua màn hình Death Screen an toàn
+            }, 2L);
         }
     }
 

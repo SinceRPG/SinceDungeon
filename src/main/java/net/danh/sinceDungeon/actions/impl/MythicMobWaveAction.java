@@ -23,12 +23,14 @@ import java.util.UUID;
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
+    private final int level;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
-    public MythicMobWaveAction(String internalName, int amount, List<Vector> locations) {
+    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
+        this.level = level;
         this.locations = locations;
     }
 
@@ -64,9 +66,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
 
             try {
-                ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), 1);
+                // Áp dụng Cấp độ (Level) vào Boss khi Spawn
+                ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), this.level);
                 if (am != null) {
-                    // VÁ LỖI: Buộc Bukkit ngăn chặn hệ thống tự nhiên Despawn boss khi người chơi chạy trốn
                     Entity bukkitEntity = am.getEntity().getBukkitEntity();
                     if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
                         le.setRemoveWhenFarAway(false);

@@ -144,6 +144,18 @@ public class EditorListener implements Listener {
         Player p = e.getPlayer();
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
+
+            String cmd = e.getMessage().toLowerCase().trim();
+            String cancelKw = "/" + plugin.getMessagesFile().getString("editor.words.cancel", "cancel");
+
+            // XỬ LÝ THÔNG MINH: Người chơi có thói quen gõ /cancel (thêm dấu gạch chéo) để thoát nhập liệu
+            if (cmd.equals(cancelKw) || cmd.equals("/cancel")) {
+                EditorSession session = activeInputs.remove(p.getUniqueId());
+                sendMsg(p, "input_cancel");
+                if (session != null) reopenSessionMenu(session);
+                return;
+            }
+
             String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>You are in editor mode! Please type cancel.");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }

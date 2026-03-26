@@ -68,12 +68,15 @@ public class DungeonManager {
         registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
         registerRewardProcessor("COMMAND", (p, val, displayName) -> {
-            String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-            String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
-            if (displayName != null && msg != null) {
-                p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
-            }
+            // AN TOÀN LUỒNG: Ép lệnh chạy trên Main Thread, chống Crash do PaperMC Async block
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+                String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
+                if (displayName != null && msg != null) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+                }
+            });
         });
 
         registerRewardProcessor("ITEM", (p, val, displayName) -> {
@@ -256,13 +259,16 @@ public class DungeonManager {
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
+        // MỞ KHÓA TÍNH NĂNG LEVEL
+        mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 
         registerAction("MYTHIC_WAVE", map -> {
                     List<Vector> v = parseLocList(map.get("locations"));
                     int amount = getInt(map.get("amount"), (int) mmDefaults.get("amount"));
+                    int level = getInt(map.get("level"), (int) mmDefaults.get("level"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
-                    return new MythicMobWaveAction(mob, amount, v);
+                    return new MythicMobWaveAction(mob, amount, level, v);
                 }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
@@ -401,11 +407,9 @@ public class DungeonManager {
             }
         }
 
-        // Cập nhật API: Truyền participants vào Event
         DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
         Bukkit.getPluginManager().callEvent(startEvent);
 
-        // Cập nhật: Kiểm tra nếu plugin khác đã kick hết người chơi ra khỏi queue
         if (startEvent.isCancelled() || participants.isEmpty()) return;
 
         DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
