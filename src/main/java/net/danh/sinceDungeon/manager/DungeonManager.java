@@ -397,14 +397,21 @@ public class DungeonManager {
     public void joinDungeon(Player p, String id) {
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         Set<Player> participants = new HashSet<>();
+        int originalPartySize = 1;
 
         if (party != null) {
             if (!party.getLeader().equals(p.getUniqueId())) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
                 return;
             }
+            originalPartySize = party.getMembers().size();
             double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
             participants.addAll(plugin.getPartyManager().getEligibleMembers(party, maxDist));
+
+            // UX CẢI THIỆN: Báo cho Leader biết nếu có thành viên bị bỏ lại vì đứng quá xa
+            if (participants.size() < originalPartySize) {
+                p.sendMessage(ColorUtils.parseWithPrefix("<yellow>Cảnh báo: Có " + (originalPartySize - participants.size()) + " thành viên đứng quá xa và sẽ không được kéo vào Dungeon!"));
+            }
         } else {
             participants.add(p);
         }
@@ -451,7 +458,7 @@ public class DungeonManager {
                     }
 
                     if (!participant.equals(p)) {
-                        p.sendMessage(ColorUtils.parseWithPrefix("<red>" + participant.getName() + " failed a condition check. Initialization aborted."));
+                        p.sendMessage(ColorUtils.parseWithPrefix("<red>Thành viên " + participant.getName() + " không đạt điều kiện. Hủy quá trình vào Dungeon."));
                     }
                     return;
                 }

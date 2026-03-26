@@ -6,7 +6,6 @@ import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.manager.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -23,9 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Handles the logic and interactions of the reward collection GUI.
- */
 public class RewardGUI implements Listener {
     private final SinceDungeon plugin;
 
@@ -39,17 +35,6 @@ public class RewardGUI implements Listener {
 
     private String getMsg(String key) {
         return getConfig().getString("reward.messages." + key);
-    }
-
-    private String getPlainText(Component c) {
-        return PlainTextComponentSerializer.plainText().serialize(c);
-    }
-
-    private boolean isRewardGui(Component titleComp) {
-        String guiTitle = getPlainText(titleComp);
-        String rawConfig = getConfig().getString("reward.gui_title");
-        if (rawConfig == null) return false;
-        return guiTitle.equals(getPlainText(ColorUtils.parse(rawConfig)));
     }
 
     private int getGuiSize() {
@@ -110,34 +95,22 @@ public class RewardGUI implements Listener {
         return pool.get(0);
     }
 
-    /**
-     * Opens the reward claiming GUI for a player.
-     *
-     * @param p          The player.
-     * @param chestCount The amount of chests available to claim.
-     * @param template   The dungeon template object containing the reward pools.
-     */
     public void openRewardGUI(Player p, int chestCount, DungeonTemplate template) {
-        String titleStr = getConfig().getString("reward.gui_title", "Reward");
-        Inventory inv = Bukkit.createInventory(null, getGuiSize(), ColorUtils.parse(titleStr));
-
-        inv.setItem(getButtonSlot(), createIcon("button", chestCount));
-
         RewardSession session = RewardSessionManager.getSession(p);
         if (session == null) {
             session = new RewardSession(chestCount, template);
             RewardSessionManager.addSession(p, session);
         }
 
+        String titleStr = getConfig().getString("reward.gui_title", "Reward");
+
+        // CẤT CÁNH CỬA KHỎI LỖ HỔNG: Gắn cứng RewardHolder vào Inventory
+        Inventory inv = Bukkit.createInventory(new RewardHolder(session), getGuiSize(), ColorUtils.parse(titleStr));
+
+        inv.setItem(getButtonSlot(), createIcon("button", chestCount));
         p.openInventory(inv);
     }
 
-    /**
-     * Forces all remaining chests in a session to be claimed instantly.
-     *
-     * @param p       The player to receive the rewards.
-     * @param session The active reward session containing the data.
-     */
     public void forceClaimAll(Player p, RewardSession session) {
         int remaining = session.getChestCount();
         if (remaining <= 0) return;
@@ -148,6 +121,11 @@ public class RewardGUI implements Listener {
                 DungeonReward reward = getRandomReward(pool);
                 if (reward != null) giveReward(p, reward);
             }
+        }
+
+        // Clear chest count internally so it won't loop again
+        while (session.getChestCount() > 0) {
+            session.decreaseChestCount();
         }
 
         String msg = getMsg("auto_claim");
@@ -166,7 +144,7 @@ public class RewardGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        if (isRewardGui(e.getView().title())) {
+        if (e.getView().getTopInventory().getHolder() instanceof RewardHolder) {
             for (int slot : e.getRawSlots()) {
                 if (slot < e.getView().getTopInventory().getSize()) {
                     e.setCancelled(true);
@@ -179,8 +157,11 @@ public class RewardGUI implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (!isRewardGui(e.getView().title())) return;
 
+        // BẢO MẬT: Kiểm tra thông qua instance của Holder, không quan tâm Title là gì
+        if (!(e.getView().getTopInventory().getHolder() instanceof RewardHolder holder)) return;
+
+        // Chặn tuyệt đối mọi nỗ lực tuồn đồ ra/vào GUI
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
@@ -197,7 +178,7 @@ public class RewardGUI implements Listener {
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
             e.setCancelled(true);
 
-            RewardSession session = RewardSessionManager.getSession(p);
+            RewardSession session = holder.getSession();
             if (session == null) {
                 p.closeInventory();
                 return;
@@ -220,8 +201,8 @@ public class RewardGUI implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
-        if (isRewardGui(e.getView().title()) && e.getPlayer() instanceof Player p) {
-            RewardSession session = RewardSessionManager.getSession(p);
+        if (e.getView().getTopInventory().getHolder() instanceof RewardHolder holder && e.getPlayer() instanceof Player p) {
+            RewardSession session = holder.getSession();
             if (session != null && session.getChestCount() > 0) {
                 forceClaimAll(p, session);
                 playSound(p, "claim");

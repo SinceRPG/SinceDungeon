@@ -427,6 +427,22 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Backward compatibility alias for older actions. Routes to broadcastMessage.
+     */
+    public void sendMessage(String key, String... placeholders) {
+        broadcastMessage(key, placeholders);
+    }
+
+    /**
+     * Gets the set of all players participating in this dungeon instance.
+     *
+     * @return Set of participants.
+     */
+    public Set<Player> getParticipants() {
+        return participants;
+    }
+
     public void broadcastMessage(String key, String... placeholders) {
         String msg = plugin.getMessagesFile().getString(key);
         if (msg == null || msg.isEmpty()) return;

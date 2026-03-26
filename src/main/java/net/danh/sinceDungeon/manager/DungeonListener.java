@@ -84,9 +84,9 @@ public class DungeonListener implements Listener {
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
-                if (success && !p.isDead()) {
-                    p.setHealth(0);
-                    p.spigot().respawn();
+                if (success) {
+                    // Đã loại bỏ p.setHealth(0) và p.spigot().respawn() vì gây rớt đồ vô lý
+                    p.sendMessage(ColorUtils.parseWithPrefix("<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa."));
                 }
             });
         }

@@ -27,16 +27,12 @@ import java.util.*;
 
 /**
  * Handles all graphical user interfaces for the dungeon editor.
+ * Secured with EditorHolder to prevent GUI Spoofing exploits.
  */
 public class EditorGUI implements Listener {
 
     private final SinceDungeon plugin;
 
-    /**
-     * Constructs the EditorGUI listener.
-     *
-     * @param plugin The main plugin instance.
-     */
     public EditorGUI(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -83,28 +79,6 @@ public class EditorGUI implements Listener {
         return PlainTextComponentSerializer.plainText().serialize(c);
     }
 
-    private boolean isTitle(Component guiTitleComp, String configKey, String placeholder) {
-        String guiTitle = getPlainText(guiTitleComp);
-        String rawConfig = getMsg(configKey);
-        if (rawConfig == null) return false;
-
-        String configPlain = getPlainText(ColorUtils.parse(rawConfig));
-
-        if (placeholder == null) {
-            return guiTitle.equals(configPlain);
-        }
-
-        String[] parts = configPlain.split(placeholder);
-        int lastIndex = 0;
-        for (String part : parts) {
-            if (part.isEmpty()) continue;
-            int index = guiTitle.indexOf(part, lastIndex);
-            if (index == -1) return false;
-            lastIndex = index + part.length();
-        }
-        return true;
-    }
-
     private String locToString(Location l) {
         return String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
     }
@@ -115,13 +89,8 @@ public class EditorGUI implements Listener {
         return mat != null ? mat : Material.ARROW;
     }
 
-    /**
-     * Opens the main menu of the editor.
-     *
-     * @param p The player viewing the menu.
-     */
     public void openMainMenu(Player p) {
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.main")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(null, "MAIN"), 54, ColorUtils.parse(getMsg("title.main")));
         File folder = new File(plugin.getDataFolder(), "dungeons");
         if (folder.exists()) {
             File[] files = folder.listFiles((d, n) -> n.endsWith(".yml"));
@@ -135,16 +104,10 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the specific dungeon configuration menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openDungeonMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openDungeonMenu(player, session));
         String title = getMsg("title.dungeon").replace("<name>", session.getFile().getName());
-        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "DUNGEON"), 27, ColorUtils.parse(title));
 
         String world = session.getConfig().getString("template-world", getWord("not_set"));
         boolean isPublic = session.getConfig().getBoolean("public", false);
@@ -170,15 +133,9 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the condition list menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openConditionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openConditionList(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.conditions")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "CONDITIONS"), 54, ColorUtils.parse(getMsg("title.conditions")));
 
         ConfigurationSection sec = session.getConfig().getConfigurationSection("conditions");
         if (sec != null) {
@@ -202,30 +159,18 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the main rewards menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openRewardMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardMenu(player, session));
-        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(getMsg("title.rewards_main")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARDS_MAIN"), 27, ColorUtils.parse(getMsg("title.rewards_main")));
         inv.setItem(11, makeItem(Material.CLOCK, getMsg("items.reward_tiers_item"), null));
         inv.setItem(15, makeItem(Material.CHEST, getMsg("items.reward_pool_item"), null));
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the reward tiers menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openRewardTiers(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardTiers(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_tiers")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARD_TIERS"), 54, ColorUtils.parse(getMsg("title.reward_tiers")));
         ConfigurationSection tiers = session.getConfig().getConfigurationSection("rewards.tiers");
         if (tiers != null) {
             List<String> keys = new ArrayList<>(tiers.getKeys(false));
@@ -244,15 +189,9 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the reward pool menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openRewardPool(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardPool(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.reward_pool")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARD_POOL"), 54, ColorUtils.parse(getMsg("title.reward_pool")));
 
         ConfigurationSection pool = session.getConfig().getConfigurationSection("rewards.pool");
         if (pool != null) {
@@ -273,12 +212,6 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the editor for a specific reward.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openRewardEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardEditor(player, session));
         String key = session.getCurrentRewardKey();
@@ -294,7 +227,7 @@ public class EditorGUI implements Listener {
         String displayName = session.getConfig().getString(path + ".name", getWord("reward_default_name"));
 
         String title = getMsg("title.edit_reward").replace("<index>", key);
-        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_REWARD"), 27, ColorUtils.parse(title));
 
         List<String> tLore = new ArrayList<>();
         for (String s : plugin.getMessagesFile().getStringList("editor.items.reward_type_lore"))
@@ -320,15 +253,9 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the stages list menu.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openStageList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openStageList(player, session));
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.stages")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "STAGES"), 54, ColorUtils.parse(getMsg("title.stages")));
         ConfigurationSection stages = session.getConfig().getConfigurationSection("stages");
         if (stages != null) {
             List<String> keys = new ArrayList<>(stages.getKeys(false));
@@ -349,16 +276,10 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the action list menu for a specific stage.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openActionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionList(player, session));
         String title = getMsg("title.actions").replace("<stage>", session.getCurrentStage());
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(title));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "ACTIONS"), 54, ColorUtils.parse(title));
 
         ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
         if (sec != null) {
@@ -384,16 +305,10 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the editor for a specific action.
-     *
-     * @param p       The player viewing the menu.
-     * @param session The current editor session.
-     */
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action").replace("<index>", session.getCurrentActionKey());
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(title));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_ACTION"), 54, ColorUtils.parse(title));
 
         String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey();
         ConfigurationSection sec = session.getConfig().getConfigurationSection(path);
@@ -411,14 +326,24 @@ public class EditorGUI implements Listener {
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
             boolean isList = sec.isList(key);
 
-            if (key.equals("type")) {
-                icon = Material.BARRIER;
-                hint = getMsg("items.action_type_cant_edit");
-            } else if (key.equals("amount")) icon = Material.GOLD_NUGGET;
-            else if (key.equals("mob")) icon = Material.CREEPER_HEAD;
-            else if (isLocation) {
-                icon = Material.COMPASS;
-                hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
+            // Optimization: 'if' statement replaced with 'switch'
+            switch (key) {
+                case "type":
+                    icon = Material.BARRIER;
+                    hint = getMsg("items.action_type_cant_edit");
+                    break;
+                case "amount":
+                    icon = Material.GOLD_NUGGET;
+                    break;
+                case "mob":
+                    icon = Material.CREEPER_HEAD;
+                    break;
+                default:
+                    if (isLocation) {
+                        icon = Material.COMPASS;
+                        hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
+                    }
+                    break;
             }
 
             if (isList) {
@@ -432,13 +357,8 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the action type selector menu.
-     *
-     * @param p The player viewing the menu.
-     */
     public void openActionTypeSelector(Player p) {
-        Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.select_type")));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(null, "SELECT_TYPE"), 54, ColorUtils.parse(getMsg("title.select_type")));
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             String displayName = (meta.displayName() != null) ? "<green><bold>" + meta.displayName() : "<green>" + type;
@@ -451,14 +371,11 @@ public class EditorGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        if (e.getWhoClicked() instanceof Player) {
-            EditorSession session = plugin.getEditorManager().getSession((Player) e.getWhoClicked());
-            if (session != null || isTitle(e.getView().title(), "title.main", null)) {
-                for (int slot : e.getRawSlots()) {
-                    if (slot < e.getView().getTopInventory().getSize()) {
-                        e.setCancelled(true);
-                        return;
-                    }
+        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder) {
+            for (int slot : e.getRawSlots()) {
+                if (slot < e.getView().getTopInventory().getSize()) {
+                    e.setCancelled(true);
+                    return;
                 }
             }
         }
@@ -468,12 +385,7 @@ public class EditorGUI implements Listener {
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
 
-        EditorManager manager = plugin.getEditorManager();
-        EditorSession session = manager.getSession(p);
-        Component titleComp = e.getView().title();
-
-        boolean isEditorMenu = session != null || isTitle(titleComp, "title.main", null);
-        if (!isEditorMenu) return;
+        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
 
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
@@ -492,8 +404,13 @@ public class EditorGUI implements Listener {
         ItemStack cur = e.getCurrentItem();
         if (cur == null || cur.getType() == Material.AIR) return;
 
+        EditorManager manager = plugin.getEditorManager();
+        // Fix: session is now strictly final, removing the "Variable used in lambda expression should be final" warnings.
+        final EditorSession session = manager.getSession(p);
+        String menuType = holder.getMenuType();
+
         // ================= MAIN MENU =================
-        if (isTitle(titleComp, "title.main", null)) {
+        if (menuType.equals("MAIN")) {
             if (cur.getType() == Material.PAPER) {
                 String name = getPlainText(cur.getItemMeta().displayName());
                 manager.startEditing(p, name);
@@ -506,10 +423,50 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        // ================= SELECT ACTION TYPE =================
+        if (menuType.equals("SELECT_TYPE")) {
+            EditorSession selSession = manager.getSession(p); // Recover via local var to preserve finality of outer session
+            if (selSession == null) return;
+
+            if (e.getRawSlot() == 45) {
+                openActionList(p, selSession);
+                return;
+            }
+            String type = null;
+            ItemMeta meta = cur.getItemMeta();
+
+            // Fix: NullPointerException warning resolved by strictly evaluating meta.hasLore() and null checking
+            if (meta != null && meta.hasLore() && meta.lore() != null) {
+                for (Component comp : meta.lore()) {
+                    String line = getPlainText(comp);
+                    if (line.contains("Internal ID:")) {
+                        type = line.split(":")[1].trim();
+                        break;
+                    }
+                }
+            }
+
+            if (type == null) return;
+            DungeonManager.ActionMeta actMeta = plugin.getDungeonManager().getActionMeta(type);
+            if (actMeta == null) return;
+
+            String newKey = type.toLowerCase() + "_" + System.currentTimeMillis();
+            String path = "stages." + selSession.getCurrentStage() + ".actions." + newKey;
+
+            selSession.getConfig().set(path + ".type", type);
+            for (Map.Entry<String, Object> entry : actMeta.defaults().entrySet()) {
+                selSession.getConfig().set(path + "." + entry.getKey(), entry.getValue());
+            }
+
+            selSession.setCurrentActionKey(newKey);
+            openActionEditor(p, selSession);
+            return;
+        }
+
         if (session == null) return;
 
         // ================= DUNGEON MENU =================
-        if (isTitle(titleComp, "title.dungeon", "<name>")) {
+        if (menuType.equals("DUNGEON")) {
             int slot = e.getRawSlot();
             if (slot == 10) {
                 session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_world_name", val -> {
@@ -532,7 +489,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= CONDITIONS LIST =================
-        if (isTitle(titleComp, "title.conditions", null)) {
+        if (menuType.equals("CONDITIONS")) {
             int slot = e.getRawSlot();
             if (slot == 49) {
                 session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
@@ -574,7 +531,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= REWARDS MAIN =================
-        if (isTitle(titleComp, "title.rewards_main", null)) {
+        if (menuType.equals("REWARDS_MAIN")) {
             if (cur.getType() == Material.CLOCK) openRewardTiers(p, session);
             else if (cur.getType() == Material.CHEST) openRewardPool(p, session);
             else if (e.getRawSlot() == 18) openDungeonMenu(p, session);
@@ -582,7 +539,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= REWARD TIERS =================
-        if (isTitle(titleComp, "title.reward_tiers", null)) {
+        if (menuType.equals("REWARD_TIERS")) {
             if (e.getRawSlot() == 49) {
                 session.awaitInput(EditorSession.InputType.EDIT_TIER, "edit_tier", val -> {
                     try {
@@ -628,7 +585,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= REWARD POOL =================
-        if (isTitle(titleComp, "title.reward_pool", null)) {
+        if (menuType.equals("REWARD_POOL")) {
             if (e.getRawSlot() == 49) {
                 String newKey = "reward_" + System.currentTimeMillis();
                 session.getConfig().set("rewards.pool." + newKey + ".type", "ITEM");
@@ -659,7 +616,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= EDIT REWARD ITEM =================
-        if (isTitle(titleComp, "title.edit_reward", "<index>")) {
+        if (menuType.equals("EDIT_REWARD")) {
             if (e.getRawSlot() == 18) {
                 openRewardPool(p, session);
                 return;
@@ -719,7 +676,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= STAGES =================
-        if (isTitle(titleComp, "title.stages", null)) {
+        if (menuType.equals("STAGES")) {
             if (e.getRawSlot() == 49) {
                 ConfigurationSection sec = session.getConfig().getConfigurationSection("stages");
                 int next = 1;
@@ -745,7 +702,7 @@ public class EditorGUI implements Listener {
         }
 
         // ================= ACTIONS LIST =================
-        if (isTitle(titleComp, "title.actions", "<stage>")) {
+        if (menuType.equals("ACTIONS")) {
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
             else if (e.getRawSlot() == 45) openStageList(p, session);
             else if (cur.getType() != Material.EMERALD && cur.getType() != getNavItem()) {
@@ -768,42 +725,8 @@ public class EditorGUI implements Listener {
             return;
         }
 
-        // ================= SELECT ACTION TYPE =================
-        if (isTitle(titleComp, "title.select_type", null)) {
-            if (e.getRawSlot() == 45) {
-                openActionList(p, session);
-                return;
-            }
-            String type = null;
-            if (cur.hasItemMeta() && cur.getItemMeta().hasLore()) {
-                for (Component comp : cur.getItemMeta().lore()) {
-                    String line = getPlainText(comp);
-                    if (line.contains("Internal ID:")) {
-                        type = line.split(":")[1].trim();
-                        break;
-                    }
-                }
-            }
-
-            if (type == null) return;
-            DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
-            if (meta == null) return;
-
-            String newKey = type.toLowerCase() + "_" + System.currentTimeMillis();
-            String path = "stages." + session.getCurrentStage() + ".actions." + newKey;
-
-            session.getConfig().set(path + ".type", type);
-            for (Map.Entry<String, Object> entry : meta.defaults().entrySet()) {
-                session.getConfig().set(path + "." + entry.getKey(), entry.getValue());
-            }
-
-            session.setCurrentActionKey(newKey);
-            openActionEditor(p, session);
-            return;
-        }
-
         // ================= EDIT ACTION =================
-        if (isTitle(titleComp, "title.edit_action", "<index>")) {
+        if (menuType.equals("EDIT_ACTION")) {
             if (e.getRawSlot() == 45) {
                 openActionList(p, session);
                 return;
