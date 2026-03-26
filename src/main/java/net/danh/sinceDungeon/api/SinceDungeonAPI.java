@@ -2,6 +2,8 @@ package net.danh.sinceDungeon.api;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.ActionParser;
+import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
+import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.DungeonTemplate;
@@ -22,17 +24,10 @@ public class SinceDungeonAPI {
         this.plugin = plugin;
     }
 
-    /**
-     * Khởi tạo API (Chỉ gọi 1 lần trong onEnable của SinceDungeon)
-     */
     public static void init(SinceDungeon plugin) {
         instance = new SinceDungeonAPI(plugin);
     }
 
-    /**
-     * Lấy instance của API để sử dụng.
-     * Cách dùng: SinceDungeonAPI.get()....
-     */
     public static SinceDungeonAPI get() {
         if (instance == null) {
             throw new IllegalStateException("SinceDungeon chưa được enable hoặc chưa khởi tạo API!");
@@ -64,25 +59,27 @@ public class SinceDungeonAPI {
 
     // ========================== MỞ RỘNG (EXTENSION API) ==========================
 
-    /**
-     * Đăng ký một loại Action hoàn toàn mới bằng Code với đầy đủ tùy chỉnh hiển thị và gợi ý chat.
-     *
-     * @param type          ID của Action (VD: "MY_CUSTOM_ACTION")
-     * @param parser        Lớp xử lý logic phân tích Action
-     * @param displayName   Tên hiển thị trong GUI (VD: "<green>Hành Động Tùy Chỉnh")
-     * @param icon          Icon hiển thị trong GUI
-     * @param description   Mô tả ngắn hiển thị dưới Icon
-     * @param defaultParams Các thông số mặc định khi tạo mới
-     * @param customPrompts Map chứa các tin nhắn gợi ý khi nhập liệu ở Chat (Key là tên Field, Value là List tin nhắn)
-     */
     public void registerCustomAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaultParams, Map<String, List<String>> customPrompts) {
         plugin.getDungeonManager().registerAction(type, parser, displayName, icon, description, defaultParams, customPrompts);
         plugin.getLogger().info("[API] Đã đăng ký Custom Action: " + type);
     }
 
     /**
-     * Đăng ký một Dungeon Template (Map) trực tiếp thông qua Code thay vì file YAML.
+     * Đăng ký hệ thống trả thưởng tùy chỉnh (VD: TOKEN_ENCHANT, MYTHIC_DROP)
      */
+    public void registerRewardProcessor(String type, RewardProcessor processor) {
+        plugin.getDungeonManager().registerRewardProcessor(type, processor);
+        plugin.getLogger().info("[API] Đã đăng ký Reward Processor: " + type.toUpperCase());
+    }
+
+    /**
+     * Đăng ký hệ thống kiểm tra điều kiện tùy chỉnh (VD: QUEST_REQUIREMENT)
+     */
+    public void registerConditionProcessor(String type, ConditionProcessor processor) {
+        plugin.getDungeonManager().registerConditionProcessor(type, processor);
+        plugin.getLogger().info("[API] Đã đăng ký Condition Processor: " + type.toUpperCase());
+    }
+
     public void registerTemplate(DungeonTemplate template) {
         plugin.getDungeonManager().registerTemplate(template);
     }

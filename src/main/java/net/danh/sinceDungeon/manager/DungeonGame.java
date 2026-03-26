@@ -107,11 +107,23 @@ public class DungeonGame {
      */
     public void forceCompleteCurrentStage() {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
-
-        for (DungeonAction action : stages.get(currentStageIndex)) {
-            action.forceComplete();
-        }
+        for (DungeonAction action : stages.get(currentStageIndex)) action.forceComplete();
         checkCompletion();
+    }
+
+    /**
+     * [MỚI] Tiêm (Inject) một Action mới vào một giai đoạn bất kỳ (có thể là giai đoạn đang diễn ra).
+     */
+    public void injectAction(int stageIndex, DungeonAction action) {
+        if (stageIndex >= 0 && stageIndex < stages.size()) {
+            stages.get(stageIndex).add(action);
+
+            // Nếu tiêm thẳng vào stage đang chạy, lập tức khởi động Action đó
+            if (currentStageIndex == stageIndex && isRunning && !stageCompleting) {
+                action.announceStart(this);
+                action.start(this);
+            }
+        }
     }
     // =================================================================================
 
