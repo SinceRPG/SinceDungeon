@@ -335,20 +335,39 @@ public class DungeonManager {
     public void joinDungeon(Player p, String id) {
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         Set<Player> participants = new HashSet<>();
-        int originalPartySize = 1;
+
+        int offlineCount = 0;
+        int farCount = 0;
 
         if (party != null) {
             if (!party.getLeader().equals(p.getUniqueId())) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
                 return;
             }
-            originalPartySize = party.getMembers().size();
-            double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
-            participants.addAll(plugin.getPartyManager().getEligibleMembers(party, maxDist));
 
-            if (participants.size() < originalPartySize) {
+            double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
+
+            // XỬ LÝ PHÂN LOẠI LOGIC: Đếm chính xác ai Offline, ai đứng quá xa
+            for (UUID uid : party.getMembers()) {
+                Player mem = Bukkit.getPlayer(uid);
+                if (mem == null || !mem.isOnline() || mem.isDead()) {
+                    offlineCount++;
+                } else {
+                    if (maxDist > 0 && (!mem.getWorld().equals(p.getWorld()) || mem.getLocation().distanceSquared(p.getLocation()) > maxDist * maxDist)) {
+                        farCount++;
+                    } else {
+                        participants.add(mem);
+                    }
+                }
+            }
+
+            if (offlineCount > 0) {
+                String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
+                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
+            }
+            if (farCount > 0) {
                 String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
-                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(originalPartySize - participants.size()))));
+                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
             }
         } else {
             participants.add(p);

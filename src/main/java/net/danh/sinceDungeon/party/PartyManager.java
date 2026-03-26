@@ -44,7 +44,6 @@ public class PartyManager {
         });
     }
 
-    // VÁ LỖI MEMORY LEAK: Gom toàn bộ logic Thoát Nhóm vào đây để dọn sạch sẽ Map nhớ
     public void quitParty(UUID uuid) {
         Party party = getParty(uuid);
         if (party == null) return;
@@ -53,24 +52,30 @@ public class PartyManager {
             electNewLeader(party);
         } else {
             party.removeMember(uuid);
-            activeParties.remove(uuid); // Kích khỏi bộ đệm nhận diện nhóm
-            partyChatToggled.remove(uuid); // Xóa trạng thái Chat
+            activeParties.remove(uuid);
+            partyChatToggled.remove(uuid);
         }
     }
 
-    // VÁ LỖI MEMORY LEAK: Gom toàn bộ logic Đuổi (Kick) vào đây
     public void kickPlayer(Party party, UUID target) {
         if (party == null) return;
         party.removeMember(target);
-        activeParties.remove(target); // Kích khỏi bộ đệm nhận diện nhóm
+        activeParties.remove(target);
         partyChatToggled.remove(target);
-        activeInvites.remove(target); // Xóa các lời mời đang chờ
+        activeInvites.remove(target);
     }
 
-    public void invitePlayer(UUID leader, UUID target) {
+    // VÁ LỖI LOGIC: Trả về false nếu đã mời rồi để chặn hành vi Spam gây lag Chat
+    public boolean invitePlayer(UUID leader, UUID target) {
         long timeoutSeconds = plugin.getConfigFile().getInt("party.invite-timeout", 60);
-        activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>())
-                .put(leader, System.currentTimeMillis() + (timeoutSeconds * 1000L));
+        Map<UUID, Long> targetInvites = activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>());
+
+        if (targetInvites.containsKey(leader) && targetInvites.get(leader) > System.currentTimeMillis()) {
+            return false; // Đã mời rồi và chưa hết hạn
+        }
+
+        targetInvites.put(leader, System.currentTimeMillis() + (timeoutSeconds * 1000L));
+        return true;
     }
 
     public boolean acceptInvite(Player target, UUID leader) {
@@ -84,14 +89,18 @@ public class PartyManager {
 
         Party party = getParty(leader);
         int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
-        if (party == null || party.getMembers().size() >= maxMembers) {
-            targetInvites.remove(leader); // Xóa lời mời rác
+
+        // Xác minh xem người mời (leader) có còn quyền trưởng nhóm không
+        if (party == null || !party.getLeader().equals(leader) || party.getMembers().size() >= maxMembers) {
+            targetInvites.remove(leader);
             return false;
         }
 
         party.addMember(target.getUniqueId());
         activeParties.put(target.getUniqueId(), party);
-        targetInvites.remove(leader);
+
+        // VÁ LỖI BỘ NHỚ: Xóa mọi lời mời khác đang chờ khi đã vào nhóm
+        activeInvites.remove(target.getUniqueId());
         return true;
     }
 
@@ -105,7 +114,6 @@ public class PartyManager {
         activeParties.remove(party.getLeader());
         partyChatToggled.remove(party.getLeader());
 
-        // Lấy một thành viên ngẫu nhiên (hoặc đầu tiên) làm Trưởng nhóm mới
         UUID newLeader = party.getMembers().iterator().next();
         party.setLeader(newLeader);
 
@@ -120,6 +128,7 @@ public class PartyManager {
         sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
     }
 
+    // TỐI ƯU HÓA: Chỉ lấy những người vừa ONLINE vừa TRONG PHẠM VI
     public Set<Player> getEligibleMembers(Party party, double radius) {
         Player leaderObj = Bukkit.getPlayer(party.getLeader());
         if (leaderObj == null || !leaderObj.isOnline()) return Collections.emptySet();
@@ -132,7 +141,7 @@ public class PartyManager {
     }
 
     public void sendPartyMessage(Party party, String sender, String message) {
-        if (party == null) return;
+        if (party == null || message.trim().isEmpty()) return;
         String sanitized = MiniMessage.miniMessage().escapeTags(message);
         String format = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>")
                 .replace("<sender>", sender)

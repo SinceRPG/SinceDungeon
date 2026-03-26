@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class PartyCommand {
@@ -59,12 +60,15 @@ public class PartyCommand {
                                     Player p = (Player) ctx.getSource().getSender();
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
-                                    if (party == null || !party.getLeader().equals(p.getUniqueId())) {
+                                    // VÁ LỖI UX: Tự động tạo nhóm nếu người chơi chưa có nhóm mà muốn mời bạn bè!
+                                    if (party == null) {
+                                        party = pm.createParty(p);
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created", "<green>Hệ thống đã tự động tạo nhóm cho bạn.")));
+                                    } else if (!party.getLeader().equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
                                         return 0;
                                     }
 
-                                    // VÁ LỖI LOGIC: Chặn thao tác Invite nếu nhóm đã đạt giới hạn tối đa
                                     int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
                                     if (party.getMembers().size() >= maxMembers) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full", "<red>Party is full!")));
@@ -82,9 +86,13 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
-                                    target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
+                                    boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
+                                    if (sent) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
+                                        target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
+                                    } else {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited", "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi.")));
+                                    }
                                     return 1;
                                 })
                         )
@@ -123,10 +131,9 @@ public class PartyCommand {
                         return 0;
                     }
 
-                    // VÁ LỖI MEMORY LEAK: Sử dụng hàm quitParty để xả sạch dữ liệu trong Map
                     pm.quitParty(p.getUniqueId());
-
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
+
                     if (party.getLeader() != p.getUniqueId()) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
@@ -141,10 +148,11 @@ public class PartyCommand {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         if (party != null && party.getLeader().equals(p.getUniqueId())) {
                                             String remaining = builder.getRemainingLowerCase();
+                                            // GỢI Ý CẢ NGƯỜI CHƠI OFFLINE ĐỂ CÓ THỂ PROMOTE
                                             party.getMembers().stream()
-                                                    .map(Bukkit::getPlayer)
-                                                    .filter(t -> t != null && t.getName().toLowerCase().startsWith(remaining) && !t.equals(p))
-                                                    .forEach(t -> builder.suggest(t.getName()));
+                                                    .map(id -> Bukkit.getOfflinePlayer(id).getName())
+                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
+                                                    .forEach(builder::suggest);
                                         }
                                     }
                                     return builder.buildFuture();
@@ -158,13 +166,24 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                    if (target == null || !party.getMembers().contains(target.getUniqueId()) || target.equals(p)) {
+                                    String targetName = StringArgumentType.getString(ctx, "target");
+                                    UUID targetId = null;
+
+                                    // VÁ LỖI LOGIC: Cho phép dò và Promote cả thành viên đang Offline
+                                    for (UUID id : party.getMembers()) {
+                                        String name = Bukkit.getOfflinePlayer(id).getName();
+                                        if (name != null && name.equalsIgnoreCase(targetName)) {
+                                            targetId = id;
+                                            break;
+                                        }
+                                    }
+
+                                    if (targetId == null || targetId.equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
                                         return 0;
                                     }
 
-                                    pm.promoteMember(party, target.getUniqueId());
+                                    pm.promoteMember(party, targetId);
                                     return 1;
                                 })
                         )
@@ -178,9 +197,9 @@ public class PartyCommand {
                                         if (party != null && party.getLeader().equals(p.getUniqueId())) {
                                             String remaining = builder.getRemainingLowerCase();
                                             party.getMembers().stream()
-                                                    .map(Bukkit::getPlayer)
-                                                    .filter(t -> t != null && t.getName().toLowerCase().startsWith(remaining) && !t.equals(p))
-                                                    .forEach(t -> builder.suggest(t.getName()));
+                                                    .map(id -> Bukkit.getOfflinePlayer(id).getName())
+                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
+                                                    .forEach(builder::suggest);
                                         }
                                     }
                                     return builder.buildFuture();
@@ -194,18 +213,32 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                    if (target == null || !party.getMembers().contains(target.getUniqueId()) || target.equals(p)) {
+                                    String targetName = StringArgumentType.getString(ctx, "target");
+                                    UUID targetId = null;
+
+                                    // VÁ LỖI LOGIC: Dò và Kick được cả những kẻ đang Offline cắm cọc trong Party
+                                    for (UUID id : party.getMembers()) {
+                                        String name = Bukkit.getOfflinePlayer(id).getName();
+                                        if (name != null && name.equalsIgnoreCase(targetName)) {
+                                            targetId = id;
+                                            break;
+                                        }
+                                    }
+
+                                    if (targetId == null || targetId.equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
                                         return 0;
                                     }
 
-                                    // VÁ LỖI MEMORY LEAK: Gọi kickPlayer để dọn dẹp sạch Map
-                                    pm.kickPlayer(party, target.getUniqueId());
+                                    pm.kickPlayer(party, targetId);
 
-                                    target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kicked")));
+                                    Player targetOnline = Bukkit.getPlayer(targetId);
+                                    if (targetOnline != null && targetOnline.isOnline()) {
+                                        targetOnline.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kicked")));
+                                    }
+
                                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", target.getName()));
+                                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", targetName));
                                     return 1;
                                 })
                         )
@@ -234,7 +267,13 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    pm.sendPartyMessage(party, p.getName(), StringArgumentType.getString(ctx, "message"));
+                                    String msg = StringArgumentType.getString(ctx, "message").trim();
+                                    if (msg.isEmpty()) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.empty_message", "<red>Please enter a message.")));
+                                        return 0;
+                                    }
+
+                                    pm.sendPartyMessage(party, p.getName(), msg);
                                     return 1;
                                 })
                         )
@@ -253,10 +292,15 @@ public class PartyCommand {
                     String leaderSuffix = plugin.getMessagesFile().getString("party.leader_suffix", " (Leader)");
 
                     String members = party.getMembers().stream()
-                            .map(Bukkit::getPlayer)
-                            .map(t -> {
-                                if (t == null) return offlineTxt;
-                                return t.getUniqueId().equals(party.getLeader()) ? t.getName() + leaderSuffix : t.getName();
+                            .map(id -> {
+                                Player onlinePlayer = Bukkit.getPlayer(id);
+                                String name = Bukkit.getOfflinePlayer(id).getName();
+                                if (name == null) name = "Unknown";
+
+                                String status = (onlinePlayer != null && onlinePlayer.isOnline()) ? "" : " <gray>[" + offlineTxt + "]";
+                                String prefix = id.equals(party.getLeader()) ? leaderSuffix : "";
+
+                                return name + prefix + status;
                             })
                             .collect(Collectors.joining(", "));
 

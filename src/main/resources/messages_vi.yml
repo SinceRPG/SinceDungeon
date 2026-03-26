@@ -50,6 +50,10 @@ party:
   leader_suffix: " (Trưởng nhóm)"
   member_failed_condition: "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon."
   full: "<red>Nhóm của bạn đã đạt số lượng tối đa! Không thể mời thêm."
+  offline_left_behind: "<yellow>Cảnh báo: Có <count> thành viên đang Offline nên không thể vào Dungeon."
+  already_invited: "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi."
+  auto_created: "<green>Hệ thống đã tự động tạo nhóm cho bạn."
+  empty_message: "<red>Vui lòng nhập nội dung tin nhắn."
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"

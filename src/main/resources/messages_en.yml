@@ -50,6 +50,10 @@ party:
   leader_suffix: " (Leader)"
   member_failed_condition: "<red>Member <player> does not meet the condition. Aborting Dungeon entry."
   full: "<red>Your party is full! Cannot invite more members."
+  offline_left_behind: "<yellow>Warning: <count> member(s) are Offline and were left behind."
+  already_invited: "<red>You already invited this player. Please wait for them to respond."
+  auto_created: "<green>A party has been auto-created for you."
+  empty_message: "<red>Please enter a message to send."
 
 game:
   start: "<green>Dungeon has started! Good luck!"

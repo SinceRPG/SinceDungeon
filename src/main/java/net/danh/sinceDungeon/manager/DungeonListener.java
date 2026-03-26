@@ -181,8 +181,15 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        // VÁ LỖI BÓNG MA OFFLINE: Tự động loại bỏ bất kỳ ai ngắt kết nối khỏi Party
-        plugin.getPartyManager().quitParty(p.getUniqueId());
+        // VÁ LỖI BÓNG MA (OFFLINE RETENTION):
+        // KHÔNG kick họ khỏi Party. Nếu họ là Trưởng nhóm, chỉ nhường chức cho người khác.
+        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+        if (party != null && party.getLeader().equals(p.getUniqueId())) {
+            plugin.getPartyManager().electNewLeader(party);
+        }
+
+        // Chỉ dọn dẹp các lời mời lơ lửng và trạng thái Chat
+        plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
     }
 
     @EventHandler
