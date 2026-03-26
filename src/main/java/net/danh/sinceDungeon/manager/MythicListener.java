@@ -6,6 +6,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
+/**
+ * Specifically listens to events originating from the MythicMobs plugin.
+ */
 public class MythicListener implements Listener {
     private final SinceDungeon plugin;
 

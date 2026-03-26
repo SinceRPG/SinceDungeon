@@ -25,6 +25,9 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Core manager for handling active dungeon sessions, action registries, and processors.
+ */
 public class DungeonManager {
     private final SinceDungeon plugin;
     private final Map<UUID, DungeonGame> activeGames = new ConcurrentHashMap<>();
@@ -33,10 +36,14 @@ public class DungeonManager {
     private final Map<String, ActionParser> actionParsers = new HashMap<>();
     private final Map<String, ActionMeta> actionMeta = new HashMap<>();
 
-    // API Registries
     private final Map<String, RewardProcessor> rewardProcessors = new HashMap<>();
     private final Map<String, ConditionProcessor> conditionProcessors = new HashMap<>();
 
+    /**
+     * Constructs the DungeonManager.
+     *
+     * @param plugin The main plugin instance.
+     */
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
         registerDefaultActions();
@@ -44,33 +51,57 @@ public class DungeonManager {
         loadTemplates();
     }
 
-    // ============ [API] REGISTRIES ============
+    /**
+     * Registers a new dungeon template into memory.
+     *
+     * @param template The template to register.
+     */
     public void registerTemplate(DungeonTemplate template) {
         if (template != null && template.id() != null) templates.put(template.id(), template);
     }
 
+    /**
+     * Unregisters a dungeon template from memory.
+     *
+     * @param id The ID of the template.
+     */
     public void unregisterTemplate(String id) {
         templates.remove(id);
     }
 
+    /**
+     * Registers a custom reward processor.
+     *
+     * @param type      The reward identifier string.
+     * @param processor The processor logic interface.
+     */
     public void registerRewardProcessor(String type, RewardProcessor processor) {
         rewardProcessors.put(type.toUpperCase(), processor);
     }
 
+    /**
+     * Gets a registered reward processor.
+     *
+     * @param type The reward identifier string.
+     * @return The RewardProcessor if found, null otherwise.
+     */
     public RewardProcessor getRewardProcessor(String type) {
         return rewardProcessors.get(type.toUpperCase());
     }
 
+    /**
+     * Registers a custom condition processor.
+     *
+     * @param type      The condition identifier string.
+     * @param processor The processor logic interface.
+     */
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         conditionProcessors.put(type.toUpperCase(), processor);
     }
-    // ==========================================
 
     private void registerDefaultProcessors() {
-        // 1. PAPI Condition (Mặc định nếu không có tiền tố)
-        registerConditionProcessor("PAPI", (player, value) -> PAPIHook.checkCondition(player, value));
+        registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
-        // 2. COMMAND Reward
         registerRewardProcessor("COMMAND", (p, val, displayName) -> {
             String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
@@ -80,7 +111,6 @@ public class DungeonManager {
             }
         });
 
-        // 3. ITEM Reward
         registerRewardProcessor("ITEM", (p, val, displayName) -> {
             try {
                 String parsedVal = PAPIHook.setPlaceholders(p, val);
@@ -94,7 +124,6 @@ public class DungeonManager {
             }
         });
 
-        // 4. MMOITEM Reward
         registerRewardProcessor("MMOITEM", (p, val, displayName) -> {
             if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_installed")));
@@ -140,20 +169,49 @@ public class DungeonManager {
         if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
     }
 
+    /**
+     * Registers a custom action type in the system.
+     *
+     * @param type          The ID of the action.
+     * @param parser        The parser class.
+     * @param displayName   The display name for the editor.
+     * @param icon          The icon for the editor.
+     * @param description   The description.
+     * @param defaults      The default parameters.
+     * @param customPrompts Custom editing prompts.
+     */
     public void registerAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaults, Map<String, List<String>> customPrompts) {
         String key = type.toUpperCase();
         actionParsers.put(key, parser);
         actionMeta.put(key, new ActionMeta(displayName, icon, description, defaults, customPrompts != null ? customPrompts : new HashMap<>()));
     }
 
+    /**
+     * Gets all registered action types.
+     *
+     * @return Set of action string IDs.
+     */
     public Set<String> getRegisteredActions() {
         return actionMeta.keySet();
     }
 
+    /**
+     * Gets the metadata of a specific action.
+     *
+     * @param type The action ID.
+     * @return The ActionMeta record.
+     */
     public ActionMeta getActionMeta(String type) {
         return actionMeta.get(type.toUpperCase());
     }
 
+    /**
+     * Creates a DungeonAction instance from raw map data.
+     *
+     * @param type The type of action to create.
+     * @param data The map configuration data.
+     * @return The parsed DungeonAction, or null.
+     */
     public DungeonAction createAction(String type, Map<String, Object> data) {
         if (type == null) return null;
         ActionParser parser = actionParsers.get(type.toUpperCase());
@@ -176,7 +234,6 @@ public class DungeonManager {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void registerDefaultActions() {
         Map<String, Object> spawnDefaults = new HashMap<>();
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
@@ -194,7 +251,7 @@ public class DungeonManager {
                     int amount = getInt(map.get("amount"), (int) spawnDefaults.get("amount"));
                     List<Vector> v = parseLocList(map.get("locations"));
                     return new SpawnWaveAction(mob, amount, v);
-                }, "Triệu hồi Quái vật (Vanilla)", Material.ZOMBIE_HEAD,
+                }, "Spawn Vanilla Mob", Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
 
@@ -207,7 +264,7 @@ public class DungeonManager {
                     Vector target = DungeonLoader.parseVector(targetStr);
                     double radius = getDouble(map.get("radius"), (double) reachDefaults.get("radius"));
                     return new ReachLocationAction(target, radius);
-                }, "Điểm Kiểm Tra (Reach)", Material.COMPASS,
+                }, "Reach Checkpoint", Material.COMPASS,
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
@@ -243,7 +300,7 @@ public class DungeonManager {
                     }
 
                     return new LootChestAction(loc, itemsConfig);
-                }, "Mở Rương Kho Báu", Material.CHEST,
+                }, "Loot Treasure Chest", Material.CHEST,
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
 
@@ -256,7 +313,7 @@ public class DungeonManager {
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")))
-                ), "Phá Tường Bằng Block", Material.IRON_PICKAXE,
+                ), "Break Wall via Block", Material.IRON_PICKAXE,
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults, new HashMap<>());
 
@@ -270,7 +327,7 @@ public class DungeonManager {
                     int amount = getInt(map.get("amount"), (int) mmDefaults.get("amount"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     return new MythicMobWaveAction(mob, amount, v);
-                }, "Triệu hồi Boss (MythicMobs)", Material.WITHER_SKELETON_SKULL,
+                }, "Spawn Mythic Boss", Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
     }
@@ -303,6 +360,9 @@ public class DungeonManager {
         return v;
     }
 
+    /**
+     * Reloads all dungeon configurations and running states.
+     */
     public void reload() {
         stopAllGames();
         templates.clear();
@@ -328,6 +388,12 @@ public class DungeonManager {
         }
     }
 
+    /**
+     * Handles joining a player into a dungeon.
+     *
+     * @param p  The player.
+     * @param id The dungeon ID to join.
+     */
     public void joinDungeon(Player p, String id) {
         if (activeGames.containsKey(p.getUniqueId())) {
             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.already_in")));
@@ -346,13 +412,11 @@ public class DungeonManager {
             return;
         }
 
-        // Tích hợp API Condition check
         for (DungeonTemplate.Condition cond : tmpl.conditions()) {
             String req = cond.requirement();
             String type = "PAPI";
             String value = req;
 
-            // Nếu người dùng cấu hình "CUSTOM_PLUGIN:điều_kiện"
             if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
                 String[] parts = req.split(":", 2);
                 type = parts[0].toUpperCase();
@@ -389,10 +453,21 @@ public class DungeonManager {
         }
     }
 
+    /**
+     * Forces a player to quit their active dungeon session.
+     *
+     * @param p The player.
+     */
     public void quitDungeon(Player p) {
         if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
     }
 
+    /**
+     * Dispatches global bukkit events to the specific dungeon game handled by a player.
+     *
+     * @param p     The player.
+     * @param event The Bukkit Event.
+     */
     public void dispatchEvent(Player p, Event event) {
         if (p == null) return;
         DungeonGame game = activeGames.get(p.getUniqueId());
@@ -401,6 +476,9 @@ public class DungeonManager {
         }
     }
 
+    /**
+     * Forcefully stops all running games. Used on server shutdown/reload.
+     */
     public void stopAllGames() {
         for (DungeonGame game : new ArrayList<>(activeGames.values())) game.forceShutdown();
         activeGames.clear();
@@ -422,6 +500,9 @@ public class DungeonManager {
         activeGames.remove(uuid);
     }
 
+    /**
+     * Represents the metadata configuration for editor display of custom actions.
+     */
     public record ActionMeta(String displayName, Material icon, String description, Map<String, Object> defaults,
                              Map<String, List<String>> customPrompts) {
     }

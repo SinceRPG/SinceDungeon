@@ -12,8 +12,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Utility class to handle loading of dungeon configurations from files.
+ */
 public class DungeonLoader {
 
+    /**
+     * Loads a DungeonTemplate from a YAML file.
+     *
+     * @param plugin The main plugin instance.
+     * @param id     The name of the dungeon file (without .yml).
+     * @return The loaded DungeonTemplate or null if invalid.
+     */
     public static DungeonTemplate loadTemplate(SinceDungeon plugin, String id) {
         File file = new File(plugin.getDataFolder(), "dungeons/" + id + ".yml");
         if (!file.exists()) return null;
@@ -104,15 +114,21 @@ public class DungeonLoader {
         return new DungeonTemplate(id, world, isPublic, conditions, tiers, rewards, stages);
     }
 
+    /**
+     * Parses a string representation of a vector.
+     *
+     * @param s The string to parse.
+     * @return The parsed Vector.
+     */
     public static Vector parseVector(String s) {
         try {
             String cleanString = s.replace(" ", "");
             String[] split = cleanString.split(",");
-            if (split.length < 3) throw new IllegalArgumentException("Thiếu tọa độ XYZ");
+            if (split.length < 3) throw new IllegalArgumentException("Missing XYZ coordinates");
 
             return new Vector(Double.parseDouble(split[0]), Double.parseDouble(split[1]), Double.parseDouble(split[2]));
         } catch (Exception e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vector_parse_fail", "Lỗi phân tích tọa độ Vector: '<data>'");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
             SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", s));
             return new Vector(0, 0, 0);
         }

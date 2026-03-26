@@ -15,9 +15,17 @@ import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 
+/**
+ * Global listener that routes Bukkit events to the respective active dungeon games.
+ */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
 
+    /**
+     * Constructs the DungeonListener.
+     *
+     * @param plugin The main plugin instance.
+     */
     public DungeonListener(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -26,8 +34,6 @@ public class DungeonListener implements Listener {
         if (p == null) return;
         plugin.getDungeonManager().dispatchEvent(p, e);
     }
-
-    // ================== CÁC SỰ KIỆN CƠ BẢN BẮT BUỘC CHO API ==================
 
     @EventHandler
     public void onMove(PlayerMoveEvent e) {
@@ -80,20 +86,16 @@ public class DungeonListener implements Listener {
 
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        // Nếu người chơi đánh quái
         if (e.getDamager() instanceof Player p) {
             pass(p, e);
         } else if (e.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player p) {
             pass(p, e);
         }
 
-        // Nếu quái đánh người chơi
         if (e.getEntity() instanceof Player p) {
             pass(p, e);
         }
     }
-
-    // ================== CÁC SỰ KIỆN HỆ THỐNG CỦA DUNGEON ==================
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
@@ -146,7 +148,7 @@ public class DungeonListener implements Listener {
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND) {
 
                 e.setCancelled(true);
-                String msg = plugin.getMessagesFile().getString("error.can_not_teleport", "<red>Không thể dịch chuyển theo cách này trong Dungeon!");
+                String msg = plugin.getMessagesFile().getString("error.can_not_teleport", "<red>Cannot teleport this way inside a Dungeon!");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg));
             }
         }
@@ -159,7 +161,7 @@ public class DungeonListener implements Listener {
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             e.setCancelled(true);
-            String msg = plugin.getMessagesFile().getString("error.can_not_drop", "<red>Không thể vứt vật phẩm trong Dungeon để tránh mất đồ!");
+            String msg = plugin.getMessagesFile().getString("error.can_not_drop", "<red>Cannot drop items inside a Dungeon!");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
     }

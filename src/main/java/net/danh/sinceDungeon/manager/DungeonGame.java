@@ -20,6 +20,9 @@ import org.bukkit.scheduler.BukkitTask;
 import java.time.Duration;
 import java.util.*;
 
+/**
+ * Represents an active dungeon game session running for a player.
+ */
 public class DungeonGame {
     private final SinceDungeon plugin;
     private final Player player;
@@ -46,6 +49,13 @@ public class DungeonGame {
 
     private boolean isStopping = false;
 
+    /**
+     * Constructs a new DungeonGame.
+     *
+     * @param plugin   The plugin instance.
+     * @param player   The player taking part in the dungeon.
+     * @param template The template used to structure the dungeon.
+     */
     public DungeonGame(SinceDungeon plugin, Player player, DungeonTemplate template) {
         this.plugin = plugin;
         this.player = player;
@@ -81,29 +91,53 @@ public class DungeonGame {
         }
     }
 
-    // ============================ [API] GETTERS & SETTERS ============================
+    /**
+     * Gets the template of this dungeon.
+     *
+     * @return The DungeonTemplate.
+     */
     public DungeonTemplate getTemplate() {
         return template;
     }
 
+    /**
+     * Gets the parsed stages.
+     *
+     * @return List of action lists representing stages.
+     */
     public List<List<DungeonAction>> getStages() {
         return stages;
     }
 
+    /**
+     * Gets the current stage index.
+     *
+     * @return The current stage index.
+     */
     public int getCurrentStageIndex() {
         return currentStageIndex;
     }
 
+    /**
+     * Gets the start time of the dungeon in milliseconds.
+     *
+     * @return The start time.
+     */
     public long getStartTime() {
         return startTime;
     }
 
+    /**
+     * Checks if the dungeon game is currently running.
+     *
+     * @return True if running, false otherwise.
+     */
     public boolean isRunning() {
         return isRunning;
     }
 
     /**
-     * Cho phép API ép hệ thống hoàn thành ngay lập tức Stage hiện tại (Bỏ qua quái/nhiệm vụ).
+     * Forces the current stage to complete immediately, skipping all objectives.
      */
     public void forceCompleteCurrentStage() {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
@@ -112,21 +146,28 @@ public class DungeonGame {
     }
 
     /**
-     * [MỚI] Tiêm (Inject) một Action mới vào một giai đoạn bất kỳ (có thể là giai đoạn đang diễn ra).
+     * Injects a new action into a specific stage during runtime.
+     *
+     * @param stageIndex The index of the stage.
+     * @param action     The action to inject.
      */
     public void injectAction(int stageIndex, DungeonAction action) {
         if (stageIndex >= 0 && stageIndex < stages.size()) {
             stages.get(stageIndex).add(action);
 
-            // Nếu tiêm thẳng vào stage đang chạy, lập tức khởi động Action đó
             if (currentStageIndex == stageIndex && isRunning && !stageCompleting) {
                 action.announceStart(this);
                 action.start(this);
             }
         }
     }
-    // =================================================================================
 
+    /**
+     * Sends a formatted message to the player.
+     *
+     * @param key          The message key from the language file.
+     * @param placeholders An array of placeholders and values.
+     */
     public void sendMessage(String key, String... placeholders) {
         String msg = plugin.getMessagesFile().getString(key);
         String prefix = plugin.getMessagesFile().getString("prefix", "");
@@ -155,12 +196,15 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Starts the lobby phase for the dungeon game.
+     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
 
-        String titleMain = plugin.getMessagesFile().getString("game.title.loading_main", "<yellow><bold>ĐANG TẢI...");
-        String titleSub = plugin.getMessagesFile().getString("game.title.loading_sub", "<gray>Vui lòng chờ trong giây lát");
+        String titleMain = plugin.getMessagesFile().getString("game.title.loading_main", "<yellow><bold>LOADING...");
+        String titleSub = plugin.getMessagesFile().getString("game.title.loading_sub", "<gray>Please wait a moment");
         Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
         Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
         player.showTitle(title);
@@ -211,7 +255,7 @@ public class DungeonGame {
                 }
 
                 String titleMain = plugin.getMessagesFile().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
-                String titleSub = plugin.getMessagesFile().getString("game.title.countdown_sub", "<gold>Chuẩn bị chiến đấu!");
+                String titleSub = plugin.getMessagesFile().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
 
                 Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO);
                 Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
@@ -242,8 +286,8 @@ public class DungeonGame {
         player.teleportAsync(spawnLoc).thenAccept(success -> {
             if (success && player.isOnline()) {
 
-                String titleMain = plugin.getMessagesFile().getString("game.title.start_main", "<red><bold>BẮT ĐẦU!");
-                String titleSub = plugin.getMessagesFile().getString("game.title.start_sub", "<white>Chúc may mắn");
+                String titleMain = plugin.getMessagesFile().getString("game.title.start_main", "<red><bold>START!");
+                String titleSub = plugin.getMessagesFile().getString("game.title.start_sub", "<white>Good luck");
                 Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(2), Duration.ofMillis(500));
                 Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
                 player.showTitle(title);
@@ -296,7 +340,7 @@ public class DungeonGame {
         }
 
         if (!allCompleted && !objectiveText.isEmpty()) {
-            String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>MỤC TIÊU: <reset>");
+            String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
             player.sendActionBar(ColorUtils.parse(objPrefix + objectiveText));
         }
 
@@ -326,6 +370,11 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Propagates Bukkit events to active actions.
+     *
+     * @param event The Bukkit event.
+     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -348,7 +397,6 @@ public class DungeonGame {
         sendMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
         playConfigSound("stage_complete", 1f, 1f);
 
-        // --- GỌI SỰ KIỆN API STAGE COMPLETE ---
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
 
@@ -378,7 +426,6 @@ public class DungeonGame {
         isRunning = false;
         if (tickTask != null) tickTask.cancel();
 
-        // --- GỌI SỰ KIỆN API FINISH DUNGEON ĐỂ CHO PHÉP SỬA CHEST COUNT ---
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
         int finalChestCount = finishEvent.getChestCount();
@@ -395,8 +442,8 @@ public class DungeonGame {
 
         if (player.isInsideVehicle()) player.leaveVehicle();
 
-        String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>HOÀN THÀNH!");
-        String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Thời gian: <time> giây").replace("<time>", String.valueOf(finalElapsed));
+        String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
+        String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time> seconds").replace("<time>", String.valueOf(finalElapsed));
         Title.Times times = Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500));
         Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
 
@@ -423,6 +470,11 @@ public class DungeonGame {
         });
     }
 
+    /**
+     * Gracefully stops the dungeon session and cleans up.
+     *
+     * @param teleport Whether to teleport the player back to their original location.
+     */
     public void stop(boolean teleport) {
         if (isStopping) return;
         isStopping = true;
@@ -456,6 +508,9 @@ public class DungeonGame {
         plugin.getDungeonManager().removeGame(player.getUniqueId());
     }
 
+    /**
+     * Forcefully shuts down the dungeon, ignoring normal checks.
+     */
     public void forceShutdown() {
         isRunning = false;
         if (tickTask != null) tickTask.cancel();
@@ -480,14 +535,29 @@ public class DungeonGame {
         plugin.getDungeonManager().removeGame(player.getUniqueId());
     }
 
+    /**
+     * Gets the active world of this dungeon instance.
+     *
+     * @return The active World.
+     */
     public World getWorld() {
         return dungeonWorld;
     }
 
+    /**
+     * Gets the player running the dungeon.
+     *
+     * @return The player.
+     */
     public Player getPlayer() {
         return player;
     }
 
+    /**
+     * Gets the original location of the player before joining.
+     *
+     * @return The original location.
+     */
     public Location getOldLocation() {
         return oldLocation;
     }
