@@ -36,12 +36,9 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         this.centerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
     }
 
-    // UX: Bắn Particle liên tục để người chơi biết khối nào cần đập
     @Override
     public void onTick(DungeonGame game) {
         if (completed || centerLoc == null) return;
-
-        // Tạo hiệu ứng hạt lửa lấp lánh thu hút sự chú ý
         game.getWorld().spawnParticle(Particle.FLAME, centerLoc, 3, 0.2, 0.2, 0.2, 0.01);
     }
 
@@ -49,7 +46,10 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
             if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
-            if (!e.getPlayer().getUniqueId().equals(game.getPlayer().getUniqueId())) return;
+
+            // VÁ LỖI LOGIC: Cho phép BẤT KỲ AI TRONG NHÓM cũng có quyền phá khối đá
+            if (!game.getParticipants().contains(e.getPlayer())) return;
+
             if (!e.hasBlock()) return;
 
             Block b = e.getClickedBlock();
@@ -75,7 +75,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
-        // BẢO VỆ MÁY CHỦ: Nếu số lượng block lớn hơn 10.000, hủy lệnh để chống sập Server
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         if (volume > 10000) {
             SinceDungeon.getPlugin().getLogger().severe("NGUY HIỂM: Tọa độ phá tường quá lớn (" + volume + " blocks). Đã tự động hủy để chống sập Server!");

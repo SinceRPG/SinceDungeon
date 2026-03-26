@@ -77,7 +77,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
         }
     }
 
-    // VÁ LỖI UX: Tự động quét rương, nếu trống rỗng thì hoàn thành ngay lập tức
     @Override
     public void onTick(DungeonGame game) {
         if (completed || !isOpened || chestBlock == null) return;
@@ -88,7 +87,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 game.sendMessage("action.loot_complete");
                 chestBlock.setType(Material.AIR);
 
-                // Đóng Inventory của những ai đang xem rương để tránh lỗi click vào khoảng không
                 for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
                     viewer.closeInventory();
                 }
@@ -151,15 +149,20 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 game.sendMessage("action.chest_found");
             }
         } else if (event instanceof InventoryCloseEvent e) {
-            // Fallback an toàn phòng khi onTick bị nghẽn
             Inventory inv = e.getInventory();
             if (inv.getHolder() instanceof Chest chest) {
                 if (isTargetChest(chest.getBlock())) {
                     if (isInventoryEmpty(inv) && !completed) {
                         this.completed = true;
                         game.sendMessage("action.loot_complete");
-                        chest.getBlock().setType(Material.AIR);
-                        game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+
+                        // BẢO VỆ MÁY CHỦ: Nếu bắt buộc phải xóa Block lúc đóng rương,
+                        // CẦN trễ lại 1 tick để tránh lỗi Desync Client "Inventory bounds exception"
+                        Bukkit.getScheduler().runTask(SinceDungeon.getPlugin(), () -> {
+                            chest.getBlock().setType(Material.AIR);
+                            game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+                        });
+
                     } else if (!completed) {
                         game.sendMessage("action.chest_not_empty");
                     }

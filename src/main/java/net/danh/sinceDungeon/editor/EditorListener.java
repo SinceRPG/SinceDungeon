@@ -146,9 +146,12 @@ public class EditorListener implements Listener {
             e.setCancelled(true);
 
             String cmd = e.getMessage().toLowerCase().trim();
-            String cancelKw = "/" + plugin.getMessagesFile().getString("editor.words.cancel", "cancel");
 
-            // XỬ LÝ THÔNG MINH: Người chơi có thói quen gõ /cancel (thêm dấu gạch chéo) để thoát nhập liệu
+            // VÁ LỖI LOGIC: Bọc cứng từ khóa cấu hình vào dấu gạch chéo (/)
+            // Đảm bảo nếu config là "huy", người chơi gõ "/huy" sẽ hoạt động trơn tru.
+            String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase();
+            String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
+
             if (cmd.equals(cancelKw) || cmd.equals("/cancel")) {
                 EditorSession session = activeInputs.remove(p.getUniqueId());
                 sendMsg(p, "input_cancel");

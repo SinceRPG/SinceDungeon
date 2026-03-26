@@ -68,7 +68,6 @@ public class DungeonManager {
         registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
         registerRewardProcessor("COMMAND", (p, val, displayName) -> {
-            // AN TOÀN LUỒNG: Ép lệnh chạy trên Main Thread, chống Crash do PaperMC Async block
             Bukkit.getScheduler().runTask(plugin, () -> {
                 String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
@@ -124,11 +123,10 @@ public class DungeonManager {
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
+            // VÁ LỖI LOGIC: Bắt buộc rơi đồ ở vị trí hiện tại của NGƯỜI CHƠI BỊ ĐẦY TÚI.
+            // Không được phép ném đồ về vị trí của Party Leader.
             org.bukkit.Location dropLoc = p.getLocation();
-            DungeonGame game = getGame(p.getUniqueId());
-            if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-                dropLoc = game.getPlayer().getLocation();
-            }
+
             for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
             if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
@@ -259,7 +257,6 @@ public class DungeonManager {
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
-        // MỞ KHÓA TÍNH NĂNG LEVEL
         mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
 

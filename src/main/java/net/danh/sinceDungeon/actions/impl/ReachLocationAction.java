@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
 public class ReachLocationAction extends DungeonAction implements Tickable {
@@ -34,7 +35,6 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // UX: Tạo vòng xoáy Particle (Hào quang) quanh điểm đến để người chơi dễ nhận diện
         ticks++;
         if (centerLoc != null && ticks % 5 == 0) {
             double r = Math.sqrt(radiusSq) > 0 ? Math.sqrt(radiusSq) : 1.5;
@@ -46,17 +46,20 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
             }
         }
 
-        Location loc = game.getPlayer().getLocation();
-        if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld())) {
-            double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
-                    Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
-            double yDiff = Math.abs(loc.getY() - target.getY());
+        // VÁ LỖI LOGIC: Cho phép BẤT KỲ THÀNH VIÊN NÀO dẫm vào Checkpoint cũng tính là hoàn thành nhiệm vụ!
+        for (Player p : game.getParticipants()) {
+            Location loc = p.getLocation();
+            if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead()) {
+                double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
+                        Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
+                double yDiff = Math.abs(loc.getY() - target.getY());
 
-            if (distSq2D <= radiusSq && yDiff <= 2.5) {
-                this.completed = true;
-                game.sendMessage("action.reach_complete");
-                // Tung hoa giấy chúc mừng khi tới nơi
-                game.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+                if (distSq2D <= radiusSq && yDiff <= 2.5) {
+                    this.completed = true;
+                    game.sendMessage("action.reach_complete");
+                    game.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+                    break; // Thoát vòng lặp ngay khi có 1 người chạm mốc
+                }
             }
         }
     }
