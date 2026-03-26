@@ -76,7 +76,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
         // BẢO VỆ MÁY CHỦ: Nếu số lượng block lớn hơn 10.000, hủy lệnh để chống sập Server
-        long volume = (long)(maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         if (volume > 10000) {
             SinceDungeon.getPlugin().getLogger().severe("NGUY HIỂM: Tọa độ phá tường quá lớn (" + volume + " blocks). Đã tự động hủy để chống sập Server!");
             return;

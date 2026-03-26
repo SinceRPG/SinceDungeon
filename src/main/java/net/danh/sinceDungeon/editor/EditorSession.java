@@ -22,19 +22,16 @@ public class EditorSession {
     private final Player player;
     private final File file;
     private final YamlConfiguration config;
-
+    // BỘ ĐỆM PHÂN TRANG (PAGINATION CACHE): Ghi nhớ trang hiện tại của từng danh sách
+    private final Map<String, Integer> pageCache = new HashMap<>();
     private String currentStage = null;
     private String currentActionKey = null;
     private String currentRewardKey = null;
     private String currentConditionKey = null;
-
     private InputType currentInput = InputType.NONE;
     private String promptKey = null;
     private EditorCallback inputCallback = null;
     private Consumer<Player> lastMenuOpener = null;
-
-    // BỘ ĐỆM PHÂN TRANG (PAGINATION CACHE): Ghi nhớ trang hiện tại của từng danh sách
-    private final Map<String, Integer> pageCache = new HashMap<>();
 
     public EditorSession(SinceDungeon plugin, Player player, File file) {
         this.plugin = plugin;

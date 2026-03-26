@@ -20,6 +20,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class RewardGUI implements Listener {
@@ -78,6 +79,19 @@ public class RewardGUI implements Listener {
         return item;
     }
 
+    private ItemStack makeNavItem(String nameRaw) {
+        String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
+        Material mat = Material.matchMaterial(navItemStr);
+        if (mat == null) mat = Material.ARROW;
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && nameRaw != null) {
+            meta.displayName(ColorUtils.parse("<!i>" + nameRaw));
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
     private DungeonReward getRandomReward(List<DungeonReward> pool) {
         if (pool == null || pool.isEmpty()) return null;
 
@@ -101,33 +115,90 @@ public class RewardGUI implements Listener {
             session = new RewardSession(chestCount, template);
             RewardSessionManager.addSession(p, session);
         }
+        openPage(p, session, 0);
+    }
 
+    // HỆ THỐNG MỞ TRANG ĐỘNG
+    public void openPage(Player p, RewardSession session, int page) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
+        int size = getGuiSize();
+        Inventory inv = Bukkit.createInventory(new RewardHolder(session, page), size, ColorUtils.parse(titleStr));
 
-        Inventory inv = Bukkit.createInventory(new RewardHolder(session), getGuiSize(), ColorUtils.parse(titleStr));
-
-        inv.setItem(getButtonSlot(), createIcon("button", chestCount));
+        if (!session.isRevealed()) {
+            inv.setItem(getButtonSlot(), createIcon("button", session.getChestCount()));
+        } else {
+            renderPage(inv, session, page);
+        }
         p.openInventory(inv);
     }
 
-    public void forceClaimAll(Player p, RewardSession session) {
-        int remaining = session.getChestCount();
-        if (remaining <= 0) return;
-
-        for (int i = 0; i < remaining; i++) {
-            List<DungeonReward> pool = session.getTemplate().rewardPool();
-            if (pool != null && !pool.isEmpty()) {
-                DungeonReward reward = getRandomReward(pool);
-                if (reward != null) giveReward(p, reward);
+    private void renderPage(Inventory inv, RewardSession session, int page) {
+        Map<Integer, Boolean> pageMap = session.getChestPages().get(page);
+        if (pageMap != null) {
+            ItemStack mysteryChest = createIcon("mystery_chest", 0);
+            for (Map.Entry<Integer, Boolean> entry : pageMap.entrySet()) {
+                if (!entry.getValue()) { // Nếu rương chưa bị mở
+                    inv.setItem(entry.getKey(), mysteryChest);
+                }
             }
         }
 
-        while (session.getChestCount() > 0) {
-            session.decreaseChestCount();
+        int totalPages = session.getTotalPages();
+        int size = getGuiSize();
+        int prevSlot = size < 18 ? size - 2 : size - 9;
+        int nextSlot = size - 1;
+
+        if (totalPages > 1) {
+            if (page > 0) {
+                inv.setItem(prevSlot, makeNavItem(getConfig().getString("reward.icons.prev_page.name", "<yellow>⬅ Previous")));
+            }
+            if (page < totalPages - 1) {
+                inv.setItem(nextSlot, makeNavItem(getConfig().getString("reward.icons.next_page.name", "<yellow>Next ➡")));
+            }
+        }
+    }
+
+    // THUẬT TOÁN TỰ ĐỘNG THU THẬP THÔNG MINH XUYÊN TRANG
+    public void forceClaimAll(Player p, RewardSession session) {
+        int initialCount = session.getChestCount();
+        if (initialCount <= 0) return;
+
+        int claimedAuto = 0;
+
+        if (session.isRevealed()) {
+            for (Map<Integer, Boolean> pageMap : session.getChestPages().values()) {
+                for (Map.Entry<Integer, Boolean> entry : pageMap.entrySet()) {
+                    if (!entry.getValue()) {
+                        entry.setValue(true); // Đánh dấu đã mở để tránh lặp
+                        session.decreaseChestCount();
+                        claimedAuto++;
+
+                        List<DungeonReward> pool = session.getTemplate().rewardPool();
+                        if (pool != null && !pool.isEmpty()) {
+                            DungeonReward reward = getRandomReward(pool);
+                            if (reward != null) giveReward(p, reward);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Nếu người chơi thoát trước khi bấm nút mở hòm giữa màn hình
+            for (int i = 0; i < initialCount; i++) {
+                session.decreaseChestCount();
+                claimedAuto++;
+                List<DungeonReward> pool = session.getTemplate().rewardPool();
+                if (pool != null && !pool.isEmpty()) {
+                    DungeonReward reward = getRandomReward(pool);
+                    if (reward != null) giveReward(p, reward);
+                }
+            }
         }
 
-        String msg = getMsg("auto_claim");
-        if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<count>", String.valueOf(remaining))));
+        if (claimedAuto > 0) {
+            String msg = getMsg("auto_claim");
+            if (msg != null)
+                p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<count>", String.valueOf(claimedAuto))));
+        }
     }
 
     @EventHandler
@@ -158,7 +229,6 @@ public class RewardGUI implements Listener {
 
         if (!(e.getView().getTopInventory().getHolder() instanceof RewardHolder holder)) return;
 
-        // VÁ LỖI BẢO MẬT: Bắt chặt hành vi quăng đồ (phím Q) và các tương tác Swap/Number
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
@@ -183,15 +253,65 @@ public class RewardGUI implements Listener {
             }
 
             int slot = e.getRawSlot();
+            int page = holder.getPage();
             ItemStack clicked = e.getCurrentItem();
+
             if (clicked == null || clicked.getType() == Material.AIR) return;
 
             if (!session.isRevealed()) {
-                if (slot == getButtonSlot()) revealRewards(p, e.getInventory(), session);
+                if (slot == getButtonSlot()) {
+                    session.setRevealed(true);
+                    session.setupPagination(getGuiSize()); // Khởi tạo dữ liệu phân trang
+                    playSound(p, "reveal");
+                    openPage(p, session, 0); // Mở trang đầu tiên
+                }
             } else {
+                int size = getGuiSize();
+                int prevSlot = size < 18 ? size - 2 : size - 9;
+                int nextSlot = size - 1;
+
+                // XỬ LÝ CHUYỂN TRANG
+                if (session.getTotalPages() > 1) {
+                    if (slot == prevSlot && page > 0) {
+                        try {
+                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
+                        } catch (Exception ignored) {
+                        }
+                        openPage(p, session, page - 1);
+                        return;
+                    }
+                    if (slot == nextSlot && page < session.getTotalPages() - 1) {
+                        try {
+                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
+                        } catch (Exception ignored) {
+                        }
+                        openPage(p, session, page + 1);
+                        return;
+                    }
+                }
+
+                // XỬ LÝ MỞ RƯƠNG
                 String mysteryMatName = getConfig().getString("reward.icons.mystery_chest.material", "CHEST");
                 if (clicked.getType().name().equals(mysteryMatName)) {
-                    claimReward(p, e.getInventory(), slot, session);
+                    if (session.claimChest(page, slot)) {
+                        e.getInventory().setItem(slot, new ItemStack(Material.AIR));
+                        playSound(p, "claim");
+
+                        List<DungeonReward> pool = session.getTemplate().rewardPool();
+                        if (pool != null && !pool.isEmpty()) {
+                            DungeonReward reward = getRandomReward(pool);
+                            if (reward != null) giveReward(p, reward);
+                        }
+
+                        if (session.getChestCount() <= 0) {
+                            String msg = getMsg("claimed_all");
+                            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                            try {
+                                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -206,43 +326,6 @@ public class RewardGUI implements Listener {
                 playSound(p, "claim");
             }
             RewardSessionManager.removeSession(p);
-        }
-    }
-
-    private void revealRewards(Player p, Inventory inv, RewardSession session) {
-        inv.clear();
-        session.setRevealed(true);
-        int chests = session.getChestCount();
-        List<Integer> slots = new ArrayList<>();
-        for (int i = 0; i < getGuiSize(); i++) slots.add(i);
-        Random rand = new Random();
-        ItemStack mysteryChest = createIcon("mystery_chest", 0);
-        for (int i = 0; i < chests; i++) {
-            if (slots.isEmpty()) break;
-            inv.setItem(slots.remove(rand.nextInt(slots.size())), mysteryChest);
-        }
-        playSound(p, "reveal");
-    }
-
-    private void claimReward(Player p, Inventory inv, int slot, RewardSession session) {
-        if (session.getChestCount() <= 0) return;
-        session.decreaseChestCount();
-        inv.setItem(slot, new ItemStack(Material.AIR));
-        playSound(p, "claim");
-
-        List<DungeonReward> pool = session.getTemplate().rewardPool();
-        if (pool != null && !pool.isEmpty()) {
-            DungeonReward reward = getRandomReward(pool);
-            if (reward != null) giveReward(p, reward);
-        }
-
-        if (session.getChestCount() <= 0) {
-            String msg = getMsg("claimed_all");
-            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
-            try {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
-            } catch (Exception ignored) {
-            }
         }
     }
 
