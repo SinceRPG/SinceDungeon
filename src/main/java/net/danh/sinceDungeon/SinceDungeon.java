@@ -21,6 +21,7 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -32,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Main plugin class for SinceDungeon.
- */
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
     private MiniMessage miniMessage;
@@ -47,11 +45,6 @@ public final class SinceDungeon extends JavaPlugin {
     private EditorManager editorManager;
     private EditorListener editorListener;
 
-    /**
-     * Returns the singleton plugin instance.
-     *
-     * @return The SinceDungeon JavaPlugin instance.
-     */
     public static SinceDungeon getPlugin() {
         return plugin;
     }
@@ -136,13 +129,27 @@ public final class SinceDungeon extends JavaPlugin {
     }
 
     /**
-     * Reloads configurations and dungeon templates dynamically.
+     * Reloads configurations and dungeon templates dynamically and asynchronously.
      */
-    public void reloadFiles() {
+    public void reloadFiles(CommandSender sender) {
         if (configFile != null) configFile.reload();
         setupLanguage();
-        if (dungeonManager != null) dungeonManager.reload();
-        getLogger().info("Configuration, Language, and Dungeons reloaded.");
+
+        if (dungeonManager != null) {
+            // Khởi chạy bất đồng bộ đa luồng
+            dungeonManager.reload().thenRun(() -> {
+                String msg = messagesFile.getString("admin.reload");
+                if (sender != null && msg != null) {
+                    sender.sendMessage(ColorUtils.parseWithPrefix(msg));
+                }
+                getLogger().info("Configuration, Language, and Dungeons reloaded successfully.");
+            });
+        } else {
+            if (sender != null) {
+                sender.sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+            }
+            getLogger().info("Configuration and Language reloaded.");
+        }
     }
 
     private void cleanUpStuckWorlds() {
@@ -168,8 +175,8 @@ public final class SinceDungeon extends JavaPlugin {
                     .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                     .then(Commands.literal("reload")
                             .executes(ctx -> {
-                                reloadFiles();
-                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+                                // Gửi sender vào để trả message sau khi Async hoàn tất
+                                reloadFiles(ctx.getSource().getSender());
                                 return 1;
                             })
                     )

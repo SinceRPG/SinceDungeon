@@ -21,7 +21,9 @@ import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.io.File;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DungeonManager {
@@ -39,7 +41,9 @@ public class DungeonManager {
         this.plugin = plugin;
         registerDefaultActions();
         registerDefaultProcessors();
-        loadTemplates();
+
+        // Khởi động đồng bộ một lần duy nhất lúc bật Server để đảm bảo mọi map sẵn sàng trước khi player vào
+        loadTemplatesAsync().join();
     }
 
     public void registerTemplate(DungeonTemplate template) {
@@ -294,20 +298,33 @@ public class DungeonManager {
         return v;
     }
 
-    public void reload() {
+    /**
+     * Tải lại toàn bộ hệ thống bất đồng bộ, không làm giật Lag Server
+     *
+     * @return CompletableFuture hoàn thành khi quá trình tải kết thúc
+     */
+    public CompletableFuture<Void> reload() {
         stopAllGames();
         templates.clear();
-        loadTemplates();
-        plugin.getLogger().info("Dungeon templates reloaded!");
+        return loadTemplatesAsync().thenRun(() -> {
+            plugin.getLogger().info("Dungeon templates reloaded asynchronously with Multi-Threading!");
+        });
     }
 
-    private void loadTemplates() {
-        java.io.File folder = new java.io.File(plugin.getDataFolder(), "dungeons");
+    /**
+     * Đọc toàn bộ Map song song bằng CompletableFuture
+     */
+    private CompletableFuture<Void> loadTemplatesAsync() {
+        File folder = new File(plugin.getDataFolder(), "dungeons");
         if (!folder.exists()) folder.mkdirs();
 
-        java.io.File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
-        if (files != null) {
-            for (java.io.File f : files) {
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (files == null || files.length == 0) return CompletableFuture.completedFuture(null);
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (File f : files) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
@@ -315,8 +332,12 @@ public class DungeonManager {
                 } catch (Exception e) {
                     plugin.getLogger().severe("Error loading template " + id + ": " + e.getMessage());
                 }
-            }
+            });
+            futures.add(future);
         }
+
+        // Đợi tất cả các task chạy đa luồng kết thúc
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     public void joinDungeon(Player p, String id) {
