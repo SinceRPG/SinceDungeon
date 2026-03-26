@@ -27,7 +27,7 @@ public class PartyManager {
 
     public Party createParty(Player leader) {
         if (getParty(leader.getUniqueId()) != null) return null;
-        Party party = new Party(leader.getUniqueId());
+        Party party = new Party(leader);
         activeParties.put(leader.getUniqueId(), party);
         return party;
     }
@@ -36,7 +36,6 @@ public class PartyManager {
         return activeParties.get(uuid);
     }
 
-    // Cung cấp API để lấy danh sách lời mời (Phục vụ Tab-Complete)
     public Map<UUID, Map<UUID, Long>> getActiveInvites() {
         return activeInvites;
     }
@@ -46,7 +45,6 @@ public class PartyManager {
         party.getMembers().forEach(uuid -> {
             activeParties.remove(uuid);
             partyChatToggled.remove(uuid);
-            // Xóa sạch các lời mời "Ma" do thành viên này từng gửi
             clearSentInvites(uuid);
         });
     }
@@ -56,16 +54,14 @@ public class PartyManager {
         if (party == null) return;
 
         if (party.getLeader().equals(uuid)) {
-            passLeadership(party); // Chuyển quyền trước
+            passLeadership(party);
         }
 
-        // Sau đó mới thực sự xóa người này khỏi nhóm
         party.removeMember(uuid);
         activeParties.remove(uuid);
         partyChatToggled.remove(uuid);
-        clearSentInvites(uuid); // Dọn dẹp Zombie Invites
+        clearSentInvites(uuid);
 
-        // Nếu nhóm không còn ai sau khi rời đi, giải tán hoàn toàn
         if (party.getMembers().isEmpty()) {
             disbandParty(party);
         }
@@ -76,19 +72,16 @@ public class PartyManager {
         party.removeMember(target);
         activeParties.remove(target);
         partyChatToggled.remove(target);
-        activeInvites.remove(target); // Xóa các lời mời họ đang nhận
-        clearSentInvites(target); // Xóa các lời mời họ đã gửi
+        activeInvites.remove(target);
+        clearSentInvites(target);
     }
 
-    // VÁ LỖI LOGIC GỐC: Chuyển quyền trưởng nhóm MÀ KHÔNG KICK người chơi cũ.
-    // Phục vụ tính năng bảo tồn người chơi rớt mạng.
     public void passLeadership(Party party) {
         if (party == null || party.getMembers().size() <= 1) {
             disbandParty(party);
             return;
         }
 
-        // Tìm một thành viên bất kỳ không phải là trưởng nhóm cũ
         UUID newLeader = party.getMembers().stream()
                 .filter(id -> !id.equals(party.getLeader()))
                 .findFirst().orElse(null);
@@ -96,7 +89,7 @@ public class PartyManager {
         if (newLeader != null) {
             party.setLeader(newLeader);
             String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-            sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
+            sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
         } else {
             disbandParty(party);
         }
@@ -131,18 +124,35 @@ public class PartyManager {
             return false;
         }
 
-        party.addMember(target.getUniqueId());
+        party.addMember(target);
         activeParties.put(target.getUniqueId(), party);
 
         activeInvites.remove(target.getUniqueId());
         return true;
     }
 
+    public void electNewLeader(Party party) {
+        if (party == null || party.getMembers().size() <= 1) {
+            disbandParty(party);
+            return;
+        }
+
+        party.removeMember(party.getLeader());
+        activeParties.remove(party.getLeader());
+        partyChatToggled.remove(party.getLeader());
+
+        UUID newLeader = party.getMembers().iterator().next();
+        party.setLeader(newLeader);
+
+        String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
+    }
+
     public void promoteMember(Party party, UUID newLeader) {
         if (party == null || !party.getMembers().contains(newLeader)) return;
         party.setLeader(newLeader);
         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
+        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", party.getMemberName(newLeader)));
     }
 
     public Set<Player> getEligibleMembers(Party party, double radius) {
@@ -186,9 +196,9 @@ public class PartyManager {
 
     public void removePlayerFromCache(UUID uuid) {
         partyChatToggled.remove(uuid);
+        activeInvites.remove(uuid);
     }
 
-    // Hàm tiện ích để quét và dọn sạch các lời mời rác
     private void clearSentInvites(UUID sender) {
         activeInvites.values().forEach(invites -> invites.remove(sender));
     }
@@ -201,13 +211,14 @@ public class PartyManager {
         });
     }
 
+    // VÁ LỖI CỰC ĐỘ: Lưu kèm Tên (Name) để cấm gọi Bukkit.getOfflinePlayer() gây đứng Server!
     public static class Party {
-        private final Set<UUID> members = Collections.newSetFromMap(new ConcurrentHashMap<>());
+        private final Map<UUID, String> members = new ConcurrentHashMap<>();
         private UUID leader;
 
-        public Party(UUID leader) {
-            this.leader = leader;
-            this.members.add(leader);
+        public Party(Player leader) {
+            this.leader = leader.getUniqueId();
+            this.members.put(leader.getUniqueId(), leader.getName());
         }
 
         public UUID getLeader() {
@@ -219,11 +230,15 @@ public class PartyManager {
         }
 
         public Set<UUID> getMembers() {
-            return members;
+            return members.keySet();
         }
 
-        public void addMember(UUID uuid) {
-            members.add(uuid);
+        public String getMemberName(UUID uuid) {
+            return members.getOrDefault(uuid, "Unknown");
+        }
+
+        public void addMember(Player p) {
+            members.put(p.getUniqueId(), p.getName());
         }
 
         public void removeMember(UUID uuid) {

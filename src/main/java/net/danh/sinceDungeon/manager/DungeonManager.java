@@ -337,6 +337,7 @@ public class DungeonManager {
         Set<Player> participants = new HashSet<>();
 
         int offlineCount = 0;
+        int deadCount = 0;
         int farCount = 0;
 
         if (party != null) {
@@ -347,11 +348,13 @@ public class DungeonManager {
 
             double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
 
-            // XỬ LÝ PHÂN LOẠI LOGIC: Đếm chính xác ai Offline, ai đứng quá xa
             for (UUID uid : party.getMembers()) {
                 Player mem = Bukkit.getPlayer(uid);
-                if (mem == null || !mem.isOnline() || mem.isDead()) {
+                if (mem == null || !mem.isOnline()) {
                     offlineCount++;
+                } else if (mem.isDead()) {
+                    // VÁ LỖI LOGIC: Bắt chính xác trạng thái người đang "Ngỏm" (Dead) để báo tin chuẩn xác
+                    deadCount++;
                 } else {
                     if (maxDist > 0 && (!mem.getWorld().equals(p.getWorld()) || mem.getLocation().distanceSquared(p.getLocation()) > maxDist * maxDist)) {
                         farCount++;
@@ -365,6 +368,10 @@ public class DungeonManager {
                 String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
                 p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
             }
+            if (deadCount > 0) {
+                String warnMsg = plugin.getMessagesFile().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
+                p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(deadCount))));
+            }
             if (farCount > 0) {
                 String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
                 p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
@@ -373,6 +380,7 @@ public class DungeonManager {
             participants.add(p);
         }
 
+        // ... (phần code chặn người đang chơi và kiểm tra điều kiện giữ nguyên)
         for (Player participant : participants) {
             if (activeGames.containsKey(participant.getUniqueId())) {
                 String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");

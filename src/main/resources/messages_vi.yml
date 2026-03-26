@@ -54,6 +54,10 @@ party:
   already_invited: "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi."
   auto_created: "<green>Hệ thống đã tự động tạo nhóm cho bạn."
   empty_message: "<red>Vui lòng nhập nội dung tin nhắn."
+  invite_self: "<red>Bạn không thể tự mời chính mình vào nhóm!"
+  dead_left_behind: "<yellow>Cảnh báo: Có <count> thành viên đang Chết (Chưa hồi sinh) nên bị bỏ lại."
+
+# messages_en.yml
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"

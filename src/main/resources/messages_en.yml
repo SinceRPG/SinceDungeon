@@ -54,6 +54,8 @@ party:
   already_invited: "<red>You already invited this player. Please wait for them to respond."
   auto_created: "<green>A party has been auto-created for you."
   empty_message: "<red>Please enter a message to send."
+  invite_self: "<red>You cannot invite yourself to the party!"
+  dead_left_behind: "<yellow>Warning: <count> member(s) are Dead and were left behind."
 
 game:
   start: "<green>Dungeon has started! Good luck!"
