@@ -41,6 +41,10 @@ party:
   player_kicked: "<red><player> was kicked from the party."
   player_not_in_party: "<red>That player is not in your party."
   list: "<gold>Party Members: <white><members>"
+  promoted: "<green><player> has been promoted to Party Leader!"
+  chat_toggled: "<yellow>Party Chat mode is now: <status>"
+  start_aborted_condition: "<red>Dungeon start aborted! <player> does not meet the entry requirements."
+  distance_warning: "<yellow>Warning: <count> member(s) are too far away and were left behind!"
 
 game:
   start: "<green>Dungeon has started! Good luck!"

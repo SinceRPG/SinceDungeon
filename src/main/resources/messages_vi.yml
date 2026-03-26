@@ -41,6 +41,10 @@ party:
   player_kicked: "<red><player> đã bị đuổi khỏi nhóm."
   player_not_in_party: "<red>Người chơi đó không có trong nhóm của bạn."
   list: "<gold>Thành Viên Nhóm: <white><members>"
+  promoted: "<green><player> đã được thăng chức thành Trưởng Nhóm!"
+  chat_toggled: "<yellow>Chế độ Chat Nhóm hiện đang: <status>"
+  start_aborted_condition: "<red>Hủy vào Dungeon! Thành viên <player> không đáp ứng đủ điều kiện."
+  distance_warning: "<yellow>Cảnh báo: Có <count> thành viên đứng quá xa nên đã bị bỏ lại!"
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"

@@ -12,18 +12,8 @@ import org.bukkit.entity.Player;
 
 import java.util.stream.Collectors;
 
-/**
- * Modern Brigadier command implementation for the Party System.
- * Supports Paper 1.21+ dynamic tab completion and synchronous node resolution.
- */
 public class PartyCommand {
 
-    /**
-     * Registers the /party command tree to the lifecycle registrar.
-     *
-     * @param plugin The plugin instance.
-     * @param event  The registrar event from LifecycleEvents.COMMANDS.
-     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
         PartyManager pm = plugin.getPartyManager();
 
@@ -41,11 +31,25 @@ public class PartyCommand {
                     return 1;
                 }))
 
+                .then(Commands.literal("disband").executes(ctx -> {
+                    Player p = (Player) ctx.getSource().getSender();
+                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                    if (party == null || !party.getLeader().equals(p.getUniqueId())) {
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                        return 0;
+                    }
+                    String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.disbanded"));
+                    pm.disbandParty(party);
+                    return 1;
+                }))
+
                 .then(Commands.literal("invite")
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     Bukkit.getOnlinePlayers().stream()
+                                            .filter(t -> pm.getParty(t.getUniqueId()) == null) // Don't suggest players already in a party
                                             .map(Player::getName)
                                             .filter(name -> name.toLowerCase().startsWith(remaining))
                                             .forEach(builder::suggest);
@@ -92,7 +96,8 @@ public class PartyCommand {
 
                                     if (pm.acceptInvite(p, leader.getUniqueId())) {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
-                                        pm.sendPartyMessage(party, "System", plugin.getMessagesFile().getString("party.player_joined").replace("<player>", p.getName()));
+                                        String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+                                        pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_joined").replace("<player>", p.getName()));
                                         return 1;
                                     } else {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
@@ -116,11 +121,49 @@ public class PartyCommand {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
                     } else {
                         party.removeMember(p.getUniqueId());
-                        pm.sendPartyMessage(party, "System", plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
+                        pm.removePlayerFromCache(p.getUniqueId());
+                        String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+                        pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
                     }
                     return 1;
                 }))
+
+                .then(Commands.literal("promote")
+                        .then(Commands.argument("target", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    if (ctx.getSource().getSender() instanceof Player p) {
+                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                        if (party != null && party.getLeader().equals(p.getUniqueId())) {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            party.getMembers().stream()
+                                                    .map(Bukkit::getPlayer)
+                                                    .filter(t -> t != null && t.getName().toLowerCase().startsWith(remaining) && !t.equals(p))
+                                                    .forEach(t -> builder.suggest(t.getName()));
+                                        }
+                                    }
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    Player p = (Player) ctx.getSource().getSender();
+                                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+
+                                    if (party == null || !party.getLeader().equals(p.getUniqueId())) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                                        return 0;
+                                    }
+
+                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                    if (target == null || !party.getMembers().contains(target.getUniqueId()) || target.equals(p)) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
+                                        return 0;
+                                    }
+
+                                    pm.promoteMember(party, target.getUniqueId());
+                                    return 1;
+                                })
+                        )
+                )
 
                 .then(Commands.literal("kick")
                         .then(Commands.argument("target", StringArgumentType.word())
@@ -153,14 +196,28 @@ public class PartyCommand {
                                     }
 
                                     party.removeMember(target.getUniqueId());
+                                    pm.removePlayerFromCache(target.getUniqueId());
                                     target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kicked")));
-                                    pm.sendPartyMessage(party, "System", plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", target.getName()));
+                                    String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+                                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", target.getName()));
                                     return 1;
                                 })
                         )
                 )
 
                 .then(Commands.literal("chat")
+                        .executes(ctx -> {
+                            Player p = (Player) ctx.getSource().getSender();
+                            PartyManager.Party party = pm.getParty(p.getUniqueId());
+                            if (party == null) {
+                                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
+                                return 0;
+                            }
+                            boolean enabled = pm.togglePartyChat(p.getUniqueId());
+                            String state = enabled ? plugin.getMessagesFile().getString("words.true_word") : plugin.getMessagesFile().getString("words.false_word");
+                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.chat_toggled").replace("<status>", state)));
+                            return 1;
+                        })
                         .then(Commands.argument("message", StringArgumentType.greedyString())
                                 .executes(ctx -> {
                                     Player p = (Player) ctx.getSource().getSender();
@@ -188,7 +245,10 @@ public class PartyCommand {
 
                     String members = party.getMembers().stream()
                             .map(Bukkit::getPlayer)
-                            .map(t -> t != null ? t.getName() : "Offline")
+                            .map(t -> {
+                                if (t == null) return "Offline";
+                                return t.getUniqueId().equals(party.getLeader()) ? t.getName() + " (Leader)" : t.getName();
+                            })
                             .collect(Collectors.joining(", "));
 
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.list").replace("<members>", members)));

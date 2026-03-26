@@ -1,6 +1,8 @@
 package net.danh.sinceDungeon.manager;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.party.PartyManager.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -137,16 +139,35 @@ public class DungeonListener implements Listener {
         if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
     }
 
+    @EventHandler(priority = EventPriority.LOW)
+    public void onAsyncChat(AsyncChatEvent e) {
+        Player p = e.getPlayer();
+        if (plugin.getPartyManager().isPartyChatEnabled(p.getUniqueId())) {
+            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            if (party != null) {
+                e.setCancelled(true);
+                String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
+                plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
+            } else {
+                // Failsafe if they are no longer in a party but toggle is stuck
+                plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
+            }
+        }
+    }
+
+    // And Update your onQuit event:
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null) game.stop(true);
 
-        Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
             plugin.getPartyManager().electNewLeader(party);
         }
+        // Ensure memory leaks do not occur for chat toggles / invites
+        plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
     }
 
     @EventHandler

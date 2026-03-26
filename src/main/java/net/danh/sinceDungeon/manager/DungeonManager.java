@@ -457,8 +457,12 @@ public class DungeonManager {
                             participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
                     }
 
-                    if (!participant.equals(p)) {
-                        p.sendMessage(ColorUtils.parseWithPrefix("<red>Thành viên " + participant.getName() + " không đạt điều kiện. Hủy quá trình vào Dungeon."));
+                    String abortMsg = plugin.getMessagesFile().getString("party.start_aborted_condition");
+                    if (abortMsg != null) {
+                        String finalMsg = abortMsg.replace("<player>", participant.getName());
+                        for (Player notify : participants) {
+                            if (notify.isOnline()) notify.sendMessage(ColorUtils.parseWithPrefix(finalMsg));
+                        }
                     }
                     return;
                 }

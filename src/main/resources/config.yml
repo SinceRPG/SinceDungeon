@@ -26,6 +26,13 @@ party:
   # Reward sharing mode: EQUAL (all get the same), LEADER_ONLY (only leader gets chests)
   # Chế độ chia thưởng: EQUAL (tất cả nhận bằng nhau), LEADER_ONLY (chỉ trưởng nhóm nhận rương)
   reward-share-mode: "EQUAL"
+  # The display name of the system when sending automated party broadcasts
+  # Tên hiển thị của hệ thống khi gửi thông báo tự động cho nhóm
+  system-name: "System"
+
+  # Time in seconds before a party invite expires
+  # Thời gian tính bằng giây trước khi lời mời vào nhóm hết hạn
+  invite-timeout: 60
 
 dungeon:
   # Countdown time (in seconds) before the dungeon starts
