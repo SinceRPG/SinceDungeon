@@ -100,7 +100,6 @@ public class DungeonGame {
                     dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
                     dungeonWorld.setAutoSave(false);
 
-                    // CHỐNG LOẠN KHÍ HẬU: Luôn đặt thời tiết đẹp và ban ngày lúc bắt đầu
                     dungeonWorld.setTime(6000);
                     dungeonWorld.setStorm(false);
                     dungeonWorld.setThundering(false);
@@ -338,7 +337,6 @@ public class DungeonGame {
                 if (success && p.isOnline()) {
                     restorePlayerState(p);
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        // BẢO MẬT: Kiểm tra xem người chơi còn sống không mới mở rương (Chống Ghost Inventory bug)
                         if (p.isOnline() && !p.isDead()) {
                             if (finalChestCount > 0) {
                                 new net.danh.sinceDungeon.reward.RewardGUI(plugin).openRewardGUI(p, finalChestCount, template);
@@ -359,8 +357,12 @@ public class DungeonGame {
     }
 
     public void handlePlayerDisconnect(Player p) {
+        // VÁ LỖI MẤT TRẠNG THÁI GỐC: Trả lại máu, gamemode và đồ trước khi họ bị xóa sổ khỏi Instance.
+        restorePlayerState(p);
+
         participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
+        savedStates.remove(p.getUniqueId()); // Tránh Leak RAM
 
         if (participants.isEmpty()) {
             stop(false, DungeonEndEvent.EndReason.FAILED);
@@ -458,7 +460,9 @@ public class DungeonGame {
             p.setFoodLevel(state.foodLevel);
 
             for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
-            for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+            if (state.potionEffects != null) {
+                for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+            }
             p.setFireTicks(state.fireTicks);
             p.setFallDistance(0);
         }

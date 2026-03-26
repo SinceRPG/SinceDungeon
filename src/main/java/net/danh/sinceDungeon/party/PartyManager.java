@@ -28,7 +28,7 @@ public class PartyManager {
     public Party createParty(Player leader) {
         Party party = new Party(leader);
         if (activeParties.putIfAbsent(leader.getUniqueId(), party) != null) {
-            return null; // Tranh chấp đa luồng: Nhóm đã được tạo ở 1 luồng khác
+            return null;
         }
         return party;
     }
@@ -63,9 +63,8 @@ public class PartyManager {
         Party party = getParty(uuid);
         if (party == null) return;
 
-        // VÁ LỖI CỰC ĐỘ: Khóa toàn bộ object nhóm để tránh việc 2 người cùng Quit gây đâm xe
         synchronized (party) {
-            if (activeParties.get(party.getLeader()) != party) return; // Nhóm đã giải tán
+            if (activeParties.get(party.getLeader()) != party) return;
 
             if (party.getLeader().equals(uuid)) {
                 passLeadership(party);
@@ -137,6 +136,9 @@ public class PartyManager {
                 .orElse(candidates.stream().findFirst().orElse(null));
 
         if (newLeader != null) {
+            // VÁ LỖI LỜI MỜI MA: Đốt sạch lời mời của Trưởng nhóm cũ khi bàn giao quyền lực
+            clearSentInvites(party.getLeader());
+
             party.setLeader(newLeader);
             String sysName = plugin.getConfigFile().getString("party.system-name", "System");
             sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
@@ -174,11 +176,10 @@ public class PartyManager {
             return false;
         }
 
-        // VÁ LỖI BÓNG MA PHỤC SINH: Kiểm tra lại toàn diện bên trong vòng khóa
         synchronized (party) {
             if (activeParties.get(party.getLeader()) != party) {
                 targetInvites.remove(leader);
-                return false; // Nhóm đã bị giải tán ở 1 mili-giây trước
+                return false;
             }
             if (party.getMembers().size() >= maxMembers) {
                 targetInvites.remove(leader);
@@ -195,6 +196,8 @@ public class PartyManager {
     public void promoteMember(Party party, UUID newLeader) {
         if (party == null || !party.getMembers().contains(newLeader)) return;
         synchronized (party) {
+            // VÁ LỖI LỜI MỜI MA: Đốt sạch lời mời của Trưởng nhóm cũ khi giáng chức
+            clearSentInvites(party.getLeader());
             party.setLeader(newLeader);
         }
         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
@@ -248,14 +251,17 @@ public class PartyManager {
     }
 
     private void clearSentInvites(UUID sender) {
+        // VÁ LỖI RAM LEAK: Sử dụng iterator chuẩn xác để tháo gỡ các Map rỗng
         activeInvites.values().forEach(invites -> invites.remove(sender));
+        activeInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 
     private void purgeExpiredInvites() {
         long now = System.currentTimeMillis();
-        activeInvites.forEach((target, invites) -> {
-            invites.entrySet().removeIf(entry -> now > entry.getValue());
-            if (invites.isEmpty()) activeInvites.remove(target);
+        // VÁ LỖI XUNG ĐỘT ĐA LUỒNG: Sử dụng removeIf an toàn cho Map 2 lớp
+        activeInvites.entrySet().removeIf(entry -> {
+            entry.getValue().entrySet().removeIf(inv -> now > inv.getValue());
+            return entry.getValue().isEmpty();
         });
     }
 
