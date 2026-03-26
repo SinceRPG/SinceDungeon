@@ -256,6 +256,8 @@ editor:
     action_val_hint_loc_single: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Delete"
     action_val_hint_loc_list: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Clear list"
     action_type_cant_edit: "<red>Cannot change action type after creation"
+    prev_page: "<yellow>⬅ Previous Page"
+    next_page: "<yellow>Next Page ➡"
   input:
     title_main: "<gold><bold>INPUT MODE"
     title_sub: "<white>Check the chat for instructions!"

@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.actions.impl;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,21 +14,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.Vector;
 
-/**
- * Represents an action that breaks a defined wall structure when a trigger block is interacted with.
- */
-public class SmartBreakWallAction extends DungeonAction {
+public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector trigger;
     private final Vector c1;
     private final Vector c2;
+    private Location centerLoc;
 
-    /**
-     * Constructs a new SmartBreakWallAction.
-     *
-     * @param trigger The vector location of the trigger block.
-     * @param c1      The first corner vector of the wall.
-     * @param c2      The second corner vector of the wall.
-     */
     public SmartBreakWallAction(Vector trigger, Vector c1, Vector c2) {
         this.trigger = trigger;
         this.c1 = c1;
@@ -41,7 +33,16 @@ public class SmartBreakWallAction extends DungeonAction {
 
     @Override
     public void start(DungeonGame game) {
-        Location loc = new Location(game.getWorld(), trigger.getX() + 0.5, trigger.getY() + 0.5, trigger.getZ() + 0.5);
+        this.centerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+    }
+
+    // UX: Bắn Particle liên tục để người chơi biết khối nào cần đập
+    @Override
+    public void onTick(DungeonGame game) {
+        if (completed || centerLoc == null) return;
+
+        // Tạo hiệu ứng hạt lửa lấp lánh thu hút sự chú ý
+        game.getWorld().spawnParticle(Particle.FLAME, centerLoc, 3, 0.2, 0.2, 0.2, 0.01);
     }
 
     @Override
@@ -67,9 +68,19 @@ public class SmartBreakWallAction extends DungeonAction {
     }
 
     private void removeWall(DungeonGame game) {
-        int minX = Math.min(c1.getBlockX(), c2.getBlockX()), maxX = Math.max(c1.getBlockX(), c2.getBlockX());
-        int minY = Math.min(c1.getBlockY(), c2.getBlockY()), maxY = Math.max(c1.getBlockY(), c2.getBlockY());
-        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ()), maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+        int minX = Math.min(c1.getBlockX(), c2.getBlockX());
+        int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
+        int minY = Math.min(c1.getBlockY(), c2.getBlockY());
+        int maxY = Math.max(c1.getBlockY(), c2.getBlockY());
+        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
+        int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+
+        // BẢO VỆ MÁY CHỦ: Nếu số lượng block lớn hơn 10.000, hủy lệnh để chống sập Server
+        long volume = (long)(maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+        if (volume > 10000) {
+            SinceDungeon.getPlugin().getLogger().severe("NGUY HIỂM: Tọa độ phá tường quá lớn (" + volume + " blocks). Đã tự động hủy để chống sập Server!");
+            return;
+        }
 
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {

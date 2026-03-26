@@ -256,6 +256,8 @@ editor:
     action_val_hint_loc_single: "<yellow>Trái: Nhập tay | Phải: Lấy vị trí đứng | <red>Shift-Phải: Xóa"
     action_val_hint_loc_list: "<yellow>Trái: Nhập tay | Phải: Lấy vị trí đứng | <red>Shift-Phải: Xóa sạch list"
     action_type_cant_edit: "<red>Không thể đổi loại hành động sau khi tạo"
+    prev_page: "<yellow>⬅ Trang Trước"
+    next_page: "<yellow>Trang Sau ➡"
   input:
     title_main: "<gold><bold>NHẬP LIỆU"
     title_sub: "<white>Hãy xem hướng dẫn ở khung Chat!"

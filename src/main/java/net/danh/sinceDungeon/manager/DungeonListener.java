@@ -224,10 +224,11 @@ public class DungeonListener implements Listener {
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
-
             if (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL ||
                     cause == consumableEffect ||
-                    cause == PlayerTeleportEvent.TeleportCause.COMMAND) {
+                    cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
+                    cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
+
                 e.setCancelled(true);
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_teleport")));
             }

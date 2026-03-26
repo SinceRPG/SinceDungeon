@@ -14,19 +14,8 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * Manages physical creation, duplication, and destruction of temporary dungeon worlds.
- */
 public class WorldManager {
 
-    /**
-     * Spawns an asynchronous task to duplicate and generate a temporary dungeon world.
-     *
-     * @param plugin       The main plugin instance.
-     * @param templateName The name of the root template folder.
-     * @param instanceId   The requested target instance world name.
-     * @return A CompletableFuture resulting in the loaded temporary Bukkit World.
-     */
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
         World templateW = Bukkit.getWorld(templateName);
@@ -34,23 +23,18 @@ public class WorldManager {
         boolean wasAutoSave = false;
 
         if (templateW != null) {
+            // TỐI ƯU CỰC ĐỘ: Ép lưu dữ liệu xuống ổ cứng (Save) thay vì Unload World.
+            // Điều này cho phép Admin tiếp tục xây dựng trong Map mẫu mà không bị Kick ra ngoài.
             templateW.save();
             wasAutoSave = templateW.isAutoSave();
+
+            // Tạm tắt AutoSave trong tích tắc để quá trình Copy file không bị hỏng (Corruption)
             templateW.setAutoSave(false);
 
-            boolean hasPlayers = !templateW.getPlayers().isEmpty();
-            if (hasPlayers) {
-                Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
-                for (Player p : templateW.getPlayers()) {
-                    p.teleport(safeLoc);
-                }
-            }
             final boolean finalAutoSaveState = wasAutoSave;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                Bukkit.unloadWorld(templateW, true);
-                executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW, finalAutoSaveState);
-            }, hasPlayers ? 2L : 0L);
 
+            // Tiến hành Copy Asynchronous ngay lập tức không cần trễ (delay)
+            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW, finalAutoSaveState);
         } else {
             executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, null, false);
         }
@@ -72,6 +56,7 @@ public class WorldManager {
                 throw new RuntimeException("Failed to copy world files using WorldUtils.");
             }
 
+            // Xóa file UID để Bukkit nhận diện đây là một World hoàn toàn mới
             new File(target, "uid.dat").delete();
             return instanceId;
 
@@ -81,6 +66,8 @@ public class WorldManager {
                     WorldCreator creator = new WorldCreator(id);
                     creator.generatorSettings("");
                     creator.generateStructures(false);
+
+                    // Ngăn chặn giật Lag (TPS Drop) khi load chunk ở khu vực Spawn
                     if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
 
                     World world = Bukkit.createWorld(creator);
@@ -93,6 +80,8 @@ public class WorldManager {
                 } catch (Exception e) {
                     finalFuture.completeExceptionally(e);
                 }
+
+                // Trả lại trạng thái AutoSave cho Map mẫu sau khi Copy xong
                 if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
             });
 
@@ -100,16 +89,12 @@ public class WorldManager {
             plugin.getLogger().severe("[WorldManager] Error generating dungeon world: " + ex.getMessage());
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
+
+            if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
             return null;
         });
     }
 
-    /**
-     * Attempts to cleanly unload and delete the given world folder from the server.
-     *
-     * @param plugin The main plugin instance.
-     * @param world  The target world object to annihilate.
-     */
     public static void unloadAndDeleteWorld(SinceDungeon plugin, World world) {
         if (world == null) return;
         File folder = world.getWorldFolder();
@@ -140,13 +125,6 @@ public class WorldManager {
         }
     }
 
-    /**
-     * Forcefully evicts players, unloads the world instantly and deletes it synchronously.
-     * Should only be used upon emergency shutdowns.
-     *
-     * @param plugin The main plugin instance.
-     * @param world  The target world object.
-     */
     public static void forceUnloadAndDelete(SinceDungeon plugin, World world) {
         if (world == null) return;
         File folder = world.getWorldFolder();

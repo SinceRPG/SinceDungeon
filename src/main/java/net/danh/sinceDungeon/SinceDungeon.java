@@ -151,15 +151,18 @@ public final class SinceDungeon extends JavaPlugin {
     private void cleanUpStuckWorlds() {
         File container = Bukkit.getWorldContainer();
         File[] files = container.listFiles();
+
         if (files != null) {
-            // Đọc prefix linh hoạt để chống kẹt rác nếu Admin đổi tên trong config
-            String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-            for (File file : files) {
-                if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
-                    getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing execution routines...");
-                    WorldUtils.deleteWorld(file);
+            // TỐI ƯU: Đẩy luồng dọn rác Map ra Async, giúp Server khởi động nhanh hơn không bị nghẽn
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+                for (File file : files) {
+                    if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
+                        getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing async deletion...");
+                        WorldUtils.deleteWorld(file);
+                    }
                 }
-            }
+            });
         }
     }
 
