@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.editor;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
@@ -51,19 +52,39 @@ public class EditorListener implements Listener {
         p.sendMessage(ColorUtils.parse(prefix + header));
 
         List<String> prompts = null;
-        if (session.getPromptKey() != null) {
+
+        // BƯỚC 1: Xử lý Custom Prompts từ API Custom Action
+        if (session.getPromptKey() != null && session.getPromptKey().startsWith("edit_action_")) {
+            String fieldName = session.getPromptKey().substring("edit_action_".length());
+
+            if (session.getCurrentActionKey() != null && session.getCurrentStage() != null) {
+                String actionType = session.getConfig().getString("stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".type");
+                if (actionType != null) {
+                    DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(actionType);
+                    if (meta != null && meta.customPrompts() != null && meta.customPrompts().containsKey(fieldName)) {
+                        prompts = meta.customPrompts().get(fieldName);
+                    }
+                }
+            }
+        }
+
+        // BƯỚC 2: Fallback về messages.yml nếu plugin gốc không định nghĩa
+        if (prompts == null && session.getPromptKey() != null) {
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + session.getPromptKey());
         }
 
+        // BƯỚC 3: Fallback dựa trên Input Type (String, Number, Boolean, v.v)
         if (prompts == null || prompts.isEmpty()) {
             String defaultTypeKey = session.getInputType().name().toLowerCase();
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + defaultTypeKey);
         }
 
+        // BƯỚC 4: Fallback mặc định an toàn tuyệt đối
         if (prompts == null || prompts.isEmpty()) {
             prompts = plugin.getMessagesFile().getStringList("editor.input.prompts.default");
         }
 
+        // Gửi dòng tin nhắn hướng dẫn ra chat
         for (String line : prompts) {
             p.sendMessage(ColorUtils.parse(line));
         }

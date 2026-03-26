@@ -294,6 +294,7 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    // [CẬP NHẬT LỚN] Lấy tên hiển thị thay vì raw type name
     public void openActionList(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionList(player, session));
         String title = getMsg("title.actions").replace("<stage>", session.getCurrentStage());
@@ -304,11 +305,17 @@ public class EditorGUI implements Listener {
             int index = 0;
             for (String key : sec.getKeys(false)) {
                 String type = sec.getString(key + ".type", getWord("unknown"));
+                DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
+
+                String displayTypeName = (meta != null && meta.displayName() != null) ? meta.displayName() : type;
+                Material icon = (meta != null && meta.icon() != null) ? meta.icon() : Material.PAPER;
+
                 String name = getMsg("items.action_item").replace("<index>", key);
                 List<String> lore = new ArrayList<>();
                 for (String s : plugin.getMessagesFile().getStringList("editor.items.action_lore"))
-                    lore.add(s.replace("<type>", type));
-                inv.setItem(index++, makeItem(Material.PAPER, name, lore));
+                    lore.add(s.replace("<type>", displayTypeName));
+
+                inv.setItem(index++, makeItem(icon, name, lore));
             }
         }
 
@@ -359,11 +366,14 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    // [CẬP NHẬT LỚN] Lấy tên hiển thị custom từ ActionMeta
     public void openActionTypeSelector(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, ColorUtils.parse(getMsg("title.select_type")));
         for (String type : plugin.getDungeonManager().getRegisteredActions()) {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
-            inv.addItem(makeItem(meta.icon(), type, Collections.singletonList("<gray>" + meta.description())));
+            String displayName = (meta.displayName() != null) ? "<green><bold>" + meta.displayName() : "<green>" + type;
+
+            inv.addItem(makeItem(meta.icon(), displayName, Arrays.asList("<gray>" + meta.description(), "", "<yellow>ID Tích Hợp: <white>" + type)));
         }
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
         p.openInventory(inv);
@@ -395,9 +405,7 @@ public class EditorGUI implements Listener {
         boolean isEditorMenu = session != null || isTitle(titleComp, "title.main", null);
         if (!isEditorMenu) return;
 
-        if (e.getClick() == ClickType.NUMBER_KEY ||
-                e.getClick() == ClickType.DOUBLE_CLICK ||
-                e.getClick() == ClickType.SWAP_OFFHAND) {
+        if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
         }
@@ -671,7 +679,7 @@ public class EditorGUI implements Listener {
         if (isTitle(titleComp, "title.actions", "<stage>")) {
             if (e.getRawSlot() == 49) openActionTypeSelector(p);
             else if (e.getRawSlot() == 45) openStageList(p, session);
-            else if (cur.getType() == Material.PAPER) {
+            else if (cur.getType() != Material.EMERALD && cur.getType() != getNavItem()) {
                 ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
                 if (sec != null) {
                     List<String> keys = new ArrayList<>(sec.getKeys(false));
@@ -697,7 +705,19 @@ public class EditorGUI implements Listener {
                 openActionList(p, session);
                 return;
             }
-            String type = getPlainText(cur.getItemMeta().displayName());
+            // Giải nén String Type ID ẩn trong List lore của GUI
+            String type = null;
+            if (cur.hasItemMeta() && cur.getItemMeta().hasLore()) {
+                for (Component comp : cur.getItemMeta().lore()) {
+                    String line = getPlainText(comp);
+                    if (line.contains("ID Tích Hợp:")) {
+                        type = line.split(":")[1].trim();
+                        break;
+                    }
+                }
+            }
+
+            if (type == null) return;
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             if (meta == null) return;
 

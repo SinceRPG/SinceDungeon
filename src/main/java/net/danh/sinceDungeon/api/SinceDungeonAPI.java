@@ -8,6 +8,7 @@ import net.danh.sinceDungeon.manager.DungeonTemplate;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -64,24 +65,28 @@ public class SinceDungeonAPI {
     // ========================== MỞ RỘNG (EXTENSION API) ==========================
 
     /**
-     * Đăng ký một loại Action hoàn toàn mới bằng Code.
+     * Đăng ký một loại Action hoàn toàn mới bằng Code với đầy đủ tùy chỉnh hiển thị và gợi ý chat.
+     *
+     * @param type          ID của Action (VD: "MY_CUSTOM_ACTION")
+     * @param parser        Lớp xử lý logic phân tích Action
+     * @param displayName   Tên hiển thị trong GUI (VD: "<green>Hành Động Tùy Chỉnh")
+     * @param icon          Icon hiển thị trong GUI
+     * @param description   Mô tả ngắn hiển thị dưới Icon
+     * @param defaultParams Các thông số mặc định khi tạo mới
+     * @param customPrompts Map chứa các tin nhắn gợi ý khi nhập liệu ở Chat (Key là tên Field, Value là List tin nhắn)
      */
-    public void registerCustomAction(String key, ActionParser parser, Material icon, String description, Map<String, Object> defaultParams) {
-        plugin.getDungeonManager().registerAction(key, parser, icon, description, defaultParams);
-        plugin.getLogger().info("[API] Đã đăng ký Custom Action: " + key);
+    public void registerCustomAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaultParams, Map<String, List<String>> customPrompts) {
+        plugin.getDungeonManager().registerAction(type, parser, displayName, icon, description, defaultParams, customPrompts);
+        plugin.getLogger().info("[API] Đã đăng ký Custom Action: " + type);
     }
 
     /**
      * Đăng ký một Dungeon Template (Map) trực tiếp thông qua Code thay vì file YAML.
-     * Hữu ích cho các mini-game tự gen map.
      */
     public void registerTemplate(DungeonTemplate template) {
         plugin.getDungeonManager().registerTemplate(template);
     }
 
-    /**
-     * Xóa một Template khỏi hệ thống bộ nhớ.
-     */
     public void unregisterTemplate(String dungeonId) {
         plugin.getDungeonManager().unregisterTemplate(dungeonId);
     }
@@ -90,16 +95,10 @@ public class SinceDungeonAPI {
         return plugin.getDungeonManager().getTemplates().get(dungeonId);
     }
 
-    /**
-     * Lấy toàn bộ danh sách Template ID đang có.
-     */
     public Set<String> getAvailableTemplates() {
         return plugin.getDungeonManager().getTemplates().keySet();
     }
 
-    /**
-     * Trả về Instance của DungeonManager để lập trình viên tự do can thiệp cực sâu.
-     */
     public DungeonManager getManager() {
         return plugin.getDungeonManager();
     }
