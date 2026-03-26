@@ -1,3 +1,4 @@
+# messages_vi.yml
 prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» <gray>"
 
 admin:
@@ -20,6 +21,26 @@ admin:
     mmoitems_missing: "Cần MMOItems để tạo vật phẩm: <data>"
     vector_parse_fail: "Lỗi phân tích tọa độ Vector: '<data>'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại file Config Map!"
 
+party:
+  chat_format: "<aqua>[Nhóm]</aqua> <green><sender></green><gray>: <white><msg>"
+  created: "<green>Đã tạo nhóm thành công. Sử dụng /party invite <người_chơi> để thêm thành viên."
+  disbanded: "<yellow>Nhóm đã bị giải tán."
+  already_in_party: "<red>Bạn đã ở trong một nhóm rồi."
+  not_in_party: "<red>Bạn chưa tham gia nhóm nào."
+  not_leader: "<red>Chỉ trưởng nhóm mới có thể làm điều này."
+  player_not_found: "<red>Không tìm thấy người chơi hoặc họ đang offline."
+  target_already_in_party: "<red>Người chơi đó đã ở trong một nhóm rồi."
+  invite_sent: "<green>Đã gửi lời mời đến <player>."
+  invite_received: "<green>Bạn nhận được lời mời vào nhóm từ <player>. Gõ /party accept <player> để tham gia."
+  no_invite: "<red>Không có lời mời nào từ người chơi đó."
+  player_joined: "<green><player> đã tham gia nhóm."
+  left: "<yellow>Bạn đã rời nhóm."
+  player_left: "<yellow><player> đã rời nhóm."
+  kicked: "<red>Bạn đã bị đuổi khỏi nhóm."
+  player_kicked: "<red><player> đã bị đuổi khỏi nhóm."
+  player_not_in_party: "<red>Người chơi đó không có trong nhóm của bạn."
+  list: "<gold>Thành Viên Nhóm: <white><members>"
+
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"
   stage_start: "<yellow>Giai đoạn <stage> bắt đầu!"
@@ -27,7 +48,7 @@ game:
   finish: "<gold><b>DUNGEON HOÀN THÀNH!</b>"
   completion_time: "<gray>Thời gian hoàn thành: <green><time>s"
   no_reward: "<red>Rất tiếc, bạn không đạt đủ điều kiện nhận thưởng."
-  death: "<red>Bạn đã bị hạ gục! Dungeon thất bại."
+  death: "<red><player> đã bị hạ gục!"
   hud:
     objective_prefix: "<gold><bold>MỤC TIÊU: <reset>"
     objective_separator: " <dark_gray>| "
@@ -68,13 +89,13 @@ action:
   mythic_wave_complete: "<green>Boss đã bị tiêu diệt!"
 
 error:
-  already_in: "<red>Bạn đang ở trong một dungeon khác!"
+  already_in: "<red>Bạn hoặc thành viên nhóm đang ở trong một dungeon khác!"
   file_not_found: "<red>Không tìm thấy file dungeon: <file>"
   dungeon_maintenance: "<red>Dungeon này đang bảo trì."
   condition_fail: "<red>Bạn không đủ điều kiện: <condition>"
   template_missing: "<red>Map mẫu <world> không tồn tại!"
   create_failed: "<red>Lỗi khởi tạo dungeon. Vui lòng báo admin."
-  mythic_mob_not_found: "<red>Lỗi config: Không tìm thấy MythicMob <mob>."
+  mythic_mob_not: "<red>Lỗi config: Không tìm thấy MythicMob <mob>."
   mob_spawn_fail: "<red>Lỗi spawn mob <mob>: <error>"
   init_failed: "<red>Lỗi khởi tạo dungeon."
   can_not_teleport: "<red>Không thể dịch chuyển theo cách này trong Dungeon!"

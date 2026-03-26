@@ -1,3 +1,4 @@
+# messages_en.yml
 prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» <gray>"
 
 admin:
@@ -20,6 +21,26 @@ admin:
     mmoitems_missing: "MMOItems is required to create item: <data>"
     vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
 
+party:
+  chat_format: "<aqua>[Party]</aqua> <green><sender></green><gray>: <white><msg>"
+  created: "<green>Party created successfully. Use /party invite <player> to add members."
+  disbanded: "<yellow>The party has been disbanded."
+  already_in_party: "<red>You are already in a party."
+  not_in_party: "<red>You are not in a party."
+  not_leader: "<red>Only the party leader can do this."
+  player_not_found: "<red>Player not found or offline."
+  target_already_in_party: "<red>That player is already in a party."
+  invite_sent: "<green>Invitation sent to <player>."
+  invite_received: "<green>You have been invited to a party by <player>. Type /party accept <player> to join."
+  no_invite: "<red>No pending invitation from that player."
+  player_joined: "<green><player> has joined the party."
+  left: "<yellow>You left the party."
+  player_left: "<yellow><player> left the party."
+  kicked: "<red>You were kicked from the party."
+  player_kicked: "<red><player> was kicked from the party."
+  player_not_in_party: "<red>That player is not in your party."
+  list: "<gold>Party Members: <white><members>"
+
 game:
   start: "<green>Dungeon has started! Good luck!"
   stage_start: "<yellow>Stage <stage> has begun!"
@@ -27,7 +48,7 @@ game:
   finish: "<gold><b>DUNGEON CLEARED!</b>"
   completion_time: "<gray>Completion time: <green><time>s"
   no_reward: "<red>Unfortunately, you didn't qualify for any rewards."
-  death: "<red>You have been defeated! Dungeon failed."
+  death: "<red><player> has been defeated!"
   hud:
     objective_prefix: "<gold><bold>OBJECTIVES: <reset>"
     objective_separator: " <dark_gray>| "
@@ -68,7 +89,7 @@ action:
   mythic_wave_complete: "<green>Boss defeated!"
 
 error:
-  already_in: "<red>You are already in another dungeon!"
+  already_in: "<red>You or your party is already in another dungeon!"
   file_not_found: "<red>Dungeon file not found: <file>"
   dungeon_maintenance: "<red>This dungeon is currently under maintenance."
   condition_fail: "<red>You do not meet the requirements: <condition>"

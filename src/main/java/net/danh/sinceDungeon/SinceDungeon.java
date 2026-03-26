@@ -10,6 +10,8 @@ import net.danh.sinceDungeon.editor.EditorManager;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
+import net.danh.sinceDungeon.party.PartyCommand;
+import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
@@ -41,6 +43,7 @@ public final class SinceDungeon extends JavaPlugin {
     private ConfigUtils messagesFile;
 
     private DungeonManager dungeonManager;
+    private PartyManager partyManager;
     private EditorManager editorManager;
     private EditorListener editorListener;
 
@@ -72,6 +75,7 @@ public final class SinceDungeon extends JavaPlugin {
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         dungeonManager = new DungeonManager(this);
+        partyManager = new PartyManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
 
@@ -88,7 +92,7 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         registerListeners(listeners.toArray(new Listener[0]));
-
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> PartyCommand.register(this, event));
         registerCommands();
         cleanUpStuckWorlds();
     }
@@ -257,5 +261,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public EditorListener getEditorListener() {
         return editorListener;
+    }
+
+    public PartyManager getPartyManager() {
+        return partyManager;
     }
 }

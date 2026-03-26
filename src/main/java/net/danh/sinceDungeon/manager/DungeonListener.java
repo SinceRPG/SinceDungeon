@@ -1,11 +1,15 @@
 package net.danh.sinceDungeon.manager;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.party.PartyManager.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,7 +20,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 
 /**
- * Global listener that routes Bukkit events to the respective active dungeon games.
+ * Global listener routing Bukkit events to active dungeon instances.
+ * Implements Ghost Rescue mechanisms and strict Friendly-Fire mitigation.
  */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
@@ -32,7 +37,66 @@ public class DungeonListener implements Listener {
 
     private void pass(Player p, org.bukkit.event.Event e) {
         if (p == null) return;
-        plugin.getDungeonManager().dispatchEvent(p, e);
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+        if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
+            game.onEvent(e);
+        }
+    }
+
+    /**
+     * Resolves the true attacker behind a damage event, tracing projectiles and explosives.
+     *
+     * @param damager The immediate entity causing damage.
+     * @return The Player responsible, or null.
+     */
+    private Player getRealAttacker(Entity damager) {
+        if (damager instanceof Player p) return p;
+        if (damager instanceof Projectile proj && proj.getShooter() instanceof Player p) return p;
+        if (damager instanceof AreaEffectCloud cloud && cloud.getSource() instanceof Player p) return p;
+        if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
+        return null;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamage(EntityDamageByEntityEvent e) {
+        if (e.getEntity() instanceof Player victim) {
+            Player attacker = getRealAttacker(e.getDamager());
+
+            // Friendly-Fire Mitigation
+            if (attacker != null && !attacker.equals(victim)) {
+                Party party = plugin.getPartyManager().getParty(victim.getUniqueId());
+                if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
+                    boolean allowFF = plugin.getConfigFile().getConfig().getBoolean("party.allow-friendly-fire", false);
+                    if (!allowFF) {
+                        e.setCancelled(true);
+                        return;
+                    }
+                }
+            }
+            pass(victim, e);
+        }
+
+        Player attacker = getRealAttacker(e.getDamager());
+        if (attacker != null) {
+            pass(attacker, e);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onJoin(PlayerJoinEvent e) {
+        Player p = e.getPlayer();
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
+        // Ghost Rescue Mechanism
+        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
+            plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
+            p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
+                if (success) {
+                    p.setHealth(0); // Force state reset if stuck
+                    p.spigot().respawn();
+                }
+            });
+        }
     }
 
     @EventHandler
@@ -72,34 +136,26 @@ public class DungeonListener implements Listener {
 
     @EventHandler
     public void onProjectileLaunch(ProjectileLaunchEvent e) {
-        if (e.getEntity().getShooter() instanceof Player p) {
-            pass(p, e);
-        }
+        if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
     }
 
     @EventHandler
     public void onProjectileHit(ProjectileHitEvent e) {
-        if (e.getEntity().getShooter() instanceof Player p) {
-            pass(p, e);
-        }
-    }
-
-    @EventHandler
-    public void onEntityDamage(EntityDamageByEntityEvent e) {
-        if (e.getDamager() instanceof Player p) {
-            pass(p, e);
-        } else if (e.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player p) {
-            pass(p, e);
-        }
-
-        if (e.getEntity() instanceof Player p) {
-            pass(p, e);
-        }
+        if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
-        plugin.getDungeonManager().quitDungeon(e.getPlayer());
+        Player p = e.getPlayer();
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+        if (game != null) {
+            game.stop(true);
+        }
+
+        Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+        if (party != null && party.getLeader().equals(p.getUniqueId())) {
+            plugin.getPartyManager().disbandParty(party);
+        }
     }
 
     @EventHandler
@@ -107,7 +163,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && !p.getWorld().equals(game.getWorld())) {
-            plugin.getLogger().info(p.getName() + " left dungeon world via teleport. Stopping game.");
+            plugin.getLogger().info(p.getName() + " left dungeon world via teleport. Triggering extraction.");
             game.stop(false);
         }
     }
@@ -123,9 +179,7 @@ public class DungeonListener implements Listener {
             e.setDroppedExp(0);
             e.setKeepLevel(true);
 
-            game.sendMessage("game.no_reward");
-            String deathMsg = plugin.getMessagesFile().getString("game.death");
-            if (deathMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(deathMsg));
+            game.broadcastMessage("game.death", "<player>", p.getName());
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 p.spigot().respawn();

@@ -1,25 +1,51 @@
-# Main Configuration for SinceDungeon
+# config.yml
+# Main Configuration for SinceDungeon / Cấu hình chính của SinceDungeon
 
 settings:
   # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
+  # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
   locale: "vi"
 
 # Debug mode: Enable to view detailed logs when an error occurs
+# Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
 debug: false
+
+party:
+  # Maximum members allowed in a single party
+  # Số lượng thành viên tối đa trong một nhóm
+  max-members: 4
+
+  # Allow party members to damage each other inside dungeons?
+  # Cho phép các thành viên trong nhóm đánh lẫn nhau trong dungeon không?
+  allow-friendly-fire: false
+
+  # Maximum block distance for party members to be pulled into a dungeon together (0 = map-wide)
+  # Khoảng cách tối đa để các thành viên được kéo vào dungeon cùng nhau (0 = toàn bản đồ)
+  max-join-distance: 50
+
+  # Reward sharing mode: EQUAL (all get the same), LEADER_ONLY (only leader gets chests)
+  # Chế độ chia thưởng: EQUAL (tất cả nhận bằng nhau), LEADER_ONLY (chỉ trưởng nhóm nhận rương)
+  reward-share-mode: "EQUAL"
 
 dungeon:
   # Countdown time (in seconds) before the dungeon starts
+  # Thời gian đếm ngược (bằng giây) trước khi dungeon bắt đầu
   lobby-countdown: 10
+
   # Folder containing template maps (located in the server's root plugin directory)
+  # Thư mục chứa các map mẫu (nằm trong thư mục plugin của server)
   template-folder: "dungeons"
+
   # World name prefix when generating a dungeon instance
+  # Tiền tố tên thế giới khi tạo bản sao dungeon
   world-prefix: "SinceDungeon_"
 
 editor:
   # Item used for navigation in the Editor GUI
+  # Vật phẩm dùng để điều hướng trong GUI Editor
   nav-item: ARROW
 
-# Sound configuration for the entire plugin
+# Sound configuration for the entire plugin / Cấu hình âm thanh cho toàn bộ plugin
 sounds:
   lobby_countdown: "block.note_block.pling"
   game_start: "entity.ender_dragon.growl"
@@ -31,6 +57,7 @@ sounds:
   reward_claim: "entity.item.pickup"
 
 # Default values configuration when creating a new Action in the editor
+# Cấu hình giá trị mặc định khi tạo Action mới trong Editor
 action-defaults:
   spawn_wave:
     mob: "ZOMBIE"
@@ -39,4 +66,4 @@ action-defaults:
     radius: 3.0
   mythic_wave:
     mob: "SkeletonKing"
-    amount: 1
+    amount: 1 
