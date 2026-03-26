@@ -55,8 +55,15 @@ public final class SinceDungeon extends JavaPlugin {
     public void onEnable() {
         miniMessage = MiniMessage.miniMessage();
 
+        // 1. Tải Config chính trước
         configFile = new ConfigUtils(this, "config.yml");
-        messagesFile = new ConfigUtils(this, "messages.yml");
+
+        // 2. Xuất sẵn các file ngôn ngữ mặc định (nếu có trong resources)
+        extractDefaultLocales();
+
+        // 3. Tải ngôn ngữ dựa trên cấu hình
+        setupLanguage();
+
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         dungeonManager = new DungeonManager(this);
@@ -79,6 +86,22 @@ public final class SinceDungeon extends JavaPlugin {
 
         registerCommands();
         cleanUpStuckWorlds();
+    }
+
+    private void extractDefaultLocales() {
+        String[] defaultLocales = {"messages_vi.yml", "messages_en.yml"};
+        for (String loc : defaultLocales) {
+            File file = new File(getDataFolder(), loc);
+            if (!file.exists() && getResource(loc) != null) {
+                saveResource(loc, false);
+            }
+        }
+    }
+
+    private void setupLanguage() {
+        String lang = configFile.getString("settings.locale", "vi");
+        messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
+        getLogger().info("Loaded language file: messages_" + lang + ".yml");
     }
 
     @Override
@@ -105,9 +128,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public void reloadFiles() {
         if (configFile != null) configFile.reload();
-        if (messagesFile != null) messagesFile.reload();
+        setupLanguage(); // Cập nhật lại file ngôn ngữ nếu chủ server đổi locale
         if (dungeonManager != null) dungeonManager.reload();
-        getLogger().info("Configuration and Dungeons reloaded.");
+        getLogger().info("Configuration, Language, and Dungeons reloaded.");
     }
 
     private void cleanUpStuckWorlds() {

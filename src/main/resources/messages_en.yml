@@ -1,0 +1,308 @@
+prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» <gray>"
+
+admin:
+  reload: "<green>Successfully reloaded all configuration and dungeon files."
+  invalid_player: "<red>Player not found."
+  in_editor: "<red>You are in editor mode! Please type <yellow>cancel<red> in chat to cancel before using commands."
+  only_admin: "<red>Only players with admin permissions can use this command."
+  join_dungeon:
+    console_error: "<red>Please specify a player: /dungeon join <map> <player>"
+    not_found_player: "<red>Could not find the player <player>"
+  mmoitems:
+    not_installed: "<red>System Error: Cannot give MMOItems because the plugin is not installed."
+    not_found: "<red>System Error: MMOItems <type>:<id> not found."
+    error: "<red>System Error: Item <item> is misconfigured or does not exist."
+  log:
+    leave_dungeon: " left the dungeon world via teleport. Stopping game."
+  warning:
+    vanilla_parse_fail: "Could not parse Vanilla item: <data>"
+    mmoitems_parse_fail: "Could not parse MMOItems: <data>"
+    mmoitems_missing: "MMOItems is required to create item: <data>"
+    vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
+
+game:
+  start: "<green>Dungeon has started! Good luck!"
+  stage_start: "<yellow>Stage <stage> has begun!"
+  stage_complete: "<green>Stage <stage> completed!"
+  finish: "<gold><b>DUNGEON CLEARED!</b>"
+  completion_time: "<gray>Completion time: <green><time>s"
+  no_reward: "<red>Unfortunately, you didn't qualify for any rewards."
+  death: "<red>You have been defeated! Dungeon failed."
+  hud:
+    objective_prefix: "<gold><bold>OBJECTIVES: <reset>"
+    objective_separator: " <dark_gray>| "
+  title:
+    loading_main: "<yellow><bold>LOADING..."
+    loading_sub: "<gray>Please wait a moment"
+    start_main: "<red><bold>START!"
+    start_sub: "<white>Good luck"
+    finish_main: "<green><bold>CLEARED!"
+    finish_sub: "<yellow>Time: <time> seconds"
+    countdown_main: "<red><bold><time>"
+    countdown_sub: "<gold>Prepare for battle!"
+
+lobby:
+  preparing: "<yellow>Initializing dungeon world..."
+  countdown: "<yellow>Dungeon starts in <time> seconds..."
+
+objective:
+  loot_chest: "<gold>Loot the supply chest to proceed"
+  mythic_wave: "<dark_red>Defeat Boss <red><mob> <gray>(Left: <remain>)"
+  reach_location: "<green>Reach the designated coordinates"
+  break_wall: "<aqua>Find and break the sealing block"
+  spawn_wave: "<yellow>Eliminate <red><mob> <gray>(Left: <remain>)"
+
+action:
+  chest_appear: "<yellow>A treasure chest has appeared!"
+  chest_found: "<green>You found a hidden chest!"
+  chest_not_empty: "<red>You must empty the chest to proceed!"
+  loot_complete: "<green>Chest cleared!"
+  reach_start: "<yellow>Move to coordinates <x>, <z>!"
+  reach_complete: "<green>Reached checkpoint!"
+  wall_break: "<yellow>The barricade has been destroyed!"
+  spawn_wave: "<red><amount> <mob> spawned!"
+  kill_remain: "<yellow><amount> enemies remaining."
+  kill_complete: "<green>All monsters eliminated!"
+  mythic_wave_start: "<red>Boss <mob> has appeared!"
+  mythic_wave_remain: "<yellow><amount> <mob> remaining."
+  mythic_wave_complete: "<green>Boss defeated!"
+
+error:
+  already_in: "<red>You are already in another dungeon!"
+  file_not_found: "<red>Dungeon file not found: <file>"
+  dungeon_maintenance: "<red>This dungeon is currently under maintenance."
+  condition_fail: "<red>You do not meet the requirements: <condition>"
+  template_missing: "<red>Template world <world> does not exist!"
+  create_failed: "<red>Failed to initialize dungeon. Please notify an admin."
+  mythic_mob_not_found: "<red>Config Error: MythicMob <mob> not found."
+  mob_spawn_fail: "<red>Failed to spawn mob <mob>: <error>"
+  init_failed: "<red>Failed to initialize dungeon."
+  can_not_teleport: "<red>You cannot teleport this way inside a Dungeon!"
+  can_not_drop: "<red>You cannot drop items in a Dungeon to prevent item loss!"
+
+reward:
+  gui_title: "<b><gradient:#ffd700:#ffaa00>Dungeon Rewards</gradient></b>"
+  messages:
+    auto_claim: "<green>Auto-claimed <count> remaining chests."
+    claimed_all: "<green>You have claimed all your rewards!"
+    received_item: "<gray>Received: <green><item>"
+    received_custom: "<gray>Reward: <green><item>"
+    inventory_full: "<red>Inventory full! Item dropped on the ground."
+  settings:
+    gui_size: 27
+    button_slot: 13
+  icons:
+    button:
+      material: CHEST
+      name: "<gold><b>Open Chest</b>"
+      lore:
+        - "<gray>Click to open a random chest!"
+        - "<gray>Remaining: <yellow><count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "<light_purple><b>Mystery Chest</b>"
+      lore:
+        - "<gray>What's inside?"
+
+editor:
+  words:
+    not_set: "Not Set"
+    true_word: "<green>ON"
+    false_word: "<red>OFF"
+    default_word: "Default"
+    unknown: "Unknown"
+    chest_amount: "Chests (<time>s)"
+    value: "Value"
+    default_condition_msg: "Requirements not met"
+    default_condition_name: "Condition <key>"
+    reward_default_name: "<gray>Default"
+  actions:
+    spawn_wave: "Spawn Vanilla monster waves"
+    reach_location: "Require player to reach a coordinate"
+    loot_chest: "Spawn a lootable treasure chest"
+    break_wall: "Destroy wall when trigger block is broken"
+    mythic_wave: "Spawn MythicMobs Boss"
+  title:
+    main: "<b>Dungeon Editor</b>"
+    dungeon: "<b>Editing: <name></b>"
+    conditions: "<b>Conditions</b>"
+    rewards_main: "<b>Rewards Menu</b>"
+    reward_tiers: "<b>Reward Tiers</b>"
+    reward_pool: "<b>Reward Pool</b>"
+    edit_reward: "<b>Edit Reward #<index></b>"
+    stages: "<b>Stages</b>"
+    actions: "<b>Stage <stage></b>"
+    select_type: "<b>Select Action Type</b>"
+    edit_action: "<b>Edit Action #<index></b>"
+  items:
+    click_edit: "<yellow>Left Click: Edit"
+    create_new: "<green><b>Create New Dungeon</b>"
+    world_template: "<yellow>World Template"
+    world_template_lore:
+      - "<gray>Current: <white><world>"
+      - "<yellow>Left Click: Enter new map name"
+    public_status: "<yellow>Public Status"
+    public_status_lore:
+      - "<gray>Current: <status>"
+      - "<yellow>Left Click: Toggle ON/OFF"
+    conditions: "<yellow>Entry Conditions"
+    conditions_lore:
+      - "<gray>Edit entry requirements"
+    rewards: "<gold>Rewards"
+    rewards_lore:
+      - "<gray>Edit dungeon rewards"
+    stages: "<red>Stages"
+    stages_lore:
+      - "<gray>Edit dungeon content"
+    save: "<green><b>Save Changes</b>"
+    back: "<red>Go Back"
+    condition_item: "<yellow>Condition #<index>"
+    condition_lore:
+      - "<gray>Check: <white><check>"
+      - "<gray>Error Msg: <white><msg>"
+      - ""
+      - "<yellow>Left Click: Edit check"
+      - "<yellow>Right Click: Edit message"
+      - "<red>Shift-Right: Delete"
+    add_condition: "<green>Add Condition"
+    reward_tiers_item: "<gold>Time Tiers"
+    reward_pool_item: "<gold>Item Pool"
+    tier_item: "<yellow><time>s"
+    tier_lore:
+      - "<gray>Chests: <white><amount>"
+      - ""
+      - "<yellow>Left Click: Edit amount"
+      - "<red>Right Click: Delete tier"
+    add_tier: "<green>Add Tier"
+    pool_item: "<yellow>Reward #<index>"
+    pool_lore:
+      - "<gray>Type: <white><type>"
+      - "<gray>Value: <white><val>"
+      - ""
+      - "<yellow>Left Click: Edit reward"
+      - "<red>Shift-Right: Delete"
+    add_pool_item: "<green>Add Reward"
+    reward_type: "<yellow>Type"
+    reward_type_lore:
+      - "<gray>Current: <white><type>"
+      - "<yellow>Left Click: Change (ITEM/COMMAND/MMOITEM)"
+    reward_value: "<yellow>Value"
+    reward_value_lore:
+      - "<gray>Current: <white><val>"
+      - "<yellow>Left Click: Type in Chat"
+      - "<yellow>Right Click: Get held item"
+    reward_chance: "<yellow>Chance"
+    reward_chance_lore:
+      - "<gray>Current: <white><val>%"
+      - "<yellow>Left Click: Edit chance"
+    reward_name: "<yellow>Display Name"
+    reward_name_lore:
+      - "<gray>Current: <white><val>"
+      - "<yellow>Left Click: Edit name"
+    stage_item: "<yellow>Stage <stage>"
+    stage_lore:
+      - "<gray>Click to edit actions"
+    add_stage: "<green>Add Stage"
+    action_item: "<yellow>Action #<index>"
+    action_lore:
+      - "<gray>Type: <white><type>"
+      - ""
+      - "<yellow>Left Click: Edit action"
+      - "<red>Shift-Right: Delete action"
+    add_action: "<green>Add Action"
+    cancel: "<red>Cancel"
+    action_val_hint_edit: "<yellow>Left Click: Enter new value"
+    action_val_hint_loc_single: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Delete"
+    action_val_hint_loc_list: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Clear list"
+    action_type_cant_edit: "<red>Cannot change action type after creation"
+  input:
+    title_main: "<gold><bold>INPUT MODE"
+    title_sub: "<white>Check the chat for instructions!"
+    header: "<yellow>=== INPUT MODE ==="
+    footer: "<yellow>====================="
+    cancel_hint: "<gray>Type <red>cancel <gray>to abort."
+    prompts:
+      create_filename:
+        - "<gray>Enter a name for the new Dungeon."
+        - "<gray>Allowed: <white>Letters (a-z), Numbers (0-9), dash/underscore."
+        - "<gray>Example: <green>dungeon_map_1"
+      edit_world_name:
+        - "<gray>Enter the template World folder name."
+        - "<gray>Example: <green>Dungeon_Map_01"
+      edit_condition_check:
+        - "<gray>Enter PAPI condition format: <white>%placeholder%;operator;value"
+        - "<gray>Supported operators: <white>>=, <=, >, <, ==, !="
+        - "<gray>Example: <green>%vault_eco_balance%;>=;500"
+      edit_condition_msg:
+        - "<gray>Enter the message shown when requirement is not met."
+        - "<gray>Example: <red>You need $500 to enter!"
+      edit_reward_value_item:
+        - "<gray>Enter item value format: <green>MATERIAL:AMOUNT"
+        - "<gray>Example: <white>DIAMOND:5 <gray>or <white>EMERALD:10"
+      edit_reward_value_mmoitem:
+        - "<gray>Enter MMOItems format: <green>TYPE:ID:AMOUNT"
+        - "<gray>Example: <white>SWORD:FIERY_SWORD:1"
+      edit_reward_value_command:
+        - "<gray>Enter the command to run (Use <green>%player% <gray>for player name)."
+        - "<gray>Example: <white>eco give %player% 1000"
+      edit_reward_chance:
+        - "<gray>Enter the drop percentage for this reward (0-100)."
+        - "<gray>Example: <white>50.5"
+      edit_reward_name:
+        - "<gray>Enter the display name or reward message."
+        - "<gray>Colors supported. Example: <green><bold>Super Sword"
+      edit_tier:
+        - "<gray>Enter Time (seconds) and Chest amount, separated by a space."
+        - "<gray>Example: <green>300 3 <gray>(Complete under 300s = 3 chests)"
+      edit_action_mob:
+        - "<gray>Enter the monster name (MythicMobs Internal Name or Vanilla EntityType)."
+        - "<gray>MythicMobs Example: <green>SkeletonKing"
+        - "<gray>Vanilla Example: <green>ZOMBIE"
+      edit_action_amount:
+        - "<gray>Enter the amount of mobs to spawn."
+        - "<gray>Example: <green>10"
+      edit_location:
+        - "<gray>Enter coordinates format: <white>X,Y,Z"
+        - "<gray>Tip: Type <green>here <gray>to use your current location."
+      edit_location_list:
+        - "<gray>Enter coordinates <white>X,Y,Z <gray>to add to the list."
+        - "<gray>Tip: Type <green>here <gray>to use your current location."
+        - "<gray>Tip: Type <red>clear <gray>to empty the list."
+      edit_number:
+        - "<gray>Please enter a <green>number<gray>."
+      edit_boolean:
+        - "<gray>Please enter <green>true <gray>or <red>false<gray>."
+      edit_list:
+        - "<gray>Enter text/value to add to the list."
+        - "<gray>Tip: Type <red>clear <gray>to empty this list."
+      edit_string:
+        - "<gray>Please enter the text or new config value."
+      default:
+        - "<gray>Please enter the new value in chat."
+  chat:
+    input_start:
+      - "<green>Please enter a value in chat."
+      - "<gray>Type <red>cancel<gray> to abort."
+      - "<gray>Type <yellow>here<gray> for your current location."
+    input_cancel: "<red>Input cancelled."
+    input_here: "<green>Location set to: <loc>"
+    session_expired: "<red>Editor session expired."
+    save_error: "<red>Error saving file: <error>"
+    saved: "<green>File saved successfully!"
+    created: "<green>Created new dungeon file: <file>"
+    template_set: "<green>Template map set to: <world>"
+    public_toggled: "<yellow>Public Status: <status>"
+    condition_val_hint_check: "<yellow>Enter PAPI condition (e.g., %player_level% >= 10)"
+    condition_val_hint_msg: "<yellow>Enter error message"
+    format_tier_error: "<red>Invalid format! Use: <seconds> <amount>"
+    tier_added: "<green>Tier added: <time>s -> <amount> chests"
+    update_val: "<green>Updated <key>: <val>"
+    number_error: "<red>Value must be a number!"
+    reward_added: "<green>New reward added!"
+    type_changed: "<green>Type changed to <type>"
+    item_set_hand: "<green>Copied item in hand: <item>"
+    hand_empty: "<red>You must hold an item in your main hand!"
+    loc_cleared: "<yellow>Coordinate list cleared."
+    update_loc: "<green>Updated location: <loc>"
+    invalid_filename: "<red>Invalid file name! Please avoid special characters."
+    input_error: "<red>Input error: <error>"

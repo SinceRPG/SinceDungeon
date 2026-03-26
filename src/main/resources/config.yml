@@ -1,5 +1,9 @@
 # Main Configuration for SinceDungeon
 
+settings:
+  # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải messages_<locale>.yml
+  locale: "vi"
+
 # Debug mode: Bật lên để xem log chi tiết khi gặp lỗi
 debug: false
 
