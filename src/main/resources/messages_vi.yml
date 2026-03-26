@@ -110,6 +110,7 @@ error:
   init_failed: "<red>Lỗi khởi tạo dungeon."
   can_not_teleport: "<red>Không thể dịch chuyển theo cách này trong Dungeon!"
   can_not_drop: "<red>Không thể vứt vật phẩm trong Dungeon để tránh mất đồ!"
+  member_already_in: "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu."
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"

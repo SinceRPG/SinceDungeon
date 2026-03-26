@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.actions.impl;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
 import org.bukkit.Bukkit;
@@ -20,21 +21,13 @@ import org.bukkit.util.Vector;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Represents an action that requires players to find and loot a specific chest.
- */
-public class LootChestAction extends DungeonAction {
+public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
     private final Map<Integer, String> dynamicItemsConfig = new HashMap<>();
     private final Map<Integer, ItemStack> cachedVanillaItems = new HashMap<>();
     private boolean isOpened = false;
+    private Block chestBlock = null;
 
-    /**
-     * Constructs a new LootChestAction.
-     *
-     * @param location    The vector location of the chest.
-     * @param itemsConfig The configuration map of items inside the chest.
-     */
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
         this.chestLocation = location;
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
@@ -62,6 +55,7 @@ public class LootChestAction extends DungeonAction {
         Block b = loc.getBlock();
         b.setType(Material.CHEST);
         b.getState().update(true, false);
+        this.chestBlock = b;
 
         if (b.getState() instanceof Chest chest) {
             Inventory inv = chest.getBlockInventory();
@@ -80,6 +74,27 @@ public class LootChestAction extends DungeonAction {
                 }
             }
             game.sendMessage("action.chest_appear");
+        }
+    }
+
+    // VÁ LỖI UX: Tự động quét rương, nếu trống rỗng thì hoàn thành ngay lập tức
+    @Override
+    public void onTick(DungeonGame game) {
+        if (completed || !isOpened || chestBlock == null) return;
+
+        if (chestBlock.getState() instanceof Chest chest) {
+            if (isInventoryEmpty(chest.getBlockInventory())) {
+                this.completed = true;
+                game.sendMessage("action.loot_complete");
+                chestBlock.setType(Material.AIR);
+
+                // Đóng Inventory của những ai đang xem rương để tránh lỗi click vào khoảng không
+                for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
+                    viewer.closeInventory();
+                }
+
+                game.getWorld().playSound(chestBlock.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+            }
         }
     }
 
@@ -136,15 +151,16 @@ public class LootChestAction extends DungeonAction {
                 game.sendMessage("action.chest_found");
             }
         } else if (event instanceof InventoryCloseEvent e) {
+            // Fallback an toàn phòng khi onTick bị nghẽn
             Inventory inv = e.getInventory();
             if (inv.getHolder() instanceof Chest chest) {
                 if (isTargetChest(chest.getBlock())) {
-                    if (isInventoryEmpty(inv)) {
+                    if (isInventoryEmpty(inv) && !completed) {
                         this.completed = true;
                         game.sendMessage("action.loot_complete");
                         chest.getBlock().setType(Material.AIR);
                         game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
-                    } else {
+                    } else if (!completed) {
                         game.sendMessage("action.chest_not_empty");
                     }
                 }

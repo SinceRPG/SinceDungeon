@@ -359,7 +359,8 @@ public class DungeonManager {
 
         for (Player participant : participants) {
             if (activeGames.containsKey(participant.getUniqueId())) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.already_in")));
+                String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
+                p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
                 return;
             }
         }

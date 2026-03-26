@@ -48,11 +48,8 @@ public class DungeonGame {
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiator = initiator;
-
-        // VÁ LỖI: Dùng Concurrent Set để tránh crash ConcurrentModificationException khi có người thoát game giữa chừng
         this.participants = ConcurrentHashMap.newKeySet();
         this.participants.addAll(rawParticipants);
-
         this.template = template;
 
         for (Player p : participants) {
@@ -169,7 +166,6 @@ public class DungeonGame {
                     p.setFoodLevel(20);
                     p.setGameMode(GameMode.SURVIVAL);
 
-                    // VÁ LỖI: Tẩy sạch hiệu ứng (Potion/Fire) trước khi vào để tránh mang Buff từ lobby vào Dungeon
                     for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
                     p.setFireTicks(0);
                     p.setFallDistance(0);
@@ -293,7 +289,11 @@ public class DungeonGame {
         }
 
         int finalElapsed = (int) elapsedSeconds;
+
+        // VÁ LỖI: Đặt isRunning = false ở đây sẽ báo hiệu cho hệ thống là Dungeon đã kết thúc
+        // Ngăn chặn sự kiện onWorldChange nhầm lẫn đây là hành vi "Bỏ trốn".
         isRunning = false;
+
         if (tickTask != null) tickTask.cancel();
 
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
@@ -324,6 +324,7 @@ public class DungeonGame {
             p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))));
             p.sendActionBar(ColorUtils.parse(" "));
 
+            // VÁ LỖI CỰC ĐỘ: Fallback Teleport để tránh người chơi kẹt trạng thái vĩnh viễn
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     restorePlayerState(p);
@@ -336,15 +337,18 @@ public class DungeonGame {
                             }
                         }
                     }, 10L);
+                } else if (p.isOnline()) {
+                    // CỨU CÁNH CUỐI CÙNG nếu Async Teleport bị hỏng do PaperMC/Chunk lỗi
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        p.teleport(targetLoc);
+                        restorePlayerState(p);
+                    });
                 }
             });
         }
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 100L);
     }
 
-    /**
-     * VÁ LỖI: Xử lý an toàn khi một người chơi thoát ngang. Những người còn lại sẽ không bị đá.
-     */
     public void handlePlayerDisconnect(Player p) {
         participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
@@ -383,6 +387,12 @@ public class DungeonGame {
 
                     p.teleportAsync(targetLoc).thenAccept(success -> {
                         if (success) restorePlayerState(p);
+                        else {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                p.teleport(targetLoc);
+                                restorePlayerState(p);
+                            });
+                        }
                     });
                 } else {
                     restorePlayerState(p);
@@ -438,7 +448,6 @@ public class DungeonGame {
             p.setHealth(Math.min(state.health, maxHealth));
             p.setFoodLevel(state.foodLevel);
 
-            // VÁ LỖI: Tẩy hiệu ứng từ Dungeon và Trả lại hiệu ứng cũ
             for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
             for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
             p.setFireTicks(state.fireTicks);
@@ -452,6 +461,11 @@ public class DungeonGame {
 
     public Set<Player> getParticipants() {
         return participants;
+    }
+
+    // THUỘC TÍNH MỚI: Cho phép các lớp khác kiểm tra xem Game có đang thực sự diễn ra hay không
+    public boolean isRunning() {
+        return isRunning;
     }
 
     public void broadcastMessage(String key, String... placeholders) {

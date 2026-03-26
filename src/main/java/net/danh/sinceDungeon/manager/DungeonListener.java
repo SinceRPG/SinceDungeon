@@ -82,15 +82,20 @@ public class DungeonListener implements Listener {
     }
 
     @EventHandler
-    public void onMove(PlayerMoveEvent e) { pass(e.getPlayer(), e); }
+    public void onMove(PlayerMoveEvent e) {
+        pass(e.getPlayer(), e);
+    }
 
     @EventHandler
-    public void onInteract(PlayerInteractEvent e) { pass(e.getPlayer(), e); }
+    public void onInteract(PlayerInteractEvent e) {
+        pass(e.getPlayer(), e);
+    }
 
     @EventHandler
-    public void onInteractEntity(PlayerInteractEntityEvent e) { pass(e.getPlayer(), e); }
+    public void onInteractEntity(PlayerInteractEntityEvent e) {
+        pass(e.getPlayer(), e);
+    }
 
-    // BẢO VỆ GỐC: Ngăn người chơi đập block nếu WorldGuard không hoạt động
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -99,7 +104,6 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
-    // BẢO VỆ GỐC: Ngăn người chơi đặt block trong Dungeon
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -118,10 +122,7 @@ public class DungeonListener implements Listener {
         if (!(e.getEntity() instanceof Player)) {
             String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
             if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-
-                // Đọc cài đặt từ config (mặc định là true nếu không thấy dòng config)
                 boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
-
                 if (clearDrops) {
                     e.getDrops().clear();
                     e.setDroppedExp(0);
@@ -177,7 +178,10 @@ public class DungeonListener implements Listener {
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        if (game != null && !p.getWorld().equals(game.getWorld())) {
+
+        // VÁ LỖI CỰC KỲ QUAN TRỌNG: Chỉ kích hoạt lệnh "Bỏ chạy" nếu Dungeon vẫn đang thực sự diễn ra.
+        // Nếu Game đã chuyển sang trạng thái dừng (isRunning = false) để phát thưởng, thì bỏ qua.
+        if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
             game.handlePlayerDisconnect(p);
         }
