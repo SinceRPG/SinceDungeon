@@ -16,6 +16,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -44,10 +45,14 @@ public class DungeonGame {
     private BukkitTask tickTask;
     private long startTime;
 
-    public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> participants, DungeonTemplate template) {
+    public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiator = initiator;
-        this.participants = participants;
+
+        // VÁ LỖI: Dùng Concurrent Set để tránh crash ConcurrentModificationException khi có người thoát game giữa chừng
+        this.participants = ConcurrentHashMap.newKeySet();
+        this.participants.addAll(rawParticipants);
+
         this.template = template;
 
         for (Player p : participants) {
@@ -84,28 +89,30 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", 200, 3000, 500);
         broadcastMessage("lobby.preparing");
 
-        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-            if (isStopping) {
-                WorldManager.unloadAndDeleteWorld(plugin, world);
-                return;
-            }
+        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
+                .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (isStopping) {
+                        WorldManager.unloadAndDeleteWorld(plugin, world);
+                        return;
+                    }
 
-            this.dungeonWorld = world;
-            dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
-            dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-            dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
-            dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
-            dungeonWorld.setAutoSave(false);
+                    this.dungeonWorld = world;
+                    dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
+                    dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                    dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                    dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+                    dungeonWorld.setAutoSave(false);
 
-            startCountdown();
-        })).exceptionally(ex -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                broadcastMessage("error.create_failed");
-                plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
-                stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
-            });
-            return null;
-        });
+                    startCountdown();
+                }))
+                .exceptionally(ex -> {
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        broadcastMessage("error.create_failed");
+                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
+                        stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
+                    });
+                    return null;
+                });
     }
 
     private void startCountdown() {
@@ -161,6 +168,11 @@ public class DungeonGame {
                     p.setHealth(attr != null ? attr.getValue() : 20.0);
                     p.setFoodLevel(20);
                     p.setGameMode(GameMode.SURVIVAL);
+
+                    // VÁ LỖI: Tẩy sạch hiệu ứng (Potion/Fire) trước khi vào để tránh mang Buff từ lobby vào Dungeon
+                    for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
+                    p.setFireTicks(0);
+                    p.setFallDistance(0);
                 }
             });
         }
@@ -298,7 +310,8 @@ public class DungeonGame {
             }
 
             if (finalChestCount > 0) {
-                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p,
+                        new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
@@ -330,21 +343,28 @@ public class DungeonGame {
     }
 
     /**
-     * Tương thích ngược: Dừng game mặc định với lý do FORCE_STOPPED.
+     * VÁ LỖI: Xử lý an toàn khi một người chơi thoát ngang. Những người còn lại sẽ không bị đá.
      */
+    public void handlePlayerDisconnect(Player p) {
+        participants.remove(p);
+        plugin.getDungeonManager().removeGame(p.getUniqueId());
+
+        if (participants.isEmpty()) {
+            stop(false, DungeonEndEvent.EndReason.FAILED);
+        } else {
+            broadcastMessage("game.player_disconnect", "<player>", p.getName());
+        }
+    }
+
     public void stop(boolean teleport) {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
     }
 
-    /**
-     * Dừng Dungeon và phát ra tín hiệu DungeonEndEvent với lý do cụ thể.
-     */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
         isRunning = false;
 
-        // Gọi API Event
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
 
         if (tickTask != null) tickTask.cancel();
@@ -417,6 +437,12 @@ public class DungeonGame {
             double maxHealth = attr != null ? attr.getValue() : 20.0;
             p.setHealth(Math.min(state.health, maxHealth));
             p.setFoodLevel(state.foodLevel);
+
+            // VÁ LỖI: Tẩy hiệu ứng từ Dungeon và Trả lại hiệu ứng cũ
+            for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
+            for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+            p.setFireTicks(state.fireTicks);
+            p.setFallDistance(0);
         }
     }
 
@@ -474,12 +500,16 @@ public class DungeonGame {
         final GameMode gameMode;
         final double health;
         final int foodLevel;
+        final Collection<PotionEffect> potionEffects;
+        final int fireTicks;
 
         PlayerState(Player p) {
             this.location = p.getLocation();
             this.gameMode = p.getGameMode();
             this.health = p.getHealth();
             this.foodLevel = p.getFoodLevel();
+            this.potionEffects = p.getActivePotionEffects();
+            this.fireTicks = p.getFireTicks();
         }
     }
 }

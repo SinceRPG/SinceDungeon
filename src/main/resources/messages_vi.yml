@@ -70,6 +70,7 @@ game:
     finish_sub: "<yellow>Thời gian: <time> giây"
     countdown_main: "<red><bold><time>"
     countdown_sub: "<gold>Chuẩn bị chiến đấu!"
+  player_disconnect: "<yellow>Thành viên <player> đã mất kết nối và rời khỏi Dungeon!"
 
 lobby:
   preparing: "<yellow>Đang khởi tạo thế giới dungeon..."

@@ -47,6 +47,11 @@ dungeon:
   # Tiền tố tên thế giới khi tạo bản sao dungeon
   world-prefix: "SinceDungeon_"
 
+  # Hành động khi có người chơi chết trong Dungeon:
+  # RESPAWN: Hồi sinh tại điểm xuất phát của Dungeon và chơi tiếp.
+  # FAIL: Cả nhóm thất bại và bị đưa về sảnh ngay lập tức.
+  death-action: "RESPAWN"
+
 editor:
   # Item used for navigation in the Editor GUI
   # Vật phẩm dùng để điều hướng trong GUI Editor

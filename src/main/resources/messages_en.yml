@@ -70,6 +70,7 @@ game:
     finish_sub: "<yellow>Time: <time> seconds"
     countdown_main: "<red><bold><time>"
     countdown_sub: "<gold>Prepare for battle!"
+  player_disconnect: "<yellow>Member <player> has disconnected and left the Dungeon!"
 
 lobby:
   preparing: "<yellow>Initializing dungeon world..."

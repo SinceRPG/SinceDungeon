@@ -8,6 +8,7 @@ import net.danh.sinceDungeon.party.PartyManager.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -81,29 +82,19 @@ public class DungeonListener implements Listener {
     }
 
     @EventHandler
-    public void onMove(PlayerMoveEvent e) {
-        pass(e.getPlayer(), e);
-    }
+    public void onMove(PlayerMoveEvent e) { pass(e.getPlayer(), e); }
 
     @EventHandler
-    public void onInteract(PlayerInteractEvent e) {
-        pass(e.getPlayer(), e);
-    }
+    public void onInteract(PlayerInteractEvent e) { pass(e.getPlayer(), e); }
 
     @EventHandler
-    public void onInteractEntity(PlayerInteractEntityEvent e) {
-        pass(e.getPlayer(), e);
-    }
+    public void onInteractEntity(PlayerInteractEntityEvent e) { pass(e.getPlayer(), e); }
 
     @EventHandler
-    public void onBreak(BlockBreakEvent e) {
-        pass(e.getPlayer(), e);
-    }
+    public void onBreak(BlockBreakEvent e) { pass(e.getPlayer(), e); }
 
     @EventHandler
-    public void onPlace(BlockPlaceEvent e) {
-        pass(e.getPlayer(), e);
-    }
+    public void onPlace(BlockPlaceEvent e) { pass(e.getPlayer(), e); }
 
     @EventHandler
     public void onCloseInv(InventoryCloseEvent e) {
@@ -144,7 +135,11 @@ public class DungeonListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        if (game != null) game.stop(true); // Default là FORCE_STOPPED nếu quit ngang
+
+        // VÁ LỖI: Giao phó cho DungeonGame xử lý 1 người chơi Disconnect thay vì Stop Game ngay
+        if (game != null) {
+            game.handlePlayerDisconnect(p);
+        }
 
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
@@ -159,7 +154,7 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
-            game.stop(false);
+            game.handlePlayerDisconnect(p); // Rời map cũng coi như tự rời khỏi nhóm chinh phạt
         }
     }
 
@@ -177,11 +172,19 @@ public class DungeonListener implements Listener {
             game.broadcastMessage("game.death", "<player>", p.getName());
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                game.restorePlayerState(p);
                 p.spigot().respawn();
-                // Báo hiệu Dungeon thất bại
-                game.stop(true, DungeonEndEvent.EndReason.FAILED);
-            }, 1L);
+
+                // VÁ LỖI UX: Kiểm tra Setting xem nên Đá cả nhóm ra ngoài hay Cho phép người chết hồi sinh chạy lại từ đầu
+                String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+
+                if (deathAction.equalsIgnoreCase("FAIL")) {
+                    game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                } else {
+                    p.teleportAsync(game.getWorld().getSpawnLocation().add(0.5, 1, 0.5));
+                    p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
+                    p.setFoodLevel(20);
+                }
+            }, 2L); // 2 Ticks để vượt qua màn hình Death Screen an toàn
         }
     }
 

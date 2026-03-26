@@ -20,22 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Represents an action that spawns a wave of MythicMobs and requires the player to defeat them.
- */
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
 
-    /**
-     * Constructs a new MythicMobWaveAction.
-     *
-     * @param internalName The internal name of the MythicMob.
-     * @param amount       The amount of mobs to spawn.
-     * @param locations    A list of vector locations for spawning.
-     */
     public MythicMobWaveAction(String internalName, int amount, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
@@ -76,6 +66,13 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             try {
                 ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), 1);
                 if (am != null) {
+                    // VÁ LỖI: Buộc Bukkit ngăn chặn hệ thống tự nhiên Despawn boss khi người chơi chạy trốn
+                    Entity bukkitEntity = am.getEntity().getBukkitEntity();
+                    if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
+                        le.setRemoveWhenFarAway(false);
+                        le.setPersistent(true);
+                    }
+
                     spawnedMobs.put(am.getEntity().getUniqueId(), finalLoc);
                     count++;
                     mobName = am.getDisplayName();

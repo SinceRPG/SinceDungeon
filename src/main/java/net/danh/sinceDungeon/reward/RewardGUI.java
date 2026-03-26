@@ -104,7 +104,6 @@ public class RewardGUI implements Listener {
 
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
 
-        // CẤT CÁNH CỬA KHỎI LỖ HỔNG: Gắn cứng RewardHolder vào Inventory
         Inventory inv = Bukkit.createInventory(new RewardHolder(session), getGuiSize(), ColorUtils.parse(titleStr));
 
         inv.setItem(getButtonSlot(), createIcon("button", chestCount));
@@ -123,7 +122,6 @@ public class RewardGUI implements Listener {
             }
         }
 
-        // Clear chest count internally so it won't loop again
         while (session.getChestCount() > 0) {
             session.decreaseChestCount();
         }
@@ -158,17 +156,17 @@ public class RewardGUI implements Listener {
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
 
-        // BẢO MẬT: Kiểm tra thông qua instance của Holder, không quan tâm Title là gì
         if (!(e.getView().getTopInventory().getHolder() instanceof RewardHolder holder)) return;
 
-        // Chặn tuyệt đối mọi nỗ lực tuồn đồ ra/vào GUI
+        // VÁ LỖI BẢO MẬT: Bắt chặt hành vi quăng đồ (phím Q) và các tương tác Swap/Number
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
             return;
         }
 
         if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.HOTBAR_SWAP ||
-                e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+                e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD || e.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
+                e.getAction().name().contains("DROP")) {
             e.setCancelled(true);
             return;
         }
