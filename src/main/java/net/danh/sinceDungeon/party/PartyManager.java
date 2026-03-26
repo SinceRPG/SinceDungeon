@@ -36,11 +36,18 @@ public class PartyManager {
         return activeParties.get(uuid);
     }
 
+    // Cung cấp API để lấy danh sách lời mời (Phục vụ Tab-Complete)
+    public Map<UUID, Map<UUID, Long>> getActiveInvites() {
+        return activeInvites;
+    }
+
     public void disbandParty(Party party) {
         if (party == null) return;
         party.getMembers().forEach(uuid -> {
             activeParties.remove(uuid);
             partyChatToggled.remove(uuid);
+            // Xóa sạch các lời mời "Ma" do thành viên này từng gửi
+            clearSentInvites(uuid);
         });
     }
 
@@ -49,11 +56,18 @@ public class PartyManager {
         if (party == null) return;
 
         if (party.getLeader().equals(uuid)) {
-            electNewLeader(party);
-        } else {
-            party.removeMember(uuid);
-            activeParties.remove(uuid);
-            partyChatToggled.remove(uuid);
+            passLeadership(party); // Chuyển quyền trước
+        }
+
+        // Sau đó mới thực sự xóa người này khỏi nhóm
+        party.removeMember(uuid);
+        activeParties.remove(uuid);
+        partyChatToggled.remove(uuid);
+        clearSentInvites(uuid); // Dọn dẹp Zombie Invites
+
+        // Nếu nhóm không còn ai sau khi rời đi, giải tán hoàn toàn
+        if (party.getMembers().isEmpty()) {
+            disbandParty(party);
         }
     }
 
@@ -62,16 +76,38 @@ public class PartyManager {
         party.removeMember(target);
         activeParties.remove(target);
         partyChatToggled.remove(target);
-        activeInvites.remove(target);
+        activeInvites.remove(target); // Xóa các lời mời họ đang nhận
+        clearSentInvites(target); // Xóa các lời mời họ đã gửi
     }
 
-    // VÁ LỖI LOGIC: Trả về false nếu đã mời rồi để chặn hành vi Spam gây lag Chat
+    // VÁ LỖI LOGIC GỐC: Chuyển quyền trưởng nhóm MÀ KHÔNG KICK người chơi cũ.
+    // Phục vụ tính năng bảo tồn người chơi rớt mạng.
+    public void passLeadership(Party party) {
+        if (party == null || party.getMembers().size() <= 1) {
+            disbandParty(party);
+            return;
+        }
+
+        // Tìm một thành viên bất kỳ không phải là trưởng nhóm cũ
+        UUID newLeader = party.getMembers().stream()
+                .filter(id -> !id.equals(party.getLeader()))
+                .findFirst().orElse(null);
+
+        if (newLeader != null) {
+            party.setLeader(newLeader);
+            String sysName = plugin.getConfigFile().getString("party.system-name", "System");
+            sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
+        } else {
+            disbandParty(party);
+        }
+    }
+
     public boolean invitePlayer(UUID leader, UUID target) {
         long timeoutSeconds = plugin.getConfigFile().getInt("party.invite-timeout", 60);
         Map<UUID, Long> targetInvites = activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>());
 
         if (targetInvites.containsKey(leader) && targetInvites.get(leader) > System.currentTimeMillis()) {
-            return false; // Đã mời rồi và chưa hết hạn
+            return false;
         }
 
         targetInvites.put(leader, System.currentTimeMillis() + (timeoutSeconds * 1000L));
@@ -90,7 +126,6 @@ public class PartyManager {
         Party party = getParty(leader);
         int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
 
-        // Xác minh xem người mời (leader) có còn quyền trưởng nhóm không
         if (party == null || !party.getLeader().equals(leader) || party.getMembers().size() >= maxMembers) {
             targetInvites.remove(leader);
             return false;
@@ -99,26 +134,8 @@ public class PartyManager {
         party.addMember(target.getUniqueId());
         activeParties.put(target.getUniqueId(), party);
 
-        // VÁ LỖI BỘ NHỚ: Xóa mọi lời mời khác đang chờ khi đã vào nhóm
         activeInvites.remove(target.getUniqueId());
         return true;
-    }
-
-    public void electNewLeader(Party party) {
-        if (party == null || party.getMembers().size() <= 1) {
-            disbandParty(party);
-            return;
-        }
-
-        party.removeMember(party.getLeader());
-        activeParties.remove(party.getLeader());
-        partyChatToggled.remove(party.getLeader());
-
-        UUID newLeader = party.getMembers().iterator().next();
-        party.setLeader(newLeader);
-
-        String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
     }
 
     public void promoteMember(Party party, UUID newLeader) {
@@ -128,7 +145,6 @@ public class PartyManager {
         sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", Bukkit.getOfflinePlayer(newLeader).getName()));
     }
 
-    // TỐI ƯU HÓA: Chỉ lấy những người vừa ONLINE vừa TRONG PHẠM VI
     public Set<Player> getEligibleMembers(Party party, double radius) {
         Player leaderObj = Bukkit.getPlayer(party.getLeader());
         if (leaderObj == null || !leaderObj.isOnline()) return Collections.emptySet();
@@ -170,7 +186,11 @@ public class PartyManager {
 
     public void removePlayerFromCache(UUID uuid) {
         partyChatToggled.remove(uuid);
-        activeInvites.remove(uuid);
+    }
+
+    // Hàm tiện ích để quét và dọn sạch các lời mời rác
+    private void clearSentInvites(UUID sender) {
+        activeInvites.values().forEach(invites -> invites.remove(sender));
     }
 
     private void purgeExpiredInvites() {

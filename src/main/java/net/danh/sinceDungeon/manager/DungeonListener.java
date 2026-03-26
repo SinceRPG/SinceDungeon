@@ -181,14 +181,12 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        // VÁ LỖI BÓNG MA (OFFLINE RETENTION):
-        // KHÔNG kick họ khỏi Party. Nếu họ là Trưởng nhóm, chỉ nhường chức cho người khác.
+        // VÁ LỖI LOGIC: Không đá người rớt mạng, chỉ chuyển quyền!
         PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
         if (party != null && party.getLeader().equals(p.getUniqueId())) {
-            plugin.getPartyManager().electNewLeader(party);
+            plugin.getPartyManager().passLeadership(party);
         }
 
-        // Chỉ dọn dẹp các lời mời lơ lửng và trạng thái Chat
         plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
     }
 

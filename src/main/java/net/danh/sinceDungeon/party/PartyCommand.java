@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -59,19 +60,10 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     Player p = (Player) ctx.getSource().getSender();
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                    boolean isAutoCreated = false;
 
-                                    // VÁ LỖI UX: Tự động tạo nhóm nếu người chơi chưa có nhóm mà muốn mời bạn bè!
-                                    if (party == null) {
-                                        party = pm.createParty(p);
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created", "<green>Hệ thống đã tự động tạo nhóm cho bạn.")));
-                                    } else if (!party.getLeader().equals(p.getUniqueId())) {
+                                    if (party != null && !party.getLeader().equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
-                                        return 0;
-                                    }
-
-                                    int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
-                                    if (party.getMembers().size() >= maxMembers) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full", "<red>Party is full!")));
                                         return 0;
                                     }
 
@@ -86,11 +78,28 @@ public class PartyCommand {
                                         return 0;
                                     }
 
+                                    int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
+                                    if (party != null && party.getMembers().size() >= maxMembers) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full", "<red>Party is full!")));
+                                        return 0;
+                                    }
+
+                                    // VÁ LỖI LOGIC: Mọi bài test đều hợp lệ. Lúc này mới bắt đầu tự tạo nhóm nếu chưa có!
+                                    if (party == null) {
+                                        party = pm.createParty(p);
+                                        isAutoCreated = true;
+                                    }
+
                                     boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
                                     if (sent) {
+                                        if (isAutoCreated) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created", "<green>Hệ thống đã tự động tạo nhóm cho bạn.")));
+                                        }
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
                                         target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
+                                        // Rơi vào trường hợp hiếm: Mời trùng (spam lệnh). Nếu vừa auto-create mà bị kẹt ở đây thì giải tán nhóm rác
+                                        if (isAutoCreated) pm.disbandParty(party);
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited", "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi.")));
                                     }
                                     return 1;
@@ -100,16 +109,47 @@ public class PartyCommand {
 
                 .then(Commands.literal("accept")
                         .then(Commands.argument("leader", StringArgumentType.word())
+                                // VÁ LỖI UX CỰC ĐỘ: Tự động gợi ý tên những người đang gửi lời mời cho mình
+                                .suggests((ctx, builder) -> {
+                                    if (ctx.getSource().getSender() instanceof Player p) {
+                                        Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
+                                        if (invites != null) {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            invites.keySet().stream()
+                                                    .map(id -> Bukkit.getOfflinePlayer(id).getName())
+                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                        }
+                                    }
+                                    return builder.buildFuture();
+                                })
                                 .executes(ctx -> {
                                     Player p = (Player) ctx.getSource().getSender();
-                                    Player leader = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "leader"));
 
-                                    if (leader == null) {
+                                    Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
+                                    if (invites == null || invites.isEmpty()) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
+                                        return 0;
+                                    }
+
+                                    String leaderName = StringArgumentType.getString(ctx, "leader");
+                                    UUID leaderId = null;
+
+                                    // VÁ LỖI LOGIC: Dò tìm người mời trong Cache, CHO PHÉP người mời đang Offline!
+                                    for (UUID id : invites.keySet()) {
+                                        String name = Bukkit.getOfflinePlayer(id).getName();
+                                        if (name != null && name.equalsIgnoreCase(leaderName)) {
+                                            leaderId = id;
+                                            break;
+                                        }
+                                    }
+
+                                    if (leaderId == null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_found")));
                                         return 0;
                                     }
 
-                                    if (pm.acceptInvite(p, leader.getUniqueId())) {
+                                    if (pm.acceptInvite(p, leaderId)) {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_joined").replace("<player>", p.getName()));
@@ -134,7 +174,8 @@ public class PartyCommand {
                     pm.quitParty(p.getUniqueId());
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
 
-                    if (party.getLeader() != p.getUniqueId()) {
+                    // party lúc này sẽ mang cấu trúc cũ. Kiểm tra size an toàn
+                    if (party.getMembers().size() > 0) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
                     }
@@ -148,7 +189,6 @@ public class PartyCommand {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         if (party != null && party.getLeader().equals(p.getUniqueId())) {
                                             String remaining = builder.getRemainingLowerCase();
-                                            // GỢI Ý CẢ NGƯỜI CHƠI OFFLINE ĐỂ CÓ THỂ PROMOTE
                                             party.getMembers().stream()
                                                     .map(id -> Bukkit.getOfflinePlayer(id).getName())
                                                     .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
@@ -169,7 +209,6 @@ public class PartyCommand {
                                     String targetName = StringArgumentType.getString(ctx, "target");
                                     UUID targetId = null;
 
-                                    // VÁ LỖI LOGIC: Cho phép dò và Promote cả thành viên đang Offline
                                     for (UUID id : party.getMembers()) {
                                         String name = Bukkit.getOfflinePlayer(id).getName();
                                         if (name != null && name.equalsIgnoreCase(targetName)) {
@@ -216,7 +255,6 @@ public class PartyCommand {
                                     String targetName = StringArgumentType.getString(ctx, "target");
                                     UUID targetId = null;
 
-                                    // VÁ LỖI LOGIC: Dò và Kick được cả những kẻ đang Offline cắm cọc trong Party
                                     for (UUID id : party.getMembers()) {
                                         String name = Bukkit.getOfflinePlayer(id).getName();
                                         if (name != null && name.equalsIgnoreCase(targetName)) {
