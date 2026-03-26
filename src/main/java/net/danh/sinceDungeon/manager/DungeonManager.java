@@ -8,11 +8,11 @@ import net.danh.sinceDungeon.actions.impl.*;
 import net.danh.sinceDungeon.api.events.DungeonStartEvent;
 import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
+import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.system.MMOItemsHook;
 import net.danh.sinceDungeon.system.PAPIHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
@@ -21,23 +21,23 @@ import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Core manager for handling active dungeon sessions, action registries, and processors.
+ * Integrated with the Party System for high-concurrency group instance instantiation.
  */
 public class DungeonManager {
     private final SinceDungeon plugin;
     private final Map<UUID, DungeonGame> activeGames = new ConcurrentHashMap<>();
-    private final Map<String, DungeonTemplate> templates = new HashMap<>();
+    private final Map<String, DungeonTemplate> templates = new ConcurrentHashMap<>();
 
-    private final Map<String, ActionParser> actionParsers = new HashMap<>();
-    private final Map<String, ActionMeta> actionMeta = new HashMap<>();
+    private final Map<String, ActionParser> actionParsers = new ConcurrentHashMap<>();
+    private final Map<String, ActionMeta> actionMeta = new ConcurrentHashMap<>();
 
-    private final Map<String, RewardProcessor> rewardProcessors = new HashMap<>();
-    private final Map<String, ConditionProcessor> conditionProcessors = new HashMap<>();
+    private final Map<String, RewardProcessor> rewardProcessors = new ConcurrentHashMap<>();
+    private final Map<String, ConditionProcessor> conditionProcessors = new ConcurrentHashMap<>();
 
     /**
      * Constructs the DungeonManager.
@@ -156,10 +156,10 @@ public class DungeonManager {
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
-            Location dropLoc = p.getLocation();
+            org.bukkit.Location dropLoc = p.getLocation();
             DungeonGame game = getGame(p.getUniqueId());
             if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-                dropLoc = game.getOldLocation();
+                dropLoc = game.getPlayer().getLocation();
             }
             for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
@@ -371,12 +371,12 @@ public class DungeonManager {
     }
 
     private void loadTemplates() {
-        File folder = new File(plugin.getDataFolder(), "dungeons");
+        java.io.File folder = new java.io.File(plugin.getDataFolder(), "dungeons");
         if (!folder.exists()) folder.mkdirs();
 
-        File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
+        java.io.File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
         if (files != null) {
-            for (File f : files) {
+            for (java.io.File f : files) {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
@@ -389,15 +389,31 @@ public class DungeonManager {
     }
 
     /**
-     * Handles joining a player into a dungeon.
+     * Evaluates party membership and initiates the DungeonGame sequence for all eligible members.
      *
-     * @param p  The player.
+     * @param p  The player initiating the command.
      * @param id The dungeon ID to join.
      */
     public void joinDungeon(Player p, String id) {
-        if (activeGames.containsKey(p.getUniqueId())) {
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.already_in")));
-            return;
+        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+        Set<Player> participants = new HashSet<>();
+
+        if (party != null) {
+            if (!party.getLeader().equals(p.getUniqueId())) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                return;
+            }
+            double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
+            participants.addAll(plugin.getPartyManager().getEligibleMembers(party, maxDist));
+        } else {
+            participants.add(p);
+        }
+
+        for (Player participant : participants) {
+            if (activeGames.containsKey(participant.getUniqueId())) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.already_in")));
+                return;
+            }
         }
 
         DungeonTemplate tmpl = templates.get(id);
@@ -407,32 +423,38 @@ public class DungeonManager {
         }
 
         if (!tmpl.isPublic() && !p.hasPermission("SinceDungeon.admin")) {
-            String msg = plugin.getMessagesFile().getString("error.dungeon_maintenance");
-            if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.dungeon_maintenance")));
             return;
         }
 
-        for (DungeonTemplate.Condition cond : tmpl.conditions()) {
-            String req = cond.requirement();
-            String type = "PAPI";
-            String value = req;
+        for (Player participant : participants) {
+            for (DungeonTemplate.Condition cond : tmpl.conditions()) {
+                String req = cond.requirement();
+                String type = "PAPI";
+                String value = req;
 
-            if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
-                String[] parts = req.split(":", 2);
-                type = parts[0].toUpperCase();
-                value = parts[1];
-            }
-
-            ConditionProcessor processor = conditionProcessors.getOrDefault(type, conditionProcessors.get("PAPI"));
-
-            if (processor != null && !processor.check(p, value)) {
-                if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
-                    p.sendMessage(ColorUtils.parseWithPrefix("<red>" + cond.failMessage()));
-                } else {
-                    String msg = plugin.getMessagesFile().getString("error.condition_fail");
-                    if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
+                if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
+                    String[] parts = req.split(":", 2);
+                    type = parts[0].toUpperCase();
+                    value = parts[1];
                 }
-                return;
+
+                ConditionProcessor processor = conditionProcessors.getOrDefault(type, conditionProcessors.get("PAPI"));
+
+                if (processor != null && !processor.check(participant, value)) {
+                    if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
+                        participant.sendMessage(ColorUtils.parseWithPrefix("<red>" + cond.failMessage()));
+                    } else {
+                        String msg = plugin.getMessagesFile().getString("error.condition_fail");
+                        if (msg != null)
+                            participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
+                    }
+
+                    if (!participant.equals(p)) {
+                        p.sendMessage(ColorUtils.parseWithPrefix("<red>" + participant.getName() + " failed a condition check. Initialization aborted."));
+                    }
+                    return;
+                }
             }
         }
 
@@ -440,15 +462,20 @@ public class DungeonManager {
         Bukkit.getPluginManager().callEvent(startEvent);
         if (startEvent.isCancelled()) return;
 
-        DungeonGame game = new DungeonGame(plugin, p, tmpl);
-        activeGames.put(p.getUniqueId(), game);
+        DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
+
+        for (Player participant : participants) {
+            activeGames.put(participant.getUniqueId(), game);
+        }
 
         try {
             game.startLobby();
         } catch (Exception e) {
             plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
             e.printStackTrace();
-            activeGames.remove(p.getUniqueId());
+            for (Player participant : participants) {
+                activeGames.remove(participant.getUniqueId());
+            }
             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.init_failed")));
         }
     }
@@ -480,7 +507,9 @@ public class DungeonManager {
      * Forcefully stops all running games. Used on server shutdown/reload.
      */
     public void stopAllGames() {
-        for (DungeonGame game : new ArrayList<>(activeGames.values())) game.forceShutdown();
+        for (DungeonGame game : new HashSet<>(activeGames.values())) {
+            game.forceShutdown();
+        }
         activeGames.clear();
     }
 
