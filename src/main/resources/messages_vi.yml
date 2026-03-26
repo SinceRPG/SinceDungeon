@@ -59,6 +59,7 @@ party:
   promote_self: "<red>Bạn đã là Trưởng nhóm rồi!"
   kick_self: "<red>Bạn không thể tự đuổi chính mình! Hãy dùng lệnh /party leave."
   unknown_player: "Không rõ"
+  left_dungeon_due_to_party: "<red>Bạn đã bị đưa ra khỏi Hầm ngục do đã rời khỏi Tổ đội!"
 
 # messages_en.yml
 

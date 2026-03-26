@@ -357,6 +357,17 @@ public class DungeonGame {
     }
 
     public void handlePlayerDisconnect(Player p) {
+        if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+            PlayerState state = savedStates.get(p.getUniqueId());
+            Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+            p.teleportAsync(targetLoc).thenAccept(success -> {
+                if (!success) {
+                    Bukkit.getScheduler().runTask(plugin, () -> p.teleport(targetLoc));
+                }
+            });
+        }
+
         restorePlayerState(p);
 
         participants.remove(p);

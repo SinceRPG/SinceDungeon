@@ -32,7 +32,6 @@ public class PartyCommand {
                     if (party != null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.created")));
                     } else {
-                        // Tình huống tranh chấp đa luồng cực hiếm
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
                     }
                     return 1;
@@ -54,12 +53,23 @@ public class PartyCommand {
                 .then(Commands.literal("invite")
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
-                                    String remaining = builder.getRemainingLowerCase();
-                                    Bukkit.getOnlinePlayers().stream()
-                                            .filter(t -> pm.getParty(t.getUniqueId()) == null)
-                                            .map(Player::getName)
-                                            .filter(name -> name.toLowerCase().startsWith(remaining))
-                                            .forEach(builder::suggest);
+                                    if (ctx.getSource().getSender() instanceof Player p) {
+                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                        int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
+
+                                        // UX TỐI ƯU: Nếu nhóm đã đầy thì dẹp luôn gợi ý tên, đỡ mất công người chơi chọn
+                                        if (party != null && party.getMembers().size() >= maxMembers) {
+                                            return builder.buildFuture();
+                                        }
+
+                                        String remaining = builder.getRemainingLowerCase();
+                                        Bukkit.getOnlinePlayers().stream()
+                                                .filter(t -> pm.getParty(t.getUniqueId()) == null)
+                                                .filter(t -> !t.equals(p)) // UX TỐI ƯU: Không gợi ý tên của chính mình
+                                                .map(Player::getName)
+                                                .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                .forEach(builder::suggest);
+                                    }
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {

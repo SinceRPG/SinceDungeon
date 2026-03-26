@@ -49,6 +49,19 @@ public class PartyManager {
         }
     }
 
+    // HÀM TIỆN ÍCH: Đá người chơi khỏi Dungeon nếu họ mất Party
+    private void ejectFromDungeon(UUID uuid) {
+        Player p = Bukkit.getPlayer(uuid);
+        if (p != null && p.isOnline()) {
+            net.danh.sinceDungeon.manager.DungeonGame game = plugin.getDungeonManager().getGame(uuid);
+            if (game != null) {
+                game.handlePlayerDisconnect(p);
+                String msg = plugin.getMessagesFile().getString("error.left_dungeon_due_to_party", "<red>Bạn đã bị đưa ra khỏi Hầm ngục do rời khỏi Tổ đội!");
+                p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+            }
+        }
+    }
+
     public void disbandParty(Party party) {
         if (party == null) return;
         synchronized (party) {
@@ -56,6 +69,9 @@ public class PartyManager {
                 activeParties.remove(uuid);
                 partyChatToggled.remove(uuid);
                 clearSentInvites(uuid);
+
+                // VÁ LỖI KIẾN TRÚC: Giải tán nhóm thì tống cổ tất cả khỏi Hầm ngục hiện tại
+                ejectFromDungeon(uuid);
             });
         }
     }
@@ -80,6 +96,8 @@ public class PartyManager {
                 disbandParty(party);
             }
         }
+        // VÁ LỖI KẺ PHẢN BỘI: Tự rời nhóm thì bị đá khỏi Hầm ngục
+        ejectFromDungeon(uuid);
     }
 
     public void kickPlayer(Party party, UUID target) {
@@ -95,11 +113,11 @@ public class PartyManager {
                 disbandParty(party);
             }
         }
+        // VÁ LỖI KẺ PHẢN BỘI: Bị đuổi khỏi nhóm thì bị đá khỏi Hầm ngục
+        ejectFromDungeon(target);
     }
 
     public void handlePlayerDisconnect(Player p) {
-        // VÁ LỖI BỘ NHỚ: LUÔN LUÔN dọn dẹp Cache cá nhân của người chơi trước,
-        // cho dù họ có trong Party hay không, để ngăn rò rỉ RAM rác.
         removePlayerFromCache(p.getUniqueId());
 
         Party party = getParty(p.getUniqueId());
@@ -150,8 +168,6 @@ public class PartyManager {
 
     public boolean invitePlayer(UUID leader, UUID target) {
         long timeoutSeconds = plugin.getConfigFile().getInt("party.invite-timeout", 60);
-
-        // VÁ LỖI ĐA LUỒNG: Sử dụng mảng atomic để lưu kết quả từ bên trong block compute
         boolean[] success = new boolean[]{false};
 
         activeInvites.compute(target, (k, invites) -> {
@@ -225,11 +241,15 @@ public class PartyManager {
 
     public void sendPartyMessage(Party party, String sender, String message) {
         if (party == null || message.trim().isEmpty()) return;
+        String safeSender = MiniMessage.miniMessage().escapeTags(sender);
+        String safeMsg = MiniMessage.miniMessage().escapeTags(message);
 
-        String formatStr = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
+        String format = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>")
+                .replace("<sender>", safeSender)
+                .replace("<msg>", safeMsg);
 
         Component finalComponent = MiniMessage.miniMessage().deserialize(
-                formatStr,
+                format,
                 Placeholder.unparsed("sender", sender),
                 Placeholder.unparsed("msg", message)
         );
@@ -256,18 +276,20 @@ public class PartyManager {
 
     public void removePlayerFromCache(UUID uuid) {
         partyChatToggled.remove(uuid);
-        activeInvites.remove(uuid); // Dọn dẹp MAP triệt để khi Logout
+        activeInvites.remove(uuid);
     }
 
     private void clearSentInvites(UUID sender) {
-        // VÁ LỖI CỤT MAP: Không xóa Map rỗng để tránh "Đâm xe đa luồng" khi ai đó vừa vặn gửi Invite
         activeInvites.values().forEach(invites -> invites.remove(sender));
+        activeInvites.entrySet().removeIf(entry -> entry.getValue().isEmpty());
     }
 
     private void purgeExpiredInvites() {
         long now = System.currentTimeMillis();
-        // VÁ LỖI CỤT MAP: Chỉ xóa lời mời hết hạn, tuyệt đối không gọi Map.removeIf() để tránh mất đồng bộ.
-        activeInvites.values().forEach(invites -> invites.entrySet().removeIf(inv -> now > inv.getValue()));
+        activeInvites.entrySet().removeIf(entry -> {
+            entry.getValue().entrySet().removeIf(inv -> now > inv.getValue());
+            return entry.getValue().isEmpty();
+        });
     }
 
     public static class Party {
