@@ -49,6 +49,7 @@ party:
   offline: "Ngoại tuyến"
   leader_suffix: " (Trưởng nhóm)"
   member_failed_condition: "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon."
+  full: "<red>Nhóm của bạn đã đạt số lượng tối đa! Không thể mời thêm."
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc may mắn!"

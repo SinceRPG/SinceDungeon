@@ -49,8 +49,22 @@ public class DungeonListener implements Listener {
             Player attacker = getRealAttacker(e.getDamager());
 
             if (attacker != null && !attacker.equals(victim)) {
+
+                boolean sameParty = false;
+
+                // Kiểm tra liên minh qua Party
                 Party party = plugin.getPartyManager().getParty(victim.getUniqueId());
                 if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
+                    sameParty = true;
+                }
+
+                // VÁ LỖI CỰC ĐỘ: Chống lợi dụng giải tán Party trong hầm ngục để giết nhau cướp rương
+                DungeonGame game = plugin.getDungeonManager().getGame(victim.getUniqueId());
+                if (game != null && game.getParticipants().contains(attacker)) {
+                    sameParty = true;
+                }
+
+                if (sameParty) {
                     boolean allowFF = plugin.getConfigFile().getBoolean("party.allow-friendly-fire");
                     if (!allowFF) {
                         e.setCancelled(true);
@@ -167,11 +181,8 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-        if (party != null && party.getLeader().equals(p.getUniqueId())) {
-            plugin.getPartyManager().electNewLeader(party);
-        }
-        plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
+        // VÁ LỖI BÓNG MA OFFLINE: Tự động loại bỏ bất kỳ ai ngắt kết nối khỏi Party
+        plugin.getPartyManager().quitParty(p.getUniqueId());
     }
 
     @EventHandler
@@ -179,8 +190,6 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
-        // VÁ LỖI CỰC KỲ QUAN TRỌNG: Chỉ kích hoạt lệnh "Bỏ chạy" nếu Dungeon vẫn đang thực sự diễn ra.
-        // Nếu Game đã chuyển sang trạng thái dừng (isRunning = false) để phát thưởng, thì bỏ qua.
         if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
             game.handlePlayerDisconnect(p);
@@ -224,6 +233,7 @@ public class DungeonListener implements Listener {
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
+
             if (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL ||
                     cause == consumableEffect ||
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||

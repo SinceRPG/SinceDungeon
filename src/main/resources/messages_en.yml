@@ -49,6 +49,7 @@ party:
   offline: "Offline"
   leader_suffix: " (Leader)"
   member_failed_condition: "<red>Member <player> does not meet the condition. Aborting Dungeon entry."
+  full: "<red>Your party is full! Cannot invite more members."
 
 game:
   start: "<green>Dungeon has started! Good luck!"

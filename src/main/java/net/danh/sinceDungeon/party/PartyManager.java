@@ -13,9 +13,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Thread-safe management system for Party lifecycles, invitations, and active sessions.
- */
 public class PartyManager {
 
     private final SinceDungeon plugin;
@@ -47,6 +44,29 @@ public class PartyManager {
         });
     }
 
+    // VÁ LỖI MEMORY LEAK: Gom toàn bộ logic Thoát Nhóm vào đây để dọn sạch sẽ Map nhớ
+    public void quitParty(UUID uuid) {
+        Party party = getParty(uuid);
+        if (party == null) return;
+
+        if (party.getLeader().equals(uuid)) {
+            electNewLeader(party);
+        } else {
+            party.removeMember(uuid);
+            activeParties.remove(uuid); // Kích khỏi bộ đệm nhận diện nhóm
+            partyChatToggled.remove(uuid); // Xóa trạng thái Chat
+        }
+    }
+
+    // VÁ LỖI MEMORY LEAK: Gom toàn bộ logic Đuổi (Kick) vào đây
+    public void kickPlayer(Party party, UUID target) {
+        if (party == null) return;
+        party.removeMember(target);
+        activeParties.remove(target); // Kích khỏi bộ đệm nhận diện nhóm
+        partyChatToggled.remove(target);
+        activeInvites.remove(target); // Xóa các lời mời đang chờ
+    }
+
     public void invitePlayer(UUID leader, UUID target) {
         long timeoutSeconds = plugin.getConfigFile().getInt("party.invite-timeout", 60);
         activeInvites.computeIfAbsent(target, k -> new ConcurrentHashMap<>())
@@ -65,6 +85,7 @@ public class PartyManager {
         Party party = getParty(leader);
         int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
         if (party == null || party.getMembers().size() >= maxMembers) {
+            targetInvites.remove(leader); // Xóa lời mời rác
             return false;
         }
 
@@ -84,6 +105,7 @@ public class PartyManager {
         activeParties.remove(party.getLeader());
         partyChatToggled.remove(party.getLeader());
 
+        // Lấy một thành viên ngẫu nhiên (hoặc đầu tiên) làm Trưởng nhóm mới
         UUID newLeader = party.getMembers().iterator().next();
         party.setLeader(newLeader);
 

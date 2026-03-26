@@ -64,6 +64,13 @@ public class PartyCommand {
                                         return 0;
                                     }
 
+                                    // VÁ LỖI LOGIC: Chặn thao tác Invite nếu nhóm đã đạt giới hạn tối đa
+                                    int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
+                                    if (party.getMembers().size() >= maxMembers) {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full", "<red>Party is full!")));
+                                        return 0;
+                                    }
+
                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                     if (target == null || target.equals(p)) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_found")));
@@ -116,15 +123,13 @@ public class PartyCommand {
                         return 0;
                     }
 
-                    if (party.getLeader().equals(p.getUniqueId())) {
-                        pm.electNewLeader(party);
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
-                    } else {
-                        party.removeMember(p.getUniqueId());
-                        pm.removePlayerFromCache(p.getUniqueId());
+                    // VÁ LỖI MEMORY LEAK: Sử dụng hàm quitParty để xả sạch dữ liệu trong Map
+                    pm.quitParty(p.getUniqueId());
+
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
+                    if (party.getLeader() != p.getUniqueId()) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
                     }
                     return 1;
                 }))
@@ -195,8 +200,9 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    party.removeMember(target.getUniqueId());
-                                    pm.removePlayerFromCache(target.getUniqueId());
+                                    // VÁ LỖI MEMORY LEAK: Gọi kickPlayer để dọn dẹp sạch Map
+                                    pm.kickPlayer(party, target.getUniqueId());
+
                                     target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kicked")));
                                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                                     pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", target.getName()));
