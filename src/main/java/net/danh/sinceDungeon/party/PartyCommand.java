@@ -103,6 +103,7 @@ public class PartyCommand {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
                                         target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
+                                        // VÁ LỖI LOGIC: Hủy ngay nhóm vừa Auto-Create nếu lời mời thất bại
                                         if (isAutoCreated) pm.disbandParty(party);
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited", "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi.")));
                                     }
@@ -179,7 +180,8 @@ public class PartyCommand {
                     pm.quitParty(p.getUniqueId());
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
 
-                    if (party.getMembers().size() > 0) {
+                    // Nếu party vẫn tồn tại (tức là còn người bên trong)
+                    if (pm.getParty(party.getLeader()) != null) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
                     }
@@ -221,7 +223,6 @@ public class PartyCommand {
                                         }
                                     }
 
-                                    // VÁ LỖI LOGIC: Bắt chính xác lỗi Promote bản thân
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.promote_self", "<red>You are already the Party Leader!")));
                                         return 0;
@@ -273,7 +274,6 @@ public class PartyCommand {
                                         }
                                     }
 
-                                    // VÁ LỖI LOGIC: Bắt chính xác lỗi Kick bản thân
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kick_self", "<red>You cannot kick yourself! Use /party leave.")));
                                         return 0;

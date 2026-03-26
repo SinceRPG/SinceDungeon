@@ -26,9 +26,11 @@ public class PartyManager {
     }
 
     public Party createParty(Player leader) {
-        if (getParty(leader.getUniqueId()) != null) return null;
         Party party = new Party(leader);
-        activeParties.put(leader.getUniqueId(), party);
+        // VÁ LỖI RACE CONDITION: Ngăn chặn 2 thread cùng tạo party đè lên nhau
+        if (activeParties.putIfAbsent(leader.getUniqueId(), party) != null) {
+            return null;
+        }
         return party;
     }
 
@@ -40,7 +42,6 @@ public class PartyManager {
         return activeInvites;
     }
 
-    // Cập nhật tên người chơi khi họ Join server (Chống Desync do đổi tên Premium)
     public void updatePlayerName(Player p) {
         Party party = getParty(p.getUniqueId());
         if (party != null) {
@@ -70,7 +71,8 @@ public class PartyManager {
         partyChatToggled.remove(uuid);
         clearSentInvites(uuid);
 
-        if (party.getMembers().isEmpty()) {
+        // VÁ LỖI RAM LEAK: Nếu nhóm không còn ai, hoặc TẤT CẢ những người còn lại đều đang Offline -> Giải tán để cứu RAM!
+        if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
             disbandParty(party);
         }
     }
@@ -82,6 +84,33 @@ public class PartyManager {
         partyChatToggled.remove(target);
         activeInvites.remove(target);
         clearSentInvites(target);
+
+        if (party.getMembers().isEmpty() || !hasOnlineMembers(party)) {
+            disbandParty(party);
+        }
+    }
+
+    // Xử lý riêng biệt khi người chơi rớt mạng để bảo tồn họ một cách an toàn
+    public void handlePlayerDisconnect(Player p) {
+        Party party = getParty(p.getUniqueId());
+        if (party == null) return;
+
+        if (party.getLeader().equals(p.getUniqueId())) {
+            passLeadership(party);
+        }
+
+        removePlayerFromCache(p.getUniqueId());
+
+        if (!hasOnlineMembers(party)) {
+            disbandParty(party);
+        }
+    }
+
+    private boolean hasOnlineMembers(Party party) {
+        return party.getMembers().stream().anyMatch(id -> {
+            Player p = Bukkit.getPlayer(id);
+            return p != null && p.isOnline();
+        });
     }
 
     public void passLeadership(Party party) {
@@ -90,16 +119,13 @@ public class PartyManager {
             return;
         }
 
-        // TỐI ƯU CỰC ĐỘ: Lọc ra những người KHÁC trưởng nhóm cũ
         Set<UUID> candidates = party.getMembers().stream()
                 .filter(id -> !id.equals(party.getLeader()))
                 .collect(Collectors.toSet());
 
-        // ƯU TIÊN 1: Tìm người đang Online để tránh Party bị "Liệt"
         UUID newLeader = candidates.stream()
                 .filter(id -> Bukkit.getPlayer(id) != null && Bukkit.getPlayer(id).isOnline())
                 .findFirst()
-                // ƯU TIÊN 2: Nếu tất cả đều Offline, chọn đại 1 người
                 .orElse(candidates.stream().findFirst().orElse(null));
 
         if (newLeader != null) {
@@ -135,13 +161,20 @@ public class PartyManager {
         Party party = getParty(leader);
         int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
 
-        if (party == null || !party.getLeader().equals(leader) || party.getMembers().size() >= maxMembers) {
+        if (party == null || !party.getLeader().equals(leader)) {
             targetInvites.remove(leader);
             return false;
         }
 
-        party.addMember(target);
-        activeParties.put(target.getUniqueId(), party);
+        // VÁ LỖI RACE CONDITION: Đồng bộ hóa (Lock) đối tượng Party khi kiểm tra số lượng và thêm người
+        synchronized (party) {
+            if (party.getMembers().size() >= maxMembers) {
+                targetInvites.remove(leader);
+                return false;
+            }
+            party.addMember(target);
+            activeParties.put(target.getUniqueId(), party);
+        }
 
         activeInvites.remove(target.getUniqueId());
         return true;
@@ -167,10 +200,14 @@ public class PartyManager {
 
     public void sendPartyMessage(Party party, String sender, String message) {
         if (party == null || message.trim().isEmpty()) return;
-        String sanitized = MiniMessage.miniMessage().escapeTags(message);
+
+        // VÁ LỖI CHAT INJECTION: Khử mã độc MiniMessage cho cả Tên người gửi và Nội dung
+        String safeSender = MiniMessage.miniMessage().escapeTags(sender);
+        String safeMsg = MiniMessage.miniMessage().escapeTags(message);
+
         String format = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>")
-                .replace("<sender>", sender)
-                .replace("<msg>", sanitized);
+                .replace("<sender>", safeSender)
+                .replace("<msg>", safeMsg);
 
         Component finalComponent = MiniMessage.miniMessage().deserialize(format);
         party.getMembers().forEach(uuid -> {
@@ -231,7 +268,6 @@ public class PartyManager {
             return members.keySet();
         }
 
-        // Trả về tên từ Cache, tích hợp chuỗi Unknown chuẩn từ Config
         public String getMemberName(UUID uuid) {
             return members.getOrDefault(uuid, SinceDungeon.getPlugin().getMessagesFile().getString("party.unknown_player", "Unknown"));
         }

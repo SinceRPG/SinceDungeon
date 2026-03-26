@@ -183,13 +183,7 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        // VÁ LỖI LOGIC: Không đá người rớt mạng, chỉ chuyển quyền!
-        PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-        if (party != null && party.getLeader().equals(p.getUniqueId())) {
-            plugin.getPartyManager().passLeadership(party);
-        }
-
-        plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
+        plugin.getPartyManager().handlePlayerDisconnect(p);
     }
 
     @EventHandler
