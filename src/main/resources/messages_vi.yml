@@ -124,6 +124,7 @@ error:
   can_not_teleport: "<red>Bạn không thể dùng kỹ năng dịch chuyển bên trong Dungeon!"
   can_not_drop: "<red>Hành động vứt vật phẩm bị khóa để tránh thất thoát đồ đạc!"
   member_already_in: "<red>Thành viên <player> đang ở trong Dungeon khác! Không thể khởi hành."
+  cannot_store_in_lootchest: "<red>Bạn không thể cất đồ của mình vào Rương Nhiệm vụ!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"

@@ -998,13 +998,15 @@ public class EditorGUI implements Listener {
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
                 boolean isList = session.getConfig().isList(fullPath);
 
-                EditorSession.InputType inputType = EditorSession.InputType.EDIT_STRING;
+                EditorSession.InputType inputType;
                 if (isLocation) {
                     inputType = isList ? EditorSession.InputType.EDIT_LOCATION_LIST : EditorSession.InputType.EDIT_LOCATION;
                 } else if (isList) {
                     inputType = EditorSession.InputType.EDIT_LIST;
                 } else if (key.equals("amount") || key.equals("radius") || key.equals("chance") || key.equals("level")) {
                     inputType = EditorSession.InputType.EDIT_NUMBER;
+                } else {
+                    inputType = EditorSession.InputType.EDIT_STRING;
                 }
 
                 if (isLocation) {
@@ -1039,7 +1041,18 @@ public class EditorGUI implements Listener {
                 if (e.getClick() == ClickType.LEFT) {
                     String promptKey = "edit_action_" + key.toLowerCase();
 
+                    // VÁ LỖI BẢO MẬT TYPE PARSING: Ép kiểu chặt chẽ ngay từ trước khi cập nhật dữ liệu.
                     session.awaitInput(inputType, promptKey, val -> {
+                        if (inputType == EditorSession.InputType.EDIT_NUMBER) {
+                            try {
+                                Double.parseDouble(val);
+                            } catch (Exception ex) {
+                                sendMessage(p, "number_error");
+                                new EditorGUI(plugin).openActionEditor(p, session);
+                                return;
+                            }
+                        }
+
                         Object finalVal = getFinalVal(val);
                         String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
 

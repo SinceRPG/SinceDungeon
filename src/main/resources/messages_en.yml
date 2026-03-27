@@ -124,6 +124,7 @@ error:
   can_not_teleport: "<red>You cannot teleport this way inside a Dungeon!"
   can_not_drop: "<red>You cannot drop items in a Dungeon to prevent item loss!"
   member_already_in: "<red>Member <player> is currently in another Dungeon! Cannot start."
+  cannot_store_in_lootchest: "<red>You cannot store your own items in a Mission Loot Chest!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Dungeon Rewards</gradient></b>"

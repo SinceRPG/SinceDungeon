@@ -16,14 +16,12 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockIgniteEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 
 public class DungeonListener implements Listener {
@@ -85,7 +83,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI PHÁ HOẠI CẤU TRÚC: Ngăn Enderman nhặt khối, Wither phá tường
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -94,28 +91,33 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI PHÁ HOẠI CẤP ĐỘ 2 (Griefing bằng Nước/Lửa/Cung/Thuốc Nổ)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onHangingBreak(HangingBreakByEntityEvent e) {
+    public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-            if (e.getRemover() instanceof Player) {
-                e.setCancelled(true);
+            e.setCancelled(true); // Cấm mọi hình thức rớt Tranh/Khung ảnh
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityDamageDecor(EntityDamageEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame ||
+                    e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
+                    e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
+                e.setCancelled(true); // Bảo vệ mọi vật thể trang trí khỏi sát thương
             }
         }
     }
 
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
-                if (e.getDamager() instanceof Player || e.getDamager() instanceof Projectile) {
-                    e.setCancelled(true);
-                    return;
-                }
-            }
-        }
-
         if (e.getEntity() instanceof Player victim) {
             Player attacker = getRealAttacker(e.getDamager());
 
@@ -204,6 +206,17 @@ public class DungeonListener implements Listener {
             e.setCancelled(true);
         }
         pass(e.getPlayer(), e);
+    }
+
+    // BỔ SUNG EVENT CHO RƯƠNG NHIỆM VỤ
+    @EventHandler
+    public void onInvClick(InventoryClickEvent e) {
+        if (e.getWhoClicked() instanceof Player p) pass(p, e);
+    }
+
+    @EventHandler
+    public void onInvDrag(InventoryDragEvent e) {
+        if (e.getWhoClicked() instanceof Player p) pass(p, e);
     }
 
     @EventHandler

@@ -5,14 +5,18 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -79,7 +83,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
-        // Dự phòng: Trong trường hợp event lỗi, Tick sẽ quét và tự đóng
         if (completed || !isOpened || chestBlock == null) return;
 
         if (chestBlock.getState() instanceof Chest chest) {
@@ -153,16 +156,44 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 }
             }
         }
+        // VÁ LỖI MẤT ĐỒ (Blackhole Chest Exploit)
+        else if (event instanceof InventoryClickEvent e) {
+            Inventory inv = e.getInventory();
+            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
+                boolean blockAction = false;
+                if (e.getClickedInventory() == e.getView().getTopInventory()) {
+                    if (e.getCursor() != null && e.getCursor().getType() != Material.AIR) {
+                        blockAction = true;
+                    }
+                } else if (e.getAction() == org.bukkit.event.inventory.InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                    blockAction = true;
+                }
+
+                if (blockAction) {
+                    e.setCancelled(true);
+                    if (e.getWhoClicked() instanceof Player p) {
+                        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.cannot_store_in_lootchest", "<red>Bạn không thể cất vật phẩm vào rương nhiệm vụ này!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    }
+                }
+            }
+        } else if (event instanceof InventoryDragEvent e) {
+            Inventory inv = e.getInventory();
+            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
+                for (int slot : e.getRawSlots()) {
+                    if (slot < inv.getSize()) {
+                        e.setCancelled(true);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
-    // TÁCH LOGIC XỬ LÝ ĐỂ GỌI ĐỒNG BỘ TỪ NHIỀU NƠI
     private void completeChestLogic(DungeonGame game, Chest chest) {
         this.completed = true;
         game.sendMessage("action.loot_complete");
 
-        // VÁ LỖI KẸT GIAO DIỆN (Inventory Bounds Desync):
-        // Phải đóng TẤT CẢ giao diện của những người đang nhìn vào rương (Viewers)
-        // TRƯỚC KHI set block thành AIR để tránh lỗi Client gửi sai dữ liệu vật lý.
         for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
             viewer.closeInventory();
         }
