@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
@@ -16,6 +17,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
@@ -52,10 +54,6 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
-
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -111,10 +109,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -166,7 +160,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI TRỘM GIÁ ĐỂ GIÁP: Armor Stand Quirks Bypass
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -174,10 +167,6 @@ public class DungeonListener implements Listener {
             e.setCancelled(true);
         }
     }
-
-    // ==========================================
-    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH)
-    // ==========================================
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
@@ -218,10 +207,6 @@ public class DungeonListener implements Listener {
             e.setCancelled(true);
         }
     }
-
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -301,7 +286,20 @@ public class DungeonListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
-        pass(e.getPlayer(), e);
+        // VÁ LỖI XUYÊN TƯỜNG BẰNG THUYỀN (Vehicle Clipping Escape):
+        // Cấm người chơi đặt Thuyền hoặc Xe Goòng trong Hầm ngục
+        Player p = e.getPlayer();
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+        if (game != null && game.getWorld().equals(p.getWorld())) {
+            if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
+                Material mat = e.getItem().getType();
+                if (mat.name().contains("BOAT") || mat.name().contains("MINECART")) {
+                    e.setCancelled(true);
+                    return; // Chặn lập tức
+                }
+            }
+        }
+        pass(p, e);
     }
 
     @EventHandler
@@ -327,7 +325,24 @@ public class DungeonListener implements Listener {
 
     @EventHandler
     public void onInvClick(InventoryClickEvent e) {
-        if (e.getWhoClicked() instanceof Player p) pass(p, e);
+        if (e.getWhoClicked() instanceof Player p) {
+            // VÁ LỖI GUI DROP EXPLOIT (Ném đồ qua cửa sổ giao diện)
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
+                boolean preventDrop = true;
+                if (game.getTemplate() != null) {
+                    preventDrop = game.getTemplate().settings().preventItemDropping();
+                }
+                if (preventDrop) {
+                    String act = e.getAction().name();
+                    if (act.contains("DROP")) {
+                        e.setCancelled(true);
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
+                    }
+                }
+                pass(p, e);
+            }
+        }
     }
 
     @EventHandler

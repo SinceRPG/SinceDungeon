@@ -52,16 +52,49 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
+        // VÁ LỖI QUÁI CHẠY KHỎI CHUNK (Dynamic Chunk Tracking)
+        Set<Chunk> currentChunks = new HashSet<>();
+
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
-            Location spawnLoc = entry.getValue();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                return ent.isDead();
+                if (ent.isDead()) return true;
+                Chunk c = ent.getLocation().getChunk();
+                currentChunks.add(c);
+                entry.setValue(ent.getLocation()); // Cập nhật vị trí cuối cùng
+                return false;
             } else {
+                // Nếu ent = null, phải kiểm tra xem Chunk đó có Load không.
+                // Nếu Chunk Load mà ent vẫn Null thì chắc chắn đã bị xoá (kill @e), ta tính là chết.
+                // Nếu Chunk chưa Load (Quái trốn thoát), ta load nó lên và giữ lại.
+                Location lastLoc = entry.getValue();
+                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
+                    return true;
+                } else {
+                    lastLoc.getChunk().load();
+                    currentChunks.add(lastLoc.getChunk());
+                    return false;
+                }
+            }
+        });
+
+        // Cấp Chunk Ticket cho các Chunk mới
+        for (Chunk c : currentChunks) {
+            if (!lockedChunks.contains(c)) {
+                c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                lockedChunks.add(c);
+            }
+        }
+
+        // Thu hồi Chunk Ticket cho các Chunk cũ quái đã đi khỏi
+        lockedChunks.removeIf(c -> {
+            if (!currentChunks.contains(c)) {
+                c.removePluginChunkTicket(SinceDungeon.getPlugin());
                 return true;
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
@@ -71,19 +104,17 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
-    // VÁ LỖI KẸT TƯỜNG (Suffocation Soft-lock)
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
         for (int i = 0; i < 3; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
-            // Nếu vị trí dưới chân và trên đầu không đặc (Không phải Solid Block) thì duyệt
             if (!block.getType().isSolid() && !head.getType().isSolid()) {
                 return check;
             }
-            check.add(0, 1, 0); // Đẩy lên 1 block để tìm không gian thở
+            check.add(0, 1, 0);
         }
-        return original; // Nếu xui quá kẹt cứng 3 block thì đành cho xuất hiện ở chỗ cũ
+        return original;
     }
 
     @Override

@@ -35,8 +35,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
-
-        // VÁ LỖI DỊ BIỆT: Cấp độ MythicMob phải >= 1
         this.level = Math.max(1, level);
         this.locations = locations;
     }
@@ -52,7 +50,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         unlockChunks();
     }
 
-    // VÁ LỖI KẸT TƯỜNG (Suffocation Soft-lock)
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
         for (int i = 0; i < 3; i++) {
@@ -125,16 +122,46 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
+        // VÁ LỖI QUÁI CHẠY KHỎI CHUNK (Dynamic Chunk Tracking)
+        Set<Chunk> currentChunks = new HashSet<>();
+
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
-            Location spawnLoc = entry.getValue();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                return ent.isDead();
+                if (ent.isDead()) return true;
+                Chunk c = ent.getLocation().getChunk();
+                currentChunks.add(c);
+                entry.setValue(ent.getLocation()); // Cập nhật vị trí
+                return false;
             } else {
+                Location lastLoc = entry.getValue();
+                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
+                    return true;
+                } else {
+                    lastLoc.getChunk().load();
+                    currentChunks.add(lastLoc.getChunk());
+                    return false;
+                }
+            }
+        });
+
+        // Quản lý vé Chunk mới
+        for (Chunk c : currentChunks) {
+            if (!lockedChunks.contains(c)) {
+                c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                lockedChunks.add(c);
+            }
+        }
+
+        // Hủy vé Chunk cũ
+        lockedChunks.removeIf(c -> {
+            if (!currentChunks.contains(c)) {
+                c.removePluginChunkTicket(SinceDungeon.getPlugin());
                 return true;
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {

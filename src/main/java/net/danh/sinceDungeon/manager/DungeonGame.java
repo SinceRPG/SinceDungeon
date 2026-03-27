@@ -343,12 +343,7 @@ public class DungeonGame {
         RewardGUI rewardHelper = new RewardGUI(plugin);
 
         for (Player p : participants) {
-            if (!p.isOnline()) continue;
-
-            // VÁ LỖI XÁC SỐNG: Ép buộc hồi sinh nếu đang ở màn hình chết
-            if (p.isDead()) {
-                p.spigot().respawn();
-            }
+            if (!p.isOnline() || p.isDead()) continue;
 
             if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.equals(initiator)) {
                 continue;
@@ -403,7 +398,6 @@ public class DungeonGame {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
         if (wasInDungeon) {
-            // VÁ LỖI XÁC SỐNG KHI THOÁT GAME (Death-Quit Void Corruption)
             if (p.isDead()) {
                 p.spigot().respawn();
             }
@@ -448,7 +442,6 @@ public class DungeonGame {
 
                 if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
                     if (teleport) {
-                        // VÁ LỖI XÁC SỐNG
                         if (p.isDead()) p.spigot().respawn();
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
@@ -502,7 +495,6 @@ public class DungeonGame {
             for (Player p : participants) {
                 plugin.getDungeonManager().removeGame(p.getUniqueId());
                 if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                    // VÁ LỖI XÁC SỐNG
                     if (p.isDead()) p.spigot().respawn();
 
                     if (p.isInsideVehicle()) p.leaveVehicle();
@@ -560,8 +552,17 @@ public class DungeonGame {
                 p.setFoodLevel(state.foodLevel);
 
                 for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
+
+                // VÁ LỖI ĐÓNG BĂNG THUỐC (Potion Time-Stop Exploit)
+                // Trừ hao thời gian người chơi đã ở trong Dungeon
+                long elapsedTicks = (System.currentTimeMillis() - startTime) / 50;
                 if (state.potionEffects != null) {
-                    for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+                    for (PotionEffect effect : state.potionEffects) {
+                        int newDuration = effect.getDuration() - (int) elapsedTicks;
+                        if (newDuration > 0) {
+                            p.addPotionEffect(new PotionEffect(effect.getType(), newDuration, effect.getAmplifier(), effect.isAmbient(), effect.hasParticles(), effect.hasIcon()));
+                        }
+                    }
                 }
                 p.setFireTicks(state.fireTicks);
             }
