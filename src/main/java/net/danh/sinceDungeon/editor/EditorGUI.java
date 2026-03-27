@@ -1041,8 +1041,7 @@ public class EditorGUI implements Listener {
                 if (e.getClick() == ClickType.LEFT) {
                     String promptKey = "edit_action_" + key.toLowerCase();
 
-                    // VÁ LỖI ÉP KIỂU TYPE PARSING (String vs Number Corruption)
-                    // Kiểm tra và bắt lỗi ngay tại chỗ, KHÔNG CHO LƯU nếu Admin gõ chữ thay vì số.
+                    // VÁ LỖI ÉP KIỂU TYPE PARSING & TRÁNH TRÀN RÁC (Garbage Type Clamp)
                     session.awaitInput(inputType, promptKey, val -> {
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {
                             try {
@@ -1054,7 +1053,7 @@ public class EditorGUI implements Listener {
                             }
                         }
 
-                        Object finalVal = getFinalVal(val);
+                        Object finalVal = getFinalVal(val, key);
                         String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
 
                         if (isList) {
@@ -1082,18 +1081,29 @@ public class EditorGUI implements Listener {
         }
     }
 
-    private @NonNull Object getFinalVal(String val) {
+    private @NonNull Object getFinalVal(String val, String key) {
         Object finalVal = val;
         if (val.equalsIgnoreCase("true")) finalVal = true;
         else if (val.equalsIgnoreCase("false")) finalVal = false;
         else {
             try {
-                // Ta KHÔNG THỂ dùng Math.max(0, parsed) ở đây được nữa vì các Custom Plugin
-                // có thể cần tọa độ âm hoặc offset âm. Trả thẳng giá trị Integer chuẩn.
-                finalVal = Integer.parseInt(val);
+                int parsed = Integer.parseInt(val);
+                // CHỈ ÉP KIỂU VỀ >= 0 CHO NHỮNG TRƯỜNG KHÔNG BAO GIỜ ÂM
+                if (key.equalsIgnoreCase("amount") || key.equalsIgnoreCase("radius") ||
+                        key.equalsIgnoreCase("chance") || key.equalsIgnoreCase("level")) {
+                    finalVal = Math.max(0, parsed);
+                } else {
+                    finalVal = parsed; // Cho phép số âm với offset
+                }
             } catch (Exception e1) {
                 try {
-                    finalVal = Double.parseDouble(val);
+                    double parsed = Double.parseDouble(val);
+                    if (key.equalsIgnoreCase("amount") || key.equalsIgnoreCase("radius") ||
+                            key.equalsIgnoreCase("chance") || key.equalsIgnoreCase("level")) {
+                        finalVal = Math.max(0.0, parsed);
+                    } else {
+                        finalVal = parsed;
+                    }
                 } catch (Exception ignored) {
                 }
             }

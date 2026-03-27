@@ -410,7 +410,9 @@ public class DungeonManager {
                 }
 
                 if (transitioningPlayers.contains(participant.getUniqueId())) {
-                    p.sendMessage(ColorUtils.parseWithPrefix("<red>Hệ thống đang xử lý dữ liệu người chơi, vui lòng thử lại sau giây lát!"));
+                    // VÁ LỖI HARDCODE: Đưa thông báo ra File
+                    String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>Hệ thống đang xử lý dữ liệu, vui lòng thử lại sau giây lát!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
                     return;
                 }
             }

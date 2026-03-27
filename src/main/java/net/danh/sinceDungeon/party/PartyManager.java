@@ -198,7 +198,16 @@ public class PartyManager {
 
         if (plugin.getDungeonManager().getGame(leader) != null) {
             targetInvites.remove(leader);
-            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "<red>Không thể tham gia vì Trưởng nhóm hiện đang ở trong Dungeon!");
+            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "<red>Không thể tham gia vì Trưởng nhóm hiện đang chinh chiến trong Dungeon!");
+            target.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+            return false;
+        }
+
+        // VÁ LỖI PHÂN MẢNH NHÓM (Nested Party Desync)
+        // Chặn người chơi tự bấm Accept nhận nhóm khác trong khi chính bản thân họ ĐANG ĐÁNH DUNGEON
+        if (plugin.getDungeonManager().getGame(target.getUniqueId()) != null) {
+            targetInvites.remove(leader);
+            String msg = plugin.getMessagesFile().getString("party.cannot_accept_in_dungeon", "<red>Bạn không thể gia nhập Tổ đội khác khi đang ở trong Hầm ngục!");
             target.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
             return false;
         }
@@ -256,8 +265,6 @@ public class PartyManager {
                 Placeholder.unparsed("msg", message)
         );
 
-        // VÁ LỖI ĐIỂM MÙ QUẢN TRỊ (Moderation Blindspot):
-        // Bắt buộc in nội dung chat nhóm ra Console để Admin có thể giám sát hoặc phục vụ cho file Log
         String shortId = party.getLeader().toString().substring(0, 6);
         plugin.getLogger().info("[Party Chat - " + shortId + "] " + sender + ": " + message);
 

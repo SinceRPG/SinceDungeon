@@ -54,10 +54,6 @@ public class DungeonListener implements Listener {
         return null;
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -112,10 +108,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -124,6 +116,7 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI BẤT TỬ QUÁI MYTHICMOB/MODELENGINE (Boss Hitbox Invincibility)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -132,18 +125,15 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
-                EntityDamageEvent.DamageCause cause = e.getCause();
-                if (cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION ||
-                        cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
-                        cause == EntityDamageEvent.DamageCause.FIRE ||
-                        cause == EntityDamageEvent.DamageCause.FIRE_TICK ||
-                        cause == EntityDamageEvent.DamageCause.LAVA ||
-                        cause == EntityDamageEvent.DamageCause.HOT_FLOOR ||
-                        cause == EntityDamageEvent.DamageCause.SUFFOCATION ||
-                        cause == EntityDamageEvent.DamageCause.FALLING_BLOCK) {
-
-                    e.setCancelled(true);
+                // Nếu Server có MythicMobs, ta phải thả cửa cho các ArmorStand của Boss nhận sát thương
+                if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                    if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
+                        return; // Là Boss -> Thoát hàm, cho phép nhận sát thương
+                    }
                 }
+
+                // Chặn toàn bộ sát thương lên vật thể trang trí thuần túy (Không phải Boss)
+                e.setCancelled(true);
             }
         }
     }
@@ -175,10 +165,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
@@ -186,6 +172,16 @@ public class DungeonListener implements Listener {
             boolean blockCommands = plugin.getConfigFile().getBoolean("dungeon.gameplay.block-commands", true);
             if (blockCommands && !p.hasPermission("SinceDungeon.admin")) {
                 String cmd = e.getMessage().split(" ")[0].toLowerCase();
+
+                // VÁ LỖI LÁCH LUẬT BẰNG NAMESPACE (Namespace Command Bypass Exploit)
+                // Cắt bỏ phần "tên_plugin:" để lấy lệnh gốc. VD: /essentials:fly -> /fly
+                if (cmd.contains(":")) {
+                    String[] parts = cmd.split(":");
+                    if (parts.length > 1) {
+                        cmd = "/" + parts[1];
+                    }
+                }
+
                 List<String> allowed = plugin.getConfigFile().getStringList("dungeon.gameplay.allowed-commands");
 
                 if (!allowed.contains(cmd)) {
@@ -219,16 +215,18 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (getRealAttacker(e.getDamager()) != null) {
+                    // Nếu Server có MythicMobs, ta phải thả cửa cho các ArmorStand của Boss nhận sát thương
+                    if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                        if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
+                            return; // Là Boss -> Thoát hàm chặn sát thương
+                        }
+                    }
                     e.setCancelled(true);
                     return;
                 }
@@ -434,6 +432,15 @@ public class DungeonListener implements Listener {
 
         if (game != null) {
             game.handlePlayerDisconnect(p);
+        }
+
+        // VÁ LỖI NHÂN BẢN VẬT PHẨM (Item Dupe / Loss) KHI THOÁT GAME TRONG GUI RƯƠNG
+        // Khôi phục đồ đang lơ lửng ở con trỏ chuột về kho đồ trước khi tắt Server
+        if (p.getOpenInventory().getTopInventory().getHolder() instanceof net.danh.sinceDungeon.reward.RewardHolder) {
+            if (p.getItemOnCursor().getType() != Material.AIR) {
+                p.getInventory().addItem(p.getItemOnCursor());
+                p.setItemOnCursor(null);
+            }
         }
 
         plugin.getPartyManager().handlePlayerDisconnect(p);

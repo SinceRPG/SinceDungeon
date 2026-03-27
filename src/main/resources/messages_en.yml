@@ -62,6 +62,7 @@ party:
   unknown_player: "Unknown"
   left_dungeon_due_to_party: "<red>You have been removed from the Dungeon because you left the Party!"
   leader_in_dungeon: "<red>Cannot join! The Party Leader is currently fighting inside a Dungeon!"
+  cannot_accept_in_dungeon: "<red>You cannot accept a party invite while inside a Dungeon!"
 
 game:
   start: "<green>Dungeon has started! Good luck!"
