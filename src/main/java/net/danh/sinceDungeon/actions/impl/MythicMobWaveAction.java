@@ -117,7 +117,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // VÁ LỖI QUÁI CHẠY KHỎI CHUNK (Dynamic Chunk Tracking)
         Set<Chunk> currentChunks = new HashSet<>();
 
         spawnedMobs.entrySet().removeIf(entry -> {
@@ -128,7 +127,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 if (ent.isDead()) return true;
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
-                entry.setValue(ent.getLocation()); // Cập nhật vị trí
+                entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
@@ -142,7 +141,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             }
         });
 
-        // Quản lý vé Chunk mới
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {
                 c.addPluginChunkTicket(SinceDungeon.getPlugin());
@@ -150,7 +148,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             }
         }
 
-        // Hủy vé Chunk cũ
         lockedChunks.removeIf(c -> {
             if (!currentChunks.contains(c)) {
                 c.removePluginChunkTicket(SinceDungeon.getPlugin());

@@ -19,14 +19,12 @@ public class RewardSessionManager {
     private static final Map<UUID, RewardSession> sessions = new ConcurrentHashMap<>();
     private static BukkitTask cleanupTask;
 
-    // VÁ LỖI TRÀN RAM: Hệ thống dọn rác, chạy ngầm mỗi 1 phút
     public static void startCleanupTask(SinceDungeon plugin) {
         cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             RewardGUI gui = new RewardGUI(plugin);
 
             for (Map.Entry<UUID, RewardSession> entry : sessions.entrySet()) {
-                // Nếu session đã tồn tại hơn 5 phút (300,000ms)
                 if (now - entry.getValue().getCreationTime() > 300000L) {
                     Player p = Bukkit.getPlayer(entry.getKey());
                     if (p != null && p.isOnline()) {

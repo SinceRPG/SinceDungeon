@@ -43,7 +43,6 @@ public class DungeonGame {
     private boolean stageCompleting = false;
     private boolean isStopping = false;
 
-    // VÁ LỖI GHOST LOBBY TASK: Ghi nhận cả Task Đếm ngược để xử lý hủy
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
     private long startTime;
@@ -442,7 +441,6 @@ public class DungeonGame {
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
-        // Đảm bảo hủy luôn LobbyTask nếu map bị phá hủy lúc đang đếm ngược
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
 
         if (participants != null) {

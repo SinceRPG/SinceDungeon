@@ -114,7 +114,7 @@ stages:
         type: "SPAWN_WAVE"
         mob: "ZOMBIE"              # [VN] Quái Vanilla / [EN] Vanilla mob
         amount: 5                  # [VN] Số lượng / [EN] Amount
-        locations:                 # [VN] Các điểm sinh ra / [EN] Spawn locations
+        locations: # [VN] Các điểm sinh ra / [EN] Spawn locations
           - "15.0,65.0,-25.0"
           - "5.0,65.0,-25.0"
         start_message:
@@ -137,7 +137,7 @@ stages:
       action_supply_chest:
         type: "LOOT_CHEST"
         location: "10.0,65.0,-40.0" # [VN] Tọa độ Rương tiếp tế / [EN] Supply chest coordinate
-        items:                      # [VN] Slot: Loại Vật Phẩm / [EN] Slot: Item Type
+        items: # [VN] Slot: Loại Vật Phẩm / [EN] Slot: Item Type
           "13": "ITEM:GOLDEN_APPLE:2"
           "14": "ITEM:ARROW:16"
         start_message:

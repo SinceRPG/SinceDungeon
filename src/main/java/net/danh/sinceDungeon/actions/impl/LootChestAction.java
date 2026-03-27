@@ -87,8 +87,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
         if (chestBlock.getState() instanceof Chest chest) {
             if (isInventoryEmpty(chest.getBlockInventory())) {
 
-                // VÁ LỖI NHÂN BẢN VẬT PHẨM (Cursor Ghost Dupe Exploit):
-                // Đảm bảo không có bất kỳ ai đang giữ món đồ cuối cùng lơ lửng trên chuột
                 boolean cursorHasItem = false;
                 for (org.bukkit.entity.HumanEntity viewer : chest.getBlockInventory().getViewers()) {
                     if (viewer.getItemOnCursor() != null && viewer.getItemOnCursor().getType() != Material.AIR) {

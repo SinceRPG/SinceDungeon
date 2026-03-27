@@ -176,7 +176,6 @@ public class EditorListener implements Listener {
         Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
     }
 
-    // VÁ LỖI RÒ RỈ RAM: Dọn dẹp Chat Input Sessions khi Reload Plugin
     public void clearAll() {
         activeInputs.clear();
     }

@@ -286,7 +286,6 @@ public class RewardGUI implements Listener {
                         } catch (Exception ignored) {
                         }
 
-                        // VÁ LỖI XÓA SESSION OAN: Báo cho onClose biết là đang chuyển trang
                         session.setSwitchingPage(true);
                         openPage(p, session, page - 1);
                         return;
@@ -297,7 +296,6 @@ public class RewardGUI implements Listener {
                         } catch (Exception ignored) {
                         }
 
-                        // VÁ LỖI XÓA SESSION OAN
                         session.setSwitchingPage(true);
                         openPage(p, session, page + 1);
                         return;
@@ -341,9 +339,8 @@ public class RewardGUI implements Listener {
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder holder && e.getPlayer() instanceof Player p) {
             RewardSession session = holder.session();
             if (session != null) {
-                // VÁ LỖI XÓA SESSION: Nếu chỉ là thao tác chuyển trang, hủy lệnh tự mở quà
                 if (session.isSwitchingPage()) {
-                    session.setSwitchingPage(false); // Reset lại trạng thái
+                    session.setSwitchingPage(false);
                     return;
                 }
 

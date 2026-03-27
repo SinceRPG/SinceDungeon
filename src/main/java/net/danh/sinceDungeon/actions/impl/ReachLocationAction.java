@@ -49,7 +49,6 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
         for (Player p : game.getParticipants()) {
             Location loc = p.getLocation();
-            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit): Không cho tàng hình đi ăn checkpoint
             if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
                 double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
                         Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);

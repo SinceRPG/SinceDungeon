@@ -45,7 +45,9 @@ public class DungeonManager {
         this.plugin = plugin;
         registerDefaultActions();
         registerDefaultProcessors();
-        loadTemplatesAsync().join();
+        Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
+        this.templates.putAll(initialTemplates);
+        plugin.getLogger().info("Loaded " + initialTemplates.size() + " Dungeon!");
     }
 
     public void addTransitioning(UUID uuid) {
@@ -144,7 +146,10 @@ public class DungeonManager {
                 }
             }
 
-            for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
+            for (ItemStack drop : left.values()) {
+                dropLoc.getWorld().dropItem(dropLoc, drop);
+            }
+
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
             if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
         }
@@ -410,7 +415,6 @@ public class DungeonManager {
                 }
 
                 if (transitioningPlayers.contains(participant.getUniqueId())) {
-                    // VÁ LỖI HARDCODE: Đưa thông báo ra File
                     String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>Hệ thống đang xử lý dữ liệu, vui lòng thử lại sau giây lát!");
                     p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
                     return;

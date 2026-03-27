@@ -12,6 +12,6 @@ public record RewardHolder(RewardSession session, int page) implements Inventory
 
     @Override
     public @NotNull Inventory getInventory() {
-        return null; // Trả về null để khóa chặt các Event dò rỉ
+        return null;
     }
 }

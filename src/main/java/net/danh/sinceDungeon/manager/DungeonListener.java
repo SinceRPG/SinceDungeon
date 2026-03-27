@@ -122,7 +122,6 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
-                // VÁ LỖI JVM CRASH: Gọi qua lớp trung gian an toàn
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) {
                         return;
@@ -232,7 +231,6 @@ public class DungeonListener implements Listener {
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (getRealAttacker(e.getDamager()) != null) {
-                    // VÁ LỖI JVM CRASH: Qua lớp trung gian
                     if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                         if (MythicMobsHook.isMythicMob(e.getEntity())) {
                             return;

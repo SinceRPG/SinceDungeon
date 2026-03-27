@@ -43,7 +43,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // VÁ LỖI QUÁI CHẠY KHỎI CHUNK (Dynamic Chunk Tracking)
         Set<Chunk> currentChunks = new HashSet<>();
 
         spawnedMobs.entrySet().removeIf(entry -> {
@@ -54,12 +53,9 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 if (ent.isDead()) return true;
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
-                entry.setValue(ent.getLocation()); // Cập nhật vị trí cuối cùng
+                entry.setValue(ent.getLocation());
                 return false;
             } else {
-                // Nếu ent = null, phải kiểm tra xem Chunk đó có Load không.
-                // Nếu Chunk Load mà ent vẫn Null thì chắc chắn đã bị xoá (kill @e), ta tính là chết.
-                // Nếu Chunk chưa Load (Quái trốn thoát), ta load nó lên và giữ lại.
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
                     return true;
@@ -71,7 +67,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
         });
 
-        // Cấp Chunk Ticket cho các Chunk mới
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {
                 c.addPluginChunkTicket(SinceDungeon.getPlugin());
@@ -79,7 +74,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
         }
 
-        // Thu hồi Chunk Ticket cho các Chunk cũ quái đã đi khỏi
         lockedChunks.removeIf(c -> {
             if (!currentChunks.contains(c)) {
                 c.removePluginChunkTicket(SinceDungeon.getPlugin());

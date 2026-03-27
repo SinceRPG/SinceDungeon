@@ -17,9 +17,6 @@ public class MythicListener implements Listener {
 
     @EventHandler
     public void onMMDeath(MythicMobDeathEvent e) {
-        // VÁ LỖI MẤT DẤU QUÁI (Pacifist Kill Tracking)
-        // Không phụ thuộc vào getKiller() nữa. Nếu quái chết trong Dungeon World,
-        // bắn thẳng Event vào Game quản lý World đó để Action cập nhật tiến độ.
         if (e.getEntity() != null && e.getEntity() != null) {
             org.bukkit.World w = e.getEntity().getWorld();
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {

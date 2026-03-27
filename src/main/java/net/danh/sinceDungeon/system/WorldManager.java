@@ -131,8 +131,7 @@ public class WorldManager {
         if (Bukkit.unloadWorld(world, false)) {
             plugin.getLogger().info("Unloaded dungeon world: " + world.getName());
 
-            // VÁ LỖI WINDOWS FILE LOCK CRASH: Thêm độ trễ 40 Ticks (2 giây)
-            // Đảm bảo OS (Đặc biệt là Windows) nhả khóa File `.mca` trước khi ra lệnh Delete.
+
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
                     plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName() + ". It may be locked by another process.");
@@ -154,7 +153,6 @@ public class WorldManager {
         if (Bukkit.unloadWorld(world, false)) {
             plugin.getLogger().info("Force unloaded dungeon world: " + world.getName());
 
-            // VÁ LỖI TƯƠNG TỰ
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 WorldUtils.deleteWorld(folder);
             }, 40L);

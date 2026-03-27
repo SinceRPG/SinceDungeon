@@ -20,7 +20,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector c2;
     private Location centerLoc;
 
-    // VÁ LỖI TRÀN RAM (Orphaned Task Leak)
     private BukkitTask breakTask = null;
     private boolean isBreaking = false;
 
@@ -52,7 +51,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         if (completed || centerLoc == null) return;
         game.getWorld().spawnParticle(Particle.FLAME, centerLoc, 3, 0.2, 0.2, 0.2, 0.01);
 
-        // VÁ LỖI CẤU TRÚC: Cho phép block bị phá bởi Vụ nổ Creeper/TNT tự động kích hoạt
         if (!isBreaking && centerLoc.getBlock().getType() == Material.AIR) {
             isBreaking = true;
             removeWall(game);
@@ -67,7 +65,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
 
             Player p = e.getPlayer();
-            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit)
             if (p.getGameMode() == GameMode.SPECTATOR) return;
 
             if (!game.getParticipants().contains(p)) return;

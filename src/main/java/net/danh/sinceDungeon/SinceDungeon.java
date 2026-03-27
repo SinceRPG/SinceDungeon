@@ -73,7 +73,6 @@ public final class SinceDungeon extends JavaPlugin {
 
         SinceDungeonAPI.init(this);
 
-        // VÁ LỖI TRÀN RAM: Khởi động bộ quét rác Reward Session
         RewardSessionManager.startCleanupTask(this);
 
         List<Listener> listeners = new ArrayList<>();

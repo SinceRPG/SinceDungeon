@@ -57,7 +57,6 @@ public class PartyCommand {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
 
-                                        // UX TỐI ƯU: Nếu nhóm đã đầy thì dẹp luôn gợi ý tên, đỡ mất công người chơi chọn
                                         if (party != null && party.getMembers().size() >= maxMembers) {
                                             return builder.buildFuture();
                                         }
@@ -65,7 +64,7 @@ public class PartyCommand {
                                         String remaining = builder.getRemainingLowerCase();
                                         Bukkit.getOnlinePlayers().stream()
                                                 .filter(t -> pm.getParty(t.getUniqueId()) == null)
-                                                .filter(t -> !t.equals(p)) // UX TỐI ƯU: Không gợi ý tên của chính mình
+                                                .filter(t -> !t.equals(p))
                                                 .map(Player::getName)
                                                 .filter(name -> name.toLowerCase().startsWith(remaining))
                                                 .forEach(builder::suggest);

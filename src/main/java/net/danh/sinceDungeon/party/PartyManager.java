@@ -203,8 +203,6 @@ public class PartyManager {
             return false;
         }
 
-        // VÁ LỖI PHÂN MẢNH NHÓM (Nested Party Desync)
-        // Chặn người chơi tự bấm Accept nhận nhóm khác trong khi chính bản thân họ ĐANG ĐÁNH DUNGEON
         if (plugin.getDungeonManager().getGame(target.getUniqueId()) != null) {
             targetInvites.remove(leader);
             String msg = plugin.getMessagesFile().getString("party.cannot_accept_in_dungeon", "<red>Bạn không thể gia nhập Tổ đội khác khi đang ở trong Hầm ngục!");

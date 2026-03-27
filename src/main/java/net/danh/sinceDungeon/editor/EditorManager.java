@@ -64,7 +64,6 @@ public class EditorManager implements Listener {
         sessions.remove(e.getPlayer().getUniqueId());
     }
 
-    // VÁ LỖI RÒ RỈ RAM: Dọn dẹp các phiên Editor đang mở khi Reload Plugin
     public void clearAll() {
         for (UUID uuid : sessions.keySet()) {
             Player p = plugin.getServer().getPlayer(uuid);

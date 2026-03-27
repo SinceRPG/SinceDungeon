@@ -11,7 +11,6 @@ import java.util.*;
 public class RewardSession {
     private final DungeonTemplate template;
     private final Map<Integer, Map<Integer, Boolean>> chestPages = new HashMap<>();
-    // VÁ LỖI RÒ RỈ RAM: Ghi nhận thời điểm tạo phiên để quét dọn
     private final long creationTime;
     private int chestCount;
     private boolean revealed = false;
