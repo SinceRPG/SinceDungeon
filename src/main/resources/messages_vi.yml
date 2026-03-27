@@ -60,6 +60,7 @@ party:
   kick_self: "<red>Bạn không thể tự trục xuất chính mình! Hãy dùng lệnh /party leave."
   unknown_player: "Không rõ"
   left_dungeon_due_to_party: "<red>Bạn đã bị đưa ra ngoài do rời khỏi Tổ đội trong khi đang ở trong Dungeon!"
+  leader_in_dungeon: "<red>Không thể tham gia vì Trưởng nhóm hiện đang chinh chiến trong Dungeon!"
 
 game:
   start: "<green>Dungeon đã bắt đầu! Chúc các bạn may mắn!"

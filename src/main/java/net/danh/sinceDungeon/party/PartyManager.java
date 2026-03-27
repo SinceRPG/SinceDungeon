@@ -49,14 +49,13 @@ public class PartyManager {
         }
     }
 
-    // HÀM TIỆN ÍCH: Đá người chơi khỏi Dungeon nếu họ mất Party
     private void ejectFromDungeon(UUID uuid) {
         Player p = Bukkit.getPlayer(uuid);
         if (p != null && p.isOnline()) {
             net.danh.sinceDungeon.manager.DungeonGame game = plugin.getDungeonManager().getGame(uuid);
             if (game != null) {
                 game.handlePlayerDisconnect(p);
-                String msg = plugin.getMessagesFile().getString("error.left_dungeon_due_to_party", "<red>Bạn đã bị đưa ra khỏi Hầm ngục do rời khỏi Tổ đội!");
+                String msg = plugin.getMessagesFile().getString("party.left_dungeon_due_to_party", "<red>Bạn đã bị đưa ra khỏi Hầm ngục do rời khỏi Tổ đội!");
                 p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
             }
         }
@@ -69,8 +68,6 @@ public class PartyManager {
                 activeParties.remove(uuid);
                 partyChatToggled.remove(uuid);
                 clearSentInvites(uuid);
-
-                // VÁ LỖI KIẾN TRÚC: Giải tán nhóm thì tống cổ tất cả khỏi Hầm ngục hiện tại
                 ejectFromDungeon(uuid);
             });
         }
@@ -96,7 +93,6 @@ public class PartyManager {
                 disbandParty(party);
             }
         }
-        // VÁ LỖI KẺ PHẢN BỘI: Tự rời nhóm thì bị đá khỏi Hầm ngục
         ejectFromDungeon(uuid);
     }
 
@@ -113,7 +109,6 @@ public class PartyManager {
                 disbandParty(party);
             }
         }
-        // VÁ LỖI KẺ PHẢN BỘI: Bị đuổi khỏi nhóm thì bị đá khỏi Hầm ngục
         ejectFromDungeon(target);
     }
 
@@ -198,6 +193,15 @@ public class PartyManager {
 
         if (party == null || !party.getLeader().equals(leader)) {
             targetInvites.remove(leader);
+            return false;
+        }
+
+        // VÁ LỖI PHÂN MẢNH NHÓM (Party State Desync)
+        // Chặn người chơi mới chui vào nhóm khi Nhóm trưởng đã khóa sổ và đang khởi hành vào Dungeon
+        if (plugin.getDungeonManager().getGame(leader) != null) {
+            targetInvites.remove(leader);
+            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "<red>Không thể tham gia vì Trưởng nhóm hiện đang ở trong Dungeon!");
+            target.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
             return false;
         }
 

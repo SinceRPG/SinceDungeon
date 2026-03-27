@@ -16,7 +16,11 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -46,7 +50,7 @@ public class DungeonListener implements Listener {
     }
 
     // ==========================================
-    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG (FALLBACK PROTECTION)
+    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG CHỐNG GRIEF
     // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -81,7 +85,15 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI PHÁ HOẠI NỘI THẤT (Chống người chơi đập Khung Tranh, Tranh Vẽ)
+    // VÁ LỖI PHÁ HOẠI CẤU TRÚC: Ngăn Enderman nhặt khối, Wither phá tường
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityChangeBlock(EntityChangeBlockEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakByEntityEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -94,7 +106,6 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        // VÁ LỖI PHÁ HOẠI NỘI THẤT (Chống đập Giá Để Giáp, Xe Goòng bằng Vũ khí / Cung)
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
@@ -226,9 +237,6 @@ public class DungeonListener implements Listener {
                 }
             }
 
-            // VÁ LỖI MẤT DẤU QUÁI (Pacifist Kill Tracking)
-            // Quái có thể chết do rơi tự do, độc, lửa, v.v (Killer = null).
-            // Do đó ta quét trực tiếp bằng World đang diễn ra sự kiện thay vì phụ thuộc vào Killer.
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
                     game.onEvent(e);

@@ -6,6 +6,9 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
+import net.danh.sinceDungeon.reward.RewardGUI;
+import net.danh.sinceDungeon.reward.RewardSession;
+import net.danh.sinceDungeon.reward.RewardSessionManager;
 import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
@@ -27,12 +30,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
-    private final String worldName;
     private Player initiator;
     private Set<Player> participants;
     private DungeonTemplate template;
+
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
+
+    private final String worldName;
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -175,9 +180,6 @@ public class DungeonGame {
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
-
-                    // VÁ LỖI CHẾT OAN (Client Chunk Load Desync)
-                    // Cho người chơi 3 giây miễn nhiễm sát thương để kịp nhìn thấy map
                     p.setNoDamageTicks(60);
 
                     if (saveStats) {
@@ -327,6 +329,7 @@ public class DungeonGame {
         int finalChestCount = finishEvent.getChestCount();
 
         String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
+        RewardGUI rewardHelper = new RewardGUI(plugin);
 
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
@@ -336,8 +339,14 @@ public class DungeonGame {
             }
 
             if (finalChestCount > 0) {
-                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p,
-                        new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
+                // VÁ LỖI XÓA SỔ PHẦN THƯỞNG (Reward Voiding Protection)
+                // Ép buộc nhận toàn bộ phần thưởng cũ trước khi tạo Session mới
+                RewardSession oldSession = RewardSessionManager.getSession(p);
+                if (oldSession != null && oldSession.getChestCount() > 0) {
+                    rewardHelper.forceClaimAll(p, oldSession);
+                }
+
+                RewardSessionManager.addSession(p, new RewardSession(finalChestCount, template));
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
@@ -352,15 +361,12 @@ public class DungeonGame {
 
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
-
-                    // VÁ LỖI XUNG ĐỘT THUỘC TÍNH (RPG Plugin Desync)
-                    // Chờ 5 tick để MMOItems / AuraSkills cấu hình xong Max Health rồi mới trả máu cũ lại
                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (p.isOnline() && !p.isDead()) {
                             if (finalChestCount > 0) {
-                                new net.danh.sinceDungeon.reward.RewardGUI(plugin).openRewardGUI(p, finalChestCount, template);
+                                rewardHelper.openRewardGUI(p, finalChestCount, template);
                             } else {
                                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));
                             }
@@ -429,9 +435,9 @@ public class DungeonGame {
 
                         p.teleportAsync(targetLoc).thenAccept(success -> {
                             if (success) {
-                                // VÁ LỖI XUNG ĐỘT (Tương tự ở trên)
                                 Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                            } else {
+                            }
+                            else {
                                 Bukkit.getScheduler().runTask(plugin, () -> {
                                     p.teleport(targetLoc);
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
