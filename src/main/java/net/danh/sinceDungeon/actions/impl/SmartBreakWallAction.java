@@ -4,15 +4,18 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 public class SmartBreakWallAction extends DungeonAction implements Tickable {
@@ -20,6 +23,10 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector c1;
     private final Vector c2;
     private Location centerLoc;
+
+    // VÁ LỖI TRÀN RAM (Orphaned Task Leak)
+    private BukkitTask breakTask = null;
+    private boolean isBreaking = false;
 
     public SmartBreakWallAction(Vector trigger, Vector c1, Vector c2) {
         this.trigger = trigger;
@@ -38,9 +45,24 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     }
 
     @Override
+    public void cleanup(DungeonGame game) {
+        if (breakTask != null && !breakTask.isCancelled()) {
+            breakTask.cancel();
+        }
+    }
+
+    @Override
     public void onTick(DungeonGame game) {
         if (completed || centerLoc == null) return;
         game.getWorld().spawnParticle(Particle.FLAME, centerLoc, 3, 0.2, 0.2, 0.2, 0.01);
+
+        // VÁ LỖI CẤU TRÚC: Cho phép block bị phá bởi Vụ nổ Creeper/TNT tự động kích hoạt
+        if (!isBreaking && centerLoc.getBlock().getType() == Material.AIR) {
+            isBreaking = true;
+            removeWall(game);
+            this.completed = true;
+            game.sendMessage("action.wall_break");
+        }
     }
 
     @Override
@@ -48,9 +70,12 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         if (event instanceof PlayerInteractEvent e) {
             if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
 
-            if (!game.getParticipants().contains(e.getPlayer())) return;
+            Player p = e.getPlayer();
+            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit)
+            if (p.getGameMode() == GameMode.SPECTATOR) return;
 
-            if (!e.hasBlock()) return;
+            if (!game.getParticipants().contains(p)) return;
+            if (!e.hasBlock() || isBreaking) return;
 
             Block b = e.getClickedBlock();
             if (b != null && b.getWorld().equals(game.getWorld()) &&
@@ -58,6 +83,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                     b.getY() == trigger.getBlockY() &&
                     b.getZ() == trigger.getBlockZ()) {
 
+                isBreaking = true;
                 b.setType(Material.AIR);
                 removeWall(game);
 
@@ -82,9 +108,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             return;
         }
 
-        // VÁ LỖI TPS DROP: Chia nhỏ quá trình phá khối ra bằng Runnable.
-        // Phá 2500 block mỗi Tick (0.05s) để Server không bao giờ bị nghẽn (Freeze).
-        new BukkitRunnable() {
+        breakTask = new BukkitRunnable() {
             int currentX = minX;
             int currentY = minY;
             int currentZ = minZ;

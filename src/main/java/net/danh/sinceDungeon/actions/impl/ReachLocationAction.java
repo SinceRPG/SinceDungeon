@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
@@ -48,13 +49,11 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
         for (Player p : game.getParticipants()) {
             Location loc = p.getLocation();
-            if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead()) {
+            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit): Không cho tàng hình đi ăn checkpoint
+            if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
                 double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
                         Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
 
-                // VÁ LỖI XUYÊN TẦNG (Vertical Checkpoint Exploit):
-                // Tính toán chính xác cao độ. Người chơi chỉ được phép đứng ngang hàng,
-                // hoặc nhảy lên tối đa 3.5 block. Không được phép kích hoạt từ tầng dưới (-y).
                 double yDiff = loc.getY() - target.getY();
 
                 if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {

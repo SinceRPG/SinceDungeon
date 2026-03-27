@@ -21,6 +21,7 @@ import org.bukkit.event.Event;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.*;
@@ -29,7 +30,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private Player initiator;
+    // VÁ LỖI RÒ RỈ THỰC THỂ KHI CHIA THƯỞNG: Lưu UUID thay vì Player Object
+    private UUID initiatorId;
     private Set<Player> participants;
     private DungeonTemplate template;
 
@@ -46,14 +48,11 @@ public class DungeonGame {
 
     private BukkitTask tickTask;
     private long startTime;
-
-    // VÁ LỖI DESYNC THUỐC BẰNG LAG (TPS-Desync Potion Eraser)
-    // Dùng bộ đếm Server Ticks độc lập với thời gian thực (Real-time).
     private int serverTicksActive = 0;
 
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
-        this.initiator = initiator;
+        this.initiatorId = initiator.getUniqueId();
         this.participants = ConcurrentHashMap.newKeySet();
         this.participants.addAll(rawParticipants);
         this.template = template;
@@ -182,6 +181,9 @@ public class DungeonGame {
 
             if (p.isInsideVehicle()) p.leaveVehicle();
 
+            // VÁ LỖI QUÁN TÍNH ĐỘNG NĂNG (Kinetic Energy Crash)
+            p.setVelocity(new Vector(0, 0, 0));
+
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     p.setNoDamageTicks(60);
@@ -224,7 +226,7 @@ public class DungeonGame {
                     cancel();
                     return;
                 }
-                serverTicksActive += 4; // Task này chạy mỗi 4 ticks
+                serverTicksActive += 4;
                 runTick();
             }
         }.runTaskTimer(plugin, 4L, 4L);
@@ -350,7 +352,7 @@ public class DungeonGame {
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
 
-            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.equals(initiator)) {
+            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(initiatorId)) {
                 continue;
             }
 
@@ -364,6 +366,7 @@ public class DungeonGame {
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
+            p.setVelocity(new Vector(0,0,0));
 
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -372,6 +375,8 @@ public class DungeonGame {
             String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
             p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))));
             p.sendActionBar(ColorUtils.parse(" "));
+
+            plugin.getDungeonManager().addTransitioning(p.getUniqueId());
 
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
@@ -406,6 +411,8 @@ public class DungeonGame {
             if (p.isDead()) {
                 p.spigot().respawn();
             }
+            if (p.isInsideVehicle()) p.leaveVehicle();
+            p.setVelocity(new Vector(0,0,0));
 
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -450,8 +457,11 @@ public class DungeonGame {
                         if (p.isDead()) p.spigot().respawn();
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
+                        p.setVelocity(new Vector(0,0,0));
                         PlayerState state = savedStates.get(p.getUniqueId());
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+                        plugin.getDungeonManager().addTransitioning(p.getUniqueId());
 
                         p.teleportAsync(targetLoc).thenAccept(success -> {
                             if (success) {
@@ -503,8 +513,12 @@ public class DungeonGame {
                     if (p.isDead()) p.spigot().respawn();
 
                     if (p.isInsideVehicle()) p.leaveVehicle();
+                    p.setVelocity(new Vector(0,0,0));
+
                     PlayerState state = savedStates.get(p.getUniqueId());
                     Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+                    plugin.getDungeonManager().addTransitioning(p.getUniqueId());
                     p.teleport(targetLoc);
                     restorePlayerState(p);
                     p.sendActionBar(ColorUtils.parse(" "));
@@ -540,12 +554,16 @@ public class DungeonGame {
             participants = null;
         }
         this.dungeonWorld = null;
-        this.initiator = null;
+        this.initiatorId = null;
         this.template = null;
     }
 
     public void restorePlayerState(Player p) {
-        if (!p.isOnline()) return;
+        if (!p.isOnline()) {
+            plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
+            return;
+        }
+
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
             if (template != null && template.settings().saveAndRestoreStats()) {
@@ -569,7 +587,9 @@ public class DungeonGame {
                 p.setFireTicks(state.fireTicks);
             }
             p.setFallDistance(0);
+            p.setVelocity(new Vector(0,0,0));
         }
+        plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }
 
     public void sendMessage(String key, String... placeholders) {
@@ -626,7 +646,7 @@ public class DungeonGame {
     }
 
     public Player getPlayer() {
-        return initiator;
+        return Bukkit.getPlayer(initiatorId);
     }
 
     private static class PlayerState {

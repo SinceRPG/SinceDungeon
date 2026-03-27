@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.system.MMOItemsHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -141,6 +142,9 @@ public class LootChestAction extends DungeonAction implements Tickable {
             if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if (!e.hasBlock()) return;
 
+            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit)
+            if (e.getPlayer().getGameMode() == GameMode.SPECTATOR) return;
+
             Block b = e.getClickedBlock();
             if (isTargetChest(b) && !isOpened) {
                 isOpened = true;
@@ -161,10 +165,15 @@ public class LootChestAction extends DungeonAction implements Tickable {
         else if (event instanceof InventoryClickEvent e) {
             Inventory inv = e.getInventory();
             if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
+
+                // Cấm Spectator trộm đồ rương
+                if (e.getWhoClicked() instanceof Player p && p.getGameMode() == GameMode.SPECTATOR) {
+                    e.setCancelled(true);
+                    return;
+                }
+
                 boolean blockAction = false;
 
-                // VÁ LỖI ĐÁNH TRÁO RƯƠNG (Hotbar Swap & Offhand Dupe/Loss Exploit)
-                // Cấm phím số, phím F, ném ra ngoài và bất cứ hành động nào mang tính nhét đồ vào.
                 if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.SWAP_OFFHAND) {
                     blockAction = true;
                 } else if (e.getAction().name().contains("DROP") || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {

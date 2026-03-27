@@ -39,11 +39,21 @@ public class DungeonManager {
     private final Map<String, ConditionProcessor> conditionProcessors = new ConcurrentHashMap<>();
     private final Object joinLock = new Object();
 
+    private final Set<UUID> transitioningPlayers = ConcurrentHashMap.newKeySet();
+
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
         registerDefaultActions();
         registerDefaultProcessors();
         loadTemplatesAsync().join();
+    }
+
+    public void addTransitioning(UUID uuid) {
+        transitioningPlayers.add(uuid);
+    }
+
+    public void removeTransitioning(UUID uuid) {
+        transitioningPlayers.remove(uuid);
     }
 
     public void registerTemplate(DungeonTemplate template) {
@@ -135,7 +145,6 @@ public class DungeonManager {
             }
 
             for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
-
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
             if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
         }
@@ -397,6 +406,11 @@ public class DungeonManager {
                 if (activeGames.containsKey(participant.getUniqueId())) {
                     String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
                     p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
+                    return;
+                }
+
+                if (transitioningPlayers.contains(participant.getUniqueId())) {
+                    p.sendMessage(ColorUtils.parseWithPrefix("<red>Hệ thống đang xử lý dữ liệu người chơi, vui lòng thử lại sau giây lát!"));
                     return;
                 }
             }
