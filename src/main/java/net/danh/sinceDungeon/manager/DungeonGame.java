@@ -162,6 +162,7 @@ public class DungeonGame {
         }
 
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
+        boolean saveStats = plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
 
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
@@ -170,13 +171,16 @@ public class DungeonGame {
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
-                    AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
-                    p.setHealth(attr != null ? attr.getValue() : 20.0);
-                    p.setFoodLevel(20);
-                    p.setGameMode(GameMode.SURVIVAL);
+                    if (saveStats) {
+                        AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
+                        p.setHealth(attr != null ? attr.getValue() : 20.0);
+                        p.setFoodLevel(20);
+                        p.setGameMode(GameMode.SURVIVAL);
 
-                    for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
-                    p.setFireTicks(0);
+                        for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
+                        p.setFireTicks(0);
+                    }
+                    // Luôn luôn reset fall distance để tránh sát thương rơi tồn đọng khi vừa dịch chuyển
                     p.setFallDistance(0);
                 }
             });
@@ -221,13 +225,13 @@ public class DungeonGame {
 
                 if (!action.isCompleted()) {
                     allCompleted = false;
-                    if (objectiveText.length() > 0) objectiveText.append(objSeparator);
+                    if (!objectiveText.isEmpty()) objectiveText.append(objSeparator);
                     objectiveText.append(action.getObjectiveText());
                 }
             }
         }
 
-        if (!allCompleted && objectiveText.length() > 0) {
+        if (!allCompleted && !objectiveText.isEmpty()) {
             String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
             for (Player p : participants) {
                 if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
@@ -362,16 +366,12 @@ public class DungeonGame {
     }
 
     public void handlePlayerDisconnect(Player p) {
-        // VÁ LỖI BẢO MẬT: Phải kiểm tra chính xác xem người chơi CÓ ĐANG Ở TRONG DUNGEON hay không.
-        // Ngăn chặn trục lợi (Exploit) hồi máu bằng cách đăng xuất trong lúc đếm ngược ở Lobby.
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
         if (wasInDungeon) {
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-            // VÁ LỖI DỊCH CHUYỂN: Sử dụng dịch chuyển đồng bộ (Sync) ngay trong hàm PlayerQuitEvent
-            // để đảm bảo Bukkit kịp ghi đè tọa độ trước khi người chơi biến mất hoàn toàn.
             p.teleport(targetLoc);
             restorePlayerState(p);
         }
@@ -470,19 +470,22 @@ public class DungeonGame {
     public void restorePlayerState(Player p) {
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
-            p.setGameMode(state.gameMode);
-            AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
-            double maxHealth = attr != null ? attr.getValue() : 20.0;
+            boolean saveStats = plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
 
-            // VÁ LỖI VÒNG LẶP CHẾT (Death Loop): Đảm bảo máu khôi phục không bao giờ <= 0
-            p.setHealth(Math.max(1.0, Math.min(state.health, maxHealth)));
-            p.setFoodLevel(state.foodLevel);
+            if (saveStats) {
+                p.setGameMode(state.gameMode);
+                AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
+                double maxHealth = attr != null ? attr.getValue() : 20.0;
 
-            for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
-            if (state.potionEffects != null) {
-                for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+                p.setHealth(Math.max(1.0, Math.min(state.health, maxHealth)));
+                p.setFoodLevel(state.foodLevel);
+
+                for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
+                if (state.potionEffects != null) {
+                    for (PotionEffect effect : state.potionEffects) p.addPotionEffect(effect);
+                }
+                p.setFireTicks(state.fireTicks);
             }
-            p.setFireTicks(state.fireTicks);
             p.setFallDistance(0);
         }
     }

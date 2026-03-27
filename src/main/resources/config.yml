@@ -58,6 +58,12 @@ dungeon:
   # Bật (true) để ngăn người chơi farm rác/exp. Tắt (false) nếu bạn muốn giữ lại hệ thống rơi đồ mặc định.
   clear-mob-drops: true
 
+  # Có lưu lại thông số (máu, độ đói, hiệu ứng...) của người chơi trước khi vào và trả lại khi ra không?
+  # Nếu tắt (false), người chơi sẽ giữ nguyên trạng thái hiện tại khi vào và ra Dungeon.
+  # Save and restore player stats (health, food, effects...) before entering and after leaving?
+  # If false, players will keep their current stats when entering and leaving.
+  save-and-restore-stats: false
+
 editor:
   # Item used for navigation in the Editor GUI
   # Vật phẩm dùng để điều hướng trong GUI Editor
