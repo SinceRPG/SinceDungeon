@@ -61,7 +61,6 @@ public class DungeonGame {
         parseStages();
     }
 
-    // BỔ SUNG: Cấp quyền truy xuất vị trí an toàn để nhả vật phẩm
     public Location getSavedLocation(UUID uuid) {
         PlayerState state = savedStates.get(uuid);
         return state != null ? state.location : null;
@@ -363,18 +362,19 @@ public class DungeonGame {
     }
 
     public void handlePlayerDisconnect(Player p) {
-        if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+        // VÁ LỖI BẢO MẬT: Phải kiểm tra chính xác xem người chơi CÓ ĐANG Ở TRONG DUNGEON hay không.
+        // Ngăn chặn trục lợi (Exploit) hồi máu bằng cách đăng xuất trong lúc đếm ngược ở Lobby.
+        boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
+
+        if (wasInDungeon) {
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-            p.teleportAsync(targetLoc).thenAccept(success -> {
-                if (!success) {
-                    Bukkit.getScheduler().runTask(plugin, () -> p.teleport(targetLoc));
-                }
-            });
+            // VÁ LỖI DỊCH CHUYỂN: Sử dụng dịch chuyển đồng bộ (Sync) ngay trong hàm PlayerQuitEvent
+            // để đảm bảo Bukkit kịp ghi đè tọa độ trước khi người chơi biến mất hoàn toàn.
+            p.teleport(targetLoc);
+            restorePlayerState(p);
         }
-
-        restorePlayerState(p);
 
         participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
@@ -473,7 +473,9 @@ public class DungeonGame {
             p.setGameMode(state.gameMode);
             AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
             double maxHealth = attr != null ? attr.getValue() : 20.0;
-            p.setHealth(Math.min(state.health, maxHealth));
+
+            // VÁ LỖI VÒNG LẶP CHẾT (Death Loop): Đảm bảo máu khôi phục không bao giờ <= 0
+            p.setHealth(Math.max(1.0, Math.min(state.health, maxHealth)));
             p.setFoodLevel(state.foodLevel);
 
             for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());

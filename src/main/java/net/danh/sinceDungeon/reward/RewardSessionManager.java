@@ -2,15 +2,17 @@ package net.danh.sinceDungeon.reward;
 
 import org.bukkit.entity.Player;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Global cache storing active reward sessions mapped by player UUID.
+ * Upgraded to ConcurrentHashMap to prevent thread-safety issues during asynchronous events or rapid inventory clicks.
  */
 public class RewardSessionManager {
-    private static final Map<UUID, RewardSession> sessions = new HashMap<>();
+    // VÁ LỖI AN TOÀN LUỒNG: Sử dụng ConcurrentHashMap thay vì HashMap
+    private static final Map<UUID, RewardSession> sessions = new ConcurrentHashMap<>();
 
     public static void addSession(Player p, RewardSession session) {
         sessions.put(p.getUniqueId(), session);
