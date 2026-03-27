@@ -515,7 +515,14 @@ public class DungeonGame {
     private void aggressivelyCleanupMemory() {
         if (savedStates != null) savedStates.clear();
         if (stages != null) {
-            for (List<DungeonAction> list : stages) list.clear();
+            for (List<DungeonAction> list : stages) {
+                for (DungeonAction action : list) {
+                    try {
+                        action.cleanup(this); 
+                    } catch (Exception ignored) {}
+                }
+                list.clear();
+            }
             stages.clear();
             stages = null;
         }

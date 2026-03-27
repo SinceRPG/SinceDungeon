@@ -28,8 +28,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
-
-    // VÁ LỖI SOFT-LOCK KẸT QUÁI: Giữ lại Chunk để quái không bị Unload
     private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
@@ -44,6 +42,12 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         return base.replace("<mob>", type.name()).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
+    // VÁ LỖI MEMORY LEAK: Đảm bảo Ticket được giải phóng nếu Game Crash hoặc Force Stop
+    @Override
+    public void cleanup(DungeonGame game) {
+        unlockChunks();
+    }
+
     @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
@@ -56,7 +60,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                // Nếu ent == null nghĩa là lỗi dị biệt (Bị plugin khác xóa/The Void), ta cứ coi như chết để game đi tiếp
                 return true;
             }
         });
@@ -89,7 +92,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 living.setRemoveWhenFarAway(false);
                 living.setPersistent(true);
 
-                // Khóa Chunk lại, ép hệ thống giữ khu vực này luôn được Load
                 Chunk c = finalLoc.getChunk();
                 c.addPluginChunkTicket(SinceDungeon.getPlugin());
                 lockedChunks.add(c);

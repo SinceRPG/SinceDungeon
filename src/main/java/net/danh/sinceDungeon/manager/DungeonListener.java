@@ -28,6 +28,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 
+import java.util.List;
+
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
 
@@ -50,6 +52,10 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
+
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -105,6 +111,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -113,7 +123,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI QUÁI CUSTOM BẤT TỬ (ModelEngine / MythicMobs Invincibility Fix)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -122,8 +131,6 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
-                // Chỉ chặn khi sát thương gây ra bởi Môi trường hoặc Người chơi.
-                // Nếu nguồn sát thương là CUSTOM (Của Plugin tạo Boss tự ép máu) hoặc VOID, thì cho phép.
                 EntityDamageEvent.DamageCause cause = e.getCause();
                 if (cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION ||
                         cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
@@ -159,6 +166,36 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI TRỘM GIÁ ĐỂ GIÁP: Armor Stand Quirks Bypass
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getPlayer().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true);
+        }
+    }
+
+    // ==========================================
+    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH)
+    // ==========================================
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
+        Player p = e.getPlayer();
+        if (plugin.getDungeonManager().getGame(p.getUniqueId()) != null) {
+            boolean blockCommands = plugin.getConfigFile().getBoolean("dungeon.gameplay.block-commands", true);
+            if (blockCommands && !p.hasPermission("SinceDungeon.admin")) {
+                String cmd = e.getMessage().split(" ")[0].toLowerCase();
+                List<String> allowed = plugin.getConfigFile().getStringList("dungeon.gameplay.allowed-commands");
+
+                if (!allowed.contains(cmd)) {
+                    e.setCancelled(true);
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.command_blocked", "<red>Bạn không được phép dùng lệnh này trong Dungeon!")));
+                }
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -182,9 +219,12 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        // VÁ LỖI BẤT TỬ TIẾP TỤC: Xử lý riêng nguồn sát thương từ Người chơi lên Khối trang trí
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {

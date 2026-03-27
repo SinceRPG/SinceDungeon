@@ -85,6 +85,16 @@ dungeon:
     # Nếu tắt (false), Dungeon sẽ giữ nguyên thời gian và thời tiết từ Map mẫu của bạn.
     # Force daylight (6000 ticks) and clear weather when a dungeon is generated?
     force-daylight-and-clear-weather: true
+    # THÊM MỚI: Cấm sử dụng lệnh để chống gian lận (VD: /fly, /heal, /sethome)
+    # Block commands inside dungeons to prevent cheating?
+    block-commands: true
+    # Danh sách các lệnh ĐƯỢC PHÉP dùng (Nhớ ghi chữ thường)
+    # List of allowed commands inside dungeons.
+    allowed-commands:
+      - "/party"
+      - "/p"
+      - "/dungeon"
+      - "/sincedungeon"
 
 editor:
   # Item used for navigation in the Editor GUI

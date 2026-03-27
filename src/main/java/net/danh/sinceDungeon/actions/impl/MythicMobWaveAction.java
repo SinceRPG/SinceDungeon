@@ -44,6 +44,12 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
+    // VÁ LỖI MEMORY LEAK TƯƠNG TỰ
+    @Override
+    public void cleanup(DungeonGame game) {
+        unlockChunks();
+    }
+
     @Override
     public void start(DungeonGame game) {
         if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
@@ -111,7 +117,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
+                return true;
             }
         });
 
