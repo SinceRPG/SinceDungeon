@@ -98,7 +98,7 @@ public class EditorListener implements Listener {
 
         e.setCancelled(true);
         EditorSession session = activeInputs.remove(p.getUniqueId());
-        // Cạo bỏ hoàn toàn khoảng trắng dư thừa
+
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
 
         String cancelKw = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").trim();
@@ -146,13 +146,11 @@ public class EditorListener implements Listener {
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
 
-            // Xử lý thông minh khoảng trắng cho các lệnh
             String cmd = e.getMessage().toLowerCase().trim();
 
             String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase().trim();
             String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
 
-            // Cạo sạch khoảng trắng và kiểm tra linh hoạt
             if (cmd.equals(cancelKw) || cmd.equals("/cancel") || cmd.startsWith(cancelKw + " ") || cmd.startsWith("/cancel ")) {
                 EditorSession session = activeInputs.remove(p.getUniqueId());
                 sendMsg(p, "input_cancel");
@@ -176,5 +174,10 @@ public class EditorListener implements Listener {
 
     private void reopenSessionMenu(EditorSession session) {
         Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
+    }
+
+    // VÁ LỖI RÒ RỈ RAM: Dọn dẹp Chat Input Sessions khi Reload Plugin
+    public void clearAll() {
+        activeInputs.clear();
     }
 }

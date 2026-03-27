@@ -29,12 +29,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
-    private final String worldName;
     private Player initiator;
     private Set<Player> participants;
     private DungeonTemplate template;
+
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
+
+    private final String worldName;
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -162,6 +164,7 @@ public class DungeonGame {
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
+
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         boolean saveStats = template.settings().saveAndRestoreStats();
 
@@ -426,7 +429,8 @@ public class DungeonGame {
                         p.teleportAsync(targetLoc).thenAccept(success -> {
                             if (success) {
                                 Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                            } else {
+                            }
+                            else {
                                 Bukkit.getScheduler().runTask(plugin, () -> {
                                     p.teleport(targetLoc);
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
@@ -480,7 +484,11 @@ public class DungeonGame {
         }
 
         if (dungeonWorld != null) {
-            WorldManager.forceUnloadAndDelete(plugin, dungeonWorld);
+            // VÁ LỖI TREO UNLOAD: Thêm độ trễ 5 tick để đảm bảo người chơi đã thoát hoàn toàn
+            World w = dungeonWorld;
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                WorldManager.forceUnloadAndDelete(plugin, w);
+            }, 5L);
         }
         aggressivelyCleanupMemory();
     }

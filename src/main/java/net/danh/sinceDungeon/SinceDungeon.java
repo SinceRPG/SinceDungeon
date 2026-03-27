@@ -106,6 +106,7 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onDisable() {
         if (dungeonManager != null) {
+            // Lưu ý: stopAllGames sẽ kích hoạt việc xoá World Async
             dungeonManager.stopAllGames();
         }
 
@@ -122,14 +123,20 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardSessionManager.clearAll();
-        Bukkit.getScheduler().cancelTasks(this);
 
+        // VÁ LỖI THỨ TỰ THỰC THI: Loại bỏ Bukkit.getScheduler().cancelTasks(this);
+        // để không vô tình "giết" luồng xoá rác ổ cứng của WorldManager.
+
+        if (editorManager != null) editorManager.clearAll();
+        if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();
         if (messagesFile != null) messagesFile.save();
     }
 
     public void reloadFiles(CommandSender sender) {
         if (configFile != null) configFile.reload();
+        if (editorManager != null) editorManager.clearAll();
+        if (editorListener != null) editorListener.clearAll();
         setupLanguage();
 
         if (dungeonManager != null) {

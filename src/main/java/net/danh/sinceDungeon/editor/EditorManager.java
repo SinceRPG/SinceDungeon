@@ -22,7 +22,7 @@ public class EditorManager implements Listener {
     }
 
     public void openEditor(Player p) {
-        new EditorGUI(plugin).openMainMenu(p, 0); // Mở trang đầu tiên
+        new EditorGUI(plugin).openMainMenu(p, 0);
     }
 
     public void startEditing(Player p, String filename) {
@@ -62,5 +62,16 @@ public class EditorManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         sessions.remove(e.getPlayer().getUniqueId());
+    }
+
+    // VÁ LỖI RÒ RỈ RAM: Dọn dẹp các phiên Editor đang mở khi Reload Plugin
+    public void clearAll() {
+        for (UUID uuid : sessions.keySet()) {
+            Player p = plugin.getServer().getPlayer(uuid);
+            if (p != null && p.isOnline()) {
+                p.closeInventory();
+            }
+        }
+        sessions.clear();
     }
 }

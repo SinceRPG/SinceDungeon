@@ -126,9 +126,6 @@ public class DungeonManager {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
             Location dropLoc = p.getLocation();
-
-            // VÁ LỖI MẤT ĐỒ (Permanent Item Loss):
-            // Nếu người chơi đang kẹt trong Dungeon chuẩn bị xóa sổ, ép rơi vật phẩm ra ngoài khu vực an toàn
             DungeonGame game = getGame(p.getUniqueId());
             if (game != null && dropLoc.getWorld() != null && dropLoc.getWorld().equals(game.getWorld())) {
                 Location safeLoc = game.getSavedLocation(p.getUniqueId());
@@ -309,29 +306,34 @@ public class DungeonManager {
         return v;
     }
 
+    // VÁ LỖI ZERO-DOWNTIME (Chống Null Pointer khi đang tải lại map)
     public CompletableFuture<Void> reload() {
         stopAllGames();
-        templates.clear();
-        return loadTemplatesAsync().thenRun(() -> {
-            plugin.getLogger().info("Dungeon templates reloaded asynchronously with Multi-Threading!");
+        return loadTemplatesAsync().thenAccept(newTemplates -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                templates.clear();
+                templates.putAll(newTemplates);
+                plugin.getLogger().info("Dungeon templates reloaded asynchronously without disrupting joins!");
+            });
         });
     }
 
-    private CompletableFuture<Void> loadTemplatesAsync() {
+    private CompletableFuture<Map<String, DungeonTemplate>> loadTemplatesAsync() {
         File folder = new File(plugin.getDataFolder(), "dungeons");
         if (!folder.exists()) folder.mkdirs();
 
         File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
-        if (files == null || files.length == 0) return CompletableFuture.completedFuture(null);
+        if (files == null || files.length == 0) return CompletableFuture.completedFuture(new HashMap<>());
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Map<String, DungeonTemplate> bufferMap = new ConcurrentHashMap<>();
 
         for (File f : files) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
-                    if (t != null) templates.put(id, t);
+                    if (t != null) bufferMap.put(id, t);
                 } catch (Exception e) {
                     plugin.getLogger().severe("Error loading template " + id + ": " + e.getMessage());
                 }
@@ -339,7 +341,8 @@ public class DungeonManager {
             futures.add(future);
         }
 
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> bufferMap);
     }
 
     public void joinDungeon(Player p, String id) {

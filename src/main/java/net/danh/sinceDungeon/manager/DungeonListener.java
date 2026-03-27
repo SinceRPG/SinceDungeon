@@ -16,7 +16,11 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -46,10 +50,6 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
-
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -91,7 +91,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI GIAN LẬN XÔ NƯỚC / DUNG NHAM (Bucket Flooding Cheese)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBucketEmpty(PlayerBucketEmptyEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -106,10 +105,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -118,6 +113,7 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI QUÁI CUSTOM BẤT TỬ (ModelEngine / MythicMobs Invincibility Fix)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -125,12 +121,25 @@ public class DungeonListener implements Listener {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame ||
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
-                e.setCancelled(true);
+
+                // Chỉ chặn khi sát thương gây ra bởi Môi trường hoặc Người chơi.
+                // Nếu nguồn sát thương là CUSTOM (Của Plugin tạo Boss tự ép máu) hoặc VOID, thì cho phép.
+                EntityDamageEvent.DamageCause cause = e.getCause();
+                if (cause == EntityDamageEvent.DamageCause.BLOCK_EXPLOSION ||
+                        cause == EntityDamageEvent.DamageCause.ENTITY_EXPLOSION ||
+                        cause == EntityDamageEvent.DamageCause.FIRE ||
+                        cause == EntityDamageEvent.DamageCause.FIRE_TICK ||
+                        cause == EntityDamageEvent.DamageCause.LAVA ||
+                        cause == EntityDamageEvent.DamageCause.HOT_FLOOR ||
+                        cause == EntityDamageEvent.DamageCause.SUFFOCATION ||
+                        cause == EntityDamageEvent.DamageCause.FALLING_BLOCK) {
+
+                    e.setCancelled(true);
+                }
             }
         }
     }
 
-    // VÁ LỖI TRỘM CẮP ĐỒ NỘI THẤT (Armor Stand / Item Frame Theft)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInteractEntityDecor(PlayerInteractEntityEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -150,20 +159,14 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS & TRANSFORMS)
-    // ==========================================
-
-    // VÁ LỖI BỐC HƠI QUÁI BẰNG NƯỚC (Entity Transform Bypass)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-            e.setCancelled(true); // Ngăn Zombie biến thành Drowned làm hỏng bộ đếm Wave
+            e.setCancelled(true);
         }
     }
 
-    // VÁ LỖI DỊCH CHUYỂN QUA CỔNG ĐỊA NGỤC (Portal Banishment Exploit)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -179,12 +182,19 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
+        // VÁ LỖI BẤT TỬ TIẾP TỤC: Xử lý riêng nguồn sát thương từ Người chơi lên Khối trang trí
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
+                if (getRealAttacker(e.getDamager()) != null) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
         if (e.getEntity() instanceof Player victim) {
             Player attacker = getRealAttacker(e.getDamager());
 
@@ -203,7 +213,7 @@ public class DungeonListener implements Listener {
                 }
 
                 if (sameParty) {
-                    boolean allowFF = plugin.getConfigFile().getConfig().getBoolean("party.allow-friendly-fire");
+                    boolean allowFF = plugin.getConfigFile().getBoolean("party.allow-friendly-fire");
                     if (!allowFF) {
                         e.setCancelled(true);
                         return;
@@ -254,6 +264,11 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
+    @EventHandler
+    public void onInteractEntity(PlayerInteractEntityEvent e) {
+        pass(e.getPlayer(), e);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -291,7 +306,7 @@ public class DungeonListener implements Listener {
 
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (!(e.getEntity() instanceof Player)) {
-                boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+                boolean clearDrops = plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
                 DungeonGame targetGame = null;
 
                 for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
