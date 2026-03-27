@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.party.PartyManager.Party;
+import net.danh.sinceDungeon.system.MythicMobsHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -50,10 +51,6 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
-
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -109,10 +106,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -129,8 +122,9 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
+                // VÁ LỖI JVM CRASH: Gọi qua lớp trung gian an toàn
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                    if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
+                    if (MythicMobsHook.isMythicMob(e.getEntity())) {
                         return;
                     }
                 }
@@ -166,10 +160,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH, SLIME)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
@@ -203,7 +193,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI PHÂN BÀO SLIME: Chống sinh ra "Quái Lậu" khi Slime chết
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSlimeSplit(SlimeSplitEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -212,7 +201,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI RÁC KHỐI RƠI: Chống sỏi, cát, đe rớt xuống khi phá tường
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(EntitySpawnEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -238,18 +226,15 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (getRealAttacker(e.getDamager()) != null) {
+                    // VÁ LỖI JVM CRASH: Qua lớp trung gian
                     if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                        if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
+                        if (MythicMobsHook.isMythicMob(e.getEntity())) {
                             return;
                         }
                     }

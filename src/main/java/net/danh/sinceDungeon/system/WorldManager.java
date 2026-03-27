@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class WorldManager {
 
-    // VÁ LỖI AUTO-SAVE CORRUPTION: Bộ đếm tham chiếu an toàn luồng
     private static final Map<String, Integer> templateUsageCount = new ConcurrentHashMap<>();
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
@@ -31,7 +30,6 @@ public class WorldManager {
         if (templateW != null) {
             templateW.save();
 
-            // Xử lý khoá an toàn AutoSave qua Bộ đếm
             int count = templateUsageCount.merge(templateName, 1, Integer::sum);
             if (count == 1) {
                 templateW.setAutoSave(false);
@@ -104,7 +102,6 @@ public class WorldManager {
         });
     }
 
-    // Hàm giải phóng lock an toàn
     private static void releaseTemplateLock(String templateName, World templateW) {
         if (templateW == null) return;
         int newCount = templateUsageCount.merge(templateName, -1, Integer::sum);
@@ -134,11 +131,13 @@ public class WorldManager {
         if (Bukkit.unloadWorld(world, false)) {
             plugin.getLogger().info("Unloaded dungeon world: " + world.getName());
 
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            // VÁ LỖI WINDOWS FILE LOCK CRASH: Thêm độ trễ 40 Ticks (2 giây)
+            // Đảm bảo OS (Đặc biệt là Windows) nhả khóa File `.mca` trước khi ra lệnh Delete.
+            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
-                    plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName());
+                    plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName() + ". It may be locked by another process.");
                 }
-            });
+            }, 40L);
         } else {
             plugin.getLogger().warning("Could not unload world: " + world.getName());
         }
@@ -154,7 +153,12 @@ public class WorldManager {
 
         if (Bukkit.unloadWorld(world, false)) {
             plugin.getLogger().info("Force unloaded dungeon world: " + world.getName());
-            WorldUtils.deleteWorld(folder);
+
+            // VÁ LỖI TƯƠNG TỰ
+            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+                WorldUtils.deleteWorld(folder);
+            }, 40L);
+
         } else {
             plugin.getLogger().severe("CRITICAL: Failed to force-unload world " + world.getName() + " during shutdown!");
         }
