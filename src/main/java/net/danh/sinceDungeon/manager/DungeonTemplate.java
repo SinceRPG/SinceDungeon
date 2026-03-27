@@ -26,6 +26,7 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
      */
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
                            boolean blockEnderPearls, int kickDelayAfterFinish,
-                           boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats) {
+                           boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats,
+                           String deathAction, boolean clearMobDrops) {
     }
 }

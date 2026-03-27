@@ -136,7 +136,25 @@ public class DungeonListener implements Listener {
         if (!(e.getEntity() instanceof Player)) {
             String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
             if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+                // TÌM DUNGEON ĐỂ LẤY OPTION CLEAR-MOB-DROPS
                 boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+                DungeonGame targetGame = null;
+
+                if (e.getEntity().getKiller() != null) {
+                    targetGame = plugin.getDungeonManager().getGame(e.getEntity().getKiller().getUniqueId());
+                } else {
+                    for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
+                        if (g.getWorld() != null && g.getWorld().equals(e.getEntity().getWorld())) {
+                            targetGame = g;
+                            break;
+                        }
+                    }
+                }
+
+                if (targetGame != null) {
+                    clearDrops = targetGame.getTemplate().settings().clearMobDrops();
+                }
+
                 if (clearDrops) {
                     e.getDrops().clear();
                     e.setDroppedExp(0);
@@ -201,7 +219,7 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
-            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            // ĐỌC OPTION: Tùy chọn giữ túi đồ
             boolean keepInv = game.getTemplate().settings().keepInventoryOnDeath();
 
             if (keepInv) {
@@ -217,7 +235,8 @@ public class DungeonListener implements Listener {
                 if (p.isOnline()) {
                     p.spigot().respawn();
 
-                    String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+                    // ĐỌC OPTION: Tùy chọn hành động khi chết
+                    String deathAction = game.getTemplate().settings().deathAction();
 
                     if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
@@ -240,7 +259,7 @@ public class DungeonListener implements Listener {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
 
-            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            // ĐỌC OPTION: Có cấm Ender Pearl / Chorus Fruit không?
             boolean blockPearls = game.getTemplate().settings().blockEnderPearls();
 
             if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) ||
@@ -259,7 +278,7 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            // ĐỌC OPTION: Có cấm vứt đồ không?
             boolean preventDrop = game.getTemplate().settings().preventItemDropping();
             if (preventDrop) {
                 e.setCancelled(true);

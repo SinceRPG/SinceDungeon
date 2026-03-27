@@ -217,6 +217,8 @@ editor:
     setting_kick_delay: "<yellow>Kick Delay After Win"
     setting_force_weather: "<yellow>Force Daylight & Clear Weather"
     setting_save_stats: "<yellow>Save & Restore Player Stats"
+    setting_death_action: "<yellow>Death Action"
+    setting_clear_drops: "<yellow>Clear Mob Drops"
     save: "<green><b>Save Changes</b>"
     back: "<red>Go Back"
     condition_item: "<yellow>Condition #<index>"

@@ -166,6 +166,8 @@ public class EditorGUI implements Listener {
         int kickDelay = session.getConfig().contains("settings.kick-delay-after-finish") ? session.getConfig().getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
         boolean forceWeather = session.getConfig().contains("settings.force-daylight-and-clear-weather") ? session.getConfig().getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
         boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+        String deathAction = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+        boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
 
         inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getLoreToggle(keepInv)));
         inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getLoreToggle(preventDrop)));
@@ -178,6 +180,10 @@ public class EditorGUI implements Listener {
 
         inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getLoreToggle(forceWeather)));
         inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getLoreToggle(saveStats)));
+
+        // THÊM: Click to cycle Death Action & Clear Mob Drops
+        inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), Arrays.asList("<gray>Current: <white>" + deathAction.toUpperCase(), "<yellow>Left Click to toggle (RESPAWN/FAIL)")));
+        inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getLoreToggle(clearMobDrops)));
 
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
@@ -613,7 +619,7 @@ public class EditorGUI implements Listener {
                     sendMessage(p, "public_toggled", "<status>", String.valueOf(!current));
                     openDungeonMenu(p, session);
                 } else if (slot == 12) openConditionList(p, session, session.getPage("CONDITIONS"));
-                else if (slot == 13) openSettingsMenu(p, session); // MỞ MENU SETTINGS
+                else if (slot == 13) openSettingsMenu(p, session);
                 else if (slot == 14) openRewardMenu(p, session);
                 else if (slot == 16) openStageList(p, session, session.getPage("STAGES"));
                 else if (slot == 22) session.save();
@@ -625,8 +631,10 @@ public class EditorGUI implements Listener {
                     openDungeonMenu(p, session);
                     return;
                 }
+
                 String path = "";
                 boolean isBool = true;
+
                 if (slot == 10) path = "settings.keep-inventory-on-death";
                 else if (slot == 11) path = "settings.prevent-item-dropping";
                 else if (slot == 12) path = "settings.block-ender-pearls";
@@ -635,12 +643,26 @@ public class EditorGUI implements Listener {
                     isBool = false;
                 } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
+                else if (slot == 16) {
+                    // Click to cycle Death Action
+                    String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+                    String next = current.equalsIgnoreCase("RESPAWN") ? "FAIL" : "RESPAWN";
+                    session.getConfig().set("settings.death-action", next);
+                    p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                    openSettingsMenu(p, session);
+                    return;
+                } else if (slot == 17) path = "settings.clear-mob-drops";
 
                 if (!path.isEmpty()) {
                     if (isBool) {
-                        boolean current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
-                        if (path.equals("settings.save-and-restore-stats"))
+                        boolean current;
+                        if (path.equals("settings.save-and-restore-stats")) {
                             current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+                        } else if (path.equals("settings.clear-mob-drops")) {
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+                        } else {
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
+                        }
 
                         session.getConfig().set(path, !current);
                         p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);

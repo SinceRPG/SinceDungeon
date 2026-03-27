@@ -217,6 +217,8 @@ editor:
     setting_kick_delay: "<yellow>Đếm Ngược Thoát Khi Win"
     setting_force_weather: "<yellow>Ép Buổi Sáng & Tạnh Mưa"
     setting_save_stats: "<yellow>Lưu & Trả Lại Máu, Thức Ăn Khi Ra/Vào"
+    setting_death_action: "<yellow>Hành Động Khi Chết"
+    setting_clear_drops: "<yellow>Xóa Vật Phẩm Rác Từ Quái"
     save: "<green><b>Lưu Lại Toàn Bộ</b>"
     back: "<red>Quay Về"
     condition_item: "<yellow>Điều kiện #<index>"
