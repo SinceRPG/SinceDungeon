@@ -88,7 +88,6 @@ public class EditorGUI implements Listener {
         return mat != null ? mat : Material.ARROW;
     }
 
-    // THUẬT TOÁN PHÂN TRANG (PAGINATION)
     private void setPagination(Inventory inv, int page, int maxPage) {
         if (page > 0) {
             inv.setItem(48, makeItem(getNavItem(), getMsg("items.prev_page", "<yellow>⬅ Previous"), null));
@@ -147,10 +146,45 @@ public class EditorGUI implements Listener {
         inv.setItem(14, makeItem(Material.CHEST, getMsg("items.rewards"), plugin.getMessagesFile().getStringList("editor.items.rewards_lore")));
         inv.setItem(16, makeItem(Material.DIAMOND_SWORD, getMsg("items.stages"), plugin.getMessagesFile().getStringList("editor.items.stages_lore")));
 
+        // BUTTON SETTINGS
+        inv.setItem(13, makeItem(Material.COMPARATOR, getMsg("items.settings"), plugin.getMessagesFile().getStringList("editor.items.settings_lore")));
+
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save"), null));
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
 
         p.openInventory(inv);
+    }
+
+    // GIAO DIỆN SETTINGS PER-DUNGEON
+    public void openSettingsMenu(Player p, EditorSession session) {
+        session.setLastMenuOpener(player -> openSettingsMenu(player, session));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
+
+        boolean keepInv = session.getConfig().contains("settings.keep-inventory-on-death") ? session.getConfig().getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
+        boolean preventDrop = session.getConfig().contains("settings.prevent-item-dropping") ? session.getConfig().getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+        boolean blockPearls = session.getConfig().contains("settings.block-ender-pearls") ? session.getConfig().getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+        int kickDelay = session.getConfig().contains("settings.kick-delay-after-finish") ? session.getConfig().getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
+        boolean forceWeather = session.getConfig().contains("settings.force-daylight-and-clear-weather") ? session.getConfig().getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
+        boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+
+        inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getLoreToggle(keepInv)));
+        inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getLoreToggle(preventDrop)));
+        inv.setItem(12, makeItem(Material.ENDER_PEARL, getMsg("items.setting_block_pearls"), getLoreToggle(blockPearls)));
+
+        List<String> delayLore = new ArrayList<>();
+        delayLore.add("<gray>Current: <white>" + kickDelay + "s");
+        delayLore.add("<yellow>Left Click to edit");
+        inv.setItem(13, makeItem(Material.CLOCK, getMsg("items.setting_kick_delay"), delayLore));
+
+        inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getLoreToggle(forceWeather)));
+        inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getLoreToggle(saveStats)));
+
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
+        p.openInventory(inv);
+    }
+
+    private List<String> getLoreToggle(boolean state) {
+        return Arrays.asList("<gray>Current: " + (state ? getWord("true_word") : getWord("false_word")), "<yellow>Left Click to toggle");
     }
 
     public void openConditionList(Player p, EditorSession session, int page) {
@@ -499,12 +533,11 @@ public class EditorGUI implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorManager manager = plugin.getEditorManager();
-        final EditorSession session = holder.session(); // Đã dùng session lấy trực tiếp từ Holder thay vì dò map
+        final EditorSession session = holder.session();
         String menuType = holder.menuType();
         int page = holder.page();
         int slot = e.getRawSlot();
 
-        // ================= MAIN MENU =================
         if (menuType.equals("MAIN")) {
             if (slot == 48 && cur.getType() == getNavItem()) {
                 openMainMenu(p, page - 1);
@@ -529,7 +562,6 @@ public class EditorGUI implements Listener {
 
         if (session == null) return;
 
-        // ================= SELECT ACTION TYPE =================
         switch (menuType) {
             case "SELECT_TYPE" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
@@ -567,8 +599,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= DUNGEON MENU =================
             case "DUNGEON" -> {
                 if (slot == 10) {
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_world_name", val -> {
@@ -583,15 +613,56 @@ public class EditorGUI implements Listener {
                     sendMessage(p, "public_toggled", "<status>", String.valueOf(!current));
                     openDungeonMenu(p, session);
                 } else if (slot == 12) openConditionList(p, session, session.getPage("CONDITIONS"));
+                else if (slot == 13) openSettingsMenu(p, session); // MỞ MENU SETTINGS
                 else if (slot == 14) openRewardMenu(p, session);
                 else if (slot == 16) openStageList(p, session, session.getPage("STAGES"));
                 else if (slot == 22) session.save();
-                else if (slot == 18) openMainMenu(p, 0); // Quay về trang đầu của danh sách Map
-                // Quay về trang đầu của danh sách Map
+                else if (slot == 18) openMainMenu(p, 0);
             }
 
+            case "SETTINGS" -> {
+                if (slot == 18) {
+                    openDungeonMenu(p, session);
+                    return;
+                }
+                String path = "";
+                boolean isBool = true;
+                if (slot == 10) path = "settings.keep-inventory-on-death";
+                else if (slot == 11) path = "settings.prevent-item-dropping";
+                else if (slot == 12) path = "settings.block-ender-pearls";
+                else if (slot == 13) {
+                    path = "settings.kick-delay-after-finish";
+                    isBool = false;
+                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
+                else if (slot == 15) path = "settings.save-and-restore-stats";
 
-            // ================= CONDITIONS LIST =================
+                if (!path.isEmpty()) {
+                    if (isBool) {
+                        boolean current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
+                        if (path.equals("settings.save-and-restore-stats"))
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+
+                        session.getConfig().set(path, !current);
+                        p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                        openSettingsMenu(p, session);
+                    } else {
+                        final String finalPath = path;
+                        session.awaitInput(EditorSession.InputType.EDIT_KICK_DELAY, "edit_kick_delay", val -> {
+                            try {
+                                int newDelay = Integer.parseInt(val);
+                                session.getConfig().set(finalPath, newDelay);
+                                sendMessage(p, "update_val", "<key>", "Kick Delay", "<val>", val);
+                                openSettingsMenu(p, session);
+                            } catch (Exception ex) {
+                                sendMessage(p, "number_error");
+                                openSettingsMenu(p, session);
+                            }
+                        });
+                        plugin.getEditorListener().startListening(p, session);
+                    }
+                }
+            }
+
             case "CONDITIONS" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
                     openConditionList(p, session, page - 1);
@@ -641,16 +712,12 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= REWARDS MAIN =================
             case "REWARDS_MAIN" -> {
                 if (cur.getType() == Material.CLOCK) openRewardTiers(p, session, session.getPage("REWARD_TIERS"));
                 else if (cur.getType() == Material.CHEST) openRewardPool(p, session, session.getPage("REWARD_POOL"));
                 else if (slot == 18) openDungeonMenu(p, session);
             }
 
-
-            // ================= REWARD TIERS =================
             case "REWARD_TIERS" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
                     openRewardTiers(p, session, page - 1);
@@ -711,8 +778,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= REWARD POOL =================
             case "REWARD_POOL" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
                     openRewardPool(p, session, page - 1);
@@ -751,8 +816,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= EDIT REWARD ITEM =================
             case "EDIT_REWARD" -> {
                 if (slot == 18) {
                     openRewardPool(p, session, session.getPage("REWARD_POOL"));
@@ -810,8 +873,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= STAGES =================
             case "STAGES" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
                     openStageList(p, session, page - 1);
@@ -835,7 +896,7 @@ public class EditorGUI implements Listener {
                         }
                     }
                     session.getConfig().createSection("stages." + next + ".actions");
-                    openStageList(p, session, page); // reload current page
+                    openStageList(p, session, page);
                 } else if (slot == 45) {
                     openDungeonMenu(p, session);
                 } else if (slot < 45 && cur.getType() == Material.FILLED_MAP) {
@@ -859,8 +920,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= ACTIONS LIST =================
             case "ACTIONS" -> {
                 if (slot == 48 && cur.getType() == getNavItem()) {
                     openActionList(p, session, page - 1);
@@ -894,8 +953,6 @@ public class EditorGUI implements Listener {
                 }
             }
 
-
-            // ================= EDIT ACTION =================
             case "EDIT_ACTION" -> {
                 if (slot == 45) {
                     openActionList(p, session, session.getPage("ACTIONS"));
@@ -966,7 +1023,6 @@ public class EditorGUI implements Listener {
                 }
             }
         }
-
     }
 
     private @NonNull Object getFinalVal(String val) {

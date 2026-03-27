@@ -22,7 +22,6 @@ public class EditorSession {
     private final Player player;
     private final File file;
     private final YamlConfiguration config;
-    // BỘ ĐỆM PHÂN TRANG (PAGINATION CACHE): Ghi nhớ trang hiện tại của từng danh sách
     private final Map<String, Integer> pageCache = new HashMap<>();
     private String currentStage = null;
     private String currentActionKey = null;
@@ -165,7 +164,6 @@ public class EditorSession {
         this.currentConditionKey = key;
     }
 
-    // PHÂN TRANG (PAGINATION)
     public int getPage(String menuType) {
         return pageCache.getOrDefault(menuType, 0);
     }
@@ -193,7 +191,7 @@ public class EditorSession {
     }
 
     public enum InputType {
-        NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK
+        NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK, EDIT_KICK_DELAY
     }
 
     public interface EditorCallback {

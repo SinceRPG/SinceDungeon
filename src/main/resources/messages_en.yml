@@ -186,6 +186,7 @@ editor:
     actions: "<b>Stage <stage></b>"
     select_type: "<b>Select Action Type</b>"
     edit_action: "<b>Edit Action #<index></b>"
+    settings: "<b>Advanced Settings</b>"
   items:
     click_edit: "<yellow>Left Click: Edit"
     create_new: "<green><b>Create New Dungeon</b>"
@@ -206,6 +207,16 @@ editor:
     stages: "<red>Stages"
     stages_lore:
       - "<gray>Edit dungeon content"
+    settings: "<aqua>Gameplay Settings"
+    settings_lore:
+      - "<gray>Edit custom game rules"
+      - "<gray>for this specific map."
+    setting_keep_inv: "<yellow>Keep Inventory on Death"
+    setting_prevent_drop: "<yellow>Prevent Item Dropping"
+    setting_block_pearls: "<yellow>Block Ender Pearls/Chorus"
+    setting_kick_delay: "<yellow>Kick Delay After Win"
+    setting_force_weather: "<yellow>Force Daylight & Clear Weather"
+    setting_save_stats: "<yellow>Save & Restore Player Stats"
     save: "<green><b>Save Changes</b>"
     back: "<red>Go Back"
     condition_item: "<yellow>Condition #<index>"
@@ -308,6 +319,9 @@ editor:
       edit_tier:
         - "<gray>Enter Time (seconds) and Chest amount, separated by a space."
         - "<gray>Example: <green>300 3 <gray>(Complete under 300s = 3 chests)"
+      edit_kick_delay:
+        - "<gray>Enter the Delay in Seconds before kicking players out upon win."
+        - "<gray>Example: <green>15"
       edit_action_mob:
         - "<gray>Enter the monster name (MythicMobs Internal Name or Vanilla EntityType)."
         - "<gray>MythicMobs Example: <green>SkeletonKing"
@@ -351,7 +365,7 @@ editor:
     format_tier_error: "<red>Invalid format! Use: <seconds> <amount>"
     tier_added: "<green>Tier added: <time>s -> <amount> chests"
     update_val: "<green>Updated <key>: <val>"
-    number_error: "<red>Value must be a number!"
+    number_error: "<red>Value must be a valid number!"
     reward_added: "<green>New reward added!"
     type_changed: "<green>Type changed to <type>"
     item_set_hand: "<green>Copied item in hand: <item>"

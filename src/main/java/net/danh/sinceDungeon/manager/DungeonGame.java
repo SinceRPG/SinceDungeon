@@ -61,6 +61,10 @@ public class DungeonGame {
         parseStages();
     }
 
+    public DungeonTemplate getTemplate() {
+        return template;
+    }
+
     public Location getSavedLocation(UUID uuid) {
         PlayerState state = savedStates.get(uuid);
         return state != null ? state.location : null;
@@ -105,9 +109,8 @@ public class DungeonGame {
                     dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
                     dungeonWorld.setAutoSave(false);
 
-                    // ĐỌC OPTION: Cho phép giữ nguyên thời tiết ban đêm/mưa từ Map gốc nếu tắt config này
-                    boolean forceClear = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
-                    if (forceClear) {
+                    // ĐỌC TỪ TEMPLATE THAY VÌ CONFIG
+                    if (template.settings().forceDaylightAndClearWeather()) {
                         dungeonWorld.setTime(6000);
                         dungeonWorld.setStorm(false);
                         dungeonWorld.setThundering(false);
@@ -166,7 +169,7 @@ public class DungeonGame {
         }
 
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
-        boolean saveStats = plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+        boolean saveStats = template.settings().saveAndRestoreStats();
 
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
@@ -366,8 +369,8 @@ public class DungeonGame {
             });
         }
 
-        // ĐỌC OPTION: Thời gian đá người chơi ra ngoài (Tính bằng giây * 20 Tick)
-        int kickDelay = plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
+        // Lấy thời gian đá khỏi Template
+        int kickDelay = template.settings().kickDelayAfterFinish();
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
     }
 
@@ -476,9 +479,7 @@ public class DungeonGame {
     public void restorePlayerState(Player p) {
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
-            boolean saveStats = plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
-
-            if (saveStats) {
+            if (template.settings().saveAndRestoreStats()) {
                 p.setGameMode(state.gameMode);
                 AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                 double maxHealth = attr != null ? attr.getValue() : 20.0;

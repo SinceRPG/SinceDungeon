@@ -159,7 +159,7 @@ editor:
     default_condition_msg: "Chưa đủ điều kiện tham gia"
     default_condition_name: "Điều kiện <key>"
     reward_default_name: "<gray>Mặc định"
-    cancel: "cancel" # Đã chuẩn hóa từ "huy" thành "cancel" để tránh lỗi gõ phím của Admin
+    cancel: "cancel"
     here: "here"
     clear: "clear"
   actions_name:
@@ -186,6 +186,7 @@ editor:
     actions: "<b>Giai Đoạn <stage></b>"
     select_type: "<b>Chọn Loại Nhiệm Vụ</b>"
     edit_action: "<b>Cấu Hình Nhiệm Vụ #<index></b>"
+    settings: "<b>Cài Đặt Chuyên Sâu</b>"
   items:
     click_edit: "<yellow>Chuột Trái: Chỉnh sửa"
     create_new: "<green><b>Tạo Dungeon Mới</b>"
@@ -206,6 +207,16 @@ editor:
     stages: "<red>Giai Đoạn (Stages)"
     stages_lore:
       - "<gray>Thiết lập nội dung và thử thách"
+    settings: "<aqua>Cài Đặt Bổ Sung"
+    settings_lore:
+      - "<gray>Chỉnh sửa các luồng Gameplay"
+      - "<gray>chỉ dành riêng cho Map này."
+    setting_keep_inv: "<yellow>Giữ Túi Đồ Khi Chết"
+    setting_prevent_drop: "<yellow>Khóa Vứt Vật Phẩm"
+    setting_block_pearls: "<yellow>Chặn Ngọc Ender & Trái Chorus"
+    setting_kick_delay: "<yellow>Đếm Ngược Thoát Khi Win"
+    setting_force_weather: "<yellow>Ép Buổi Sáng & Tạnh Mưa"
+    setting_save_stats: "<yellow>Lưu & Trả Lại Máu, Thức Ăn Khi Ra/Vào"
     save: "<green><b>Lưu Lại Toàn Bộ</b>"
     back: "<red>Quay Về"
     condition_item: "<yellow>Điều kiện #<index>"
@@ -308,6 +319,9 @@ editor:
       edit_tier:
         - "<gray>Nhập [Thời gian(s)] và [Số rương], cách nhau bằng dấu cách."
         - "<gray>Ví dụ: <green>300 3 <gray>(Win dưới 300s được 3 rương)"
+      edit_kick_delay:
+        - "<gray>Nhập Số Giây sẽ đá người chơi ra sau khi Win xong Map này."
+        - "<gray>Ví dụ: <green>15"
       edit_action_mob:
         - "<gray>Nhập tên quái vật (MythicMobs Internal Name hoặc Vanilla EntityType)."
         - "<gray>Ví dụ MythicMobs: <green>SkeletonKing"
@@ -351,7 +365,7 @@ editor:
     format_tier_error: "<red>Sai cấu trúc! Yêu cầu: <giây> <số_lượng>"
     tier_added: "<green>Thêm mốc thành công: Dưới <time>s -> Được <amount> rương"
     update_val: "<green>Đã cập nhật <key>: <val>"
-    number_error: "<red>Dữ liệu này bắt buộc phải là một con số!"
+    number_error: "<red>Dữ liệu này bắt buộc phải là một con số hợp lệ!"
     reward_added: "<green>Tạo mục phần thưởng thành công!"
     type_changed: "<green>Chuyển đổi phân loại sang <type>"
     item_set_hand: "<green>Đã sao chép dữ liệu từ vật phẩm trên tay: <item>"

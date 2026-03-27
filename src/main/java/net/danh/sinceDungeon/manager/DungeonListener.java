@@ -201,8 +201,8 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
-            // ĐỌC OPTION: Tùy chọn giữ túi đồ
-            boolean keepInv = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
+            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            boolean keepInv = game.getTemplate().settings().keepInventoryOnDeath();
 
             if (keepInv) {
                 e.setKeepInventory(true);
@@ -240,8 +240,8 @@ public class DungeonListener implements Listener {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
 
-            // ĐỌC OPTION: Có cấm Ender Pearl / Chorus Fruit không?
-            boolean blockPearls = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            boolean blockPearls = game.getTemplate().settings().blockEnderPearls();
 
             if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) ||
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
@@ -259,8 +259,8 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-            // ĐỌC OPTION: Có cấm vứt đồ không?
-            boolean preventDrop = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+            // LẤY TỪ TEMPLATE THAY VÌ CONFIG
+            boolean preventDrop = game.getTemplate().settings().preventItemDropping();
             if (preventDrop) {
                 e.setCancelled(true);
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
