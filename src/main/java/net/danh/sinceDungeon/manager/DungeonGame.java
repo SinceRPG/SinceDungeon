@@ -61,6 +61,12 @@ public class DungeonGame {
         parseStages();
     }
 
+    // BỔ SUNG: Cấp quyền truy xuất vị trí an toàn để nhả vật phẩm
+    public Location getSavedLocation(UUID uuid) {
+        PlayerState state = savedStates.get(uuid);
+        return state != null ? state.location : null;
+    }
+
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -421,7 +427,6 @@ public class DungeonGame {
             }
         }
 
-        // VÁ LỖI RAM LEAK: Dọn sạch sẽ kho dữ liệu máu/đồ ngay khi Game dừng.
         savedStates.clear();
 
         if (dungeonWorld != null) {
@@ -463,9 +468,6 @@ public class DungeonGame {
     }
 
     public void restorePlayerState(Player p) {
-        // VÁ LỖI CỰC ĐỘ: Ép buộc can thiệp vào Player Object ngay cả khi isOnline() == false.
-        // Điều này đảm bảo Bukkit/Paper sẽ lưu chính xác lượng Máu, Potion, Gamemode cuối cùng
-        // vào file player.dat trước khi tiến trình Quit hoàn tất. Chống lỗi mất trạng thái vĩnh viễn.
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
             p.setGameMode(state.gameMode);

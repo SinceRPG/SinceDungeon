@@ -61,8 +61,6 @@ public class WorldManager {
 
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
-                        // TỐI ƯU GỐC: Khóa chặn mọi GameRule ngay lập tức khi World vừa khởi tạo xong.
-                        // Đảm bảo không có lấy 1 tick nào để Vanilla Mobs hay thời tiết xấu lọt vào!
                         world.setAutoSave(false);
                         world.setGameRule(GameRules.SPAWN_MOBS, false);
                         world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
@@ -89,7 +87,10 @@ public class WorldManager {
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
 
-            if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
+            // VÁ LỖI NGHIÊM TRỌNG: Đảm bảo thao tác với World phải ở Main Thread dù tiến trình đang lỗi
+            if (templateW != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> templateW.setAutoSave(finalAutoSaveState));
+            }
             return null;
         });
     }

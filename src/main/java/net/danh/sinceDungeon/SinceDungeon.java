@@ -28,10 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
@@ -113,7 +110,10 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardGUI rewardHelper = new RewardGUI(this);
-        for (Map.Entry<UUID, RewardSession> entry : RewardSessionManager.getSessions().entrySet()) {
+
+        // VÁ LỖI NGHIÊM TRỌNG (ConcurrentModificationException):
+        // Khóa chặt việc xóa Session bên trong vòng lặp bằng cách tạo một bản sao độc lập của HashMap
+        for (Map.Entry<UUID, RewardSession> entry : new HashMap<>(RewardSessionManager.getSessions()).entrySet()) {
             Player p = Bukkit.getPlayer(entry.getKey());
             if (p != null && p.isOnline()) {
                 rewardHelper.forceClaimAll(p, entry.getValue());
@@ -153,7 +153,6 @@ public final class SinceDungeon extends JavaPlugin {
         File[] files = container.listFiles();
 
         if (files != null) {
-            // TỐI ƯU: Đẩy luồng dọn rác Map ra Async, giúp Server khởi động nhanh hơn không bị nghẽn
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                 String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
                 for (File file : files) {

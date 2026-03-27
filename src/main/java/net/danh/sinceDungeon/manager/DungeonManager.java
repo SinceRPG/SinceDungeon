@@ -13,6 +13,7 @@ import net.danh.sinceDungeon.system.MMOItemsHook;
 import net.danh.sinceDungeon.system.PAPIHook;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
@@ -124,9 +125,17 @@ public class DungeonManager {
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
-            // VÁ LỖI LOGIC: Bắt buộc rơi đồ ở vị trí hiện tại của NGƯỜI CHƠI BỊ ĐẦY TÚI.
-            // Không được phép ném đồ về vị trí của Party Leader.
-            org.bukkit.Location dropLoc = p.getLocation();
+            Location dropLoc = p.getLocation();
+
+            // VÁ LỖI MẤT ĐỒ (Permanent Item Loss):
+            // Nếu người chơi đang kẹt trong Dungeon chuẩn bị xóa sổ, ép rơi vật phẩm ra ngoài khu vực an toàn
+            DungeonGame game = getGame(p.getUniqueId());
+            if (game != null && dropLoc.getWorld() != null && dropLoc.getWorld().equals(game.getWorld())) {
+                Location safeLoc = game.getSavedLocation(p.getUniqueId());
+                if (safeLoc != null && safeLoc.getWorld() != null) {
+                    dropLoc = safeLoc;
+                }
+            }
 
             for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
@@ -381,7 +390,6 @@ public class DungeonManager {
                 participants.add(p);
             }
 
-            // VÁ LỖI NHÂN BẢN: Nhờ có Block synchronized bên trên, bước kiểm tra này tuyệt đối an toàn
             for (Player participant : participants) {
                 if (activeGames.containsKey(participant.getUniqueId())) {
                     String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");

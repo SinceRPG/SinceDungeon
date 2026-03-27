@@ -47,7 +47,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         if (event instanceof PlayerInteractEvent e) {
             if (e.getAction() != Action.LEFT_CLICK_BLOCK) return;
 
-            // VÁ LỖI LOGIC: Cho phép BẤT KỲ AI TRONG NHÓM cũng có quyền phá khối đá
             if (!game.getParticipants().contains(e.getPlayer())) return;
 
             if (!e.hasBlock()) return;
@@ -84,7 +83,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         for (int x = minX; x <= maxX; x++) {
             for (int y = minY; y <= maxY; y++) {
                 for (int z = minZ; z <= maxZ; z++) {
-                    game.getWorld().getBlockAt(x, y, z).setType(Material.AIR);
+                    game.getWorld().getBlockAt(x, y, z).setType(Material.AIR, false);
                 }
             }
         }
