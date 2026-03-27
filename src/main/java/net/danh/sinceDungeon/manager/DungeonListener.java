@@ -54,6 +54,10 @@ public class DungeonListener implements Listener {
         return null;
     }
 
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -108,6 +112,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -116,7 +124,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI BẤT TỬ QUÁI MYTHICMOB/MODELENGINE (Boss Hitbox Invincibility)
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -125,14 +132,11 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
-                // Nếu Server có MythicMobs, ta phải thả cửa cho các ArmorStand của Boss nhận sát thương
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
-                        return; // Là Boss -> Thoát hàm, cho phép nhận sát thương
+                        return;
                     }
                 }
-
-                // Chặn toàn bộ sát thương lên vật thể trang trí thuần túy (Không phải Boss)
                 e.setCancelled(true);
             }
         }
@@ -165,6 +169,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
@@ -173,8 +181,6 @@ public class DungeonListener implements Listener {
             if (blockCommands && !p.hasPermission("SinceDungeon.admin")) {
                 String cmd = e.getMessage().split(" ")[0].toLowerCase();
 
-                // VÁ LỖI LÁCH LUẬT BẰNG NAMESPACE (Namespace Command Bypass Exploit)
-                // Cắt bỏ phần "tên_plugin:" để lấy lệnh gốc. VD: /essentials:fly -> /fly
                 if (cmd.contains(":")) {
                     String[] parts = cmd.split(":");
                     if (parts.length > 1) {
@@ -215,16 +221,19 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (getRealAttacker(e.getDamager()) != null) {
-                    // Nếu Server có MythicMobs, ta phải thả cửa cho các ArmorStand của Boss nhận sát thương
                     if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                         if (io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(e.getEntity()) != null) {
-                            return; // Là Boss -> Thoát hàm chặn sát thương
+                            return;
                         }
                     }
                     e.setCancelled(true);
@@ -434,8 +443,6 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        // VÁ LỖI NHÂN BẢN VẬT PHẨM (Item Dupe / Loss) KHI THOÁT GAME TRONG GUI RƯƠNG
-        // Khôi phục đồ đang lơ lửng ở con trỏ chuột về kho đồ trước khi tắt Server
         if (p.getOpenInventory().getTopInventory().getHolder() instanceof net.danh.sinceDungeon.reward.RewardHolder) {
             if (p.getItemOnCursor().getType() != Material.AIR) {
                 p.getInventory().addItem(p.getItemOnCursor());
@@ -449,8 +456,21 @@ public class DungeonListener implements Listener {
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
-        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
+        // VÁ LỖI TPA XÂM NHẬP TRÁI PHÉP (Interloper WorldChange Bypass Exploit)
+        // Nếu người chơi bước vào World Dungeon nhưng họ KHÔNG ĐƯỢC ĐĂNG KÝ trong Map đó, đá họ ra lập tức
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (p.getWorld().getName().startsWith(prefix)) {
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game == null || !p.getWorld().equals(game.getWorld())) {
+                plugin.getLogger().warning("Intercepted unauthorized entry by " + p.getName() + " into " + p.getWorld().getName());
+                p.sendMessage(ColorUtils.parseWithPrefix("<red>Khu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"));
+                p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
+                return;
+            }
+        }
+
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
             plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
             game.handlePlayerDisconnect(p);
@@ -501,6 +521,26 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
+
+        // VÁ LỖI TPA XÂM NHẬP TRÁI PHÉP (Interloper Teleport Bypass Exploit)
+        // Chặn người chơi dùng lệnh /tpa của Plugin khác để dịch chuyển thẳng vào vị trí của đồng đội trong Dungeon
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(prefix)) {
+            DungeonGame targetGame = null;
+            for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
+                if (g.getWorld() != null && g.getWorld().equals(e.getTo().getWorld())) {
+                    targetGame = g;
+                    break;
+                }
+            }
+
+            if (targetGame == null || !targetGame.getParticipants().contains(p)) {
+                e.setCancelled(true);
+                p.sendMessage(ColorUtils.parseWithPrefix("<red>Khu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"));
+                return;
+            }
+        }
+
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
