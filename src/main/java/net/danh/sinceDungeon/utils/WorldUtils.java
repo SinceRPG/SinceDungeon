@@ -14,7 +14,10 @@ import java.util.EnumSet;
  */
 public class WorldUtils {
 
-    private static final ArrayList<String> IGNORE_FILES = new ArrayList<>(Arrays.asList("uid.dat", "session.lock"));
+    // TỐI ƯU HÓA: Chặn copy toàn bộ dữ liệu rác để tiết kiệm RAM và ổ cứng (Disk I/O)
+    private static final ArrayList<String> IGNORE_FILES = new ArrayList<>(Arrays.asList(
+            "uid.dat", "session.lock", "playerdata", "stats", "advancements", "poi", "entities", "datapacks"
+    ));
 
     /**
      * Forcefully duplicates the entirety of a valid directory folder matching typical Bukkit formats.
@@ -29,6 +32,11 @@ public class WorldUtils {
             Files.walkFileTree(source.toPath(), EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    // Bỏ qua các thư mục rác nếu có
+                    if (IGNORE_FILES.contains(dir.getFileName().toString())) {
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+
                     Path targetDir = target.toPath().resolve(source.toPath().relativize(dir));
                     try {
                         Files.createDirectories(targetDir);

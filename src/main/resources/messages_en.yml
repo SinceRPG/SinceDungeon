@@ -14,7 +14,7 @@ admin:
     not_found: "<red>System Error: MMOItems <type>:<id> not found."
     error: "<red>System Error: Item <item> is misconfigured or does not exist."
   log:
-    leave_dungeon: " left the dungeon world via teleport. Stopping game."
+    leave_dungeon: " has left the Dungeon via teleportation. Stopping game instance."
   warning:
     vanilla_parse_fail: "Could not parse Vanilla item: <data>"
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"

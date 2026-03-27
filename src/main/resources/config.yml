@@ -4,7 +4,7 @@
 settings:
   # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
   # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
-  locale: "en"
+  locale: "vi"
 
 # Debug mode: Enable to view detailed logs when an error occurs
 # Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
@@ -21,14 +21,15 @@ party:
 
   # Maximum block distance for party members to be pulled into a dungeon together (0 = map-wide)
   # Khoảng cách tối đa để các thành viên được kéo vào dungeon cùng nhau (0 = toàn bản đồ)
-  max-join-distance: 50
+  max-join-distance: 50.0
 
   # Reward sharing mode: EQUAL (all get the same), LEADER_ONLY (only leader gets chests)
   # Chế độ chia thưởng: EQUAL (tất cả nhận bằng nhau), LEADER_ONLY (chỉ trưởng nhóm nhận rương)
   reward-share-mode: "EQUAL"
+
   # The display name of the system when sending automated party broadcasts
   # Tên hiển thị của hệ thống khi gửi thông báo tự động cho nhóm
-  system-name: "System"
+  system-name: "Hệ thống"
 
   # Time in seconds before a party invite expires
   # Thời gian tính bằng giây trước khi lời mời vào nhóm hết hạn
@@ -84,3 +85,4 @@ action-defaults:
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
+    level: 1
