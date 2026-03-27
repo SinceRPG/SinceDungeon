@@ -27,14 +27,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private final Player initiator;
-    private final Set<Player> participants;
-    private final DungeonTemplate template;
-
     private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
-    private final List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
-
     private final String worldName;
+    private Player initiator;
+    private Set<Player> participants;
+    private DungeonTemplate template;
+    private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -109,7 +107,6 @@ public class DungeonGame {
                     dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
                     dungeonWorld.setAutoSave(false);
 
-                    // ĐỌC TỪ TEMPLATE THAY VÌ CONFIG
                     if (template.settings().forceDaylightAndClearWeather()) {
                         dungeonWorld.setTime(6000);
                         dungeonWorld.setStorm(false);
@@ -318,7 +315,7 @@ public class DungeonGame {
 
         isRunning = false;
 
-        if (tickTask != null) tickTask.cancel();
+        if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
 
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
@@ -369,7 +366,6 @@ public class DungeonGame {
             });
         }
 
-        // Lấy thời gian đá khỏi Template
         int kickDelay = template.settings().kickDelayAfterFinish();
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
     }
@@ -385,11 +381,11 @@ public class DungeonGame {
             restorePlayerState(p);
         }
 
-        participants.remove(p);
+        if (participants != null) participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
         savedStates.remove(p.getUniqueId());
 
-        if (participants.isEmpty()) {
+        if (participants == null || participants.isEmpty()) {
             stop(false, DungeonEndEvent.EndReason.FAILED);
         } else {
             broadcastMessage("game.player_disconnect", "<player>", p.getName());
@@ -407,46 +403,50 @@ public class DungeonGame {
 
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
 
-        if (tickTask != null) tickTask.cancel();
+        if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
 
-        for (Player p : participants) {
-            plugin.getDungeonManager().removeGame(p.getUniqueId());
-            if (!p.isOnline()) continue;
+        if (participants != null) {
+            for (Player p : participants) {
+                plugin.getDungeonManager().removeGame(p.getUniqueId());
+                if (!p.isOnline()) continue;
 
-            p.sendActionBar(ColorUtils.parse(" "));
+                p.sendActionBar(ColorUtils.parse(" "));
 
-            if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                if (teleport) {
-                    if (p.isInsideVehicle()) p.leaveVehicle();
-                    PlayerState state = savedStates.get(p.getUniqueId());
-                    Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+                if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                    if (teleport) {
+                        if (p.isInsideVehicle()) p.leaveVehicle();
+                        PlayerState state = savedStates.get(p.getUniqueId());
+                        Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-                    p.teleportAsync(targetLoc).thenAccept(success -> {
-                        if (success) restorePlayerState(p);
-                        else {
-                            Bukkit.getScheduler().runTask(plugin, () -> {
-                                p.teleport(targetLoc);
-                                restorePlayerState(p);
-                            });
-                        }
-                    });
-                } else {
-                    restorePlayerState(p);
+                        p.teleportAsync(targetLoc).thenAccept(success -> {
+                            if (success) restorePlayerState(p);
+                            else {
+                                Bukkit.getScheduler().runTask(plugin, () -> {
+                                    p.teleport(targetLoc);
+                                    restorePlayerState(p);
+                                });
+                            }
+                        });
+                    } else {
+                        restorePlayerState(p);
+                    }
                 }
             }
         }
 
-        savedStates.clear();
-
+        // TIẾN HÀNH XÓA THẾ GIỚI
         if (dungeonWorld != null) {
             World w = dungeonWorld;
-            dungeonWorld = null;
-
             for (Entity entity : w.getEntities()) {
                 if (!(entity instanceof Player)) entity.remove();
             }
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> WorldManager.unloadAndDeleteWorld(plugin, w), 40L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                WorldManager.unloadAndDeleteWorld(plugin, w);
+                aggressivelyCleanupMemory(); // Giải phóng RAM triệt để
+            }, 40L);
+        } else {
+            aggressivelyCleanupMemory();
         }
     }
 
@@ -456,30 +456,52 @@ public class DungeonGame {
 
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
 
-        if (tickTask != null) tickTask.cancel();
+        if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
 
-        for (Player p : participants) {
-            plugin.getDungeonManager().removeGame(p.getUniqueId());
-            if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                if (p.isInsideVehicle()) p.leaveVehicle();
-                PlayerState state = savedStates.get(p.getUniqueId());
-                Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
-                p.teleport(targetLoc);
-                restorePlayerState(p);
-                p.sendActionBar(ColorUtils.parse(" "));
+        if (participants != null) {
+            for (Player p : participants) {
+                plugin.getDungeonManager().removeGame(p.getUniqueId());
+                if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                    if (p.isInsideVehicle()) p.leaveVehicle();
+                    PlayerState state = savedStates.get(p.getUniqueId());
+                    Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+                    p.teleport(targetLoc);
+                    restorePlayerState(p);
+                    p.sendActionBar(ColorUtils.parse(" "));
+                }
             }
         }
 
         if (dungeonWorld != null) {
             WorldManager.forceUnloadAndDelete(plugin, dungeonWorld);
-            dungeonWorld = null;
         }
+        aggressivelyCleanupMemory();
+    }
+
+    // ==========================================
+    // VÁ LỖI RÒ RỈ BỘ NHỚ (Memory Leak Prevention)
+    // Gán Null toàn bộ để ép Java GC thu hồi bộ nhớ ngay lập tức
+    // ==========================================
+    private void aggressivelyCleanupMemory() {
+        if (savedStates != null) savedStates.clear();
+        if (stages != null) {
+            for (List<DungeonAction> list : stages) list.clear();
+            stages.clear();
+            stages = null;
+        }
+        if (participants != null) {
+            participants.clear();
+            participants = null;
+        }
+        this.dungeonWorld = null;
+        this.initiator = null;
+        this.template = null;
     }
 
     public void restorePlayerState(Player p) {
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
-            if (template.settings().saveAndRestoreStats()) {
+            if (template != null && template.settings().saveAndRestoreStats()) {
                 p.setGameMode(state.gameMode);
                 AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                 double maxHealth = attr != null ? attr.getValue() : 20.0;
@@ -502,7 +524,7 @@ public class DungeonGame {
     }
 
     public Set<Player> getParticipants() {
-        return participants;
+        return participants != null ? participants : Collections.emptySet();
     }
 
     public boolean isRunning() {
@@ -510,6 +532,8 @@ public class DungeonGame {
     }
 
     public void broadcastMessage(String key, String... placeholders) {
+        if (participants == null || participants.isEmpty()) return;
+
         String msg = plugin.getMessagesFile().getString(key);
         if (msg == null || msg.isEmpty()) return;
 
@@ -525,6 +549,8 @@ public class DungeonGame {
     }
 
     public void broadcastTitle(String mainKey, String subKey, int fadeIn, int stay, int fadeOut) {
+        if (participants == null || participants.isEmpty()) return;
+
         String main = plugin.getMessagesFile().getString(mainKey, "");
         String sub = plugin.getMessagesFile().getString(subKey, "");
         Title title = Title.title(ColorUtils.parse(main), ColorUtils.parse(sub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut)));

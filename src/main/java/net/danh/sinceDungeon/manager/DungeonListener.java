@@ -14,8 +14,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
@@ -42,6 +41,47 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
+
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG (FALLBACK PROTECTION)
+    // Hoạt động độc lập ngay cả khi Server không cài WorldGuard
+    // ==========================================
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getLocation().getWorld().getName().startsWith(prefix)) {
+            e.blockList().clear(); // Hủy toàn bộ sát thương lên khối (Chỉ giữ lại sát thương lên người)
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockExplode(BlockExplodeEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+            e.blockList().clear(); // Chống lỗi nổ Giường/Respawn Anchor
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockIgnite(BlockIgniteEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true); // Cấm Lửa lan ra
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBlockBurn(BlockBurnEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true); // Cấm Lửa thiêu rụi khối gỗ
+        }
+    }
+
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -136,7 +176,6 @@ public class DungeonListener implements Listener {
         if (!(e.getEntity() instanceof Player)) {
             String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
             if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-                // TÌM DUNGEON ĐỂ LẤY OPTION CLEAR-MOB-DROPS
                 boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
                 DungeonGame targetGame = null;
 
@@ -151,7 +190,7 @@ public class DungeonListener implements Listener {
                     }
                 }
 
-                if (targetGame != null) {
+                if (targetGame != null && targetGame.getTemplate() != null) {
                     clearDrops = targetGame.getTemplate().settings().clearMobDrops();
                 }
 
@@ -219,8 +258,10 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
-            // ĐỌC OPTION: Tùy chọn giữ túi đồ
-            boolean keepInv = game.getTemplate().settings().keepInventoryOnDeath();
+            boolean keepInv = true;
+            if (game.getTemplate() != null) {
+                keepInv = game.getTemplate().settings().keepInventoryOnDeath();
+            }
 
             if (keepInv) {
                 e.setKeepInventory(true);
@@ -235,8 +276,10 @@ public class DungeonListener implements Listener {
                 if (p.isOnline()) {
                     p.spigot().respawn();
 
-                    // ĐỌC OPTION: Tùy chọn hành động khi chết
-                    String deathAction = game.getTemplate().settings().deathAction();
+                    String deathAction = "RESPAWN";
+                    if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
+                        deathAction = game.getTemplate().settings().deathAction();
+                    }
 
                     if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
@@ -259,8 +302,10 @@ public class DungeonListener implements Listener {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
 
-            // ĐỌC OPTION: Có cấm Ender Pearl / Chorus Fruit không?
-            boolean blockPearls = game.getTemplate().settings().blockEnderPearls();
+            boolean blockPearls = true;
+            if (game.getTemplate() != null) {
+                blockPearls = game.getTemplate().settings().blockEnderPearls();
+            }
 
             if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) ||
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
@@ -278,8 +323,10 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-            // ĐỌC OPTION: Có cấm vứt đồ không?
-            boolean preventDrop = game.getTemplate().settings().preventItemDropping();
+            boolean preventDrop = true;
+            if (game.getTemplate() != null) {
+                preventDrop = game.getTemplate().settings().preventItemDropping();
+            }
             if (preventDrop) {
                 e.setCancelled(true);
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));

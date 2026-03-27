@@ -53,7 +53,7 @@ public class RewardGUI implements Listener {
 
     private void playSound(Player p, String key) {
         try {
-            String soundName = plugin.getConfigFile().getString("reward.sounds." + key);
+            String soundName = plugin.getConfigFile().getString("sounds.reward_" + key);
             if (soundName != null) p.playSound(p.getLocation(), soundName, 1f, 1f);
         } catch (Exception ignored) {
         }
@@ -118,7 +118,6 @@ public class RewardGUI implements Listener {
         openPage(p, session, 0);
     }
 
-    // HỆ THỐNG MỞ TRANG ĐỘNG
     public void openPage(Player p, RewardSession session, int page) {
         String titleStr = getConfig().getString("reward.gui_title", "Reward");
         int size = getGuiSize();
@@ -137,7 +136,7 @@ public class RewardGUI implements Listener {
         if (pageMap != null) {
             ItemStack mysteryChest = createIcon("mystery_chest", 0);
             for (Map.Entry<Integer, Boolean> entry : pageMap.entrySet()) {
-                if (!entry.getValue()) { // Nếu rương chưa bị mở
+                if (!entry.getValue()) {
                     inv.setItem(entry.getKey(), mysteryChest);
                 }
             }
@@ -150,15 +149,14 @@ public class RewardGUI implements Listener {
 
         if (totalPages > 1) {
             if (page > 0) {
-                inv.setItem(prevSlot, makeNavItem(getConfig().getString("reward.icons.prev_page.name", "<yellow>⬅ Previous")));
+                inv.setItem(prevSlot, makeNavItem(getConfig().getString("editor.items.prev_page", "<yellow>⬅ Previous")));
             }
             if (page < totalPages - 1) {
-                inv.setItem(nextSlot, makeNavItem(getConfig().getString("reward.icons.next_page.name", "<yellow>Next ➡")));
+                inv.setItem(nextSlot, makeNavItem(getConfig().getString("editor.items.next_page", "<yellow>Next ➡")));
             }
         }
     }
 
-    // THUẬT TOÁN TỰ ĐỘNG THU THẬP THÔNG MINH XUYÊN TRANG
     public void forceClaimAll(Player p, RewardSession session) {
         int initialCount = session.getChestCount();
         if (initialCount <= 0) return;
@@ -169,27 +167,40 @@ public class RewardGUI implements Listener {
             for (Map<Integer, Boolean> pageMap : session.getChestPages().values()) {
                 for (Map.Entry<Integer, Boolean> entry : pageMap.entrySet()) {
                     if (!entry.getValue()) {
-                        entry.setValue(true); // Đánh dấu đã mở để tránh lặp
+                        entry.setValue(true);
                         session.decreaseChestCount();
                         claimedAuto++;
 
                         List<DungeonReward> pool = session.getTemplate().rewardPool();
                         if (pool != null && !pool.isEmpty()) {
                             DungeonReward reward = getRandomReward(pool);
-                            if (reward != null) giveReward(p, reward);
+                            // VÁ LỖI TẮC NGHẼN (Gacha Loop Halt):
+                            // Tránh việc món đồ lỗi làm đứng cả quá trình auto claim.
+                            if (reward != null) {
+                                try {
+                                    giveReward(p, reward);
+                                } catch (Exception e) {
+                                    plugin.getLogger().warning("Lỗi trao thưởng khi Auto-Claim: " + reward.type() + ":" + reward.value());
+                                }
+                            }
                         }
                     }
                 }
             }
         } else {
-            // Nếu người chơi thoát trước khi bấm nút mở hòm giữa màn hình
             for (int i = 0; i < initialCount; i++) {
                 session.decreaseChestCount();
                 claimedAuto++;
                 List<DungeonReward> pool = session.getTemplate().rewardPool();
                 if (pool != null && !pool.isEmpty()) {
                     DungeonReward reward = getRandomReward(pool);
-                    if (reward != null) giveReward(p, reward);
+                    if (reward != null) {
+                        try {
+                            giveReward(p, reward);
+                        } catch (Exception e) {
+                            plugin.getLogger().warning("Lỗi trao thưởng khi Auto-Claim: " + reward.type() + ":" + reward.value());
+                        }
+                    }
                 }
             }
         }
@@ -234,6 +245,8 @@ public class RewardGUI implements Listener {
             return;
         }
 
+        // VÁ LỖI NHÂN BẢN & MẤT ĐỒ (Item Stealing/Ghosting)
+        // Cấm toàn diện các hành vi click Shift hoặc Click ném ra ngoài khi mở Reward GUI
         if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.HOTBAR_SWAP ||
                 e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD || e.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
                 e.getAction().name().contains("DROP")) {
@@ -261,16 +274,15 @@ public class RewardGUI implements Listener {
             if (!session.isRevealed()) {
                 if (slot == getButtonSlot()) {
                     session.setRevealed(true);
-                    session.setupPagination(getGuiSize()); // Khởi tạo dữ liệu phân trang
+                    session.setupPagination(getGuiSize());
                     playSound(p, "reveal");
-                    openPage(p, session, 0); // Mở trang đầu tiên
+                    openPage(p, session, 0);
                 }
             } else {
                 int size = getGuiSize();
                 int prevSlot = size < 18 ? size - 2 : size - 9;
                 int nextSlot = size - 1;
 
-                // XỬ LÝ CHUYỂN TRANG
                 if (session.getTotalPages() > 1) {
                     if (slot == prevSlot && page > 0) {
                         try {
@@ -290,8 +302,7 @@ public class RewardGUI implements Listener {
                     }
                 }
 
-                // XỬ LÝ MỞ RƯƠNG
-                String mysteryMatName = getConfig().getString("reward.icons.mystery_chest.material", "CHEST");
+                String mysteryMatName = getConfig().getString("reward.icons.mystery_chest.material", "ENDER_CHEST");
                 if (clicked.getType().name().equals(mysteryMatName)) {
                     if (session.claimChest(page, slot)) {
                         e.getInventory().setItem(slot, new ItemStack(Material.AIR));
@@ -300,7 +311,13 @@ public class RewardGUI implements Listener {
                         List<DungeonReward> pool = session.getTemplate().rewardPool();
                         if (pool != null && !pool.isEmpty()) {
                             DungeonReward reward = getRandomReward(pool);
-                            if (reward != null) giveReward(p, reward);
+                            if (reward != null) {
+                                try {
+                                    giveReward(p, reward);
+                                } catch (Exception ex) {
+                                    plugin.getLogger().warning("Lỗi trao thưởng trong GUI: " + reward.type() + ":" + reward.value());
+                                }
+                            }
                         }
 
                         if (session.getChestCount() <= 0) {
