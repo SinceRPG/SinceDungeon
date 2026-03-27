@@ -12,6 +12,7 @@ import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 public class SmartBreakWallAction extends DungeonAction implements Tickable {
@@ -75,22 +76,49 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-        if (volume > 10000) {
+        if (volume > 200000) {
             String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
             SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
             return;
         }
 
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    game.getWorld().getBlockAt(x, y, z).setType(Material.AIR, false);
+        // VÁ LỖI TPS DROP: Chia nhỏ quá trình phá khối ra bằng Runnable.
+        // Phá 2500 block mỗi Tick (0.05s) để Server không bao giờ bị nghẽn (Freeze).
+        new BukkitRunnable() {
+            int currentX = minX;
+            int currentY = minY;
+            int currentZ = minZ;
+
+            @Override
+            public void run() {
+                if (game.getWorld() == null || !game.isRunning()) {
+                    cancel();
+                    return;
+                }
+
+                int blocksProcessed = 0;
+                while (blocksProcessed < 2500) {
+                    game.getWorld().getBlockAt(currentX, currentY, currentZ).setType(Material.AIR, false);
+                    blocksProcessed++;
+
+                    currentX++;
+                    if (currentX > maxX) {
+                        currentX = minX;
+                        currentY++;
+                        if (currentY > maxY) {
+                            currentY = minY;
+                            currentZ++;
+                            if (currentZ > maxZ) {
+                                Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
+                                game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
+                                game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
+                                cancel();
+                                return;
+                            }
+                        }
+                    }
                 }
             }
-        }
-
-        Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
-        game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
-        game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
+        }.runTaskTimer(SinceDungeon.getPlugin(), 0L, 1L);
     }
 }

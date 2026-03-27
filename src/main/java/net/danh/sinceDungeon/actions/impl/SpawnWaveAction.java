@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -16,8 +17,10 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class SpawnWaveAction extends DungeonAction implements Tickable {
@@ -25,6 +28,9 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+
+    // VÁ LỖI SOFT-LOCK KẸT QUÁI: Giữ lại Chunk để quái không bị Unload
+    private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
@@ -50,11 +56,13 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (ent != null) {
                 return ent.isDead();
             } else {
-                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
+                // Nếu ent == null nghĩa là lỗi dị biệt (Bị plugin khác xóa/The Void), ta cứ coi như chết để game đi tiếp
+                return true;
             }
         });
 
         if (spawnedMobs.isEmpty()) {
+            unlockChunks();
             this.completed = true;
             game.sendMessage("action.kill_complete");
         }
@@ -81,7 +89,11 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 living.setRemoveWhenFarAway(false);
                 living.setPersistent(true);
 
-                // UX: Tạo hiệu ứng âm thanh và hạt Particle mây đen/lửa để người chơi biết quái vừa xuất hiện
+                // Khóa Chunk lại, ép hệ thống giữ khu vực này luôn được Load
+                Chunk c = finalLoc.getChunk();
+                c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                lockedChunks.add(c);
+
                 game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
                 game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
 
@@ -104,6 +116,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         if (event instanceof EntityDeathEvent e) {
             if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
                 if (spawnedMobs.isEmpty()) {
+                    unlockChunks();
                     this.completed = true;
                     game.sendMessage("action.kill_complete");
                 } else {
@@ -111,5 +124,14 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 }
             }
         }
+    }
+
+    private void unlockChunks() {
+        for (Chunk c : lockedChunks) {
+            try {
+                c.removePluginChunkTicket(SinceDungeon.getPlugin());
+            } catch (Exception ignored) {}
+        }
+        lockedChunks.clear();
     }
 }

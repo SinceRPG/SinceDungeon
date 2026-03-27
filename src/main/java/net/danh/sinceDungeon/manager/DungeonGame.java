@@ -168,8 +168,15 @@ public class DungeonGame {
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         boolean saveStats = template.settings().saveAndRestoreStats();
 
+        // VÁ LỖI BÓNG MA HÀNG ĐỢI (Countdown Ghosting):
+        // Những kẻ rớt mạng hoặc chết khi đếm ngược xong sẽ bị loại khỏi bộ nhớ Dungeon vĩnh viễn.
+        Set<Player> failedToEnter = new HashSet<>();
+
         for (Player p : participants) {
-            if (!p.isOnline() || p.isDead()) continue;
+            if (!p.isOnline() || p.isDead()) {
+                failedToEnter.add(p);
+                continue;
+            }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
 
@@ -189,6 +196,19 @@ public class DungeonGame {
                     p.setFallDistance(0);
                 }
             });
+        }
+
+        // Thanh trừng các tài khoản thất bại
+        for (Player failed : failedToEnter) {
+            participants.remove(failed);
+            plugin.getDungeonManager().removeGame(failed.getUniqueId());
+            savedStates.remove(failed.getUniqueId());
+        }
+
+        // Nếu cả nhóm rụng sạch, hủy bỏ map luôn
+        if (participants.isEmpty()) {
+            stop(false, DungeonEndEvent.EndReason.FAILED);
+            return;
         }
 
         broadcastTitle("game.title.start_main", "game.title.start_sub", 200, 2000, 500);
@@ -484,7 +504,6 @@ public class DungeonGame {
         }
 
         if (dungeonWorld != null) {
-            // VÁ LỖI TREO UNLOAD: Thêm độ trễ 5 tick để đảm bảo người chơi đã thoát hoàn toàn
             World w = dungeonWorld;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 WorldManager.forceUnloadAndDelete(plugin, w);

@@ -158,14 +158,14 @@ public class EditorGUI implements Listener {
         session.setLastMenuOpener(player -> openSettingsMenu(player, session));
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
 
-        boolean keepInv = session.getConfig().contains("settings.keep-inventory-on-death") ? session.getConfig().getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
-        boolean preventDrop = session.getConfig().contains("settings.prevent-item-dropping") ? session.getConfig().getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
-        boolean blockPearls = session.getConfig().contains("settings.block-ender-pearls") ? session.getConfig().getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+        boolean keepInv = session.getConfig().contains("settings.keep-inventory-on-death") ? session.getConfig().getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
+        boolean preventDrop = session.getConfig().contains("settings.prevent-item-dropping") ? session.getConfig().getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+        boolean blockPearls = session.getConfig().contains("settings.block-ender-pearls") ? session.getConfig().getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getBoolean("dungeon.gameplay.block-ender-pearls", true);
         int kickDelay = session.getConfig().contains("settings.kick-delay-after-finish") ? session.getConfig().getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
-        boolean forceWeather = session.getConfig().contains("settings.force-daylight-and-clear-weather") ? session.getConfig().getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
-        boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+        boolean forceWeather = session.getConfig().contains("settings.force-daylight-and-clear-weather") ? session.getConfig().getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
+        boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
         String deathAction = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
-        boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+        boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
 
         inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getLoreToggle(keepInv)));
         inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getLoreToggle(preventDrop)));
@@ -650,7 +650,8 @@ public class EditorGUI implements Listener {
                 else if (slot == 13) {
                     path = "settings.kick-delay-after-finish";
                     isBool = false;
-                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
+                }
+                else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
                 else if (slot == 16) {
                     String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
@@ -659,17 +660,18 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openSettingsMenu(p, session);
                     return;
-                } else if (slot == 17) path = "settings.clear-mob-drops";
+                }
+                else if (slot == 17) path = "settings.clear-mob-drops";
 
                 if (!path.isEmpty()) {
                     if (isBool) {
                         boolean current;
                         if (path.equals("settings.save-and-restore-stats")) {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
                         } else if (path.equals("settings.clear-mob-drops")) {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
                         } else {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
+                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
                         }
 
                         session.getConfig().set(path, !current);
@@ -1039,7 +1041,8 @@ public class EditorGUI implements Listener {
                 if (e.getClick() == ClickType.LEFT) {
                     String promptKey = "edit_action_" + key.toLowerCase();
 
-                    // VÁ LỖI BẢO MẬT TYPE PARSING: Ép kiểu chặt chẽ ngay từ trước khi cập nhật dữ liệu.
+                    // VÁ LỖI ÉP KIỂU TYPE PARSING (String vs Number Corruption)
+                    // Kiểm tra và bắt lỗi ngay tại chỗ, KHÔNG CHO LƯU nếu Admin gõ chữ thay vì số.
                     session.awaitInput(inputType, promptKey, val -> {
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {
                             try {
@@ -1085,12 +1088,12 @@ public class EditorGUI implements Listener {
         else if (val.equalsIgnoreCase("false")) finalVal = false;
         else {
             try {
-                int parsed = Integer.parseInt(val);
-                finalVal = Math.max(0, parsed);
+                // Ta KHÔNG THỂ dùng Math.max(0, parsed) ở đây được nữa vì các Custom Plugin
+                // có thể cần tọa độ âm hoặc offset âm. Trả thẳng giá trị Integer chuẩn.
+                finalVal = Integer.parseInt(val);
             } catch (Exception e1) {
                 try {
-                    double parsed = Double.parseDouble(val);
-                    finalVal = Math.max(0.0, parsed);
+                    finalVal = Double.parseDouble(val);
                 } catch (Exception ignored) {
                 }
             }
