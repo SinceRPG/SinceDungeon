@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.editor.EditorGUI;
 import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
+import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
@@ -106,14 +107,11 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onDisable() {
         if (dungeonManager != null) {
-            // Lưu ý: stopAllGames sẽ kích hoạt việc xoá World Async
             dungeonManager.stopAllGames();
         }
 
         RewardGUI rewardHelper = new RewardGUI(this);
 
-        // VÁ LỖI NGHIÊM TRỌNG (ConcurrentModificationException):
-        // Khóa chặt việc xóa Session bên trong vòng lặp bằng cách tạo một bản sao độc lập của HashMap
         for (Map.Entry<UUID, RewardSession> entry : new HashMap<>(RewardSessionManager.getSessions()).entrySet()) {
             Player p = Bukkit.getPlayer(entry.getKey());
             if (p != null && p.isOnline()) {
@@ -123,9 +121,6 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardSessionManager.clearAll();
-
-        // VÁ LỖI THỨ TỰ THỰC THI: Loại bỏ Bukkit.getScheduler().cancelTasks(this);
-        // để không vô tình "giết" luồng xoá rác ổ cứng của WorldManager.
 
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
@@ -229,7 +224,14 @@ public final class SinceDungeon extends JavaPlugin {
                     .then(Commands.literal("leave")
                             .executes(ctx -> {
                                 if (ctx.getSource().getExecutor() instanceof Player p) {
-                                    dungeonManager.quitDungeon(p);
+                                    // VÁ LỖI KẺ PHẢN BỘI: Chỉ tách người chơi gọi lệnh ra khỏi Hầm ngục thay vì Hủy diệt toàn bộ Map
+                                    DungeonGame game = dungeonManager.getGame(p.getUniqueId());
+                                    if (game != null) {
+                                        game.handlePlayerDisconnect(p);
+                                        p.sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("party.left_dungeon_due_to_party", "<yellow>Bạn đã thoát khỏi Dungeon.")));
+                                    } else {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("error.not_in_dungeon", "<red>Bạn hiện không ở trong Dungeon nào.")));
+                                    }
                                 } else {
                                     ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
                                 }

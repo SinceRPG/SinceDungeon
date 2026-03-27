@@ -196,8 +196,6 @@ public class PartyManager {
             return false;
         }
 
-        // VÁ LỖI PHÂN MẢNH NHÓM (Party State Desync)
-        // Chặn người chơi mới chui vào nhóm khi Nhóm trưởng đã khóa sổ và đang khởi hành vào Dungeon
         if (plugin.getDungeonManager().getGame(leader) != null) {
             targetInvites.remove(leader);
             String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "<red>Không thể tham gia vì Trưởng nhóm hiện đang ở trong Dungeon!");
@@ -257,6 +255,11 @@ public class PartyManager {
                 Placeholder.unparsed("sender", sender),
                 Placeholder.unparsed("msg", message)
         );
+
+        // VÁ LỖI ĐIỂM MÙ QUẢN TRỊ (Moderation Blindspot):
+        // Bắt buộc in nội dung chat nhóm ra Console để Admin có thể giám sát hoặc phục vụ cho file Log
+        String shortId = party.getLeader().toString().substring(0, 6);
+        plugin.getLogger().info("[Party Chat - " + shortId + "] " + sender + ": " + message);
 
         party.getMembers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);

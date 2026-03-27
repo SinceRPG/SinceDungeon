@@ -15,8 +15,16 @@ public class WorldManager {
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
-        World templateW = Bukkit.getWorld(templateName);
 
+        // VÁ LỖI BẢO MẬT (Path Traversal Security Exploit):
+        // Khóa chặt các ký tự thoát cấp thư mục (., /, \). Tránh việc Hacker cố tình sao chép
+        // toàn bộ Server vào một World gây đầy ổ cứng và sập máy chủ.
+        if (templateName == null || templateName.contains("/") || templateName.contains("\\") || templateName.contains(".")) {
+            finalFuture.completeExceptionally(new IllegalArgumentException("Path Traversal attack detected in World Name: " + templateName));
+            return finalFuture;
+        }
+
+        World templateW = Bukkit.getWorld(templateName);
         boolean wasAutoSave = false;
 
         if (templateW != null) {
@@ -87,7 +95,6 @@ public class WorldManager {
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
 
-            // VÁ LỖI NGHIÊM TRỌNG: Đảm bảo thao tác với World phải ở Main Thread dù tiến trình đang lỗi
             if (templateW != null) {
                 Bukkit.getScheduler().runTask(plugin, () -> templateW.setAutoSave(finalAutoSaveState));
             }
