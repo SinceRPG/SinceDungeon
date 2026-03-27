@@ -16,9 +16,6 @@ public class WorldManager {
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
 
-        // VÁ LỖI BẢO MẬT (Path Traversal Security Exploit):
-        // Khóa chặt các ký tự thoát cấp thư mục (., /, \). Tránh việc Hacker cố tình sao chép
-        // toàn bộ Server vào một World gây đầy ổ cứng và sập máy chủ.
         if (templateName == null || templateName.contains("/") || templateName.contains("\\") || templateName.contains(".")) {
             finalFuture.completeExceptionally(new IllegalArgumentException("Path Traversal attack detected in World Name: " + templateName));
             return finalFuture;

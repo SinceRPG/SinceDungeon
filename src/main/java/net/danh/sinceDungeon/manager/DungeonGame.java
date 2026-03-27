@@ -47,6 +47,10 @@ public class DungeonGame {
     private BukkitTask tickTask;
     private long startTime;
 
+    // VÁ LỖI DESYNC THUỐC BẰNG LAG (TPS-Desync Potion Eraser)
+    // Dùng bộ đếm Server Ticks độc lập với thời gian thực (Real-time).
+    private int serverTicksActive = 0;
+
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiator = initiator;
@@ -220,6 +224,7 @@ public class DungeonGame {
                     cancel();
                     return;
                 }
+                serverTicksActive += 4; // Task này chạy mỗi 4 ticks
                 runTick();
             }
         }.runTaskTimer(plugin, 4L, 4L);
@@ -553,12 +558,9 @@ public class DungeonGame {
 
                 for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
 
-                // VÁ LỖI ĐÓNG BĂNG THUỐC (Potion Time-Stop Exploit)
-                // Trừ hao thời gian người chơi đã ở trong Dungeon
-                long elapsedTicks = (System.currentTimeMillis() - startTime) / 50;
                 if (state.potionEffects != null) {
                     for (PotionEffect effect : state.potionEffects) {
-                        int newDuration = effect.getDuration() - (int) elapsedTicks;
+                        int newDuration = effect.getDuration() - serverTicksActive;
                         if (newDuration > 0) {
                             p.addPotionEffect(new PotionEffect(effect.getType(), newDuration, effect.getAmplifier(), effect.isAmbient(), effect.hasParticles(), effect.hasIcon()));
                         }

@@ -7,7 +7,6 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.editor.EditorGUI;
 import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
-import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
@@ -22,6 +21,7 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -159,8 +159,18 @@ public final class SinceDungeon extends JavaPlugin {
                 String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
                 for (File file : files) {
                     if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
-                        getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing async deletion...");
-                        WorldUtils.deleteWorld(file);
+                        // VÁ LỖI XUNG ĐỘT BỘ NHỚ KHI XOÁ FILE:
+                        // Ép Bukkit phải Unload bằng được cái Map đó ra khỏi RAM (nếu đang bị Load) trước khi xoá thư mục.
+                        Bukkit.getScheduler().runTask(this, () -> {
+                            World w = Bukkit.getWorld(file.getName());
+                            if (w != null) {
+                                Bukkit.unloadWorld(w, false);
+                            }
+                            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                                getLogger().info("[Cleanup] Deleted leftover generated dungeon world: " + file.getName());
+                                WorldUtils.deleteWorld(file);
+                            });
+                        });
                     }
                 }
             });
@@ -224,7 +234,6 @@ public final class SinceDungeon extends JavaPlugin {
                     .then(Commands.literal("leave")
                             .executes(ctx -> {
                                 if (ctx.getSource().getExecutor() instanceof Player p) {
-                                    // VÁ LỖI KẺ PHẢN BỘI: Chỉ tách người chơi gọi lệnh ra khỏi Hầm ngục thay vì Hủy diệt toàn bộ Map
                                     DungeonGame game = dungeonManager.getGame(p.getUniqueId());
                                     if (game != null) {
                                         game.handlePlayerDisconnect(p);

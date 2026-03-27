@@ -135,6 +135,7 @@ public class DungeonManager {
             }
 
             for (ItemStack drop : left.values()) dropLoc.getWorld().dropItem(dropLoc, drop);
+
             String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
             if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
         }
@@ -306,7 +307,6 @@ public class DungeonManager {
         return v;
     }
 
-    // VÁ LỖI ZERO-DOWNTIME (Chống Null Pointer khi đang tải lại map)
     public CompletableFuture<Void> reload() {
         stopAllGames();
         return loadTemplatesAsync().thenAccept(newTemplates -> {
