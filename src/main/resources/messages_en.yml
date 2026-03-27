@@ -20,6 +20,7 @@ admin:
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"
     mmoitems_missing: "MMOItems is required to create item: <data>"
     vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
+    wall_too_large: "DANGER: Wall volume is too large (<volume> blocks). Action cancelled to prevent Server Crash!"
   ghost_rescued: "<yellow>The system rescued you from a deleted or corrupted Dungeon instance."
 
 party:
@@ -377,3 +378,4 @@ editor:
     update_loc: "<green>Updated location: <loc>"
     invalid_filename: "<red>Invalid file name! Please avoid special characters."
     input_error: "<red>Input error: <error>"
+    list_limit_reached: "<red>List size limit reached (Max 50 items/locations) to prevent memory issues!"

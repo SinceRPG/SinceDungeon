@@ -1021,9 +1021,8 @@ public class EditorGUI implements Listener {
                         String locStr = locToString(p.getLocation());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
-                            // VÁ LỖI TRÀN RAM OOM (Giới hạn kích thước danh sách tọa độ)
                             if (list.size() >= 50) {
-                                p.sendMessage(ColorUtils.parseWithPrefix("<red>Chỉ được lưu tối đa 50 tọa độ cho mỗi hành động!"));
+                                sendMessage(p, "list_limit_reached");
                                 return;
                             }
                             list.add(locStr);
@@ -1049,9 +1048,8 @@ public class EditorGUI implements Listener {
                             if (val.equalsIgnoreCase(clearKw)) {
                                 list.clear();
                             } else {
-                                // VÁ LỖI TRÀN RAM OOM
                                 if (list.size() >= 50) {
-                                    p.sendMessage(ColorUtils.parseWithPrefix("<red>Chỉ được lưu tối đa 50 phần tử cho danh sách này!"));
+                                    sendMessage(p, "list_limit_reached");
                                     return;
                                 }
                                 list.add(val);

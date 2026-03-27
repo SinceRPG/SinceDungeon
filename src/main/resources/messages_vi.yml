@@ -20,6 +20,7 @@ admin:
     mmoitems_parse_fail: "Không thể nhận diện vật phẩm MMOItems: <data>"
     mmoitems_missing: "Cần cài đặt MMOItems để tạo vật phẩm: <data>"
     vector_parse_fail: "Lỗi phân tích tọa độ Vector: '<data>'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại Config Map!"
+    wall_too_large: "NGUY HIỂM: Tọa độ phá tường quá lớn (<volume> khối). Đã tự động hủy hành động để chống sập Server!"
   ghost_rescued: "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi hoặc đã đóng cửa."
 
 party:
@@ -377,3 +378,4 @@ editor:
     update_loc: "<green>Cập nhật tọa độ thành công: <loc>"
     invalid_filename: "<red>Tên file không được chứa các ký tự đặc biệt hoặc dấu cách!"
     input_error: "<red>Lỗi trong quá trình nhập: <error>"
+    list_limit_reached: "<red>Chỉ được lưu tối đa 50 phần tử/tọa độ cho danh sách này để chống tràn RAM!"

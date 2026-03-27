@@ -76,7 +76,8 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         if (volume > 10000) {
-            SinceDungeon.getPlugin().getLogger().severe("NGUY HIỂM: Tọa độ phá tường quá lớn (" + volume + " blocks). Đã tự động hủy để chống sập Server!");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
+            SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
             return;
         }
 
