@@ -168,8 +168,6 @@ public class DungeonGame {
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         boolean saveStats = template.settings().saveAndRestoreStats();
 
-        // VÁ LỖI BÓNG MA HÀNG ĐỢI (Countdown Ghosting):
-        // Những kẻ rớt mạng hoặc chết khi đếm ngược xong sẽ bị loại khỏi bộ nhớ Dungeon vĩnh viễn.
         Set<Player> failedToEnter = new HashSet<>();
 
         for (Player p : participants) {
@@ -198,14 +196,12 @@ public class DungeonGame {
             });
         }
 
-        // Thanh trừng các tài khoản thất bại
         for (Player failed : failedToEnter) {
             participants.remove(failed);
             plugin.getDungeonManager().removeGame(failed.getUniqueId());
             savedStates.remove(failed.getUniqueId());
         }
 
-        // Nếu cả nhóm rụng sạch, hủy bỏ map luôn
         if (participants.isEmpty()) {
             stop(false, DungeonEndEvent.EndReason.FAILED);
             return;
@@ -347,7 +343,12 @@ public class DungeonGame {
         RewardGUI rewardHelper = new RewardGUI(plugin);
 
         for (Player p : participants) {
-            if (!p.isOnline() || p.isDead()) continue;
+            if (!p.isOnline()) continue;
+
+            // VÁ LỖI XÁC SỐNG: Ép buộc hồi sinh nếu đang ở màn hình chết
+            if (p.isDead()) {
+                p.spigot().respawn();
+            }
 
             if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.equals(initiator)) {
                 continue;
@@ -402,6 +403,11 @@ public class DungeonGame {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
         if (wasInDungeon) {
+            // VÁ LỖI XÁC SỐNG KHI THOÁT GAME (Death-Quit Void Corruption)
+            if (p.isDead()) {
+                p.spigot().respawn();
+            }
+
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
@@ -442,6 +448,9 @@ public class DungeonGame {
 
                 if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
                     if (teleport) {
+                        // VÁ LỖI XÁC SỐNG
+                        if (p.isDead()) p.spigot().respawn();
+
                         if (p.isInsideVehicle()) p.leaveVehicle();
                         PlayerState state = savedStates.get(p.getUniqueId());
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -493,6 +502,9 @@ public class DungeonGame {
             for (Player p : participants) {
                 plugin.getDungeonManager().removeGame(p.getUniqueId());
                 if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                    // VÁ LỖI XÁC SỐNG
+                    if (p.isDead()) p.spigot().respawn();
+
                     if (p.isInsideVehicle()) p.leaveVehicle();
                     PlayerState state = savedStates.get(p.getUniqueId());
                     Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -518,7 +530,7 @@ public class DungeonGame {
             for (List<DungeonAction> list : stages) {
                 for (DungeonAction action : list) {
                     try {
-                        action.cleanup(this); 
+                        action.cleanup(this);
                     } catch (Exception ignored) {}
                 }
                 list.clear();

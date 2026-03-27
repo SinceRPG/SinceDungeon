@@ -14,6 +14,8 @@ import org.bukkit.block.Chest;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -156,16 +158,22 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 }
             }
         }
-        // VÁ LỖI MẤT ĐỒ (Blackhole Chest Exploit)
         else if (event instanceof InventoryClickEvent e) {
             Inventory inv = e.getInventory();
             if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
                 boolean blockAction = false;
-                if (e.getClickedInventory() == e.getView().getTopInventory()) {
+
+                // VÁ LỖI ĐÁNH TRÁO RƯƠNG (Hotbar Swap & Offhand Dupe/Loss Exploit)
+                // Cấm phím số, phím F, ném ra ngoài và bất cứ hành động nào mang tính nhét đồ vào.
+                if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.SWAP_OFFHAND) {
+                    blockAction = true;
+                } else if (e.getAction().name().contains("DROP") || e.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+                    blockAction = true;
+                } else if (e.getClickedInventory() == e.getView().getTopInventory()) {
                     if (e.getCursor() != null && e.getCursor().getType() != Material.AIR) {
                         blockAction = true;
                     }
-                } else if (e.getAction() == org.bukkit.event.inventory.InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                } else if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
                     blockAction = true;
                 }
 

@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.util.Vector;
@@ -34,7 +35,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations) {
         this.internalName = internalName;
         this.amount = amount;
-        this.level = level;
+
+        // VÁ LỖI DỊ BIỆT: Cấp độ MythicMob phải >= 1
+        this.level = Math.max(1, level);
         this.locations = locations;
     }
 
@@ -44,10 +47,23 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
-    // VÁ LỖI MEMORY LEAK TƯƠNG TỰ
     @Override
     public void cleanup(DungeonGame game) {
         unlockChunks();
+    }
+
+    // VÁ LỖI KẸT TƯỜNG (Suffocation Soft-lock)
+    private Location findSafeSpawn(Location original) {
+        Location check = original.clone();
+        for (int i = 0; i < 3; i++) {
+            Block block = check.getBlock();
+            Block head = check.clone().add(0, 1, 0).getBlock();
+            if (!block.getType().isSolid() && !head.getType().isSolid()) {
+                return check;
+            }
+            check.add(0, 1, 0);
+        }
+        return original;
     }
 
     @Override
@@ -73,7 +89,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
             double offsetX = (Math.random() - 0.5) * 1.5;
             double offsetZ = (Math.random() - 0.5) * 1.5;
-            Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+            Location finalLoc = findSafeSpawn(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
             try {
                 ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), this.level);

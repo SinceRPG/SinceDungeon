@@ -9,6 +9,7 @@ import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -42,7 +43,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         return base.replace("<mob>", type.name()).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
-    // VÁ LỖI MEMORY LEAK: Đảm bảo Ticket được giải phóng nếu Game Crash hoặc Force Stop
     @Override
     public void cleanup(DungeonGame game) {
         unlockChunks();
@@ -71,6 +71,21 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
+    // VÁ LỖI KẸT TƯỜNG (Suffocation Soft-lock)
+    private Location findSafeSpawn(Location original) {
+        Location check = original.clone();
+        for (int i = 0; i < 3; i++) {
+            Block block = check.getBlock();
+            Block head = check.clone().add(0, 1, 0).getBlock();
+            // Nếu vị trí dưới chân và trên đầu không đặc (Không phải Solid Block) thì duyệt
+            if (!block.getType().isSolid() && !head.getType().isSolid()) {
+                return check;
+            }
+            check.add(0, 1, 0); // Đẩy lên 1 block để tìm không gian thở
+        }
+        return original; // Nếu xui quá kẹt cứng 3 block thì đành cho xuất hiện ở chỗ cũ
+    }
+
     @Override
     public void start(DungeonGame game) {
         int count = 0;
@@ -85,7 +100,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
             double offsetX = (Math.random() - 0.5) * 1.5;
             double offsetZ = (Math.random() - 0.5) * 1.5;
-            Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+            Location finalLoc = findSafeSpawn(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
             Entity ent = game.getWorld().spawnEntity(finalLoc, type);
             if (ent instanceof LivingEntity living) {
