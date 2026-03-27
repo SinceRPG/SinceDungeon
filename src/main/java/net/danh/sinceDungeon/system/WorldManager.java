@@ -9,9 +9,14 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WorldManager {
+
+    // VÁ LỖI AUTO-SAVE CORRUPTION: Bộ đếm tham chiếu an toàn luồng
+    private static final Map<String, Integer> templateUsageCount = new ConcurrentHashMap<>();
 
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
@@ -22,23 +27,25 @@ public class WorldManager {
         }
 
         World templateW = Bukkit.getWorld(templateName);
-        boolean wasAutoSave = false;
 
         if (templateW != null) {
             templateW.save();
-            wasAutoSave = templateW.isAutoSave();
-            templateW.setAutoSave(false);
 
-            final boolean finalAutoSaveState = wasAutoSave;
-            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW, finalAutoSaveState);
+            // Xử lý khoá an toàn AutoSave qua Bộ đếm
+            int count = templateUsageCount.merge(templateName, 1, Integer::sum);
+            if (count == 1) {
+                templateW.setAutoSave(false);
+            }
+
+            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, templateW);
         } else {
-            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, null, false);
+            executeAsyncCopyAndLoad(plugin, templateName, instanceId, finalFuture, null);
         }
 
         return finalFuture;
     }
 
-    private static void executeAsyncCopyAndLoad(SinceDungeon plugin, String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW, boolean finalAutoSaveState) {
+    private static void executeAsyncCopyAndLoad(SinceDungeon plugin, String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW) {
         CompletableFuture.supplyAsync(() -> {
             File source = new File(Bukkit.getWorldContainer(), templateName);
             File target = new File(Bukkit.getWorldContainer(), instanceId);
@@ -84,7 +91,7 @@ public class WorldManager {
                     finalFuture.completeExceptionally(e);
                 }
 
-                if (templateW != null) templateW.setAutoSave(finalAutoSaveState);
+                releaseTemplateLock(templateName, templateW);
             });
 
         }).exceptionally(ex -> {
@@ -92,11 +99,19 @@ public class WorldManager {
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
 
-            if (templateW != null) {
-                Bukkit.getScheduler().runTask(plugin, () -> templateW.setAutoSave(finalAutoSaveState));
-            }
+            Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
             return null;
         });
+    }
+
+    // Hàm giải phóng lock an toàn
+    private static void releaseTemplateLock(String templateName, World templateW) {
+        if (templateW == null) return;
+        int newCount = templateUsageCount.merge(templateName, -1, Integer::sum);
+        if (newCount <= 0) {
+            templateW.setAutoSave(true);
+            templateUsageCount.remove(templateName);
+        }
     }
 
     public static void unloadAndDeleteWorld(SinceDungeon plugin, World world) {

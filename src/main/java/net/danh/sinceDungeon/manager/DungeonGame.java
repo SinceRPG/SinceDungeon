@@ -30,7 +30,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    // VÁ LỖI RÒ RỈ THỰC THỂ KHI CHIA THƯỞNG: Lưu UUID thay vì Player Object
     private UUID initiatorId;
     private Set<Player> participants;
     private DungeonTemplate template;
@@ -46,6 +45,8 @@ public class DungeonGame {
     private boolean stageCompleting = false;
     private boolean isStopping = false;
 
+    // VÁ LỖI GHOST LOBBY TASK: Ghi nhận cả Task Đếm ngược để xử lý hủy
+    private BukkitTask lobbyTask;
     private BukkitTask tickTask;
     private long startTime;
     private int serverTicksActive = 0;
@@ -133,7 +134,7 @@ public class DungeonGame {
     }
 
     private void startCountdown() {
-        new BukkitRunnable() {
+        lobbyTask = new BukkitRunnable() {
             int count = plugin.getConfigFile().getInt("dungeon.lobby-countdown", 5);
 
             @Override
@@ -181,7 +182,6 @@ public class DungeonGame {
 
             if (p.isInsideVehicle()) p.leaveVehicle();
 
-            // VÁ LỖI QUÁN TÍNH ĐỘNG NĂNG (Kinetic Energy Crash)
             p.setVelocity(new Vector(0, 0, 0));
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
@@ -444,6 +444,8 @@ public class DungeonGame {
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
+        // Đảm bảo hủy luôn LobbyTask nếu map bị phá hủy lúc đang đếm ngược
+        if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
 
         if (participants != null) {
             for (Player p : participants) {
@@ -505,6 +507,7 @@ public class DungeonGame {
         Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
+        if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
 
         if (participants != null) {
             for (Player p : participants) {

@@ -227,19 +227,27 @@ public class DungeonListener implements Listener {
             }
         }
 
-        if (e.getEntity() instanceof Player victim) {
+        // VÁ LỖI GIẾT HẠI ĐỆ TỬ CỦA ĐỒNG ĐỘI (Pet Friendly-Fire Bypass)
+        Player trueVictim = null;
+        if (e.getEntity() instanceof Player pVictim) {
+            trueVictim = pVictim;
+        } else if (e.getEntity() instanceof Tameable pet && pet.isTamed() && pet.getOwner() instanceof Player owner) {
+            trueVictim = owner; // Nếu nạn nhân là Sói/Đệ tử của người chơi, coi như sát thương tác động lên người chơi
+        }
+
+        if (trueVictim != null) {
             Player attacker = getRealAttacker(e.getDamager());
 
-            if (attacker != null && !attacker.equals(victim)) {
+            if (attacker != null && !attacker.equals(trueVictim)) {
 
                 boolean sameParty = false;
 
-                Party party = plugin.getPartyManager().getParty(victim.getUniqueId());
+                Party party = plugin.getPartyManager().getParty(trueVictim.getUniqueId());
                 if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
                     sameParty = true;
                 }
 
-                DungeonGame game = plugin.getDungeonManager().getGame(victim.getUniqueId());
+                DungeonGame game = plugin.getDungeonManager().getGame(trueVictim.getUniqueId());
                 if (game != null && game.getParticipants().contains(attacker)) {
                     sameParty = true;
                 }
@@ -252,7 +260,7 @@ public class DungeonListener implements Listener {
                     }
                 }
             }
-            pass(victim, e);
+            pass(trueVictim, e);
         }
 
         Player attacker = getRealAttacker(e.getDamager());
@@ -468,9 +476,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI TRỐN THOÁT BẰNG HỒI SINH (Auto-Respawn Escape Bypass)
-    // Nếu người chơi chết trong map, bất luận họ hồi sinh kiểu gì (Tự click hay Plugin ép),
-    // BẮT BUỘC phải giam họ lại điểm xuất phát của Dungeon đó!
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn(PlayerRespawnEvent e) {
         Player p = e.getPlayer();
@@ -513,7 +518,6 @@ public class DungeonListener implements Listener {
                     if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
-                        // Tọa độ đã được chốt ở PlayerRespawnEvent, ở đây ta chỉ cần trả lại Máu
                         p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
                         p.setFoodLevel(20);
                     }
