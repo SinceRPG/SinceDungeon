@@ -17,12 +17,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
@@ -190,7 +185,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         for (Chunk c : lockedChunks) {
             try {
                 c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         lockedChunks.clear();
     }

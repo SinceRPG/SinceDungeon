@@ -1007,6 +1007,8 @@ public class EditorGUI implements Listener {
                     inputType = EditorSession.InputType.EDIT_STRING;
                 }
 
+                int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
+
                 if (isLocation) {
                     if (e.getClick() == ClickType.SHIFT_RIGHT) {
                         if (isList) {
@@ -1021,8 +1023,8 @@ public class EditorGUI implements Listener {
                         String locStr = locToString(p.getLocation());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
-                            if (list.size() >= 50) {
-                                sendMessage(p, "list_limit_reached");
+                            if (list.size() >= maxLocs) {
+                                sendMessage(p, "list_limit_reached", "<limit>", String.valueOf(maxLocs));
                                 return;
                             }
                             list.add(locStr);
@@ -1040,7 +1042,6 @@ public class EditorGUI implements Listener {
                     String promptKey = "edit_action_" + key.toLowerCase();
 
                     session.awaitInput(inputType, promptKey, val -> {
-                        // VÁ LỖI ÉP XUNG DỮ LIỆU ĐỘC HẠI (Nuke Values Clamping)
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {
                             try {
                                 Double.parseDouble(val);
@@ -1059,8 +1060,8 @@ public class EditorGUI implements Listener {
                             if (val.equalsIgnoreCase(clearKw)) {
                                 list.clear();
                             } else {
-                                if (list.size() >= 50) {
-                                    sendMessage(p, "list_limit_reached");
+                                if (list.size() >= maxLocs) {
+                                    sendMessage(p, "list_limit_reached", "<limit>", String.valueOf(maxLocs));
                                     return;
                                 }
                                 list.add(val);
@@ -1080,14 +1081,16 @@ public class EditorGUI implements Listener {
     }
 
     private @NonNull Object getFinalVal(String val, String key) {
+        int maxAmount = plugin.getConfigFile().getInt("editor.limits.max-mob-amount", 200);
+        double maxRadius = plugin.getConfigFile().getDouble("editor.limits.max-radius", 100.0);
+
         Object finalVal = val;
         if (val.equalsIgnoreCase("true")) finalVal = true;
         else if (val.equalsIgnoreCase("false")) finalVal = false;
         else {
             try {
                 int parsed = Integer.parseInt(val);
-                // VÁ LỖI CẤU TRÚC: Ép trần giá trị, chống phá hoại Action Nuke
-                if (key.equalsIgnoreCase("amount")) finalVal = Math.min(200, Math.max(0, parsed));
+                if (key.equalsIgnoreCase("amount")) finalVal = Math.min(maxAmount, Math.max(0, parsed));
                 else if (key.equalsIgnoreCase("level")) finalVal = Math.max(1, parsed);
                 else if (key.equalsIgnoreCase("radius") || key.equalsIgnoreCase("chance"))
                     finalVal = Math.max(0, parsed);
@@ -1095,7 +1098,7 @@ public class EditorGUI implements Listener {
             } catch (Exception e1) {
                 try {
                     double parsed = Double.parseDouble(val);
-                    if (key.equalsIgnoreCase("radius")) finalVal = Math.min(100.0, Math.max(0.0, parsed));
+                    if (key.equalsIgnoreCase("radius")) finalVal = Math.min(maxRadius, Math.max(0.0, parsed));
                     else if (key.equalsIgnoreCase("chance")) finalVal = Math.min(100.0, Math.max(0.0, parsed));
                     else if (key.equalsIgnoreCase("amount")) finalVal = Math.max(0.0, parsed);
                     else finalVal = parsed;

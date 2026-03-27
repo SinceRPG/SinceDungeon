@@ -4,11 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -17,12 +13,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
@@ -178,7 +169,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         for (Chunk c : lockedChunks) {
             try {
                 c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         lockedChunks.clear();
     }

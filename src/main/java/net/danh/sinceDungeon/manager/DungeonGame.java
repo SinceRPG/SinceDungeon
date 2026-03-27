@@ -30,14 +30,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
+    private final String worldName;
     private UUID initiatorId;
     private Set<Player> participants;
     private DungeonTemplate template;
-
-    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
-
-    private final String worldName;
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -366,7 +364,7 @@ public class DungeonGame {
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
-            p.setVelocity(new Vector(0,0,0));
+            p.setVelocity(new Vector(0, 0, 0));
 
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -412,7 +410,7 @@ public class DungeonGame {
                 p.spigot().respawn();
             }
             if (p.isInsideVehicle()) p.leaveVehicle();
-            p.setVelocity(new Vector(0,0,0));
+            p.setVelocity(new Vector(0, 0, 0));
 
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -459,7 +457,7 @@ public class DungeonGame {
                         if (p.isDead()) p.spigot().respawn();
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
-                        p.setVelocity(new Vector(0,0,0));
+                        p.setVelocity(new Vector(0, 0, 0));
                         PlayerState state = savedStates.get(p.getUniqueId());
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
@@ -468,8 +466,7 @@ public class DungeonGame {
                         p.teleportAsync(targetLoc).thenAccept(success -> {
                             if (success) {
                                 Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                            }
-                            else {
+                            } else {
                                 Bukkit.getScheduler().runTask(plugin, () -> {
                                     p.teleport(targetLoc);
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
@@ -516,7 +513,7 @@ public class DungeonGame {
                     if (p.isDead()) p.spigot().respawn();
 
                     if (p.isInsideVehicle()) p.leaveVehicle();
-                    p.setVelocity(new Vector(0,0,0));
+                    p.setVelocity(new Vector(0, 0, 0));
 
                     PlayerState state = savedStates.get(p.getUniqueId());
                     Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -545,7 +542,8 @@ public class DungeonGame {
                 for (DungeonAction action : list) {
                     try {
                         action.cleanup(this);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
                 list.clear();
             }
@@ -590,7 +588,7 @@ public class DungeonGame {
                 p.setFireTicks(state.fireTicks);
             }
             p.setFallDistance(0);
-            p.setVelocity(new Vector(0,0,0));
+            p.setVelocity(new Vector(0, 0, 0));
         }
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }

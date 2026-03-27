@@ -18,11 +18,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockIgniteEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -54,6 +50,10 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
+
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -109,6 +109,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -162,6 +166,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // ==========================================
+    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH, SLIME)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
@@ -195,6 +203,26 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI PHÂN BÀO SLIME: Chống sinh ra "Quái Lậu" khi Slime chết
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onSlimeSplit(SlimeSplitEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true);
+        }
+    }
+
+    // VÁ LỖI RÁC KHỐI RƠI: Chống sỏi, cát, đe rớt xuống khi phá tường
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntitySpawn(EntitySpawnEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (e.getEntity() instanceof FallingBlock) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -209,6 +237,10 @@ public class DungeonListener implements Listener {
             e.setCancelled(true);
         }
     }
+
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -227,12 +259,11 @@ public class DungeonListener implements Listener {
             }
         }
 
-        // VÁ LỖI GIẾT HẠI ĐỆ TỬ CỦA ĐỒNG ĐỘI (Pet Friendly-Fire Bypass)
         Player trueVictim = null;
         if (e.getEntity() instanceof Player pVictim) {
             trueVictim = pVictim;
         } else if (e.getEntity() instanceof Tameable pet && pet.isTamed() && pet.getOwner() instanceof Player owner) {
-            trueVictim = owner; // Nếu nạn nhân là Sói/Đệ tử của người chơi, coi như sát thương tác động lên người chơi
+            trueVictim = owner;
         }
 
         if (trueVictim != null) {
