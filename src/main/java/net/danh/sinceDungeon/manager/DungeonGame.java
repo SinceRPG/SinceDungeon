@@ -27,12 +27,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
-    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
-    private final String worldName;
     private Player initiator;
     private Set<Player> participants;
     private DungeonTemplate template;
+
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
+
+    private final String worldName;
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -175,6 +177,11 @@ public class DungeonGame {
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
+
+                    // VÁ LỖI CHẾT OAN (Client Chunk Load Desync)
+                    // Cho người chơi 3 giây miễn nhiễm sát thương để kịp nhìn thấy map
+                    p.setNoDamageTicks(60);
+
                     if (saveStats) {
                         AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                         p.setHealth(attr != null ? attr.getValue() : 20.0);
@@ -347,7 +354,11 @@ public class DungeonGame {
 
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
-                    restorePlayerState(p);
+
+                    // VÁ LỖI XUNG ĐỘT THUỘC TÍNH (RPG Plugin Desync)
+                    // Chờ 5 tick để MMOItems / AuraSkills cấu hình xong Max Health rồi mới trả máu cũ lại
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (p.isOnline() && !p.isDead()) {
                             if (finalChestCount > 0) {
@@ -360,7 +371,7 @@ public class DungeonGame {
                 } else if (p.isOnline()) {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         p.teleport(targetLoc);
-                        restorePlayerState(p);
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
                     });
                 }
             });
@@ -419,11 +430,14 @@ public class DungeonGame {
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
                         p.teleportAsync(targetLoc).thenAccept(success -> {
-                            if (success) restorePlayerState(p);
+                            if (success) {
+                                // VÁ LỖI XUNG ĐỘT (Tương tự ở trên)
+                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                            }
                             else {
                                 Bukkit.getScheduler().runTask(plugin, () -> {
                                     p.teleport(targetLoc);
-                                    restorePlayerState(p);
+                                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
                                 });
                             }
                         });
@@ -434,7 +448,8 @@ public class DungeonGame {
             }
         }
 
-        // TIẾN HÀNH XÓA THẾ GIỚI
+        savedStates.clear();
+
         if (dungeonWorld != null) {
             World w = dungeonWorld;
             for (Entity entity : w.getEntities()) {
@@ -443,7 +458,7 @@ public class DungeonGame {
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 WorldManager.unloadAndDeleteWorld(plugin, w);
-                aggressivelyCleanupMemory(); // Giải phóng RAM triệt để
+                aggressivelyCleanupMemory();
             }, 40L);
         } else {
             aggressivelyCleanupMemory();
@@ -478,10 +493,6 @@ public class DungeonGame {
         aggressivelyCleanupMemory();
     }
 
-    // ==========================================
-    // VÁ LỖI RÒ RỈ BỘ NHỚ (Memory Leak Prevention)
-    // Gán Null toàn bộ để ép Java GC thu hồi bộ nhớ ngay lập tức
-    // ==========================================
     private void aggressivelyCleanupMemory() {
         if (savedStates != null) savedStates.clear();
         if (stages != null) {
@@ -499,6 +510,7 @@ public class DungeonGame {
     }
 
     public void restorePlayerState(Player p) {
+        if (!p.isOnline()) return;
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
             if (template != null && template.settings().saveAndRestoreStats()) {

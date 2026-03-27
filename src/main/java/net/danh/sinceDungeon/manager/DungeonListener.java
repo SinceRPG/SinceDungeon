@@ -5,16 +5,22 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.party.PartyManager.Party;
+import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
@@ -42,16 +48,11 @@ public class DungeonListener implements Listener {
         return null;
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG (FALLBACK PROTECTION)
-    // Hoạt động độc lập ngay cả khi Server không cài WorldGuard
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getLocation().getWorld().getName().startsWith(prefix)) {
-            e.blockList().clear(); // Hủy toàn bộ sát thương lên khối (Chỉ giữ lại sát thương lên người)
+            e.blockList().clear();
         }
     }
 
@@ -59,7 +60,7 @@ public class DungeonListener implements Listener {
     public void onBlockExplode(BlockExplodeEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getBlock().getWorld().getName().startsWith(prefix)) {
-            e.blockList().clear(); // Chống lỗi nổ Giường/Respawn Anchor
+            e.blockList().clear();
         }
     }
 
@@ -67,7 +68,7 @@ public class DungeonListener implements Listener {
     public void onBlockIgnite(BlockIgniteEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getBlock().getWorld().getName().startsWith(prefix)) {
-            e.setCancelled(true); // Cấm Lửa lan ra
+            e.setCancelled(true);
         }
     }
 
@@ -75,13 +76,9 @@ public class DungeonListener implements Listener {
     public void onBlockBurn(BlockBurnEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getBlock().getWorld().getName().startsWith(prefix)) {
-            e.setCancelled(true); // Cấm Lửa thiêu rụi khối gỗ
+            e.setCancelled(true);
         }
     }
-
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -125,11 +122,22 @@ public class DungeonListener implements Listener {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
+            World ghostWorld = p.getLocation().getWorld();
             plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
+
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
                     String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
+
+                    // VÁ LỖI TRÀN RAM (Orphaned Memory Leak)
+                    // Sau khi cứu người ra, kiểm tra nếu World đã rỗng thì Xóa vĩnh viễn luôn
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (ghostWorld.getPlayers().isEmpty()) {
+                            plugin.getLogger().info("Ghost World " + ghostWorld.getName() + " is now empty. Deleting permanently...");
+                            WorldManager.forceUnloadAndDelete(plugin, ghostWorld);
+                        }
+                    }, 40L);
                 }
             });
         }

@@ -503,7 +503,15 @@ public class EditorGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
+        // VÁ LỖI BẢO MẬT (Security Bypass)
+        // Chặn tuyệt đối việc Hacker dùng mod client mở GUI khi không có quyền Admin
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder) {
+            if (!e.getWhoClicked().hasPermission("SinceDungeon.admin")) {
+                e.setCancelled(true);
+                e.getWhoClicked().closeInventory();
+                return;
+            }
+
             for (int slot : e.getRawSlots()) {
                 if (slot < e.getView().getTopInventory().getSize()) {
                     e.setCancelled(true);
@@ -517,6 +525,13 @@ public class EditorGUI implements Listener {
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
+
+        // VÁ LỖI BẢO MẬT (Security Bypass)
+        if (!p.hasPermission("SinceDungeon.admin")) {
+            e.setCancelled(true);
+            p.closeInventory();
+            return;
+        }
 
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
             e.setCancelled(true);
@@ -667,7 +682,6 @@ public class EditorGUI implements Listener {
                         final String finalPath = path;
                         session.awaitInput(EditorSession.InputType.EDIT_KICK_DELAY, "edit_kick_delay", val -> {
                             try {
-                                // VÁ LỖI CẤU TRÚC: Chống nhập số âm (Negative Kick Delay) gây lỗi hệ thống Task Timer.
                                 int newDelay = Math.max(1, Integer.parseInt(val));
                                 session.getConfig().set(finalPath, newDelay);
                                 sendMessage(p, "update_val", "<key>", "Kick Delay", "<val>", String.valueOf(newDelay));
@@ -752,7 +766,6 @@ public class EditorGUI implements Listener {
                         try {
                             String[] parts = val.split(" ");
                             if (parts.length < 2) throw new Exception();
-                            // VÁ LỖI CẤU TRÚC: Chống nhập số âm vào thời gian và số lượng rương
                             int time = Math.max(1, Integer.parseInt(parts[0]));
                             int amt = Math.max(1, Integer.parseInt(parts[1]));
                             session.getConfig().set("rewards.tiers." + time, amt);
@@ -782,7 +795,6 @@ public class EditorGUI implements Listener {
                             } else if (e.getClick() == ClickType.LEFT) {
                                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_number", val -> {
                                     try {
-                                        // VÁ LỖI CẤU TRÚC: Chống nhập số âm vào lượng Rương
                                         int newAmount = Math.max(0, Integer.parseInt(val));
                                         session.getConfig().set("rewards.tiers." + timeStr, newAmount);
                                         sendMessage(p, "update_val", "<key>", getWord("chest_amount").replace("<time>", timeStr), "<val>", String.valueOf(newAmount));
@@ -876,7 +888,6 @@ public class EditorGUI implements Listener {
                 } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                         try {
-                            // VÁ LỖI CẤU TRÚC: Clamp giá trị tỉ lệ rơi vào khoảng [0.0, 100.0]
                             double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
                             session.getConfig().set(path + ".chance", chance);
                             new EditorGUI(plugin).openRewardEditor(p, session);
@@ -1053,8 +1064,6 @@ public class EditorGUI implements Listener {
         else if (val.equalsIgnoreCase("false")) finalVal = false;
         else {
             try {
-                // VÁ LỖI CẤU TRÚC: Chặn số âm vào lượng Quái (Amount) / Radius.
-                // Ngoại trừ Level của MythicMob có thể cấu hình bằng 0.
                 int parsed = Integer.parseInt(val);
                 finalVal = Math.max(0, parsed);
             } catch (Exception e1) {
