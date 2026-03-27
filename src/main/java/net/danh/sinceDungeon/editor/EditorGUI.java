@@ -146,7 +146,6 @@ public class EditorGUI implements Listener {
         inv.setItem(14, makeItem(Material.CHEST, getMsg("items.rewards"), plugin.getMessagesFile().getStringList("editor.items.rewards_lore")));
         inv.setItem(16, makeItem(Material.DIAMOND_SWORD, getMsg("items.stages"), plugin.getMessagesFile().getStringList("editor.items.stages_lore")));
 
-        // BUTTON SETTINGS
         inv.setItem(13, makeItem(Material.COMPARATOR, getMsg("items.settings"), plugin.getMessagesFile().getStringList("editor.items.settings_lore")));
 
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save"), null));
@@ -155,7 +154,6 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    // GIAO DIỆN SETTINGS PER-DUNGEON
     public void openSettingsMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openSettingsMenu(player, session));
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
@@ -181,7 +179,6 @@ public class EditorGUI implements Listener {
         inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getLoreToggle(forceWeather)));
         inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getLoreToggle(saveStats)));
 
-        // THÊM: Click to cycle Death Action & Clear Mob Drops
         inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), Arrays.asList("<gray>Current: <white>" + deathAction.toUpperCase(), "<yellow>Left Click to toggle (RESPAWN/FAIL)")));
         inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getLoreToggle(clearMobDrops)));
 
@@ -644,7 +641,6 @@ public class EditorGUI implements Listener {
                 } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
                 else if (slot == 16) {
-                    // Click to cycle Death Action
                     String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
                     String next = current.equalsIgnoreCase("RESPAWN") ? "FAIL" : "RESPAWN";
                     session.getConfig().set("settings.death-action", next);
@@ -671,9 +667,10 @@ public class EditorGUI implements Listener {
                         final String finalPath = path;
                         session.awaitInput(EditorSession.InputType.EDIT_KICK_DELAY, "edit_kick_delay", val -> {
                             try {
-                                int newDelay = Integer.parseInt(val);
+                                // VÁ LỖI CẤU TRÚC: Chống nhập số âm (Negative Kick Delay) gây lỗi hệ thống Task Timer.
+                                int newDelay = Math.max(1, Integer.parseInt(val));
                                 session.getConfig().set(finalPath, newDelay);
-                                sendMessage(p, "update_val", "<key>", "Kick Delay", "<val>", val);
+                                sendMessage(p, "update_val", "<key>", "Kick Delay", "<val>", String.valueOf(newDelay));
                                 openSettingsMenu(p, session);
                             } catch (Exception ex) {
                                 sendMessage(p, "number_error");
@@ -755,8 +752,9 @@ public class EditorGUI implements Listener {
                         try {
                             String[] parts = val.split(" ");
                             if (parts.length < 2) throw new Exception();
-                            int time = Integer.parseInt(parts[0]);
-                            int amt = Integer.parseInt(parts[1]);
+                            // VÁ LỖI CẤU TRÚC: Chống nhập số âm vào thời gian và số lượng rương
+                            int time = Math.max(1, Integer.parseInt(parts[0]));
+                            int amt = Math.max(1, Integer.parseInt(parts[1]));
                             session.getConfig().set("rewards.tiers." + time, amt);
                             sendMessage(p, "tier_added", "<time>", String.valueOf(time), "<amount>", String.valueOf(amt));
                             openRewardTiers(p, session, page);
@@ -784,9 +782,10 @@ public class EditorGUI implements Listener {
                             } else if (e.getClick() == ClickType.LEFT) {
                                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_number", val -> {
                                     try {
-                                        int newAmount = Integer.parseInt(val);
+                                        // VÁ LỖI CẤU TRÚC: Chống nhập số âm vào lượng Rương
+                                        int newAmount = Math.max(0, Integer.parseInt(val));
                                         session.getConfig().set("rewards.tiers." + timeStr, newAmount);
-                                        sendMessage(p, "update_val", "<key>", getWord("chest_amount").replace("<time>", timeStr), "<val>", val);
+                                        sendMessage(p, "update_val", "<key>", getWord("chest_amount").replace("<time>", timeStr), "<val>", String.valueOf(newAmount));
                                         openRewardTiers(p, session, page);
                                     } catch (Exception ex) {
                                         sendMessage(p, "number_error");
@@ -877,7 +876,8 @@ public class EditorGUI implements Listener {
                 } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                         try {
-                            double chance = Double.parseDouble(val);
+                            // VÁ LỖI CẤU TRÚC: Clamp giá trị tỉ lệ rơi vào khoảng [0.0, 100.0]
+                            double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
                             session.getConfig().set(path + ".chance", chance);
                             new EditorGUI(plugin).openRewardEditor(p, session);
                         } catch (Exception ex) {
@@ -1053,10 +1053,14 @@ public class EditorGUI implements Listener {
         else if (val.equalsIgnoreCase("false")) finalVal = false;
         else {
             try {
-                finalVal = Integer.parseInt(val);
+                // VÁ LỖI CẤU TRÚC: Chặn số âm vào lượng Quái (Amount) / Radius.
+                // Ngoại trừ Level của MythicMob có thể cấu hình bằng 0.
+                int parsed = Integer.parseInt(val);
+                finalVal = Math.max(0, parsed);
             } catch (Exception e1) {
                 try {
-                    finalVal = Double.parseDouble(val);
+                    double parsed = Double.parseDouble(val);
+                    finalVal = Math.max(0.0, parsed);
                 } catch (Exception ignored) {
                 }
             }

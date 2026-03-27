@@ -52,10 +52,12 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
                 double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
                         Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
 
-                // NỚI LỎNG Y: Trục Y nâng lên 4.0 block, giúp nhảy vọt qua dốc vẫn được ăn Checkpoint
-                double yDiff = Math.abs(loc.getY() - target.getY());
+                // VÁ LỖI XUYÊN TẦNG (Vertical Checkpoint Exploit):
+                // Tính toán chính xác cao độ. Người chơi chỉ được phép đứng ngang hàng,
+                // hoặc nhảy lên tối đa 3.5 block. Không được phép kích hoạt từ tầng dưới (-y).
+                double yDiff = loc.getY() - target.getY();
 
-                if (distSq2D <= radiusSq && yDiff <= 4.0) {
+                if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {
                     this.completed = true;
                     game.sendMessage("action.reach_complete");
                     game.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);

@@ -79,19 +79,12 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
+        // Dự phòng: Trong trường hợp event lỗi, Tick sẽ quét và tự đóng
         if (completed || !isOpened || chestBlock == null) return;
 
         if (chestBlock.getState() instanceof Chest chest) {
             if (isInventoryEmpty(chest.getBlockInventory())) {
-                this.completed = true;
-                game.sendMessage("action.loot_complete");
-                chestBlock.setType(Material.AIR);
-
-                for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
-                    viewer.closeInventory();
-                }
-
-                game.getWorld().playSound(chestBlock.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+                completeChestLogic(game, chest);
             }
         }
     }
@@ -153,22 +146,31 @@ public class LootChestAction extends DungeonAction implements Tickable {
             if (inv.getHolder() instanceof Chest chest) {
                 if (isTargetChest(chest.getBlock())) {
                     if (isInventoryEmpty(inv) && !completed) {
-                        this.completed = true;
-                        game.sendMessage("action.loot_complete");
-
-                        // BẢO VỆ MÁY CHỦ: Nếu bắt buộc phải xóa Block lúc đóng rương,
-                        // CẦN trễ lại 1 tick để tránh lỗi Desync Client "Inventory bounds exception"
-                        Bukkit.getScheduler().runTask(SinceDungeon.getPlugin(), () -> {
-                            chest.getBlock().setType(Material.AIR);
-                            game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
-                        });
-
+                        completeChestLogic(game, chest);
                     } else if (!completed) {
                         game.sendMessage("action.chest_not_empty");
                     }
                 }
             }
         }
+    }
+
+    // TÁCH LOGIC XỬ LÝ ĐỂ GỌI ĐỒNG BỘ TỪ NHIỀU NƠI
+    private void completeChestLogic(DungeonGame game, Chest chest) {
+        this.completed = true;
+        game.sendMessage("action.loot_complete");
+
+        // VÁ LỖI KẸT GIAO DIỆN (Inventory Bounds Desync):
+        // Phải đóng TẤT CẢ giao diện của những người đang nhìn vào rương (Viewers)
+        // TRƯỚC KHI set block thành AIR để tránh lỗi Client gửi sai dữ liệu vật lý.
+        for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
+            viewer.closeInventory();
+        }
+
+        Bukkit.getScheduler().runTaskLater(SinceDungeon.getPlugin(), () -> {
+            chest.getBlock().setType(Material.AIR);
+            game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+        }, 1L);
     }
 
     private boolean isTargetChest(Block b) {
