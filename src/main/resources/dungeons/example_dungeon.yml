@@ -1,114 +1,158 @@
-# 1. CÀI ĐẶT CHUNG (GENERAL SETTINGS)
-# Tên thư mục world mẫu nằm trong thư mục gốc của server (ngang hàng với world, world_nether...)
-template-world: "Dungeon_Template_Map"
+# =========================================================
+# BẢN MẪU CẤU HÌNH DUNGEON - SINCE DUNGEON PREMIUM
+# EXAMPLE DUNGEON CONFIGURATION - SINCE DUNGEON PREMIUM
+# =========================================================
 
-# Cho phép tất cả người chơi tham gia? (Nếu false, chỉ Admin có quyền SinceDungeon.admin mới vào được)
+# [VN] Tên thư mục World mẫu (Phải nằm trong thư mục gốc của Server)
+# [EN] The folder name of the template World (Must be in the Server's root directory)
+template-world: "Dungeon_Map_01"
+
+# [VN] 'true' để mở cửa cho người chơi. 'false' để bảo trì (chỉ Admin mới vào được).
+# [EN] 'true' to open for players. 'false' for maintenance (only Admins can enter).
 public: true
 
-# =======================================================
-# 2. ĐIỀU KIỆN THAM GIA (CONDITIONS)
-# Cú pháp check: %placeholder%;operator;value
-# Các operator hỗ trợ: >=, <=, >, <, ==, !=, equalsIgnoreCase
-# =======================================================
+# =========================================================
+# 1. CÀI ĐẶT LUẬT CHƠI (GAMEPLAY SETTINGS)
+# =========================================================
+settings:
+  # [VN] Giữ lại túi đồ khi chết trong Dungeon
+  # [EN] Keep inventory when dying inside the Dungeon
+  keep-inventory-on-death: true
+
+  # [VN] Chặn người chơi vứt đồ (phím Q) để chống mất trộm hoặc lag
+  # [EN] Prevent players from dropping items (Q key) to avoid theft/lag
+  prevent-item-dropping: true
+
+  # [VN] Khóa Ngọc Ender & Trái Chorus để chống lách chướng ngại vật
+  # [EN] Block Ender Pearls & Chorus Fruits to prevent bypassing obstacles
+  block-ender-pearls: true
+
+  # [VN] Thời gian đếm ngược (giây) đá người chơi về sảnh sau khi chiến thắng
+  # [EN] Countdown time (seconds) to kick players to the lobby after winning
+  kick-delay-after-finish: 15
+
+  # [VN] Ép thời tiết luôn là Buổi sáng và Tạnh mưa
+  # [EN] Force the weather to always be Daylight and Clear
+  force-daylight-and-clear-weather: true
+
+  # [VN] Lưu lại lượng máu/thức ăn lúc vào và trả lại lúc ra
+  # [EN] Save health/food levels upon entry and restore them upon exit
+  save-and-restore-stats: true
+
+  # [VN] Hành động khi người chơi chết (RESPAWN: Hồi sinh chơi tiếp | FAIL: Xử thua ngay lập tức)
+  # [EN] Action upon player death (RESPAWN: Respawn and continue | FAIL: Fail the dungeon immediately)
+  death-action: "FAIL"
+
+  # [VN] Xóa sạch các vật phẩm rác rơi ra từ quái vật (Thịt thối, xương...)
+  # [EN] Clear all trash items dropped by monsters (Rotten flesh, bones...)
+  clear-mob-drops: true
+
+# =========================================================
+# 2. ĐIỀU KIỆN THAM GIA (ENTRY CONDITIONS)
+# =========================================================
+# [VN] Sử dụng định dạng PlaceholderAPI: %placeholder%;toán_tử;giá_trị
+# [EN] Using PlaceholderAPI format: %placeholder%;operator;value
 conditions:
-  cond_level:
-    name: "Cấp độ tối thiểu"
+  cond_level_10:
+    name: "Yêu cầu Cấp độ 10 / Level 10 Requirement"
     check: "%player_level%;>=;10"
-    msg: "Bạn cần đạt cấp độ 10 để vào hầm ngục này!"
+    msg: "Bạn cần đạt cấp độ 10 để tiến vào! / You must reach level 10 to enter!"
   cond_money:
-    name: "Yêu cầu lệ phí"
+    name: "Vé vào cửa 500$ / 500$ Entry Ticket"
     check: "%vault_eco_balance%;>=;500"
-    msg: "Bạn cần có ít nhất 500$ trong tài khoản để mua vé vào cửa!"
+    msg: "Bạn cần 500$ để mua vé! / You need 500$ for the ticket!"
 
-# =======================================================
-# 3. PHẦN THƯỞNG (REWARDS)
-# =======================================================
+# =========================================================
+# 3. HỆ THỐNG PHẦN THƯỞNG (REWARDS SYSTEM)
+# =========================================================
 rewards:
-  # Số lượng rương (chest) dựa trên thời gian hoàn thành (tính bằng giây)
-  # Ví dụ: Xong trước 5 phút (300s) được 3 rương, xong trước 10 phút (600s) được 2 rương...
+  # [VN] Phân chia số lượng rương dựa trên Thời Gian Hoàn Thành (giây)
+  # [EN] Distribute chest amounts based on Completion Time (seconds)
   tiers:
-    '300': 3
-    '600': 2
-    '900': 1
+    300: 3   # < 300s (5 mins) = 3 chests
+    600: 2   # < 600s (10 mins) = 2 chests
+    9999: 1  # Default = 1 chest
 
-  # Vòng quay phần thưởng (Reward Pool) cho mỗi rương mà người chơi mở
+  # [VN] Vòng quay nhân phẩm (Lưu ý: chance là tỷ lệ trọng số)
+  # [EN] Gacha pool (Note: chance is a weighted probability)
   pool:
-    reward_1:
+    reward_kim_cuong:
       type: "ITEM"
       value: "DIAMOND:5"
       chance: 50.0
-      name: "<#00ff00>Kim Cương Lấp Lánh"
-      lore:
-        - "<gray>Phần thưởng cơ bản từ hầm ngục"
-        - "<yellow>Số lượng: 5"
-    reward_2:
+      name: "<aqua><bold>5x Kim Cương / Diamonds"
+
+    reward_tien_mat:
       type: "COMMAND"
       value: "eco give %player% 1000"
       chance: 30.0
-      name: "<gold>1000 Tiền Thưởng"
-      lore:
-        - "<gray>Túi tiền khổng lồ rơi ra từ quái vật"
-    reward_3:
+      name: "<gold>1000$ Tiền Thưởng / Cash Reward"
+
+    reward_kiem_vip:
       type: "MMOITEM"
-      value: "SWORD:EPIC_SWORD:1" # Cú pháp: TYPE:ID:AMOUNT
+      value: "SWORD:FIERY_SWORD:1"
       chance: 10.0
-      name: "<#ff00ff>Thanh Gươm Thần Thoại"
-      lore:
-        - "<gray>Vũ khí hiếm cực kỳ mạnh mẽ"
-        - "<red>Tỷ lệ rớt: Rất thấp (10%)"
+      name: "<red><bold>Thanh Gươm Hỏa Ngục / Fiery Sword"
 
-# =======================================================
-# 4. CÁC GIAI ĐOẠN VÀ HÀNH ĐỘNG (STAGES & ACTIONS)
-# Hầm ngục sẽ chạy lần lượt từ Stage 1, 2, 3...
-# Mỗi Stage phải hoàn thành TẤT CẢ Actions bên trong mới qua Stage tiếp theo.
-# =======================================================
+# =========================================================
+# 4. KỊCH BẢN HẦM NGỤC (STAGES & ACTIONS)
+# =========================================================
 stages:
-  '1':
+  1:
     actions:
-      action_reach_1:
+      action_reach_gate:
         type: "REACH_LOCATION"
-        target: "10.5, 65.0, -20.5" # Tọa độ X, Y, Z
-        radius: 5.0 # Bán kính hoàn thành
+        target: "10.5,65.0,-20.5"  # [VN] Tọa độ đích / [EN] Target coordinates
+        radius: 4.0                # [VN] Bán kính nhận diện / [EN] Detection radius
         start_message:
-          - "<yellow>▶ <white>Tiến vào khu vực sảnh chính để đánh thức quái vật!"
+          - "<yellow>Nhiệm vụ: Hãy tìm đường tiến đến khu vực Cổng Rừng!"
+          - "<yellow>Objective: Find your way to the Forest Gate!"
 
-      action_spawn_1:
+  2:
+    actions:
+      action_kill_zombies:
         type: "SPAWN_WAVE"
-        mob: "ZOMBIE" # Tên quái Vanilla
-        amount: 5
-        locations:
-          - "15.0, 65.0, -15.0"
-          - "5.0, 65.0, -25.0"
+        mob: "ZOMBIE"              # [VN] Quái Vanilla / [EN] Vanilla mob
+        amount: 5                  # [VN] Số lượng / [EN] Amount
+        locations:                 # [VN] Các điểm sinh ra / [EN] Spawn locations
+          - "15.0,65.0,-25.0"
+          - "5.0,65.0,-25.0"
         start_message:
-          - "<red>▶ <white>Bầy Zombie đã xuất hiện! Tiêu diệt chúng!"
+          - "<red>Bọn Thây ma đang chặn đường! Hãy tiêu diệt hết bọn chúng!"
+          - "<red>Zombies are blocking the way! Eliminate them all!"
 
-  '2':
+  3:
     actions:
-      action_chest_1:
-        type: "LOOT_CHEST"
-        location: "20.0, 65.0, -30.0"
-        items:
-          '13': "APPLE:5" # Ô số 13 chứa 5 quả táo (Vanilla)
-          '14': "MMOITEMS:CONSUMABLE:HEALTH_POTION:2" # Ô 14 chứa 2 bình máu MMOItems
-        start_message:
-          - "<yellow>▶ <white>Tìm và thu thập vật phẩm trong rương tiếp tế!"
-
-      action_break_wall:
+      action_break_barrier:
         type: "BREAK_WALL"
-        trigger: "25.0, 66.0, -30.0" # Tọa độ block cần click chuột trái để phá
-        corner1: "25.0, 65.0, -32.0" # Góc 1 của bức tường bị xóa
-        corner2: "25.0, 68.0, -28.0" # Góc 2 của bức tường bị xóa
+        trigger: "10.0,66.0,-30.0" # [VN] Tọa độ khối đá cần đập / [EN] Trigger block coordinate
+        corner1: "8.0,65.0,-32.0"  # [VN] Góc 1 bức tường / [EN] Wall corner 1
+        corner2: "12.0,68.0,-32.0" # [VN] Góc 2 bức tường / [EN] Wall corner 2
         start_message:
-          - "<yellow>▶ <white>Đập vỡ viên đá phong ấn (click trái) để phá hủy bức tường cản đường!"
+          - "<aqua>Một bức tường ma thuật đang chắn ngang. Hãy đập vỡ khối Ngọc Lục Bảo để mở đường!"
+          - "<aqua>A magical barrier blocks the path. Break the Emerald block to open the way!"
 
-  '3':
+  4:
     actions:
-      action_boss:
-        type: "MYTHIC_WAVE"
-        mob: "SkeletonKing" # Tên Internal Name của MythicMobs
-        amount: 1
-        locations:
-          - "50.0, 65.0, -50.0"
+      action_supply_chest:
+        type: "LOOT_CHEST"
+        location: "10.0,65.0,-40.0" # [VN] Tọa độ Rương tiếp tế / [EN] Supply chest coordinate
+        items:                      # [VN] Slot: Loại Vật Phẩm / [EN] Slot: Item Type
+          "13": "ITEM:GOLDEN_APPLE:2"
+          "14": "ITEM:ARROW:16"
         start_message:
-          - "<dark_red>▶ <red>CẢNH BÁO: <white>Vua Hài Cốt đã thức tỉnh!"
-          - "<gray>Hãy tiêu diệt hắn để hoàn thành hầm ngục!"
+          - "<gold>Bạn đã tìm thấy rương tiếp tế! Hãy lấy toàn bộ đồ bên trong để hồi phục."
+          - "<gold>You found a supply chest! Take all items inside to recover."
+
+  5:
+    actions:
+      action_boss_fight:
+        type: "MYTHIC_WAVE"
+        mob: "SkeletonKing"        # [VN] Tên Boss MythicMobs / [EN] MythicMobs Internal Name
+        amount: 1
+        level: 5                   # [VN] Cấp độ Boss / [EN] Boss level
+        locations:
+          - "10.0,65.0,-50.0"      # [VN] Nơi Boss giáng lâm / [EN] Boss spawn location
+        start_message:
+          - "<dark_red><bold>BOSS SKELETON KING ĐÃ XUẤT HIỆN! TIÊU DIỆT NÓ LÀ KẾT THÚC!"
+          - "<dark_red><bold>SKELETON KING BOSS HAS APPEARED! DEFEAT IT TO FINISH!"
