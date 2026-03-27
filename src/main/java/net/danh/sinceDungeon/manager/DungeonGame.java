@@ -27,14 +27,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DungeonGame {
     private final SinceDungeon plugin;
+    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
+    private final String worldName;
     private Player initiator;
     private Set<Player> participants;
     private DungeonTemplate template;
-
-    private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
-
-    private final String worldName;
     private World dungeonWorld;
     private int currentStageIndex = 0;
     private boolean isRunning = false;
@@ -433,8 +431,7 @@ public class DungeonGame {
                             if (success) {
                                 // VÁ LỖI XUNG ĐỘT (Tương tự ở trên)
                                 Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                            }
-                            else {
+                            } else {
                                 Bukkit.getScheduler().runTask(plugin, () -> {
                                     p.teleport(targetLoc);
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);

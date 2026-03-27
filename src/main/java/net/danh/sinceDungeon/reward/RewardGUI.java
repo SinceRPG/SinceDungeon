@@ -174,8 +174,6 @@ public class RewardGUI implements Listener {
                         List<DungeonReward> pool = session.getTemplate().rewardPool();
                         if (pool != null && !pool.isEmpty()) {
                             DungeonReward reward = getRandomReward(pool);
-                            // VÁ LỖI TẮC NGHẼN (Gacha Loop Halt):
-                            // Tránh việc món đồ lỗi làm đứng cả quá trình auto claim.
                             if (reward != null) {
                                 try {
                                     giveReward(p, reward);
@@ -245,8 +243,6 @@ public class RewardGUI implements Listener {
             return;
         }
 
-        // VÁ LỖI NHÂN BẢN & MẤT ĐỒ (Item Stealing/Ghosting)
-        // Cấm toàn diện các hành vi click Shift hoặc Click ném ra ngoài khi mở Reward GUI
         if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.HOTBAR_SWAP ||
                 e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD || e.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
                 e.getAction().name().contains("DROP")) {
@@ -289,6 +285,9 @@ public class RewardGUI implements Listener {
                             p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
+
+                        // VÁ LỖI XÓA SESSION OAN: Báo cho onClose biết là đang chuyển trang
+                        session.setSwitchingPage(true);
                         openPage(p, session, page - 1);
                         return;
                     }
@@ -297,6 +296,9 @@ public class RewardGUI implements Listener {
                             p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
+
+                        // VÁ LỖI XÓA SESSION OAN
+                        session.setSwitchingPage(true);
                         openPage(p, session, page + 1);
                         return;
                     }
@@ -338,11 +340,19 @@ public class RewardGUI implements Listener {
     public void onClose(InventoryCloseEvent e) {
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder holder && e.getPlayer() instanceof Player p) {
             RewardSession session = holder.session();
-            if (session != null && session.getChestCount() > 0) {
-                forceClaimAll(p, session);
-                playSound(p, "claim");
+            if (session != null) {
+                // VÁ LỖI XÓA SESSION: Nếu chỉ là thao tác chuyển trang, hủy lệnh tự mở quà
+                if (session.isSwitchingPage()) {
+                    session.setSwitchingPage(false); // Reset lại trạng thái
+                    return;
+                }
+
+                if (session.getChestCount() > 0) {
+                    forceClaimAll(p, session);
+                    playSound(p, "claim");
+                }
+                RewardSessionManager.removeSession(p);
             }
-            RewardSessionManager.removeSession(p);
         }
     }
 

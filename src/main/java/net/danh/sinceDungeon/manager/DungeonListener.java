@@ -16,12 +16,9 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockIgniteEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 
@@ -47,6 +44,10 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
+
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG (FALLBACK PROTECTION)
+    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -80,8 +81,30 @@ public class DungeonListener implements Listener {
         }
     }
 
+    // VÁ LỖI PHÁ HOẠI NỘI THẤT (Chống người chơi đập Khung Tranh, Tranh Vẽ)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onHangingBreak(HangingBreakByEntityEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (e.getRemover() instanceof Player) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
+        // VÁ LỖI PHÁ HOẠI NỘI THẤT (Chống đập Giá Để Giáp, Xe Goòng bằng Vũ khí / Cung)
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
+                if (e.getDamager() instanceof Player || e.getDamager() instanceof Projectile) {
+                    e.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
         if (e.getEntity() instanceof Player victim) {
             Player attacker = getRealAttacker(e.getDamager());
 
@@ -130,8 +153,6 @@ public class DungeonListener implements Listener {
                     String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-                    // VÁ LỖI TRÀN RAM (Orphaned Memory Leak)
-                    // Sau khi cứu người ra, kiểm tra nếu World đã rỗng thì Xóa vĩnh viễn luôn
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (ghostWorld.getPlayers().isEmpty()) {
                             plugin.getLogger().info("Ghost World " + ghostWorld.getName() + " is now empty. Deleting permanently...");
@@ -181,20 +202,17 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
-        if (!(e.getEntity() instanceof Player)) {
-            String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-            if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            if (!(e.getEntity() instanceof Player)) {
                 boolean clearDrops = plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
                 DungeonGame targetGame = null;
 
-                if (e.getEntity().getKiller() != null) {
-                    targetGame = plugin.getDungeonManager().getGame(e.getEntity().getKiller().getUniqueId());
-                } else {
-                    for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
-                        if (g.getWorld() != null && g.getWorld().equals(e.getEntity().getWorld())) {
-                            targetGame = g;
-                            break;
-                        }
+                for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
+                    if (g.getWorld() != null && g.getWorld().equals(e.getEntity().getWorld())) {
+                        targetGame = g;
+                        break;
                     }
                 }
 
@@ -207,9 +225,17 @@ public class DungeonListener implements Listener {
                     e.setDroppedExp(0);
                 }
             }
-        }
 
-        if (e.getEntity().getKiller() != null) pass(e.getEntity().getKiller(), e);
+            // VÁ LỖI MẤT DẤU QUÁI (Pacifist Kill Tracking)
+            // Quái có thể chết do rơi tự do, độc, lửa, v.v (Killer = null).
+            // Do đó ta quét trực tiếp bằng World đang diễn ra sự kiện thay vì phụ thuộc vào Killer.
+            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
+                if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
+                    game.onEvent(e);
+                    break;
+                }
+            }
+        }
     }
 
     @EventHandler

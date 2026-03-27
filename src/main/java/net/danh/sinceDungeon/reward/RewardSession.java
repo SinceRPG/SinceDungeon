@@ -6,15 +6,17 @@ import java.util.*;
 
 /**
  * Maintains the session state for a player actively opening reward chests.
- * Now upgraded with Multi-Page Gacha Logic.
+ * Now upgraded with Multi-Page Gacha Logic and Switching Protection.
  */
 public class RewardSession {
     private final DungeonTemplate template;
-    // Bộ đệm lưu trữ vị trí rương: Page -> (Slot -> isClaimed)
     private final Map<Integer, Map<Integer, Boolean>> chestPages = new HashMap<>();
     private int chestCount;
     private boolean revealed = false;
     private int totalPages = 1;
+
+    // VÁ LỖI XÓA SESSION: Biến cờ đánh dấu người chơi đang chuyển trang
+    private boolean switchingPage = false;
 
     public RewardSession(int chestCount, DungeonTemplate template) {
         this.chestCount = chestCount;
@@ -51,15 +53,19 @@ public class RewardSession {
         return totalPages;
     }
 
-    /**
-     * Khởi tạo thuật toán phân bổ rương ngẫu nhiên qua các trang.
-     * Tự động tính toán Slot dựa trên kích thước GUI.
-     */
+    public boolean isSwitchingPage() {
+        return switchingPage;
+    }
+
+    public void setSwitchingPage(boolean switchingPage) {
+        this.switchingPage = switchingPage;
+    }
+
     public void setupPagination(int guiSize) {
         int prevSlot = guiSize < 18 ? guiSize - 2 : guiSize - 9;
         int nextSlot = guiSize - 1;
 
-        int maxPerPage = guiSize - 2; // Dành 2 ô cho nút Chuyển trang
+        int maxPerPage = guiSize - 2;
 
         this.totalPages = (int) Math.ceil((double) chestCount / maxPerPage);
         if (this.totalPages == 0) this.totalPages = 1;
@@ -72,31 +78,24 @@ public class RewardSession {
             List<Integer> availableSlots = new ArrayList<>();
 
             for (int i = 0; i < guiSize; i++) {
-                // Nếu có nhiều trang, phải chừa lại slot cho 2 nút điều hướng
                 if (totalPages > 1 && (i == prevSlot || i == nextSlot)) continue;
                 availableSlots.add(i);
             }
 
             int chestsOnPage = Math.min(chestsToDistribute, availableSlots.size());
             for (int i = 0; i < chestsOnPage; i++) {
-                // Rải rương ngẫu nhiên vào các ô trống
                 int slot = availableSlots.remove(rand.nextInt(availableSlots.size()));
-                pageMap.put(slot, false); // false = Chưa mở
+                pageMap.put(slot, false);
             }
             chestPages.put(p, pageMap);
             chestsToDistribute -= chestsOnPage;
         }
     }
 
-    /**
-     * Xác nhận mở rương tại một trang và slot cụ thể.
-     *
-     * @return true nếu rương tồn tại và chưa bị mở.
-     */
     public boolean claimChest(int page, int slot) {
         Map<Integer, Boolean> pageMap = chestPages.get(page);
         if (pageMap != null && pageMap.containsKey(slot) && !pageMap.get(slot)) {
-            pageMap.put(slot, true); // Đánh dấu đã mở
+            pageMap.put(slot, true);
             decreaseChestCount();
             return true;
         }
