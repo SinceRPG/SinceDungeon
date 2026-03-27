@@ -141,6 +141,7 @@ reward:
     received_item: "<gray>Received: <green><item>"
     received_custom: "<gray>Reward: <green><item>"
     inventory_full: "<red>Inventory full! Item dropped on the ground."
+    auto_claimed_expired: "<yellow>Your Dungeon rewards have been auto-claimed due to timeout."
   settings:
     gui_size: 27
     button_slot: 13

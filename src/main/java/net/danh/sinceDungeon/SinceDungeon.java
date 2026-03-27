@@ -73,6 +73,9 @@ public final class SinceDungeon extends JavaPlugin {
 
         SinceDungeonAPI.init(this);
 
+        // VÁ LỖI TRÀN RAM: Khởi động bộ quét rác Reward Session
+        RewardSessionManager.startCleanupTask(this);
+
         List<Listener> listeners = new ArrayList<>();
         listeners.add(new DungeonListener(this));
         listeners.add(editorListener);
@@ -160,8 +163,6 @@ public final class SinceDungeon extends JavaPlugin {
                 String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
                 for (File file : files) {
                     if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
-                        // VÁ LỖI XUNG ĐỘT BỘ NHỚ KHI XOÁ FILE:
-                        // Ép Bukkit phải Unload bằng được cái Map đó ra khỏi RAM (nếu đang bị Load) trước khi xoá thư mục.
                         Bukkit.getScheduler().runTask(this, () -> {
                             World w = Bukkit.getWorld(file.getName());
                             if (w != null) {

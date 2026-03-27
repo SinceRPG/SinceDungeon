@@ -6,7 +6,7 @@ import java.util.*;
 
 /**
  * Maintains the session state for a player actively opening reward chests.
- * Now upgraded with Multi-Page Gacha Logic and Switching Protection.
+ * Now upgraded with Multi-Page Gacha Logic, Switching Protection and RAM Expiration.
  */
 public class RewardSession {
     private final DungeonTemplate template;
@@ -14,13 +14,19 @@ public class RewardSession {
     private int chestCount;
     private boolean revealed = false;
     private int totalPages = 1;
-
-    // VÁ LỖI XÓA SESSION: Biến cờ đánh dấu người chơi đang chuyển trang
     private boolean switchingPage = false;
+
+    // VÁ LỖI RÒ RỈ RAM: Ghi nhận thời điểm tạo phiên để quét dọn
+    private final long creationTime;
 
     public RewardSession(int chestCount, DungeonTemplate template) {
         this.chestCount = chestCount;
         this.template = template;
+        this.creationTime = System.currentTimeMillis();
+    }
+
+    public long getCreationTime() {
+        return creationTime;
     }
 
     public int getChestCount() {

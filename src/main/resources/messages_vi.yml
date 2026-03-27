@@ -141,6 +141,7 @@ reward:
     received_item: "<gray>Nhận được: <green><item>"
     received_custom: "<gray>Phần thưởng: <green><item>"
     inventory_full: "<red>Túi đồ đã đầy! Vật phẩm bị rớt xuống đất."
+    auto_claimed_expired: "<yellow>Phần thưởng Dungeon của bạn đã được tự động mở do để quá lâu."
   settings:
     gui_size: 27
     button_slot: 13

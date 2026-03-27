@@ -650,8 +650,7 @@ public class EditorGUI implements Listener {
                 else if (slot == 13) {
                     path = "settings.kick-delay-after-finish";
                     isBool = false;
-                }
-                else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
+                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
                 else if (slot == 16) {
                     String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
@@ -660,8 +659,7 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openSettingsMenu(p, session);
                     return;
-                }
-                else if (slot == 17) path = "settings.clear-mob-drops";
+                } else if (slot == 17) path = "settings.clear-mob-drops";
 
                 if (!path.isEmpty()) {
                     if (isBool) {
@@ -1041,8 +1039,8 @@ public class EditorGUI implements Listener {
                 if (e.getClick() == ClickType.LEFT) {
                     String promptKey = "edit_action_" + key.toLowerCase();
 
-                    // VÁ LỖI ÉP KIỂU TYPE PARSING & TRÁNH TRÀN RÁC (Garbage Type Clamp)
                     session.awaitInput(inputType, promptKey, val -> {
+                        // VÁ LỖI ÉP XUNG DỮ LIỆU ĐỘC HẠI (Nuke Values Clamping)
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {
                             try {
                                 Double.parseDouble(val);
@@ -1088,22 +1086,19 @@ public class EditorGUI implements Listener {
         else {
             try {
                 int parsed = Integer.parseInt(val);
-                // CHỈ ÉP KIỂU VỀ >= 0 CHO NHỮNG TRƯỜNG KHÔNG BAO GIỜ ÂM
-                if (key.equalsIgnoreCase("amount") || key.equalsIgnoreCase("radius") ||
-                        key.equalsIgnoreCase("chance") || key.equalsIgnoreCase("level")) {
+                // VÁ LỖI CẤU TRÚC: Ép trần giá trị, chống phá hoại Action Nuke
+                if (key.equalsIgnoreCase("amount")) finalVal = Math.min(200, Math.max(0, parsed));
+                else if (key.equalsIgnoreCase("level")) finalVal = Math.max(1, parsed);
+                else if (key.equalsIgnoreCase("radius") || key.equalsIgnoreCase("chance"))
                     finalVal = Math.max(0, parsed);
-                } else {
-                    finalVal = parsed; // Cho phép số âm với offset
-                }
+                else finalVal = parsed;
             } catch (Exception e1) {
                 try {
                     double parsed = Double.parseDouble(val);
-                    if (key.equalsIgnoreCase("amount") || key.equalsIgnoreCase("radius") ||
-                            key.equalsIgnoreCase("chance") || key.equalsIgnoreCase("level")) {
-                        finalVal = Math.max(0.0, parsed);
-                    } else {
-                        finalVal = parsed;
-                    }
+                    if (key.equalsIgnoreCase("radius")) finalVal = Math.min(100.0, Math.max(0.0, parsed));
+                    else if (key.equalsIgnoreCase("chance")) finalVal = Math.min(100.0, Math.max(0.0, parsed));
+                    else if (key.equalsIgnoreCase("amount")) finalVal = Math.max(0.0, parsed);
+                    else finalVal = parsed;
                 } catch (Exception ignored) {
                 }
             }

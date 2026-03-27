@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -53,10 +54,6 @@ public class DungeonListener implements Listener {
         if (damager instanceof TNTPrimed tnt && tnt.getSource() instanceof Player p) return p;
         return null;
     }
-
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
@@ -112,10 +109,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
@@ -169,10 +162,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // ==========================================
-    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS, LỆNH)
-    // ==========================================
-
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
@@ -220,10 +209,6 @@ public class DungeonListener implements Listener {
             e.setCancelled(true);
         }
     }
-
-    // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
-    // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
@@ -284,7 +269,6 @@ public class DungeonListener implements Listener {
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             World ghostWorld = p.getLocation().getWorld();
 
-            // XÓA HARDCODE: Dùng Config
             String logMsg = plugin.getMessagesFile().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
 
@@ -295,7 +279,6 @@ public class DungeonListener implements Listener {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (ghostWorld.getPlayers().isEmpty()) {
-                            // XÓA HARDCODE
                             String delLog = plugin.getMessagesFile().getString("admin.log.deleting_ghost_world", "Ghost World <world> is now empty. Deleting permanently...");
                             plugin.getLogger().info(delLog.replace("<world>", ghostWorld.getName()));
                             WorldManager.forceUnloadAndDelete(plugin, ghostWorld);
@@ -466,7 +449,6 @@ public class DungeonListener implements Listener {
         if (p.getWorld().getName().startsWith(prefix)) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
-                // XÓA HARDCODE
                 String logMsg = plugin.getMessagesFile().getString("admin.log.unauthorized_entry", "Intercepted unauthorized entry by <player> into <world>");
                 plugin.getLogger().warning(logMsg.replace("<player>", p.getName()).replace("<world>", p.getWorld().getName()));
 
@@ -483,6 +465,19 @@ public class DungeonListener implements Listener {
             String logLeave = plugin.getMessagesFile().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
             plugin.getLogger().info(p.getName() + logLeave);
             game.handlePlayerDisconnect(p);
+        }
+    }
+
+    // VÁ LỖI TRỐN THOÁT BẰNG HỒI SINH (Auto-Respawn Escape Bypass)
+    // Nếu người chơi chết trong map, bất luận họ hồi sinh kiểu gì (Tự click hay Plugin ép),
+    // BẮT BUỘC phải giam họ lại điểm xuất phát của Dungeon đó!
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerRespawn(PlayerRespawnEvent e) {
+        Player p = e.getPlayer();
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+        if (game != null && game.getWorld() != null) {
+            Location spawnLoc = game.getWorld().getSpawnLocation().add(0.5, 1, 0.5);
+            e.setRespawnLocation(spawnLoc);
         }
     }
 
@@ -518,7 +513,7 @@ public class DungeonListener implements Listener {
                     if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
-                        p.teleportAsync(game.getWorld().getSpawnLocation().add(0.5, 1, 0.5));
+                        // Tọa độ đã được chốt ở PlayerRespawnEvent, ở đây ta chỉ cần trả lại Máu
                         p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
                         p.setFoodLevel(20);
                     }
@@ -543,7 +538,6 @@ public class DungeonListener implements Listener {
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
                 e.setCancelled(true);
-                // XÓA HARDCODE
                 String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Khu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
                 return;
