@@ -15,6 +15,9 @@ admin:
     error: "<red>System Error: Item <item> is misconfigured or does not exist."
   log:
     leave_dungeon: " has left the Dungeon via teleportation. Stopping game instance."
+    unauthorized_entry: "Intercepted unauthorized entry by <player> into <world>"
+    rescuing_ghost: "Rescuing ghosted player <player> from deleted instance."
+    deleting_ghost_world: "Ghost World <world> is now empty. Deleting permanently..."
   warning:
     vanilla_parse_fail: "Could not parse Vanilla item: <data>"
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"
@@ -127,6 +130,8 @@ error:
   member_already_in: "<red>Member <player> is currently in another Dungeon! Cannot start."
   cannot_store_in_lootchest: "<red>You cannot store your own items in a Mission Loot Chest!"
   command_blocked: "<red>You are not allowed to use this command inside the Dungeon!"
+  dungeon_sealed_entry: "<red>Area sealed. Unauthorized entry detected!"
+  dungeon_sealed_teleport: "<red>Area sealed. Teleportation magic nullified!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Dungeon Rewards</gradient></b>"
@@ -382,3 +387,4 @@ editor:
     invalid_filename: "<red>Invalid file name! Please avoid special characters."
     input_error: "<red>Input error: <error>"
     list_limit_reached: "<red>List size limit reached (Max 50 items/locations) to prevent memory issues!"
+    transition_processing: "<red>System is processing data, please try again in a moment!"

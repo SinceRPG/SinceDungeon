@@ -90,7 +90,20 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
         if (chestBlock.getState() instanceof Chest chest) {
             if (isInventoryEmpty(chest.getBlockInventory())) {
-                completeChestLogic(game, chest);
+
+                // VÁ LỖI NHÂN BẢN VẬT PHẨM (Cursor Ghost Dupe Exploit):
+                // Đảm bảo không có bất kỳ ai đang giữ món đồ cuối cùng lơ lửng trên chuột
+                boolean cursorHasItem = false;
+                for (org.bukkit.entity.HumanEntity viewer : chest.getBlockInventory().getViewers()) {
+                    if (viewer.getItemOnCursor() != null && viewer.getItemOnCursor().getType() != Material.AIR) {
+                        cursorHasItem = true;
+                        break;
+                    }
+                }
+
+                if (!cursorHasItem) {
+                    completeChestLogic(game, chest);
+                }
             }
         }
     }
@@ -142,7 +155,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
             if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if (!e.hasBlock()) return;
 
-            // VÁ LỖI BÓNG MA QUAN SÁT (Spectator Ghosting Exploit)
             if (e.getPlayer().getGameMode() == GameMode.SPECTATOR) return;
 
             Block b = e.getClickedBlock();
@@ -166,7 +178,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
             Inventory inv = e.getInventory();
             if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
 
-                // Cấm Spectator trộm đồ rương
                 if (e.getWhoClicked() instanceof Player p && p.getGameMode() == GameMode.SPECTATOR) {
                     e.setCancelled(true);
                     return;

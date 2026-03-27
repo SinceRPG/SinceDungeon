@@ -283,7 +283,10 @@ public class DungeonListener implements Listener {
 
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             World ghostWorld = p.getLocation().getWorld();
-            plugin.getLogger().warning("Rescuing ghosted player " + p.getName() + " from deleted instance.");
+
+            // XÓA HARDCODE: Dùng Config
+            String logMsg = plugin.getMessagesFile().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
+            plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
 
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
@@ -292,7 +295,9 @@ public class DungeonListener implements Listener {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (ghostWorld.getPlayers().isEmpty()) {
-                            plugin.getLogger().info("Ghost World " + ghostWorld.getName() + " is now empty. Deleting permanently...");
+                            // XÓA HARDCODE
+                            String delLog = plugin.getMessagesFile().getString("admin.log.deleting_ghost_world", "Ghost World <world> is now empty. Deleting permanently...");
+                            plugin.getLogger().info(delLog.replace("<world>", ghostWorld.getName()));
                             WorldManager.forceUnloadAndDelete(plugin, ghostWorld);
                         }
                     }, 40L);
@@ -457,14 +462,17 @@ public class DungeonListener implements Listener {
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
 
-        // VÁ LỖI TPA XÂM NHẬP TRÁI PHÉP (Interloper WorldChange Bypass Exploit)
-        // Nếu người chơi bước vào World Dungeon nhưng họ KHÔNG ĐƯỢC ĐĂNG KÝ trong Map đó, đá họ ra lập tức
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (p.getWorld().getName().startsWith(prefix)) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
-                plugin.getLogger().warning("Intercepted unauthorized entry by " + p.getName() + " into " + p.getWorld().getName());
-                p.sendMessage(ColorUtils.parseWithPrefix("<red>Khu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"));
+                // XÓA HARDCODE
+                String logMsg = plugin.getMessagesFile().getString("admin.log.unauthorized_entry", "Intercepted unauthorized entry by <player> into <world>");
+                plugin.getLogger().warning(logMsg.replace("<player>", p.getName()).replace("<world>", p.getWorld().getName()));
+
+                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_entry", "<red>Khu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!");
+                p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
+
                 p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
                 return;
             }
@@ -472,7 +480,8 @@ public class DungeonListener implements Listener {
 
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
-            plugin.getLogger().info(p.getName() + plugin.getMessagesFile().getString("admin.log.leave_dungeon"));
+            String logLeave = plugin.getMessagesFile().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
+            plugin.getLogger().info(p.getName() + logLeave);
             game.handlePlayerDisconnect(p);
         }
     }
@@ -522,8 +531,6 @@ public class DungeonListener implements Listener {
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
 
-        // VÁ LỖI TPA XÂM NHẬP TRÁI PHÉP (Interloper Teleport Bypass Exploit)
-        // Chặn người chơi dùng lệnh /tpa của Plugin khác để dịch chuyển thẳng vào vị trí của đồng đội trong Dungeon
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(prefix)) {
             DungeonGame targetGame = null;
@@ -536,7 +543,9 @@ public class DungeonListener implements Listener {
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
                 e.setCancelled(true);
-                p.sendMessage(ColorUtils.parseWithPrefix("<red>Khu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"));
+                // XÓA HARDCODE
+                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Khu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!");
+                p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
                 return;
             }
         }

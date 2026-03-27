@@ -15,6 +15,9 @@ admin:
     error: "<red>Lỗi hệ thống: Vật phẩm <item> cấu hình sai tên hoặc không tồn tại trong server."
   log:
     leave_dungeon: " đã rời khỏi Dungeon bằng cách dịch chuyển. Hệ thống tự động hủy tiến trình."
+    unauthorized_entry: "Phát hiện kẻ xâm nhập <player> lọt vào <world>. Đã chặn!"
+    rescuing_ghost: "Đang giải cứu bóng ma <player> khỏi khu vực lỗi."
+    deleting_ghost_world: "Khu vực <world> đã trống. Đang xóa vĩnh viễn..."
   warning:
     vanilla_parse_fail: "Không thể nhận diện vật phẩm Vanilla: <data>"
     mmoitems_parse_fail: "Không thể nhận diện vật phẩm MMOItems: <data>"
@@ -127,6 +130,8 @@ error:
   member_already_in: "<red>Thành viên <player> đang ở trong Dungeon khác! Không thể khởi hành."
   cannot_store_in_lootchest: "<red>Bạn không thể cất đồ của mình vào Rương Nhiệm vụ!"
   command_blocked: "<red>Bạn không được phép sử dụng lệnh này trong Hầm ngục!"
+  dungeon_sealed_entry: "<red>Khu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"
+  dungeon_sealed_teleport: "<red>Khu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Phần Thưởng Dungeon</gradient></b>"
@@ -382,3 +387,4 @@ editor:
     invalid_filename: "<red>Tên file không được chứa các ký tự đặc biệt hoặc dấu cách!"
     input_error: "<red>Lỗi trong quá trình nhập: <error>"
     list_limit_reached: "<red>Chỉ được lưu tối đa 50 phần tử/tọa độ cho danh sách này để chống tràn RAM!"
+    transition_processing: "<red>Hệ thống đang xử lý dữ liệu, vui lòng thử lại sau giây lát!"
