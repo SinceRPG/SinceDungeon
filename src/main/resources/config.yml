@@ -63,6 +63,28 @@ dungeon:
   # Save and restore player stats (health, food, effects...) before entering and after leaving?
   # If false, players will keep their current stats when entering and leaving.
   save-and-restore-stats: false
+  # THÊM MỚI: Các Tùy chọn Gameplay trong lúc đánh Dungeon
+  gameplay:
+    # Có giữ lại túi đồ và cấp độ khi người chơi chết trong Dungeon không?
+    # Keep inventory and EXP when a player dies inside the dungeon?
+    keep-inventory-on-death: true
+
+    # Có cấm vứt vật phẩm (Drop Item) trong Dungeon không? (Chống thất thoát đồ)
+    # Prevent players from dropping items inside the dungeon?
+    prevent-item-dropping: true
+
+    # Có cấm sử dụng Ngọc Ender (Ender Pearl) và Quả Chorus để chống bug xuyên tường không?
+    # Block Ender Pearls and Chorus Fruit teleportation inside the dungeon?
+    block-ender-pearls: true
+
+    # Thời gian (tính bằng giây) cho phép người chơi nán lại Dungeon sau khi chiến thắng trước khi bị đưa về.
+    # Delay in seconds before kicking players out of the dungeon after they win.
+    kick-delay-after-finish: 10
+
+    # Tự động ép thời gian thành Buổi Sáng (Trưa) và Tạnh Mưa khi tạo Dungeon?
+    # Nếu tắt (false), Dungeon sẽ giữ nguyên thời gian và thời tiết từ Map mẫu của bạn.
+    # Force daylight (6000 ticks) and clear weather when a dungeon is generated?
+    force-daylight-and-clear-weather: true
 
 editor:
   # Item used for navigation in the Editor GUI

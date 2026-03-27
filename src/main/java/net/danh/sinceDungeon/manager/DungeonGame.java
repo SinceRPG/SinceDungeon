@@ -105,9 +105,13 @@ public class DungeonGame {
                     dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
                     dungeonWorld.setAutoSave(false);
 
-                    dungeonWorld.setTime(6000);
-                    dungeonWorld.setStorm(false);
-                    dungeonWorld.setThundering(false);
+                    // ĐỌC OPTION: Cho phép giữ nguyên thời tiết ban đêm/mưa từ Map gốc nếu tắt config này
+                    boolean forceClear = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
+                    if (forceClear) {
+                        dungeonWorld.setTime(6000);
+                        dungeonWorld.setStorm(false);
+                        dungeonWorld.setThundering(false);
+                    }
 
                     startCountdown();
                 }))
@@ -180,7 +184,6 @@ public class DungeonGame {
                         for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
                         p.setFireTicks(0);
                     }
-                    // Luôn luôn reset fall distance để tránh sát thương rơi tồn đọng khi vừa dịch chuyển
                     p.setFallDistance(0);
                 }
             });
@@ -225,13 +228,13 @@ public class DungeonGame {
 
                 if (!action.isCompleted()) {
                     allCompleted = false;
-                    if (!objectiveText.isEmpty()) objectiveText.append(objSeparator);
+                    if (objectiveText.length() > 0) objectiveText.append(objSeparator);
                     objectiveText.append(action.getObjectiveText());
                 }
             }
         }
 
-        if (!allCompleted && !objectiveText.isEmpty()) {
+        if (!allCompleted && objectiveText.length() > 0) {
             String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
             for (Player p : participants) {
                 if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
@@ -362,7 +365,10 @@ public class DungeonGame {
                 }
             });
         }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 100L);
+
+        // ĐỌC OPTION: Thời gian đá người chơi ra ngoài (Tính bằng giây * 20 Tick)
+        int kickDelay = plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
     }
 
     public void handlePlayerDisconnect(Player p) {

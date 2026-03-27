@@ -52,20 +52,18 @@ public class DungeonListener implements Listener {
 
                 boolean sameParty = false;
 
-                // Kiểm tra liên minh qua Party
                 Party party = plugin.getPartyManager().getParty(victim.getUniqueId());
                 if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
                     sameParty = true;
                 }
 
-                // VÁ LỖI CỰC ĐỘ: Chống lợi dụng giải tán Party trong hầm ngục để giết nhau cướp rương
                 DungeonGame game = plugin.getDungeonManager().getGame(victim.getUniqueId());
                 if (game != null && game.getParticipants().contains(attacker)) {
                     sameParty = true;
                 }
 
                 if (sameParty) {
-                    boolean allowFF = plugin.getConfigFile().getBoolean("party.allow-friendly-fire");
+                    boolean allowFF = plugin.getConfigFile().getConfig().getBoolean("party.allow-friendly-fire");
                     if (!allowFF) {
                         e.setCancelled(true);
                         return;
@@ -165,13 +163,10 @@ public class DungeonListener implements Listener {
         if (plugin.getPartyManager().isPartyChatEnabled(p.getUniqueId())) {
             PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             if (party != null) {
-                // Chặn dòng tin nhắn này không cho hiển thị ra Global Chat
                 e.setCancelled(true);
-
                 String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
                 plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
             } else {
-                // Tự dọn dẹp nếu người chơi bị kẹt trạng thái
                 plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
             }
         }
@@ -206,18 +201,20 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
+            // ĐỌC OPTION: Tùy chọn giữ túi đồ
+            boolean keepInv = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
 
-            // VÁ LỖI KHAI THÁC ITEM: Ép buộc giữ lại đồ và dọn dẹp điểm rơi (Drop Pool)
-            // Ngăn chặn hoàn toàn việc người khác có thể nhặt trộm hoặc hệ thống nhân bản lầm Item
-            e.setKeepInventory(true);
-            e.getDrops().clear();
-            e.setDroppedExp(0);
-            e.setKeepLevel(true);
+            if (keepInv) {
+                e.setKeepInventory(true);
+                e.getDrops().clear();
+                e.setDroppedExp(0);
+                e.setKeepLevel(true);
+            }
 
             game.broadcastMessage("game.death", "<player>", p.getName());
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (p.isOnline()) { // Chặn rủi ro người chơi Quit ngay lúc vừa chết
+                if (p.isOnline()) {
                     p.spigot().respawn();
 
                     String deathAction = plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
@@ -243,8 +240,10 @@ public class DungeonListener implements Listener {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
             PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
 
-            if (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL ||
-                    cause == consumableEffect ||
+            // ĐỌC OPTION: Có cấm Ender Pearl / Chorus Fruit không?
+            boolean blockPearls = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+
+            if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) ||
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
                     cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
 
@@ -260,8 +259,12 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
-            e.setCancelled(true);
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
+            // ĐỌC OPTION: Có cấm vứt đồ không?
+            boolean preventDrop = plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+            if (preventDrop) {
+                e.setCancelled(true);
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
+            }
         }
     }
 }
