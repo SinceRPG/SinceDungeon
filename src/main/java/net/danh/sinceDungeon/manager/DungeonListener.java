@@ -48,7 +48,7 @@ public class DungeonListener implements Listener {
     }
 
     // ==========================================
-    // LỚP KHIÊN BẢO VỆ DỰ PHÒNG CHỐNG GRIEF
+    // LỚP KHIÊN BẢO VỆ MÔI TRƯỜNG & KHỐI
     // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -91,12 +91,30 @@ public class DungeonListener implements Listener {
         }
     }
 
-    // VÁ LỖI PHÁ HOẠI CẤP ĐỘ 2 (Griefing bằng Nước/Lửa/Cung/Thuốc Nổ)
+    // VÁ LỖI GIAN LẬN XÔ NƯỚC / DUNG NHAM (Bucket Flooding Cheese)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBucketEmpty(PlayerBucketEmptyEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBucketFill(PlayerBucketFillEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            e.setCancelled(true);
+        }
+    }
+
+    // ==========================================
+    // LỚP KHIÊN BẢO VỆ VẬT THỂ TRANG TRÍ (DECORATION)
+    // ==========================================
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-            e.setCancelled(true); // Cấm mọi hình thức rớt Tranh/Khung ảnh
+            e.setCancelled(true);
         }
     }
 
@@ -107,13 +125,62 @@ public class DungeonListener implements Listener {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame ||
                     e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
-                e.setCancelled(true); // Bảo vệ mọi vật thể trang trí khỏi sát thương
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    // VÁ LỖI TRỘM CẮP ĐỒ NỘI THẤT (Armor Stand / Item Frame Theft)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInteractEntityDecor(PlayerInteractEntityEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            if (e.getRightClicked() instanceof ArmorStand || e.getRightClicked() instanceof ItemFrame ||
+                    e.getRightClicked() instanceof Painting || e.getRightClicked() instanceof LeashHitch) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInteractAtEntityDecor(PlayerInteractAtEntityEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            if (e.getRightClicked() instanceof ArmorStand) {
+                e.setCancelled(true);
             }
         }
     }
 
     // ==========================================
-    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG
+    // LỚP BẢO VỆ CHỐNG THOÁT MAP BẰNG LỖ HỔNG (PORTALS & TRANSFORMS)
+    // ==========================================
+
+    // VÁ LỖI BỐC HƠI QUÁI BẰNG NƯỚC (Entity Transform Bypass)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityTransform(EntityTransformEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true); // Ngăn Zombie biến thành Drowned làm hỏng bộ đếm Wave
+        }
+    }
+
+    // VÁ LỖI DỊCH CHUYỂN QUA CỔNG ĐỊA NGỤC (Portal Banishment Exploit)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityPortal(EntityPortalEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            e.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerPortal(PlayerPortalEvent e) {
+        if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
+            e.setCancelled(true);
+        }
+    }
+
+    // ==========================================
+    // CÁC SỰ KIỆN TƯƠNG TÁC THÔNG THƯỜNG & CHIẾN ĐẤU
     // ==========================================
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -187,11 +254,6 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
-    @EventHandler
-    public void onInteractEntity(PlayerInteractEntityEvent e) {
-        pass(e.getPlayer(), e);
-    }
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
@@ -208,7 +270,6 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
-    // BỔ SUNG EVENT CHO RƯƠNG NHIỆM VỤ
     @EventHandler
     public void onInvClick(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player p) pass(p, e);

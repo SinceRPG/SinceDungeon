@@ -650,8 +650,7 @@ public class EditorGUI implements Listener {
                 else if (slot == 13) {
                     path = "settings.kick-delay-after-finish";
                     isBool = false;
-                }
-                else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
+                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
                 else if (slot == 16) {
                     String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
@@ -660,8 +659,7 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openSettingsMenu(p, session);
                     return;
-                }
-                else if (slot == 17) path = "settings.clear-mob-drops";
+                } else if (slot == 17) path = "settings.clear-mob-drops";
 
                 if (!path.isEmpty()) {
                     if (isBool) {

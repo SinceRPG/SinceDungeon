@@ -15,9 +15,6 @@ dependencies:
     MythicLib:
       load: BEFORE
       required: false
-    WorldGuard:
-      load: BEFORE
-      required: false
     MythicMobs:
       load: BEFORE
       required: false
