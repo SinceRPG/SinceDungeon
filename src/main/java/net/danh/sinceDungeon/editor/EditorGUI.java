@@ -503,8 +503,6 @@ public class EditorGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        // VÁ LỖI BẢO MẬT (Security Bypass)
-        // Chặn tuyệt đối việc Hacker dùng mod client mở GUI khi không có quyền Admin
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder) {
             if (!e.getWhoClicked().hasPermission("SinceDungeon.admin")) {
                 e.setCancelled(true);
@@ -526,7 +524,6 @@ public class EditorGUI implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
 
-        // VÁ LỖI BẢO MẬT (Security Bypass)
         if (!p.hasPermission("SinceDungeon.admin")) {
             e.setCancelled(true);
             p.closeInventory();
@@ -653,7 +650,8 @@ public class EditorGUI implements Listener {
                 else if (slot == 13) {
                     path = "settings.kick-delay-after-finish";
                     isBool = false;
-                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
+                }
+                else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
                 else if (slot == 15) path = "settings.save-and-restore-stats";
                 else if (slot == 16) {
                     String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
@@ -662,7 +660,8 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openSettingsMenu(p, session);
                     return;
-                } else if (slot == 17) path = "settings.clear-mob-drops";
+                }
+                else if (slot == 17) path = "settings.clear-mob-drops";
 
                 if (!path.isEmpty()) {
                     if (isBool) {
@@ -939,7 +938,7 @@ public class EditorGUI implements Listener {
                         keys.sort(Comparator.comparingInt(s -> {
                             try {
                                 return Integer.parseInt(s);
-                            } catch (Exception ex) {
+                            } catch (Exception err) {
                                 return 0;
                             }
                         }));
@@ -1022,6 +1021,11 @@ public class EditorGUI implements Listener {
                         String locStr = locToString(p.getLocation());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
+                            // VÁ LỖI TRÀN RAM OOM (Giới hạn kích thước danh sách tọa độ)
+                            if (list.size() >= 50) {
+                                p.sendMessage(ColorUtils.parseWithPrefix("<red>Chỉ được lưu tối đa 50 tọa độ cho mỗi hành động!"));
+                                return;
+                            }
                             list.add(locStr);
                             session.getConfig().set(fullPath, list);
                         } else {
@@ -1042,8 +1046,16 @@ public class EditorGUI implements Listener {
 
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
-                            if (val.equalsIgnoreCase(clearKw)) list.clear();
-                            else list.add(val);
+                            if (val.equalsIgnoreCase(clearKw)) {
+                                list.clear();
+                            } else {
+                                // VÁ LỖI TRÀN RAM OOM
+                                if (list.size() >= 50) {
+                                    p.sendMessage(ColorUtils.parseWithPrefix("<red>Chỉ được lưu tối đa 50 phần tử cho danh sách này!"));
+                                    return;
+                                }
+                                list.add(val);
+                            }
                             session.getConfig().set(fullPath, list);
                         } else {
                             session.getConfig().set(fullPath, finalVal);

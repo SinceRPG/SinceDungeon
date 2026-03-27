@@ -9,7 +9,6 @@ import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
-import net.danh.sinceDungeon.system.WorldGuardHook;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.title.Title;
@@ -165,11 +164,6 @@ public class DungeonGame {
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
-
-        if (Bukkit.getPluginManager().isPluginEnabled("WorldGuard")) {
-            WorldGuardHook.applyDungeonFlags(dungeonWorld);
-        }
-
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         boolean saveStats = template.settings().saveAndRestoreStats();
 
@@ -339,8 +333,6 @@ public class DungeonGame {
             }
 
             if (finalChestCount > 0) {
-                // VÁ LỖI XÓA SỔ PHẦN THƯỞNG (Reward Voiding Protection)
-                // Ép buộc nhận toàn bộ phần thưởng cũ trước khi tạo Session mới
                 RewardSession oldSession = RewardSessionManager.getSession(p);
                 if (oldSession != null && oldSession.getChestCount() > 0) {
                     rewardHelper.forceClaimAll(p, oldSession);
