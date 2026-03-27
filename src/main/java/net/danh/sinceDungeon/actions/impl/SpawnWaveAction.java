@@ -4,8 +4,8 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -13,27 +13,15 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-/**
- * Represents an action that spawns vanilla entity waves.
- */
 public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final EntityType type;
     private final int amount;
     private final List<Vector> locations;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private final Set<Chunk> lockedChunks = new HashSet<>();
 
-    /**
-     * Constructs a new SpawnWaveAction.
-     *
-     * @param type      The vanilla entity type.
-     * @param amount    The amount of entities to spawn.
-     * @param locations The list of vector spawn locations.
-     */
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations) {
         this.type = type;
         this.amount = amount;
@@ -47,25 +35,71 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     }
 
     @Override
+    public void cleanup(DungeonGame game) {
+        unlockChunks();
+    }
+
+    @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
 
+        Set<Chunk> currentChunks = new HashSet<>();
+
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
-            Location spawnLoc = entry.getValue();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                return ent.isDead();
+                if (ent.isDead()) return true;
+                Chunk c = ent.getLocation().getChunk();
+                currentChunks.add(c);
+                entry.setValue(ent.getLocation());
+                return false;
             } else {
-                return spawnLoc.getWorld() != null && spawnLoc.getWorld().isChunkLoaded(spawnLoc.getBlockX() >> 4, spawnLoc.getBlockZ() >> 4);
+                Location lastLoc = entry.getValue();
+                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
+                    return true;
+                } else {
+                    lastLoc.getChunk().load();
+                    currentChunks.add(lastLoc.getChunk());
+                    return false;
+                }
             }
         });
 
+        for (Chunk c : currentChunks) {
+            if (!lockedChunks.contains(c)) {
+                c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                lockedChunks.add(c);
+            }
+        }
+
+        lockedChunks.removeIf(c -> {
+            if (!currentChunks.contains(c)) {
+                c.removePluginChunkTicket(SinceDungeon.getPlugin());
+                return true;
+            }
+            return false;
+        });
+
         if (spawnedMobs.isEmpty()) {
+            unlockChunks();
             this.completed = true;
             game.sendMessage("action.kill_complete");
         }
+    }
+
+    private Location findSafeSpawn(Location original) {
+        Location check = original.clone();
+        for (int i = 0; i < 3; i++) {
+            Block block = check.getBlock();
+            Block head = check.clone().add(0, 1, 0).getBlock();
+            if (!block.getType().isSolid() && !head.getType().isSolid()) {
+                return check;
+            }
+            check.add(0, 1, 0);
+        }
+        return original;
     }
 
     @Override
@@ -82,12 +116,19 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
             double offsetX = (Math.random() - 0.5) * 1.5;
             double offsetZ = (Math.random() - 0.5) * 1.5;
-            Location finalLoc = loc.add(0.5 + offsetX, 0, 0.5 + offsetZ);
+            Location finalLoc = findSafeSpawn(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
             Entity ent = game.getWorld().spawnEntity(finalLoc, type);
             if (ent instanceof LivingEntity living) {
                 living.setRemoveWhenFarAway(false);
                 living.setPersistent(true);
+
+                Chunk c = finalLoc.getChunk();
+                c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                lockedChunks.add(c);
+
+                game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
+                game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
 
                 spawnedMobs.put(ent.getUniqueId(), finalLoc);
                 count++;
@@ -108,6 +149,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         if (event instanceof EntityDeathEvent e) {
             if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
                 if (spawnedMobs.isEmpty()) {
+                    unlockChunks();
                     this.completed = true;
                     game.sendMessage("action.kill_complete");
                 } else {
@@ -115,5 +157,15 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 }
             }
         }
+    }
+
+    private void unlockChunks() {
+        for (Chunk c : lockedChunks) {
+            try {
+                c.removePluginChunkTicket(SinceDungeon.getPlugin());
+            } catch (Exception ignored) {
+            }
+        }
+        lockedChunks.clear();
     }
 }

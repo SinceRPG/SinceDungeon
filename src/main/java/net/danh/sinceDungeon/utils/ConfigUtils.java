@@ -83,6 +83,10 @@ public class ConfigUtils {
         return config.getDouble(path, def);
     }
 
+    public boolean getBoolean(String path, boolean defValue) {
+        return config.getBoolean(path, defValue);
+    }
+
     public boolean getBoolean(String path) {
         return config.getBoolean(path);
     }

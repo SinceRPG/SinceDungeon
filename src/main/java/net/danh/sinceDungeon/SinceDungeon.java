@@ -7,9 +7,12 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.editor.EditorGUI;
 import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
+import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
+import net.danh.sinceDungeon.party.PartyCommand;
+import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
@@ -19,20 +22,16 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-/**
- * Main plugin class for SinceDungeon.
- */
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
     private MiniMessage miniMessage;
@@ -41,14 +40,10 @@ public final class SinceDungeon extends JavaPlugin {
     private ConfigUtils messagesFile;
 
     private DungeonManager dungeonManager;
+    private PartyManager partyManager;
     private EditorManager editorManager;
     private EditorListener editorListener;
 
-    /**
-     * Returns the singleton plugin instance.
-     *
-     * @return The SinceDungeon JavaPlugin instance.
-     */
     public static SinceDungeon getPlugin() {
         return plugin;
     }
@@ -72,10 +67,13 @@ public final class SinceDungeon extends JavaPlugin {
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         dungeonManager = new DungeonManager(this);
+        partyManager = new PartyManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
 
         SinceDungeonAPI.init(this);
+
+        RewardSessionManager.startCleanupTask(this);
 
         List<Listener> listeners = new ArrayList<>();
         listeners.add(new DungeonListener(this));
@@ -88,7 +86,7 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         registerListeners(listeners.toArray(new Listener[0]));
-
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> PartyCommand.register(this, event));
         registerCommands();
         cleanUpStuckWorlds();
     }
@@ -116,7 +114,8 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardGUI rewardHelper = new RewardGUI(this);
-        for (Map.Entry<UUID, RewardSession> entry : RewardSessionManager.getSessions().entrySet()) {
+
+        for (Map.Entry<UUID, RewardSession> entry : new HashMap<>(RewardSessionManager.getSessions()).entrySet()) {
             Player p = Bukkit.getPlayer(entry.getKey());
             if (p != null && p.isOnline()) {
                 rewardHelper.forceClaimAll(p, entry.getValue());
@@ -125,32 +124,57 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         RewardSessionManager.clearAll();
-        Bukkit.getScheduler().cancelTasks(this);
 
+        if (editorManager != null) editorManager.clearAll();
+        if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();
         if (messagesFile != null) messagesFile.save();
     }
 
-    /**
-     * Reloads configurations and dungeon templates dynamically.
-     */
-    public void reloadFiles() {
+    public void reloadFiles(CommandSender sender) {
         if (configFile != null) configFile.reload();
+        if (editorManager != null) editorManager.clearAll();
+        if (editorListener != null) editorListener.clearAll();
         setupLanguage();
-        if (dungeonManager != null) dungeonManager.reload();
-        getLogger().info("Configuration, Language, and Dungeons reloaded.");
+
+        if (dungeonManager != null) {
+            dungeonManager.reload().thenRun(() -> {
+                String msg = messagesFile.getString("admin.reload");
+                if (sender != null && msg != null) {
+                    sender.sendMessage(ColorUtils.parseWithPrefix(msg));
+                }
+                getLogger().info("Configuration, Language, and Dungeons reloaded successfully.");
+            });
+        } else {
+            if (sender != null) {
+                sender.sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+            }
+            getLogger().info("Configuration and Language reloaded.");
+        }
     }
 
     private void cleanUpStuckWorlds() {
         File container = Bukkit.getWorldContainer();
         File[] files = container.listFiles();
+
         if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory() && file.getName().startsWith("SinceDungeon_")) {
-                    getLogger().info("[Cleanup] Detected leftover generated dungeon world: " + file.getName() + ". Processing execution routines...");
-                    WorldUtils.deleteWorld(file);
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+                for (File file : files) {
+                    if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
+                        Bukkit.getScheduler().runTask(this, () -> {
+                            World w = Bukkit.getWorld(file.getName());
+                            if (w != null) {
+                                Bukkit.unloadWorld(w, false);
+                            }
+                            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                                getLogger().info("[Cleanup] Deleted leftover generated dungeon world: " + file.getName());
+                                WorldUtils.deleteWorld(file);
+                            });
+                        });
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -164,8 +188,7 @@ public final class SinceDungeon extends JavaPlugin {
                     .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                     .then(Commands.literal("reload")
                             .executes(ctx -> {
-                                reloadFiles();
-                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+                                reloadFiles(ctx.getSource().getSender());
                                 return 1;
                             })
                     )
@@ -212,7 +235,13 @@ public final class SinceDungeon extends JavaPlugin {
                     .then(Commands.literal("leave")
                             .executes(ctx -> {
                                 if (ctx.getSource().getExecutor() instanceof Player p) {
-                                    dungeonManager.quitDungeon(p);
+                                    DungeonGame game = dungeonManager.getGame(p.getUniqueId());
+                                    if (game != null) {
+                                        game.handlePlayerDisconnect(p);
+                                        p.sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("party.left_dungeon_due_to_party", "<yellow>Bạn đã thoát khỏi Dungeon.")));
+                                    } else {
+                                        p.sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("error.not_in_dungeon", "<red>Bạn hiện không ở trong Dungeon nào.")));
+                                    }
                                 } else {
                                     ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.only_admin")));
                                 }
@@ -257,5 +286,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public EditorListener getEditorListener() {
         return editorListener;
+    }
+
+    public PartyManager getPartyManager() {
+        return partyManager;
     }
 }

@@ -1,3 +1,4 @@
+# messages_en.yml
 prefix: "<gradient:#ffaa00:#ffff55><b>SinceDungeon</b></gradient> <dark_gray>» <gray>"
 
 admin:
@@ -13,12 +14,58 @@ admin:
     not_found: "<red>System Error: MMOItems <type>:<id> not found."
     error: "<red>System Error: Item <item> is misconfigured or does not exist."
   log:
-    leave_dungeon: " left the dungeon world via teleport. Stopping game."
+    leave_dungeon: " has left the Dungeon via teleportation. Stopping game instance."
+    unauthorized_entry: "Intercepted unauthorized entry by <player> into <world>"
+    rescuing_ghost: "Rescuing ghosted player <player> from deleted instance."
+    deleting_ghost_world: "Ghost World <world> is now empty. Deleting permanently..."
   warning:
     vanilla_parse_fail: "Could not parse Vanilla item: <data>"
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"
     mmoitems_missing: "MMOItems is required to create item: <data>"
     vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
+    wall_too_large: "DANGER: Wall volume is too large (<volume> blocks). Action cancelled to prevent Server Crash!"
+  ghost_rescued: "<yellow>The system rescued you from a deleted or corrupted Dungeon instance."
+
+party:
+  chat_format: "<aqua>[Party]</aqua> <green><sender></green><gray>: <white><msg>"
+  created: "<green>Party created successfully. Use /party invite <player> to add members."
+  disbanded: "<yellow>The party has been disbanded."
+  new_leader: "<yellow><player> has been promoted to Party Leader!"
+  already_in_party: "<red>You are already in a party."
+  not_in_party: "<red>You are not in a party."
+  not_leader: "<red>Only the party leader can do this."
+  player_not_found: "<red>Player not found or offline."
+  target_already_in_party: "<red>That player is already in a party."
+  invite_sent: "<green>Invitation sent to <player>."
+  invite_received: "<green>You have been invited to a party by <player>. Type /party accept <player> to join."
+  no_invite: "<red>No pending invitation from that player."
+  player_joined: "<green><player> has joined the party."
+  left: "<yellow>You left the party."
+  player_left: "<yellow><player> left the party."
+  kicked: "<red>You were kicked from the party."
+  player_kicked: "<red><player> was kicked from the party."
+  player_not_in_party: "<red>That player is not in your party."
+  list: "<gold>Party Members: <white><members>"
+  promoted: "<green><player> has been promoted to Party Leader!"
+  chat_toggled: "<yellow>Party Chat mode is now: <status>"
+  start_aborted_condition: "<red>Dungeon start aborted! <player> does not meet the entry requirements."
+  distance_warning: "<yellow>Warning: <count> member(s) are too far away and were left behind!"
+  offline: "Offline"
+  leader_suffix: " (Leader)"
+  member_failed_condition: "<red>Member <player> does not meet the condition. Aborting Dungeon entry."
+  full: "<red>Your party is full! Cannot invite more members."
+  offline_left_behind: "<yellow>Warning: <count> member(s) are Offline and were left behind."
+  already_invited: "<red>You already invited this player. Please wait for them to respond."
+  auto_created: "<green>A party has been auto-created for you."
+  empty_message: "<red>Please enter a message to send."
+  invite_self: "<red>You cannot invite yourself to the party!"
+  dead_left_behind: "<yellow>Warning: <count> member(s) are Dead and were left behind."
+  promote_self: "<red>You are already the Party Leader!"
+  kick_self: "<red>You cannot kick yourself! Use /party leave."
+  unknown_player: "Unknown"
+  left_dungeon_due_to_party: "<red>You have been removed from the Dungeon because you left the Party!"
+  leader_in_dungeon: "<red>Cannot join! The Party Leader is currently fighting inside a Dungeon!"
+  cannot_accept_in_dungeon: "<red>You cannot accept a party invite while inside a Dungeon!"
 
 game:
   start: "<green>Dungeon has started! Good luck!"
@@ -27,7 +74,7 @@ game:
   finish: "<gold><b>DUNGEON CLEARED!</b>"
   completion_time: "<gray>Completion time: <green><time>s"
   no_reward: "<red>Unfortunately, you didn't qualify for any rewards."
-  death: "<red>You have been defeated! Dungeon failed."
+  death: "<red><player> has been defeated!"
   hud:
     objective_prefix: "<gold><bold>OBJECTIVES: <reset>"
     objective_separator: " <dark_gray>| "
@@ -40,6 +87,7 @@ game:
     finish_sub: "<yellow>Time: <time> seconds"
     countdown_main: "<red><bold><time>"
     countdown_sub: "<gold>Prepare for battle!"
+  player_disconnect: "<yellow>Member <player> has disconnected and left the Dungeon!"
 
 lobby:
   preparing: "<yellow>Initializing dungeon world..."
@@ -68,7 +116,7 @@ action:
   mythic_wave_complete: "<green>Boss defeated!"
 
 error:
-  already_in: "<red>You are already in another dungeon!"
+  already_in: "<red>You or your party is already in another dungeon!"
   file_not_found: "<red>Dungeon file not found: <file>"
   dungeon_maintenance: "<red>This dungeon is currently under maintenance."
   condition_fail: "<red>You do not meet the requirements: <condition>"
@@ -79,6 +127,11 @@ error:
   init_failed: "<red>Failed to initialize dungeon."
   can_not_teleport: "<red>You cannot teleport this way inside a Dungeon!"
   can_not_drop: "<red>You cannot drop items in a Dungeon to prevent item loss!"
+  member_already_in: "<red>Member <player> is currently in another Dungeon! Cannot start."
+  cannot_store_in_lootchest: "<red>You cannot store your own items in a Mission Loot Chest!"
+  command_blocked: "<red>You are not allowed to use this command inside the Dungeon!"
+  dungeon_sealed_entry: "<red>Area sealed. Unauthorized entry detected!"
+  dungeon_sealed_teleport: "<red>Area sealed. Teleportation magic nullified!"
 
 reward:
   gui_title: "<b><gradient:#ffd700:#ffaa00>Dungeon Rewards</gradient></b>"
@@ -88,6 +141,7 @@ reward:
     received_item: "<gray>Received: <green><item>"
     received_custom: "<gray>Reward: <green><item>"
     inventory_full: "<red>Inventory full! Item dropped on the ground."
+    auto_claimed_expired: "<yellow>Your Dungeon rewards have been auto-claimed due to timeout."
   settings:
     gui_size: 27
     button_slot: 13
@@ -116,6 +170,15 @@ editor:
     default_condition_msg: "Requirements not met"
     default_condition_name: "Condition <key>"
     reward_default_name: "<gray>Default"
+    cancel: "cancel"
+    here: "here"
+    clear: "clear"
+  actions_name:
+    spawn_wave: "Spawn Vanilla Mob"
+    reach_location: "Reach Checkpoint"
+    loot_chest: "Loot Treasure Chest"
+    break_wall: "Break Wall via Block"
+    mythic_wave: "Spawn Mythic Boss"
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"
@@ -134,6 +197,7 @@ editor:
     actions: "<b>Stage <stage></b>"
     select_type: "<b>Select Action Type</b>"
     edit_action: "<b>Edit Action #<index></b>"
+    settings: "<b>Advanced Settings</b>"
   items:
     click_edit: "<yellow>Left Click: Edit"
     create_new: "<green><b>Create New Dungeon</b>"
@@ -154,6 +218,18 @@ editor:
     stages: "<red>Stages"
     stages_lore:
       - "<gray>Edit dungeon content"
+    settings: "<aqua>Gameplay Settings"
+    settings_lore:
+      - "<gray>Edit custom game rules"
+      - "<gray>for this specific map."
+    setting_keep_inv: "<yellow>Keep Inventory on Death"
+    setting_prevent_drop: "<yellow>Prevent Item Dropping"
+    setting_block_pearls: "<yellow>Block Ender Pearls/Chorus"
+    setting_kick_delay: "<yellow>Kick Delay After Win"
+    setting_force_weather: "<yellow>Force Daylight & Clear Weather"
+    setting_save_stats: "<yellow>Save & Restore Player Stats"
+    setting_death_action: "<yellow>Death Action"
+    setting_clear_drops: "<yellow>Clear Mob Drops"
     save: "<green><b>Save Changes</b>"
     back: "<red>Go Back"
     condition_item: "<yellow>Condition #<index>"
@@ -215,6 +291,8 @@ editor:
     action_val_hint_loc_single: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Delete"
     action_val_hint_loc_list: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Clear list"
     action_type_cant_edit: "<red>Cannot change action type after creation"
+    prev_page: "<yellow>⬅ Previous Page"
+    next_page: "<yellow>Next Page ➡"
   input:
     title_main: "<gold><bold>INPUT MODE"
     title_sub: "<white>Check the chat for instructions!"
@@ -254,6 +332,9 @@ editor:
       edit_tier:
         - "<gray>Enter Time (seconds) and Chest amount, separated by a space."
         - "<gray>Example: <green>300 3 <gray>(Complete under 300s = 3 chests)"
+      edit_kick_delay:
+        - "<gray>Enter the Delay in Seconds before kicking players out upon win."
+        - "<gray>Example: <green>15"
       edit_action_mob:
         - "<gray>Enter the monster name (MythicMobs Internal Name or Vanilla EntityType)."
         - "<gray>MythicMobs Example: <green>SkeletonKing"
@@ -297,7 +378,7 @@ editor:
     format_tier_error: "<red>Invalid format! Use: <seconds> <amount>"
     tier_added: "<green>Tier added: <time>s -> <amount> chests"
     update_val: "<green>Updated <key>: <val>"
-    number_error: "<red>Value must be a number!"
+    number_error: "<red>Value must be a valid number!"
     reward_added: "<green>New reward added!"
     type_changed: "<green>Type changed to <type>"
     item_set_hand: "<green>Copied item in hand: <item>"
@@ -306,3 +387,5 @@ editor:
     update_loc: "<green>Updated location: <loc>"
     invalid_filename: "<red>Invalid file name! Please avoid special characters."
     input_error: "<red>Input error: <error>"
+    list_limit_reached: "<red>List size limit reached (Max 50 items/locations) to prevent memory issues!"
+    transition_processing: "<red>System is processing data, please try again in a moment!"

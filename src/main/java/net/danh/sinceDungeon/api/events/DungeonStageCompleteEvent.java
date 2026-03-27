@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.api.events;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Event called when a specific stage inside a dungeon is completed.
@@ -46,7 +47,7 @@ public class DungeonStageCompleteEvent extends Event {
     }
 
     @Override
-    public HandlerList getHandlers() {
+    public @NonNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

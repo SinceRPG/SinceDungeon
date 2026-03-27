@@ -34,6 +34,17 @@ public class DungeonLoader {
 
         boolean isPublic = config.getBoolean("public", false);
 
+        boolean keepInv = config.contains("settings.keep-inventory-on-death") ? config.getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
+        boolean preventDrop = config.contains("settings.prevent-item-dropping") ? config.getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+        boolean blockPearls = config.contains("settings.block-ender-pearls") ? config.getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+        int kickDelay = config.contains("settings.kick-delay-after-finish") ? config.getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
+        boolean forceWeather = config.contains("settings.force-daylight-and-clear-weather") ? config.getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
+        boolean saveStats = config.contains("settings.save-and-restore-stats") ? config.getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+        String deathAction = config.contains("settings.death-action") ? config.getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
+        boolean clearMobDrops = config.contains("settings.clear-mob-drops") ? config.getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
+
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops);
+
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
         if (condSec != null) {
@@ -111,7 +122,7 @@ public class DungeonLoader {
             }
         }
 
-        return new DungeonTemplate(id, world, isPublic, conditions, tiers, rewards, stages);
+        return new DungeonTemplate(id, world, isPublic, conditions, tiers, rewards, stages, settings);
     }
 
     /**

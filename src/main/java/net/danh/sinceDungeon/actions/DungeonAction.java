@@ -30,6 +30,9 @@ public abstract class DungeonAction {
     public void onEvent(DungeonGame game, Event event) {
     }
 
+    public void cleanup(DungeonGame game) {
+    }
+
     /**
      * Checks whether the action has been successfully completed.
      *

@@ -22,18 +22,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Handles chat inputs during an active editor session.
- */
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
     private final Map<UUID, EditorSession> activeInputs = new ConcurrentHashMap<>();
 
-    /**
-     * Constructs the EditorListener.
-     *
-     * @param plugin The main plugin instance.
-     */
     public EditorListener(SinceDungeon plugin) {
         this.plugin = plugin;
     }
@@ -43,12 +35,6 @@ public class EditorListener implements Listener {
         if (s != null) p.sendMessage(ColorUtils.parseWithPrefix(s));
     }
 
-    /**
-     * Starts listening for chat inputs for the specified editor session.
-     *
-     * @param p       The player.
-     * @param session The editor session.
-     */
     public void startListening(Player p, EditorSession session) {
         activeInputs.put(p.getUniqueId(), session);
         p.closeInventory();
@@ -112,15 +98,19 @@ public class EditorListener implements Listener {
 
         e.setCancelled(true);
         EditorSession session = activeInputs.remove(p.getUniqueId());
-        String msg = PlainTextComponentSerializer.plainText().serialize(e.message());
 
-        if (msg.equalsIgnoreCase("cancel")) {
+        String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
+
+        String cancelKw = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").trim();
+        String hereKw = plugin.getMessagesFile().getString("editor.words.here", "here").trim();
+
+        if (msg.equalsIgnoreCase(cancelKw)) {
             sendMsg(p, "input_cancel");
             if (session != null) reopenSessionMenu(session);
             return;
         }
 
-        if (msg.equalsIgnoreCase("here")) {
+        if (msg.equalsIgnoreCase(hereKw)) {
             if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
                 org.bukkit.Location l = p.getLocation();
                 msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
@@ -155,6 +145,19 @@ public class EditorListener implements Listener {
         Player p = e.getPlayer();
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
+
+            String cmd = e.getMessage().toLowerCase().trim();
+
+            String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase().trim();
+            String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
+
+            if (cmd.equals(cancelKw) || cmd.equals("/cancel") || cmd.startsWith(cancelKw + " ") || cmd.startsWith("/cancel ")) {
+                EditorSession session = activeInputs.remove(p.getUniqueId());
+                sendMsg(p, "input_cancel");
+                if (session != null) reopenSessionMenu(session);
+                return;
+            }
+
             String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>You are in editor mode! Please type cancel.");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
@@ -171,5 +174,9 @@ public class EditorListener implements Listener {
 
     private void reopenSessionMenu(EditorSession session) {
         Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
+    }
+
+    public void clearAll() {
+        activeInputs.clear();
     }
 }

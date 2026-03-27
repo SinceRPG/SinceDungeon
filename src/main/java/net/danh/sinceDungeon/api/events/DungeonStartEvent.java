@@ -5,25 +5,31 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.jspecify.annotations.NonNull;
+
+import java.util.Set;
 
 /**
- * Event called right before a player is put into a dungeon.
+ * Event called right before a dungeon instance is generated and players are teleported.
  */
 public class DungeonStartEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
-    private final Player player;
+    private final Player initiator;
     private final DungeonTemplate template;
+    private final Set<Player> participants;
     private boolean isCancelled = false;
 
     /**
      * Constructs a new DungeonStartEvent.
      *
-     * @param player   The player entering the dungeon.
-     * @param template The template configuration of the dungeon.
+     * @param initiator    The player who initiated the dungeon (or Party Leader).
+     * @param template     The template configuration of the dungeon.
+     * @param participants The mutable set of players who will be pulled into the dungeon.
      */
-    public DungeonStartEvent(Player player, DungeonTemplate template) {
-        this.player = player;
+    public DungeonStartEvent(Player initiator, DungeonTemplate template, Set<Player> participants) {
+        this.initiator = initiator;
         this.template = template;
+        this.participants = participants;
     }
 
     public static HandlerList getHandlerList() {
@@ -31,12 +37,12 @@ public class DungeonStartEvent extends Event implements Cancellable {
     }
 
     /**
-     * Gets the player attempting to start the dungeon.
+     * Gets the player who triggered the start of the dungeon.
      *
-     * @return The player.
+     * @return The initiating player.
      */
-    public Player getPlayer() {
-        return player;
+    public Player getInitiator() {
+        return initiator;
     }
 
     /**
@@ -46,6 +52,17 @@ public class DungeonStartEvent extends Event implements Cancellable {
      */
     public DungeonTemplate getTemplate() {
         return template;
+    }
+
+    /**
+     * Gets the mutable set of players who will enter the dungeon.
+     * Third-party plugins can add or remove players from this set before the dungeon starts.
+     * If the set becomes empty, the dungeon generation will be aborted safely.
+     *
+     * @return The set of participating players.
+     */
+    public Set<Player> getParticipants() {
+        return participants;
     }
 
     @Override
@@ -59,7 +76,7 @@ public class DungeonStartEvent extends Event implements Cancellable {
     }
 
     @Override
-    public HandlerList getHandlers() {
+    public @NonNull HandlerList getHandlers() {
         return HANDLERS;
     }
 }

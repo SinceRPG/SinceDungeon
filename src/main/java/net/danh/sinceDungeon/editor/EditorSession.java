@@ -12,35 +12,26 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 
-/**
- * Represents an active configuration editing session for a player.
- */
 public class EditorSession {
     private final SinceDungeon plugin;
     private final Player player;
     private final File file;
     private final YamlConfiguration config;
-
+    private final Map<String, Integer> pageCache = new HashMap<>();
     private String currentStage = null;
     private String currentActionKey = null;
     private String currentRewardKey = null;
     private String currentConditionKey = null;
-
     private InputType currentInput = InputType.NONE;
     private String promptKey = null;
     private EditorCallback inputCallback = null;
     private Consumer<Player> lastMenuOpener = null;
 
-    /**
-     * Constructs a new EditorSession.
-     *
-     * @param plugin The main plugin instance.
-     * @param player The player editing the file.
-     * @param file   The configuration file being edited.
-     */
     public EditorSession(SinceDungeon plugin, Player player, File file) {
         this.plugin = plugin;
         this.player = player;
@@ -52,9 +43,6 @@ public class EditorSession {
         }
     }
 
-    /**
-     * Saves the current configuration session to the disk asynchronously.
-     */
     public void save() {
         if (file == null) return;
 
@@ -116,21 +104,10 @@ public class EditorSession {
         return null;
     }
 
-    /**
-     * Awaits input from the player via chat.
-     *
-     * @param type      The input type.
-     * @param promptKey The prompt key to display.
-     * @param callback  The callback to execute when input is received.
-     */
     public void awaitInput(InputType type, String promptKey, EditorCallback callback) {
         this.currentInput = type;
         this.promptKey = promptKey;
         this.inputCallback = callback;
-    }
-
-    public void awaitInput(InputType type, EditorCallback callback) {
-        awaitInput(type, null, callback);
     }
 
     public void completeInput(String value) {
@@ -187,6 +164,14 @@ public class EditorSession {
         this.currentConditionKey = key;
     }
 
+    public int getPage(String menuType) {
+        return pageCache.getOrDefault(menuType, 0);
+    }
+
+    public void setPage(String menuType, int page) {
+        pageCache.put(menuType, page);
+    }
+
     public InputType getInputType() {
         return currentInput;
     }
@@ -205,16 +190,10 @@ public class EditorSession {
         this.inputCallback = null;
     }
 
-    /**
-     * Enum defining the requested input type from the user.
-     */
     public enum InputType {
-        NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK
+        NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK, EDIT_KICK_DELAY
     }
 
-    /**
-     * Callback interface for processing input results.
-     */
     public interface EditorCallback {
         void onInput(String value);
     }
