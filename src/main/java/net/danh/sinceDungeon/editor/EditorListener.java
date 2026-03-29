@@ -12,7 +12,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.time.Duration;
@@ -84,11 +86,48 @@ public class EditorListener implements Listener {
             p.sendMessage(ColorUtils.parse(line));
         }
 
+        if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
+            String rightClickHint = plugin.getMessagesFile().getString("editor.input.right_click_hint", "<aqua>or RIGHT-CLICK on any Block to get its coordinates.");
+            p.sendMessage(ColorUtils.parse(rightClickHint));
+        }
+
         String cancelHint = plugin.getMessagesFile().getString("editor.input.cancel_hint", "<gray>Type <red>cancel <gray>to abort.");
         p.sendMessage(ColorUtils.parse(cancelHint));
 
         String footer = plugin.getMessagesFile().getString("editor.input.footer", "<yellow>=====================");
         p.sendMessage(ColorUtils.parse(prefix + footer));
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onInteract(PlayerInteractEvent e) {
+        Player p = e.getPlayer();
+        if (!activeInputs.containsKey(p.getUniqueId())) return;
+
+        EditorSession session = activeInputs.get(p.getUniqueId());
+        if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
+            if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
+                e.setCancelled(true);
+                org.bukkit.Location l = e.getClickedBlock().getLocation();
+                String msg = String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
+
+                activeInputs.remove(p.getUniqueId());
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    try {
+                        session.completeInput(msg);
+                    } catch (Exception ex) {
+                        String msg_error = plugin.getMessagesFile().getString("editor.chat.input_error");
+                        if (msg_error != null)
+                            p.sendMessage(ColorUtils.parseWithPrefix(msg_error.replace("<error>", ex.getMessage())));
+                        session.reopenLastMenu();
+                    }
+                });
+
+                String m = plugin.getMessagesFile().getString("editor.chat.input_here");
+                String prefix = plugin.getMessagesFile().getString("prefix", "");
+                if (m != null) p.sendMessage(ColorUtils.parseWithPrefix(prefix + m.replace("<loc>", msg)));
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

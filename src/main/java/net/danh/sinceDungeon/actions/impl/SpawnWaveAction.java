@@ -110,30 +110,30 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
-        for (int i = 0; i < amount; i++) {
-            Vector vec = locations.get(i % locations.size());
+        for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            for (int i = 0; i < amount; i++) {
+                double offsetX = (Math.random() - 0.5) * 1.5;
+                double offsetZ = (Math.random() - 0.5) * 1.5;
+                Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
-            double offsetX = (Math.random() - 0.5) * 1.5;
-            double offsetZ = (Math.random() - 0.5) * 1.5;
-            Location finalLoc = findSafeSpawn(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ));
+                Entity ent = game.getWorld().spawnEntity(finalLoc, type);
+                if (ent instanceof LivingEntity living) {
+                    living.setRemoveWhenFarAway(false);
+                    living.setPersistent(true);
 
-            Entity ent = game.getWorld().spawnEntity(finalLoc, type);
-            if (ent instanceof LivingEntity living) {
-                living.setRemoveWhenFarAway(false);
-                living.setPersistent(true);
+                    Chunk c = finalLoc.getChunk();
+                    c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                    lockedChunks.add(c);
 
-                Chunk c = finalLoc.getChunk();
-                c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                lockedChunks.add(c);
+                    game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
+                    game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
 
-                game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
-                game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
-
-                spawnedMobs.put(ent.getUniqueId(), finalLoc);
-                count++;
-            } else {
-                ent.remove();
+                    spawnedMobs.put(ent.getUniqueId(), finalLoc);
+                    count++;
+                } else {
+                    ent.remove();
+                }
             }
         }
 

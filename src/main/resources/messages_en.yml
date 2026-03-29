@@ -298,6 +298,7 @@ editor:
     title_sub: "<white>Check the chat for instructions!"
     header: "<yellow>=== INPUT MODE ==="
     footer: "<yellow>====================="
+    right_click_hint: "<aqua>or RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "<gray>Type <red>cancel <gray>to abort."
     prompts:
       create_filename:

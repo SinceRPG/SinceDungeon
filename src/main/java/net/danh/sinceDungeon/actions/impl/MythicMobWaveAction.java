@@ -76,32 +76,38 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         int count = 0;
         String mobName = internalName;
 
-        for (int i = 0; i < amount; i++) {
-            Vector vec = locations.get(i % locations.size());
+        if (locations.isEmpty()) {
+            this.completed = true;
+            return;
+        }
+
+        for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
-            double offsetX = (Math.random() - 0.5) * 1.5;
-            double offsetZ = (Math.random() - 0.5) * 1.5;
-            Location finalLoc = findSafeSpawn(loc.add(0.5 + offsetX, 0, 0.5 + offsetZ));
+            for (int i = 0; i < amount; i++) {
+                double offsetX = (Math.random() - 0.5) * 1.5;
+                double offsetZ = (Math.random() - 0.5) * 1.5;
+                Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
-            try {
-                ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), this.level);
-                if (am != null) {
-                    Entity bukkitEntity = am.getEntity().getBukkitEntity();
-                    if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
-                        le.setRemoveWhenFarAway(false);
-                        le.setPersistent(true);
+                try {
+                    ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), this.level);
+                    if (am != null) {
+                        Entity bukkitEntity = am.getEntity().getBukkitEntity();
+                        if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
+                            le.setRemoveWhenFarAway(false);
+                            le.setPersistent(true);
+                        }
+
+                        Chunk c = finalLoc.getChunk();
+                        c.addPluginChunkTicket(SinceDungeon.getPlugin());
+                        lockedChunks.add(c);
+
+                        spawnedMobs.put(am.getEntity().getUniqueId(), finalLoc);
+                        count++;
+                        mobName = am.getDisplayName();
                     }
-
-                    Chunk c = finalLoc.getChunk();
-                    c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                    lockedChunks.add(c);
-
-                    spawnedMobs.put(am.getEntity().getUniqueId(), finalLoc);
-                    count++;
-                    mobName = am.getDisplayName();
+                } catch (Exception e) {
+                    game.sendMessage("error.mob_spawn_fail", "<mob>", internalName, "<error>", e.getMessage());
                 }
-            } catch (Exception e) {
-                game.sendMessage("error.mob_spawn_fail", "<mob>", internalName, "<error>", e.getMessage());
             }
         }
 

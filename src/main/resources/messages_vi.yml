@@ -298,6 +298,7 @@ editor:
     title_sub: "<white>Vui lòng xem hướng dẫn dưới khung Chat!"
     header: "<yellow>=== NHẬP DỮ LIỆU ==="
     footer: "<yellow>===================="
+    right_click_hint: "<aqua>Hoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "<gray>Nhập <red>cancel <gray>để thoát chế độ này."
     prompts:
       create_filename:

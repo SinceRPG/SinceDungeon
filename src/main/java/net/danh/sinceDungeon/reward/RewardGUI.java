@@ -272,6 +272,7 @@ public class RewardGUI implements Listener {
                     session.setRevealed(true);
                     session.setupPagination(getGuiSize());
                     playSound(p, "reveal");
+                    session.setSwitchingPage(true);
                     openPage(p, session, 0);
                 }
             } else {
@@ -285,7 +286,6 @@ public class RewardGUI implements Listener {
                             p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
-
                         session.setSwitchingPage(true);
                         openPage(p, session, page - 1);
                         return;
@@ -295,7 +295,6 @@ public class RewardGUI implements Listener {
                             p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
-
                         session.setSwitchingPage(true);
                         openPage(p, session, page + 1);
                         return;

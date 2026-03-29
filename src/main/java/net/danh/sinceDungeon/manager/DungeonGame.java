@@ -282,8 +282,12 @@ public class DungeonGame {
         participants.forEach(p -> playSound(p, "stage_start", 1f, 1f));
 
         for (DungeonAction action : stages.get(index)) {
-            action.announceStart(this);
-            action.start(this);
+            try {
+                action.announceStart(this);
+                action.start(this);
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error starting action: " + e.getMessage());
+            }
         }
     }
 
@@ -293,7 +297,11 @@ public class DungeonGame {
         boolean allCompleted = true;
         for (DungeonAction action : stages.get(currentStageIndex)) {
             if (!action.isCompleted()) {
-                action.onEvent(this, event);
+                try {
+                    action.onEvent(this, event);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Event handling error in action: " + e.getMessage());
+                }
                 if (!action.isCompleted()) allCompleted = false;
             }
         }
