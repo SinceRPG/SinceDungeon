@@ -298,11 +298,9 @@ public class DungeonGame {
             action.start(this);
         } catch (Exception e) {
             plugin.getLogger().severe("Error starting action: " + e.getMessage());
-            // Bỏ qua Action bị lỗi nặng để không kẹt tiến trình
             action.forceComplete();
         }
 
-        // Nếu Action hoàn thành ngay lập tức trong hàm start()
         if (action.isCompleted()) {
             advanceNextAction();
         }

@@ -198,6 +198,7 @@ editor:
     select_type: "<b>Select Action Type</b>"
     edit_action: "<b>Edit Action #<index></b>"
     settings: "<b>Advanced Settings</b>"
+    edit_action_items: "<b>Chest Editor: <index></b>"
   items:
     click_edit: "<yellow>Left Click: Edit"
     create_new: "<green><b>Create New Dungeon</b>"
@@ -291,6 +292,7 @@ editor:
     action_val_hint_loc_single: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Delete"
     action_val_hint_loc_list: "<yellow>Left: Type | Right: Current Pos | <red>Shift-Right: Clear list"
     action_val_hint_list: "<yellow>Left: Add Line | Right: Delete Last | <red>Shift-Right: Clear All"
+    action_val_hint_items: "<yellow>Left Click: Open chest editor"
     action_type_cant_edit: "<red>Cannot change action type after creation"
     prev_page: "<yellow>⬅ Previous Page"
     next_page: "<yellow>Next Page ➡"

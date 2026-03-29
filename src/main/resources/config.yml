@@ -29,7 +29,7 @@ party:
 
   # The display name of the system when sending automated party broadcasts
   # Tên hiển thị của hệ thống khi gửi thông báo tự động cho nhóm
-  system-name: "System"
+  system-name: "Hệ thống"
 
   # Time in seconds before a party invite expires
   # Thời gian tính bằng giây trước khi lời mời vào nhóm hết hạn
@@ -63,7 +63,8 @@ dungeon:
   # Save and restore player stats (health, food, effects...) before entering and after leaving?
   # If false, players will keep their current stats when entering and leaving.
   save-and-restore-stats: false
-  # THÊM MỚI: Các Tùy chọn Gameplay trong lúc đánh Dungeon
+
+  # Các Tùy chọn Gameplay trong lúc đánh Dungeon
   gameplay:
     # Có giữ lại túi đồ và cấp độ khi người chơi chết trong Dungeon không?
     # Keep inventory and EXP when a player dies inside the dungeon?
@@ -85,9 +86,11 @@ dungeon:
     # Nếu tắt (false), Dungeon sẽ giữ nguyên thời gian và thời tiết từ Map mẫu của bạn.
     # Force daylight (6000 ticks) and clear weather when a dungeon is generated?
     force-daylight-and-clear-weather: true
-    # THÊM MỚI: Cấm sử dụng lệnh để chống gian lận (VD: /fly, /heal, /sethome)
+
+    # Cấm sử dụng lệnh để chống gian lận (VD: /fly, /heal, /sethome)
     # Block commands inside dungeons to prevent cheating?
     block-commands: true
+
     # Danh sách các lệnh ĐƯỢC PHÉP dùng (Nhớ ghi chữ thường)
     # List of allowed commands inside dungeons.
     allowed-commands:
@@ -123,20 +126,21 @@ action-defaults:
     mob: "ZOMBIE"
     amount: 1
     start_message:
-      - "<red>Monster detected approaching!"
+      - "<red>Phát hiện quái vật đang tiến đến!"
   reach_location:
     radius: 3.0
     start_message:
-      - "<yellow>Let's move on to the next checkpoint!"
+      - "<yellow>Hãy di chuyển đến trạm kiểm tra tiếp theo!"
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
     level: 1
     start_message:
-      - "<dark_red>A massive wave of killing intent appeared. The boss has arrived!"
+      - "<dark_red>Một luồng sát khí khổng lồ xuất hiện. Boss đã giáng lâm!"
   loot_chest:
+    items: [ ]
     start_message:
-      - "<gold>The supply crate has appeared, collect it!"
+      - "<gold>Hòm tiếp tế đã xuất hiện, hãy thu thập nó!"
   break_wall:
     start_message:
-      - "<aqua>Break the seal to open the way!"
+      - "<aqua>Hãy phá hủy phong ấn để mở đường!"

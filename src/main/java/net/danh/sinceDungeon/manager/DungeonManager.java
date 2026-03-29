@@ -231,7 +231,7 @@ public class DungeonManager {
 
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
-        chestDefaults.put("items", new ArrayList<String>());
+        chestDefaults.put("items", new HashMap<String, String>());
         chestDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.loot_chest.start_message"));
 
         registerAction("LOOT_CHEST", map -> {
@@ -241,24 +241,7 @@ public class DungeonManager {
 
                     Object itemsObj = map.get("items");
 
-                    if (itemsObj instanceof List<?> list) {
-                        for (Object o : list) {
-                            String[] parts = o.toString().split(";");
-                            if (parts.length == 3) {
-                                try {
-                                    int slot = Integer.parseInt(parts[2].trim());
-                                    itemsConfig.put(slot, parts[0].trim() + ":" + parts[1].trim());
-                                } catch (Exception ignored) {
-                                }
-                            } else if (parts.length == 4) {
-                                try {
-                                    int slot = Integer.parseInt(parts[3].trim());
-                                    itemsConfig.put(slot, "MMOITEMS:" + parts[0].trim() + ":" + parts[1].trim() + ":" + parts[2].trim());
-                                } catch (Exception ignored) {
-                                }
-                            }
-                        }
-                    } else if (itemsObj instanceof ConfigurationSection section) {
+                    if (itemsObj instanceof ConfigurationSection section) {
                         for (String key : section.getKeys(false)) {
                             try {
                                 int slot = Integer.parseInt(key);
