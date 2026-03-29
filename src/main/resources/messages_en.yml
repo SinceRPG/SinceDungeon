@@ -105,7 +105,7 @@ action:
   chest_found: "<green>You found a hidden chest!"
   chest_not_empty: "<red>You must empty the chest to proceed!"
   loot_complete: "<green>Chest cleared!"
-  reach_start: "<yellow>Move to coordinates <x>, <y>, <z>!"
+  reach_start: "<yellow>Move to coordinates <x>, <z>!"
   reach_complete: "<green>Reached checkpoint!"
   wall_break: "<yellow>The barricade has been destroyed!"
   spawn_wave: "<red><amount> <mob> spawned!"
@@ -198,9 +198,7 @@ editor:
     select_type: "<b>Select Action Type</b>"
     edit_action: "<b>Edit Action #<index></b>"
     settings: "<b>Advanced Settings</b>"
-    edit_action_items: "<b>Chest Editor: <index></b>"
   items:
-    items.action_val_hint_items: "<yellow>Left Click: Open chest editor"
     click_edit: "<yellow>Left Click: Edit"
     create_new: "<green><b>Create New Dungeon</b>"
     world_template: "<yellow>World Template"
@@ -349,6 +347,12 @@ editor:
       edit_action_start_message:
         - "<gray>Enter the start message for this action (colors supported)."
         - "<gray>Tip: Type <red>clear <gray>to empty the message list."
+      edit_action_items:
+        - "<gray>Enter Vanilla Item: <green>MATERIAL;AMOUNT;SLOT"
+        - "<gray>Example: <white>DIAMOND;10;13"
+        - "<gray>Enter MMOItems: <green>TYPE;ID;AMOUNT;SLOT"
+        - "<gray>MMOItems Example: <white>SWORD;FIERY_SWORD;1;14"
+        - "<gray>Tip: Type <red>clear <gray>to empty the chest."
       edit_location:
         - "<gray>Enter coordinates format: <white>X,Y,Z"
         - "<gray>Tip: Type <green>here <gray>to use your current location."

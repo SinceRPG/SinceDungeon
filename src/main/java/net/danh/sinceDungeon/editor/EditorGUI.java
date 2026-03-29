@@ -10,7 +10,10 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -417,55 +420,6 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
-    private ItemStack parseItemString(String data) {
-        if (data == null || data.isEmpty()) return null;
-        try {
-            String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":");
-            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
-                    return net.danh.sinceDungeon.system.MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
-                }
-            } else {
-                Material mat = Material.matchMaterial(parts[0]);
-                if (mat != null) {
-                    int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-                    return new ItemStack(mat, amount);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
-    }
-
-    public void openActionChestEditor(Player p, EditorSession session) {
-        session.setLastMenuOpener(player -> openActionChestEditor(player, session));
-        String title = getMsg("title.edit_action_items").replace("<index>", session.getCurrentActionKey());
-        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_ACTION_ITEMS", 0), 54, ColorUtils.parse(title));
-
-        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".items";
-        ConfigurationSection sec = session.getConfig().getConfigurationSection(path);
-
-        if (sec != null) {
-            for (String slotKey : sec.getKeys(false)) {
-                try {
-                    int slot = Integer.parseInt(slotKey);
-                    if (slot >= 0 && slot < 54) {
-                        String itemStr = sec.getString(slotKey);
-                        ItemStack is = parseItemString(itemStr);
-                        if (is != null) {
-                            inv.setItem(slot, is);
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
-
-        p.openInventory(inv);
-    }
-
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action").replace("<index>", session.getCurrentActionKey());
@@ -484,6 +438,25 @@ public class EditorGUI implements Listener {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             if (meta != null) {
                 boolean changed = false;
+
+                if (sec.contains("items") && sec.isConfigurationSection("items")) {
+                    ConfigurationSection itemsSec = sec.getConfigurationSection("items");
+                    List<String> newList = new ArrayList<>();
+                    for (String k : itemsSec.getKeys(false)) {
+                        String v = itemsSec.getString(k);
+                        if (v != null) {
+                            String[] parts = v.split(":");
+                            if (parts[0].equalsIgnoreCase("MMOITEMS") && parts.length >= 4) {
+                                newList.add(parts[1] + ";" + parts[2] + ";" + parts[3] + ";" + k);
+                            } else if (parts.length >= 2) {
+                                newList.add(parts[0] + ";" + parts[1] + ";" + k);
+                            }
+                        }
+                    }
+                    session.getConfig().set(path + ".items", newList);
+                    changed = true;
+                }
+
                 for (Map.Entry<String, Object> entry : meta.defaults().entrySet()) {
                     if (!sec.contains(entry.getKey())) {
                         session.getConfig().set(path + "." + entry.getKey(), entry.getValue());
@@ -505,7 +478,6 @@ public class EditorGUI implements Listener {
 
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
             boolean isList = sec.isList(key);
-            boolean isItems = key.equalsIgnoreCase("items");
 
             switch (key) {
                 case "type":
@@ -518,15 +490,10 @@ public class EditorGUI implements Listener {
                 case "mob":
                     icon = Material.CREEPER_HEAD;
                     break;
-                case "start_message":
-                    icon = Material.PAPER;
-                    hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
-                    break;
                 case "items":
-                    icon = Material.CHEST;
-                    hint = getMsg("items.action_val_hint_items", "<yellow>Chuột Trái: Mở giao diện xếp đồ");
-                    val = "<aqua>[Nhấn để xếp vật phẩm]";
-                    isList = false;
+                case "start_message":
+                    icon = key.equals("items") ? Material.CHEST : Material.PAPER;
+                    hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
                     break;
                 default:
                     if (isLocation) {
@@ -585,12 +552,7 @@ public class EditorGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder) {
-            // Cho phép kéo thả đồ khi ở trong giao diện xếp Rương Action
-            if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) {
-                return;
-            }
-
+        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder) {
             if (!e.getWhoClicked().hasPermission("SinceDungeon.admin")) {
                 e.setCancelled(true);
                 e.getWhoClicked().closeInventory();
@@ -614,11 +576,6 @@ public class EditorGUI implements Listener {
         if (!p.hasPermission("SinceDungeon.admin")) {
             e.setCancelled(true);
             p.closeInventory();
-            return;
-        }
-
-        // Cho phép click và di chuyển đồ tự do trong giao diện rương
-        if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) {
             return;
         }
 
@@ -1086,11 +1043,6 @@ public class EditorGUI implements Listener {
 
                 if (key.equalsIgnoreCase("type")) return;
 
-                if (key.equalsIgnoreCase("items")) {
-                    openActionChestEditor(p, session);
-                    return;
-                }
-
                 boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
@@ -1108,7 +1060,6 @@ public class EditorGUI implements Listener {
                 }
 
                 int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
-
 
                 if (e.getClick() == ClickType.SHIFT_RIGHT) {
                     if (isList) {
@@ -1192,34 +1143,6 @@ public class EditorGUI implements Listener {
                     });
                     plugin.getEditorListener().startListening(p, session);
                 }
-            }
-        }
-    }
-
-    @EventHandler
-    public void onClose(InventoryCloseEvent e) {
-        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder && e.getPlayer() instanceof Player p) {
-            EditorSession session = holder.session();
-            if (session != null && "EDIT_ACTION_ITEMS".equals(holder.menuType())) {
-                String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".items";
-                session.getConfig().set(path, null);
-
-                Inventory inv = e.getView().getTopInventory();
-                for (int i = 0; i < inv.getSize(); i++) {
-                    ItemStack item = inv.getItem(i);
-                    if (item != null && item.getType() != Material.AIR) {
-                        String itemStr = null;
-                        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                            itemStr = net.danh.sinceDungeon.system.MMOItemsHook.getMMOItemString(item);
-                        }
-                        if (itemStr == null) {
-                            itemStr = item.getType().name() + ":" + item.getAmount();
-                        }
-                        session.getConfig().set(path + "." + i, itemStr);
-                    }
-                }
-
-                Bukkit.getScheduler().runTaskLater(plugin, () -> openActionEditor(p, session), 1L);
             }
         }
     }

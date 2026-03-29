@@ -105,7 +105,7 @@ action:
   chest_found: "<green>Bạn đã tìm ra rương ẩn!"
   chest_not_empty: "<red>Bạn phải lấy toàn bộ vật phẩm trong rương để tiếp tục!"
   loot_complete: "<green>Đã thu thập xong rương!"
-  reach_start: "<yellow>Hãy tiến về khu vực tọa độ <x>, <y>, <z>!"
+  reach_start: "<yellow>Hãy tiến về khu vực tọa độ <x>, <z>!"
   reach_complete: "<green>Đã chạm mốc trạm kiểm tra!"
   wall_break: "<yellow>Bức tường phong ấn đã bị phá vỡ!"
   spawn_wave: "<red>Phát hiện <amount> <mob> đang tiến đến!"
@@ -198,9 +198,7 @@ editor:
     select_type: "<b>Chọn Loại Nhiệm Vụ</b>"
     edit_action: "<b>Cấu Hình Nhiệm Vụ #<index></b>"
     settings: "<b>Cài Đặt Chuyên Sâu</b>"
-    edit_action_items: "<b>Sắp xếp Rương: <index></b>"
   items:
-    items.action_val_hint_items: "<yellow>Chuột Trái: Mở giao diện xếp đồ trực quan"
     click_edit: "<yellow>Chuột Trái: Chỉnh sửa"
     create_new: "<green><b>Tạo Dungeon Mới</b>"
     world_template: "<yellow>Bản đồ Mẫu (World)"
@@ -349,6 +347,12 @@ editor:
       edit_action_start_message:
         - "<gray>Nhập tin nhắn thông báo khi bắt đầu nhiệm vụ (Hỗ trợ mã màu)."
         - "<gray>Mẹo: Gõ <red>clear <gray>để xóa danh sách tin nhắn này."
+      edit_action_items:
+        - "<gray>Nhập vật phẩm Vanilla: <green>MATERIAL;AMOUNT;SLOT"
+        - "<gray>Ví dụ: <white>DIAMOND;10;13"
+        - "<gray>Nhập MMOItems: <green>TYPE;ID;AMOUNT;SLOT"
+        - "<gray>Ví dụ MMOItems: <white>SWORD;FIERY_SWORD;1;14"
+        - "<gray>Mẹo: Gõ <red>clear <gray>để làm trống rương."
       edit_location:
         - "<gray>Nhập tọa độ theo định dạng: <white>X,Y,Z"
         - "<gray>Mẹo: Gõ <green>here <gray>để copy tọa độ bạn đang đứng."
