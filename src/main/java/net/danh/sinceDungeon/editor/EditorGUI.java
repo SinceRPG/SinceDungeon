@@ -450,7 +450,8 @@ public class EditorGUI implements Listener {
             if (slot >= 45) break;
             String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
-            String hint = getMsg("items.action_val_hint_edit");
+            String hint = getMsg("items.action_val_hint_edit", "<yellow>Trái: Sửa | <red>Shift-Phải: Xóa");
+
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
             boolean isList = sec.isList(key);
 
@@ -467,11 +468,14 @@ public class EditorGUI implements Listener {
                     break;
                 case "start_message":
                     icon = Material.PAPER;
+                    hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
                     break;
                 default:
                     if (isLocation) {
                         icon = Material.COMPASS;
                         hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
+                    } else if (isList) {
+                        hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
                     }
                     break;
             }
@@ -542,9 +546,7 @@ public class EditorGUI implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder(
-                EditorSession session, String menuType, int page
-        ))) return;
+        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
 
         if (!p.hasPermission("SinceDungeon.admin")) {
             e.setCancelled(true);
@@ -570,6 +572,9 @@ public class EditorGUI implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorManager manager = plugin.getEditorManager();
+        final EditorSession session = holder.session();
+        String menuType = holder.menuType();
+        int page = holder.page();
         int slot = e.getRawSlot();
 
         if (menuType.equals("MAIN")) {
@@ -1010,6 +1015,9 @@ public class EditorGUI implements Listener {
                 if (cur.getType() == Material.BARRIER) return;
 
                 String key = getPlainText(cur.getItemMeta().displayName());
+
+                if (key.equalsIgnoreCase("type")) return;
+
                 boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
@@ -1028,17 +1036,19 @@ public class EditorGUI implements Listener {
 
                 int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
 
+                if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                    if (isList) {
+                        session.getConfig().set(fullPath, new ArrayList<>());
+                    } else {
+                        session.getConfig().set(fullPath, null);
+                    }
+                    sendMessage(p, "val_cleared");
+                    openActionEditor(p, session);
+                    return;
+                }
+
                 if (isLocation) {
-                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
-                        if (isList) {
-                            session.getConfig().set(fullPath, new ArrayList<>());
-                        } else {
-                            session.getConfig().set(fullPath, null);
-                        }
-                        sendMessage(p, "loc_cleared");
-                        openActionEditor(p, session);
-                        return;
-                    } else if (e.getClick() == ClickType.RIGHT) {
+                    if (e.getClick() == ClickType.RIGHT) {
                         String locStr = locToString(p.getLocation());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
@@ -1052,6 +1062,19 @@ public class EditorGUI implements Listener {
                             session.getConfig().set(fullPath, locStr);
                         }
                         sendMessage(p, "update_loc", "<loc>", locStr);
+                        openActionEditor(p, session);
+                        return;
+                    }
+                } else if (isList) {
+                    if (e.getClick() == ClickType.RIGHT) {
+                        List<String> list = session.getConfig().getStringList(fullPath);
+                        if (!list.isEmpty()) {
+                            list.remove(list.size() - 1);
+                            session.getConfig().set(fullPath, list);
+                            sendMessage(p, "line_removed");
+                        } else {
+                            sendMessage(p, "list_empty");
+                        }
                         openActionEditor(p, session);
                         return;
                     }
