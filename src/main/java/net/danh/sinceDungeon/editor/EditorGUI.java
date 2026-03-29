@@ -428,6 +428,23 @@ public class EditorGUI implements Listener {
             return;
         }
 
+        String type = sec.getString("type");
+        if (type != null) {
+            DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
+            if (meta != null) {
+                boolean changed = false;
+                for (Map.Entry<String, Object> entry : meta.defaults().entrySet()) {
+                    if (!sec.contains(entry.getKey())) {
+                        session.getConfig().set(path + "." + entry.getKey(), entry.getValue());
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    sec = session.getConfig().getConfigurationSection(path);
+                }
+            }
+        }
+
         int slot = 0;
         for (String key : sec.getKeys(false)) {
             if (slot >= 45) break;
@@ -447,6 +464,9 @@ public class EditorGUI implements Listener {
                     break;
                 case "mob":
                     icon = Material.CREEPER_HEAD;
+                    break;
+                case "start_message":
+                    icon = Material.PAPER;
                     break;
                 default:
                     if (isLocation) {
@@ -522,7 +542,9 @@ public class EditorGUI implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
+        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder(
+                EditorSession session, String menuType, int page
+        ))) return;
 
         if (!p.hasPermission("SinceDungeon.admin")) {
             e.setCancelled(true);
@@ -548,9 +570,6 @@ public class EditorGUI implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorManager manager = plugin.getEditorManager();
-        final EditorSession session = holder.session();
-        String menuType = holder.menuType();
-        int page = holder.page();
         int slot = e.getRawSlot();
 
         if (menuType.equals("MAIN")) {

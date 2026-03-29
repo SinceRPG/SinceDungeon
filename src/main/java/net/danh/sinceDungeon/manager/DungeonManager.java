@@ -198,6 +198,7 @@ public class DungeonManager {
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
         spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
         spawnDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
+        spawnDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.start_message"));
 
         registerAction("SPAWN_WAVE", map -> {
                     String mobStr = String.valueOf(map.getOrDefault("mob", spawnDefaults.get("mob")));
@@ -217,6 +218,7 @@ public class DungeonManager {
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
         reachDefaults.put("radius", plugin.getConfigFile().getDouble("action-defaults.reach_location.radius", 3.0));
+        reachDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.reach_location.start_message"));
 
         registerAction("REACH_LOCATION", map -> {
                     String targetStr = String.valueOf(map.getOrDefault("target", "0,0,0"));
@@ -230,6 +232,7 @@ public class DungeonManager {
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
         chestDefaults.put("items", new HashMap<>());
+        chestDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.loot_chest.start_message"));
 
         registerAction("LOOT_CHEST", map -> {
                     String locStr = String.valueOf(map.getOrDefault("location", "0,0,0"));
@@ -267,6 +270,7 @@ public class DungeonManager {
         wallDefaults.put("trigger", "0,0,0");
         wallDefaults.put("corner1", "0,0,0");
         wallDefaults.put("corner2", "0,0,0");
+        wallDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.break_wall.start_message"));
 
         registerAction("BREAK_WALL", map -> new SmartBreakWallAction(
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0"))),
@@ -281,6 +285,7 @@ public class DungeonManager {
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
         mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
+        mmDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.mythic_wave.start_message"));
 
         registerAction("MYTHIC_WAVE", map -> {
                     List<Vector> v = parseLocList(map.get("locations"));

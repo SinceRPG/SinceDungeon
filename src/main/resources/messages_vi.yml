@@ -105,7 +105,7 @@ action:
   chest_found: "<green>Bạn đã tìm ra rương ẩn!"
   chest_not_empty: "<red>Bạn phải lấy toàn bộ vật phẩm trong rương để tiếp tục!"
   loot_complete: "<green>Đã thu thập xong rương!"
-  reach_start: "<yellow>Hãy tiến về khu vực tọa độ <x>, <z>!"
+  reach_start: "<yellow>Hãy tiến về khu vực tọa độ <x>, <y>, <z>!"
   reach_complete: "<green>Đã chạm mốc trạm kiểm tra!"
   wall_break: "<yellow>Bức tường phong ấn đã bị phá vỡ!"
   spawn_wave: "<red>Phát hiện <amount> <mob> đang tiến đến!"
@@ -343,6 +343,9 @@ editor:
       edit_action_amount:
         - "<gray>Nhập số lượng quái vật cần sinh ra."
         - "<gray>Ví dụ: <green>10"
+      edit_action_start_message:
+        - "<gray>Nhập tin nhắn thông báo khi bắt đầu nhiệm vụ (Hỗ trợ mã màu)."
+        - "<gray>Mẹo: Gõ <red>clear <gray>để xóa danh sách tin nhắn này."
       edit_location:
         - "<gray>Nhập tọa độ theo định dạng: <white>X,Y,Z"
         - "<gray>Mẹo: Gõ <green>here <gray>để copy tọa độ bạn đang đứng."

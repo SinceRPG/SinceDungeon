@@ -29,7 +29,7 @@ party:
 
   # The display name of the system when sending automated party broadcasts
   # Tên hiển thị của hệ thống khi gửi thông báo tự động cho nhóm
-  system-name: "Hệ thống"
+  system-name: "System"
 
   # Time in seconds before a party invite expires
   # Thời gian tính bằng giây trước khi lời mời vào nhóm hết hạn
@@ -122,9 +122,21 @@ action-defaults:
   spawn_wave:
     mob: "ZOMBIE"
     amount: 1
+    start_message:
+      - "<red>Monster detected approaching!"
   reach_location:
     radius: 3.0
+    start_message:
+      - "<yellow>Let's move on to the next checkpoint!"
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
     level: 1
+    start_message:
+      - "<dark_red>A massive wave of killing intent appeared. The boss has arrived!"
+  loot_chest:
+    start_message:
+      - "<gold>The supply crate has appeared, collect it!"
+  break_wall:
+    start_message:
+      - "<aqua>Break the seal to open the way!"

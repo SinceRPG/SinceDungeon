@@ -29,7 +29,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         this.centerLoc = new Location(game.getWorld(), target.getX() + 0.5, target.getY() + 0.1, target.getZ() + 0.5);
-        game.sendMessage("action.reach_start", "<x>", String.valueOf(target.getBlockX()), "<z>", String.valueOf(target.getBlockZ()));
+        game.sendMessage("action.reach_start", "<x>", String.valueOf(target.getBlockX()), "<z>", String.valueOf(target.getBlockZ()), "<y>", String.valueOf(target.getBlockY()));
     }
 
     @Override
