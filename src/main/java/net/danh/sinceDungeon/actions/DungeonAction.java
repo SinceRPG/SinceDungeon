@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.actions;
 
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
 import java.util.ArrayList;
@@ -66,7 +67,11 @@ public abstract class DungeonAction {
     public void announceStart(DungeonGame game) {
         if (startMessages == null || startMessages.isEmpty()) return;
         for (String line : startMessages) {
-            game.getPlayer().sendMessage(ColorUtils.parse(line));
+            for (Player p : game.getParticipants()) {
+                if (p.isOnline() && p.getWorld().equals(game.getWorld())) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(line));
+                }
+            }
         }
     }
 
