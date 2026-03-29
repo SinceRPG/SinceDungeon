@@ -38,6 +38,7 @@ public class DungeonGame {
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
     private World dungeonWorld;
     private int currentStageIndex = 0;
+    private int currentActionIndex = 0;
     private boolean isRunning = false;
     private boolean isPreparing = false;
     private boolean stageCompleting = false;
@@ -234,38 +235,34 @@ public class DungeonGame {
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
-        boolean allCompleted = true;
-        StringBuilder objectiveText = new StringBuilder();
-        String objSeparator = plugin.getMessagesFile().getString("game.hud.objective_separator", " <dark_gray>| ");
+        List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+        if (currentActionIndex >= currentStageActions.size()) return;
 
-        for (DungeonAction action : stages.get(currentStageIndex)) {
+        DungeonAction action = currentStageActions.get(currentActionIndex);
+
+        if (!action.isCompleted()) {
+            if (action instanceof Tickable tickable) {
+                try {
+                    tickable.onTick(this);
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Tick error in action: " + e.getMessage());
+                }
+            }
+
             if (!action.isCompleted()) {
-                if (action instanceof Tickable tickable) {
-                    try {
-                        tickable.onTick(this);
-                    } catch (Exception e) {
-                        plugin.getLogger().warning("Tick error in action: " + e.getMessage());
+                String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>MỤC TIÊU: <reset>");
+                String objText = action.getObjectiveText();
+                for (Player p : participants) {
+                    if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
+                        p.sendActionBar(ColorUtils.parse(objPrefix + objText));
                     }
                 }
-
-                if (!action.isCompleted()) {
-                    allCompleted = false;
-                    if (objectiveText.length() > 0) objectiveText.append(objSeparator);
-                    objectiveText.append(action.getObjectiveText());
-                }
+            } else {
+                advanceNextAction();
             }
+        } else {
+            advanceNextAction();
         }
-
-        if (!allCompleted && objectiveText.length() > 0) {
-            String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
-            for (Player p : participants) {
-                if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
-                    p.sendActionBar(ColorUtils.parse(objPrefix + objectiveText));
-                }
-            }
-        }
-
-        if (allCompleted) checkCompletion();
     }
 
     private void startStage(int index) {
@@ -275,40 +272,69 @@ public class DungeonGame {
             finishDungeon();
             return;
         }
+
         currentStageIndex = index;
+        currentActionIndex = 0;
         this.stageCompleting = false;
 
         broadcastMessage("game.stage_start", "<stage>", String.valueOf(index + 1));
         participants.forEach(p -> playSound(p, "stage_start", 1f, 1f));
 
-        for (DungeonAction action : stages.get(index)) {
-            try {
-                action.announceStart(this);
-                action.start(this);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error starting action: " + e.getMessage());
-            }
+        startCurrentAction();
+    }
+
+    private void startCurrentAction() {
+        if (!isRunning || stageCompleting) return;
+        List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+
+        if (currentActionIndex >= currentStageActions.size()) {
+            checkStageCompletion();
+            return;
         }
+
+        DungeonAction action = currentStageActions.get(currentActionIndex);
+        try {
+            action.announceStart(this);
+            action.start(this);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error starting action: " + e.getMessage());
+            // Bỏ qua Action bị lỗi nặng để không kẹt tiến trình
+            action.forceComplete();
+        }
+
+        // Nếu Action hoàn thành ngay lập tức trong hàm start()
+        if (action.isCompleted()) {
+            advanceNextAction();
+        }
+    }
+
+    private void advanceNextAction() {
+        currentActionIndex++;
+        startCurrentAction();
     }
 
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
-        boolean allCompleted = true;
-        for (DungeonAction action : stages.get(currentStageIndex)) {
-            if (!action.isCompleted()) {
-                try {
-                    action.onEvent(this, event);
-                } catch (Exception e) {
-                    plugin.getLogger().warning("Event handling error in action: " + e.getMessage());
-                }
-                if (!action.isCompleted()) allCompleted = false;
+        List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+        if (currentActionIndex >= currentStageActions.size()) return;
+
+        DungeonAction action = currentStageActions.get(currentActionIndex);
+
+        if (!action.isCompleted()) {
+            try {
+                action.onEvent(this, event);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Event handling error in action: " + e.getMessage());
+            }
+
+            if (action.isCompleted()) {
+                advanceNextAction();
             }
         }
-        if (allCompleted) checkCompletion();
     }
 
-    private void checkCompletion() {
+    private void checkStageCompletion() {
         if (stageCompleting) return;
         stageCompleting = true;
 
