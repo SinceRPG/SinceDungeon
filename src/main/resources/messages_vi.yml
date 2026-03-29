@@ -198,7 +198,9 @@ editor:
     select_type: "<b>Chọn Loại Nhiệm Vụ</b>"
     edit_action: "<b>Cấu Hình Nhiệm Vụ #<index></b>"
     settings: "<b>Cài Đặt Chuyên Sâu</b>"
+    edit_action_items: "<b>Sắp xếp Rương: <index></b>"
   items:
+    items.action_val_hint_items: "<yellow>Chuột Trái: Mở giao diện xếp đồ trực quan"
     click_edit: "<yellow>Chuột Trái: Chỉnh sửa"
     create_new: "<green><b>Tạo Dungeon Mới</b>"
     world_template: "<yellow>Bản đồ Mẫu (World)"

@@ -28,4 +28,22 @@ public class MMOItemsHook {
             return null;
         }
     }
+
+    /**
+     * Tự động trích xuất chuỗi thông tin của một MMOItem để lưu vào Config.
+     *
+     * @param item Vật phẩm cần kiểm tra.
+     * @return Chuỗi định dạng MMOITEMS:TYPE:ID:AMOUNT, hoặc null nếu không phải MMOItem.
+     */
+    public static String getMMOItemString(ItemStack item) {
+        try {
+            if (item == null || !item.hasItemMeta()) return null;
+            io.lumine.mythic.lib.api.item.NBTItem nbtItem = io.lumine.mythic.lib.api.item.NBTItem.get(item);
+            if (nbtItem.hasType() && nbtItem.getString("MMOITEMS_ITEM_ID") != null && !nbtItem.getString("MMOITEMS_ITEM_ID").isEmpty()) {
+                return "MMOITEMS:" + nbtItem.getType() + ":" + nbtItem.getString("MMOITEMS_ITEM_ID") + ":" + item.getAmount();
+            }
+        } catch (Exception | NoClassDefFoundError ignored) {
+        }
+        return null;
+    }
 }

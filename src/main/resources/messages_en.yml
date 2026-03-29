@@ -198,7 +198,9 @@ editor:
     select_type: "<b>Select Action Type</b>"
     edit_action: "<b>Edit Action #<index></b>"
     settings: "<b>Advanced Settings</b>"
+    edit_action_items: "<b>Chest Editor: <index></b>"
   items:
+    items.action_val_hint_items: "<yellow>Left Click: Open chest editor"
     click_edit: "<yellow>Left Click: Edit"
     create_new: "<green><b>Create New Dungeon</b>"
     world_template: "<yellow>World Template"
