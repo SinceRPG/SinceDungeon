@@ -126,21 +126,21 @@ action-defaults:
     mob: "ZOMBIE"
     amount: 1
     start_message:
-      - "<red>Phát hiện quái vật đang tiến đến!"
+      - "&cMonsters are approaching!"
   reach_location:
     radius: 3.0
     start_message:
-      - "<yellow>Hãy di chuyển đến trạm kiểm tra tiếp theo!"
+      - "&eMove to the next checkpoint!"
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
     level: 1
     start_message:
-      - "<dark_red>Một luồng sát khí khổng lồ xuất hiện. Boss đã giáng lâm!"
+      - "&4A massive aura appears. The Boss has arrived!"
   loot_chest:
     items: [ ]
     start_message:
-      - "<gold>Hòm tiếp tế đã xuất hiện, hãy thu thập nó!"
+      - "&6A supply chest has appeared, loot it!"
   break_wall:
     start_message:
-      - "<aqua>Hãy phá hủy phong ấn để mở đường!"
+      - "&bDestroy the seal to open the path!"

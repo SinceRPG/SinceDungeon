@@ -8,6 +8,7 @@ import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEven
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -20,10 +21,22 @@ public class PartyCommand {
         PartyManager pm = plugin.getPartyManager();
 
         LiteralCommandNode<CommandSourceStack> partyNode = Commands.literal("party")
-                .requires(source -> source.getSender() instanceof Player)
+                .executes(ctx -> {
+                    CommandSender sender = ctx.getSource().getSender();
+                    if (!(sender instanceof Player)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        return 0;
+                    }
+                    sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_main")));
+                    return 1;
+                })
 
                 .then(Commands.literal("create").executes(ctx -> {
-                    Player p = (Player) ctx.getSource().getSender();
+                    CommandSender sender = ctx.getSource().getSender();
+                    if (!(sender instanceof Player p)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        return 0;
+                    }
                     if (pm.getParty(p.getUniqueId()) != null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
                         return 0;
@@ -38,7 +51,11 @@ public class PartyCommand {
                 }))
 
                 .then(Commands.literal("disband").executes(ctx -> {
-                    Player p = (Player) ctx.getSource().getSender();
+                    CommandSender sender = ctx.getSource().getSender();
+                    if (!(sender instanceof Player p)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        return 0;
+                    }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
@@ -51,6 +68,15 @@ public class PartyCommand {
                 }))
 
                 .then(Commands.literal("invite")
+                        .executes(ctx -> {
+                            CommandSender sender = ctx.getSource().getSender();
+                            if (!(sender instanceof Player)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                return 0;
+                            }
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_invite")));
+                            return 1;
+                        })
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
@@ -72,7 +98,11 @@ public class PartyCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
-                                    Player p = (Player) ctx.getSource().getSender();
+                                    CommandSender sender = ctx.getSource().getSender();
+                                    if (!(sender instanceof Player p)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        return 0;
+                                    }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
                                     boolean isAutoCreated = false;
 
@@ -84,7 +114,7 @@ public class PartyCommand {
                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
 
                                     if (target != null && target.equals(p)) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_self", "<red>You cannot invite yourself to the party!")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_self")));
                                         return 0;
                                     }
 
@@ -100,7 +130,7 @@ public class PartyCommand {
 
                                     int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
                                     if (party != null && party.getMembers().size() >= maxMembers) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full", "<red>Party is full!")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full")));
                                         return 0;
                                     }
 
@@ -118,13 +148,13 @@ public class PartyCommand {
                                     boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
                                     if (sent) {
                                         if (isAutoCreated) {
-                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created", "<green>Hệ thống đã tự động tạo nhóm cho bạn.")));
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created")));
                                         }
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
                                         target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
                                         if (isAutoCreated) pm.disbandParty(party);
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited", "<red>Bạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi.")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited")));
                                     }
                                     return 1;
                                 })
@@ -132,6 +162,15 @@ public class PartyCommand {
                 )
 
                 .then(Commands.literal("accept")
+                        .executes(ctx -> {
+                            CommandSender sender = ctx.getSource().getSender();
+                            if (!(sender instanceof Player)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                return 0;
+                            }
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_accept")));
+                            return 1;
+                        })
                         .then(Commands.argument("leader", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
@@ -147,7 +186,11 @@ public class PartyCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
-                                    Player p = (Player) ctx.getSource().getSender();
+                                    CommandSender sender = ctx.getSource().getSender();
+                                    if (!(sender instanceof Player p)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        return 0;
+                                    }
 
                                     if (pm.getParty(p.getUniqueId()) != null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
@@ -183,17 +226,20 @@ public class PartyCommand {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
                                         pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_joined").replace("<player>", p.getName()));
-                                        return 1;
                                     } else {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
-                                        return 0;
                                     }
+                                    return 1;
                                 })
                         )
                 )
 
                 .then(Commands.literal("leave").executes(ctx -> {
-                    Player p = (Player) ctx.getSource().getSender();
+                    CommandSender sender = ctx.getSource().getSender();
+                    if (!(sender instanceof Player p)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        return 0;
+                    }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                     if (party == null) {
@@ -212,6 +258,15 @@ public class PartyCommand {
                 }))
 
                 .then(Commands.literal("promote")
+                        .executes(ctx -> {
+                            CommandSender sender = ctx.getSource().getSender();
+                            if (!(sender instanceof Player)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                return 0;
+                            }
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_promote")));
+                            return 1;
+                        })
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
@@ -227,7 +282,11 @@ public class PartyCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
-                                    Player p = (Player) ctx.getSource().getSender();
+                                    CommandSender sender = ctx.getSource().getSender();
+                                    if (!(sender instanceof Player p)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        return 0;
+                                    }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
@@ -247,7 +306,7 @@ public class PartyCommand {
                                     }
 
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.promote_self", "<red>You are already the Party Leader!")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.promote_self")));
                                         return 0;
                                     }
 
@@ -263,6 +322,15 @@ public class PartyCommand {
                 )
 
                 .then(Commands.literal("kick")
+                        .executes(ctx -> {
+                            CommandSender sender = ctx.getSource().getSender();
+                            if (!(sender instanceof Player)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                return 0;
+                            }
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_kick")));
+                            return 1;
+                        })
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
@@ -278,7 +346,11 @@ public class PartyCommand {
                                     return builder.buildFuture();
                                 })
                                 .executes(ctx -> {
-                                    Player p = (Player) ctx.getSource().getSender();
+                                    CommandSender sender = ctx.getSource().getSender();
+                                    if (!(sender instanceof Player p)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        return 0;
+                                    }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
@@ -298,7 +370,7 @@ public class PartyCommand {
                                     }
 
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kick_self", "<red>You cannot kick yourself! Use /party leave.")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kick_self")));
                                         return 0;
                                     }
 
@@ -323,21 +395,29 @@ public class PartyCommand {
 
                 .then(Commands.literal("chat")
                         .executes(ctx -> {
-                            Player p = (Player) ctx.getSource().getSender();
+                            CommandSender sender = ctx.getSource().getSender();
+                            if (!(sender instanceof Player p)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                return 0;
+                            }
                             PartyManager.Party party = pm.getParty(p.getUniqueId());
                             if (party == null) {
                                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
                                 return 0;
                             }
                             boolean enabled = pm.togglePartyChat(p.getUniqueId());
-                            String state = enabled ? plugin.getMessagesFile().getString("words.true_word") : plugin.getMessagesFile().getString("words.false_word");
+                            String state = enabled ? plugin.getMessagesFile().getString("editor.words.true_word") : plugin.getMessagesFile().getString("editor.words.false_word");
                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.chat_toggled").replace("<status>", state)));
                             return 1;
                         })
                 )
 
                 .then(Commands.literal("list").executes(ctx -> {
-                    Player p = (Player) ctx.getSource().getSender();
+                    CommandSender sender = ctx.getSource().getSender();
+                    if (!(sender instanceof Player p)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        return 0;
+                    }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                     if (party == null) {
