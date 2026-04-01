@@ -116,10 +116,10 @@ action:
   wall_break: "&eBức tường phong ấn đã bị phá vỡ!"
   spawn_wave: "&cPhát hiện <amount> <mob> đang tiến đến!"
   kill_remain: "&eChỉ còn lại <amount> kẻ địch."
-  kill_complete: "&aToàn bộ quái vật đã bị dọn dẹp!"
+  kill_complete: "&aToàn bộ quái vật <mob> đã bị dọn dẹp!"
   mythic_wave_start: "&cBoss <mob> đã giáng lâm!"
   mythic_wave_remain: "&eCần tiêu diệt thêm <amount> <mob>."
-  mythic_wave_complete: "&aBoss đã bị đánh bại hoàn toàn!"
+  mythic_wave_complete: "&aBoss <mob> đã bị đánh bại hoàn toàn!"
 
 error:
   already_in: "&cBạn hoặc thành viên trong Tổ đội đang ở trong một Dungeon khác!"

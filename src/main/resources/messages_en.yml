@@ -116,10 +116,10 @@ action:
   wall_break: "&eThe barricade has been destroyed!"
   spawn_wave: "&c<amount> <mob> spawned!"
   kill_remain: "&e<amount> enemies remaining."
-  kill_complete: "&aAll monsters eliminated!"
+  kill_complete: "&aAll monsters <mob> eliminated!"
   mythic_wave_start: "&cBoss <mob> has appeared!"
   mythic_wave_remain: "&e<amount> <mob> remaining."
-  mythic_wave_complete: "&aBoss defeated!"
+  mythic_wave_complete: "&aBoss <mob> defeated!"
 
 error:
   already_in: "&cYou or your party is already in another dungeon!"

@@ -85,7 +85,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         if (spawnedMobs.isEmpty()) {
             unlockChunks();
             this.completed = true;
-            game.sendMessage("action.kill_complete");
+            game.sendMessage("action.kill_complete", "<mob>", type.name());
         }
     }
 
@@ -151,7 +151,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
-                    game.sendMessage("action.kill_complete");
+                    game.sendMessage("action.kill_complete", "<mob>", type.name());
                 } else {
                     game.sendMessage("action.kill_remain", "<amount>", String.valueOf(spawnedMobs.size()));
                 }
