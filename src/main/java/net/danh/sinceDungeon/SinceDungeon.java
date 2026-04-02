@@ -51,7 +51,7 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
-        getLogger().info("Running natively for Paper 1.21+ | Version: " + ServerVersion.getMajor() + "." + ServerVersion.getMinor() + "." + ServerVersion.getPatch());
+        getLogger().info("Running natively for Paper 1.21+ | Version: " + ServerVersion.getNmsVersion());
     }
 
     @Override
@@ -89,6 +89,8 @@ public final class SinceDungeon extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> PartyCommand.register(this, event));
         registerCommands();
         cleanUpStuckWorlds();
+        if (ServerVersion.isAtMost(1, 21, 11))
+            getLogger().warning("Warning: Your server version is below 1.21.11! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
     }
 
     private void extractDefaultLocales() {

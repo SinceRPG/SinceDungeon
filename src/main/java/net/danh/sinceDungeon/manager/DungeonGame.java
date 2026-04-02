@@ -11,6 +11,7 @@ import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -107,10 +108,17 @@ public class DungeonGame {
                     }
 
                     this.dungeonWorld = world;
-                    dungeonWorld.setGameRule(GameRules.SPAWN_MOBS, false);
-                    dungeonWorld.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                    dungeonWorld.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                    dungeonWorld.setGameRule(GameRules.ADVANCE_TIME, false);
+                    if (ServerVersion.isAtMost(1, 21, 10)) {
+                        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+                        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+                        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                    } else {
+                        world.setGameRule(GameRules.SPAWN_MOBS, false);
+                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                        world.setGameRule(GameRules.ADVANCE_TIME, false);
+                    }
                     dungeonWorld.setAutoSave(false);
 
                     if (template.settings().forceDaylightAndClearWeather()) {

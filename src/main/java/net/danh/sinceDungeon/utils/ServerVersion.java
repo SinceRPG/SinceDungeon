@@ -86,11 +86,6 @@ public class ServerVersion {
         return patch;
     }
 
-    /**
-     * Gets the full NMS revision representation format.
-     *
-     * @return NMS structure string.
-     */
     public static String getNmsVersion() {
         return nmsVersion;
     }
@@ -107,26 +102,48 @@ public class ServerVersion {
         return isFolia;
     }
 
+
+    /**
+     * Kiểm tra xem server có >= phiên bản yêu cầu không.
+     */
     public static boolean isAtLeast(int reqMajor, int reqMinor, int reqPatch) {
-        if (major > reqMajor) return true;
-        if (major == reqMajor) {
-            if (minor > reqMinor) return true;
-            if (minor == reqMinor) {
-                return patch >= reqPatch;
-            }
-        }
-        return false;
+        if (major != reqMajor) return major > reqMajor;
+        if (minor != reqMinor) return minor > reqMinor;
+        return patch >= reqPatch;
     }
 
+    /**
+     * Kiểm tra xem server có <= phiên bản yêu cầu không.
+     */
     public static boolean isAtMost(int reqMajor, int reqMinor, int reqPatch) {
-        if (major < reqMajor) return true;
-        if (major == reqMajor) {
-            if (minor < reqMinor) return true;
-            if (minor == reqMinor) {
-                return patch <= reqPatch;
-            }
-        }
-        return false;
+        if (major != reqMajor) return major < reqMajor;
+        if (minor != reqMinor) return minor < reqMinor;
+        return patch <= reqPatch;
+    }
+
+    /**
+     * Kiểm tra xem server có MỚI HƠN hẳn (>) phiên bản yêu cầu không.
+     */
+    public static boolean isNewerThan(int reqMajor, int reqMinor, int reqPatch) {
+        if (major != reqMajor) return major > reqMajor;
+        if (minor != reqMinor) return minor > reqMinor;
+        return patch > reqPatch;
+    }
+
+    /**
+     * Kiểm tra xem server có CŨ HƠN hẳn (<) phiên bản yêu cầu không.
+     */
+    public static boolean isOlderThan(int reqMajor, int reqMinor, int reqPatch) {
+        if (major != reqMajor) return major < reqMajor;
+        if (minor != reqMinor) return minor < reqMinor;
+        return patch < reqPatch;
+    }
+
+    /**
+     * Kiểm tra xem server có TRÙNG KHỚP (=) phiên bản yêu cầu không.
+     */
+    public static boolean isExactly(int reqMajor, int reqMinor, int reqPatch) {
+        return major == reqMajor && minor == reqMinor && patch == reqPatch;
     }
 
     public static boolean isAtLeast(int reqMinor) {
@@ -137,7 +154,7 @@ public class ServerVersion {
         return isAtLeast(1, reqMinor, reqPatch);
     }
 
-    public static boolean isExactly(int reqMajor, int reqMinor, int reqPatch) {
-        return major == reqMajor && minor == reqMinor && patch == reqPatch;
+    public static boolean isOlderThan(int reqMinor, int reqPatch) {
+        return isOlderThan(1, reqMinor, reqPatch);
     }
 }

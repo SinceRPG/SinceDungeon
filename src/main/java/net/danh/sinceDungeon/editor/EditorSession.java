@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -74,7 +75,7 @@ public class EditorSession {
         });
     }
 
-    private org.bukkit.Sound getSound(String soundName) {
+    private Sound getSound(String soundName) {
         if (soundName == null || soundName.trim().isEmpty()) return null;
         soundName = soundName.trim();
         if (soundName.startsWith("minecraft:")) {
@@ -85,18 +86,18 @@ public class EditorSession {
             try {
                 NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
                 if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
-                Sound sound = org.bukkit.Registry.SOUND_EVENT.get(key);
+                Sound sound = Registry.SOUND_EVENT.get(key);
                 if (sound != null) return sound;
                 return (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
             } catch (Throwable ignored) {
             }
         } else {
             try {
-                return org.bukkit.Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
-            } catch (IllegalArgumentException e1) {
+                return Sound.valueOf(soundName.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException | IncompatibleClassChangeError e) {
                 try {
                     String legacyName = soundName.replace(".", "_").toUpperCase(java.util.Locale.ROOT);
-                    return org.bukkit.Sound.valueOf(legacyName);
+                    return Sound.valueOf(legacyName);
                 } catch (IllegalArgumentException ignored) {
                 }
             }
