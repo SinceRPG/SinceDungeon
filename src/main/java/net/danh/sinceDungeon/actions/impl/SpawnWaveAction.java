@@ -28,6 +28,12 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         this.locations = locations;
     }
 
+    private void debug(String message) {
+        if (SinceDungeon.getPlugin().getConfigFile().getBoolean("debug", false)) {
+            SinceDungeon.getPlugin().getLogger().info("[Debug-SpawnWave] " + message);
+        }
+    }
+
     @Override
     public String getObjectiveText() {
         String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.spawn_wave", "<yellow>Eliminate <red><mob> <gray>(Remaining: <remain>)");
@@ -36,6 +42,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
+        debug("Cleaning up SpawnWaveAction, unlocking chunks.");
         unlockChunks();
     }
 
@@ -50,7 +57,10 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                if (ent.isDead()) return true;
+                if (ent.isDead()) {
+                    debug("Mob " + uuid + " is dead during tick check. Removing from tracker.");
+                    return true;
+                }
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
                 entry.setValue(ent.getLocation());
@@ -58,8 +68,10 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
+                    debug("Mob " + uuid + " is missing in a loaded chunk. Assuming dead/despawned.");
                     return true;
                 } else {
+                    debug("Chunk unloaded for mob " + uuid + ". Forcing chunk load.");
                     lastLoc.getChunk().load();
                     currentChunks.add(lastLoc.getChunk());
                     return false;
@@ -83,6 +95,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         });
 
         if (spawnedMobs.isEmpty()) {
+            debug("All mobs eliminated. Completing wave.");
             unlockChunks();
             this.completed = true;
             game.sendMessage("action.kill_complete", "<mob>", type.name());
@@ -91,7 +104,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 10; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
             if (!block.getType().isSolid() && !head.getType().isSolid()) {
@@ -104,20 +117,36 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
+        debug("Starting SpawnWaveAction for " + type.name() + " | Amount per location: " + amount);
         int count = 0;
+
         if (locations.isEmpty()) {
+            debug("Locations list is empty! Completing immediately.");
             this.completed = true;
             return;
         }
 
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            debug("Processing base location: " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
+
             for (int i = 0; i < amount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
-                Entity ent = game.getWorld().spawnEntity(finalLoc, type);
+                debug("Attempting to spawn at calculated safe location: " + finalLoc.getBlockX() + ", " + finalLoc.getBlockY() + ", " + finalLoc.getBlockZ());
+                boolean chunkLoaded = finalLoc.getChunk().load(true);
+                debug("Chunk loaded status: " + chunkLoaded);
+
+                Entity ent = null;
+                try {
+                    ent = game.getWorld().spawnEntity(finalLoc, type);
+                } catch (Exception e) {
+                    debug("EXCEPTION caught while spawning entity: " + e.getMessage());
+                    e.printStackTrace();
+                }
+
                 if (ent instanceof LivingEntity living) {
                     living.setRemoveWhenFarAway(false);
                     living.setPersistent(true);
@@ -131,15 +160,21 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
                     spawnedMobs.put(ent.getUniqueId(), finalLoc);
                     count++;
-                } else {
+                    debug("Successfully spawned LivingEntity with UUID: " + ent.getUniqueId());
+                } else if (ent != null) {
+                    debug("Spawned entity is not a LivingEntity. Removing it.");
                     ent.remove();
+                } else {
+                    debug("Entity returned null after spawn attempt.");
                 }
             }
         }
 
         if (count == 0) {
+            debug("Failed to spawn any mobs. Auto-completing stage to prevent softlock.");
             this.completed = true;
         } else {
+            debug("Successfully spawned a total of " + count + " mobs.");
             game.sendMessage("action.spawn_wave", "<amount>", String.valueOf(count), "<mob>", type.name());
         }
     }
@@ -148,6 +183,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof EntityDeathEvent e) {
             if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
+                debug("EntityDeathEvent registered for tracked mob: " + e.getEntity().getUniqueId() + ". Remaining: " + spawnedMobs.size());
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
