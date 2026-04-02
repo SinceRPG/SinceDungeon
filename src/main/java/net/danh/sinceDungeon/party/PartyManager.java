@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.party;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -252,20 +253,17 @@ public class PartyManager {
         if (party == null || message.trim().isEmpty()) return;
         String safeSender = MiniMessage.miniMessage().escapeTags(sender);
         String safeMsg = MiniMessage.miniMessage().escapeTags(message);
-
-        String format = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>")
-                .replace("<sender>", safeSender)
-                .replace("<msg>", safeMsg);
-
+        String mmSender = ColorUtils.convertLegacyToMiniMessage(safeSender);
+        String mmMessage = ColorUtils.convertLegacyToMiniMessage(safeMsg);
+        String rawFormat = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
+        String mmFormat = ColorUtils.convertLegacyToMiniMessage(rawFormat);
         Component finalComponent = MiniMessage.miniMessage().deserialize(
-                format,
-                Placeholder.unparsed("sender", sender),
-                Placeholder.unparsed("msg", message)
+                mmFormat,
+                Placeholder.parsed("sender", mmSender),
+                Placeholder.parsed("msg", mmMessage)
         );
-
         String shortId = party.getLeader().toString().substring(0, 6);
-        plugin.getLogger().info("[Party Chat - " + shortId + "] " + sender + ": " + message);
-
+        plugin.getLogger().info("[Party Chat - " + shortId + "] " + ColorUtils.toPlainText(finalComponent));
         party.getMembers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) p.sendMessage(finalComponent);
