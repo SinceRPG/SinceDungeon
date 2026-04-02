@@ -72,11 +72,17 @@ public class WorldManager {
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
                         world.setAutoSave(false);
-                        world.setGameRule(GameRules.SPAWN_MOBS, false);
-                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                        world.setGameRule(GameRules.ADVANCE_TIME, false);
-
+                        if (ServerVersion.isAtMost(1, 21, 10)) {
+                            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+                            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+                            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+                            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+                        } else {
+                            world.setGameRule(GameRules.SPAWN_MOBS, false);
+                            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+                            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+                            world.setGameRule(GameRules.ADVANCE_TIME, false);
+                        }
                         world.setTime(6000);
                         world.setStorm(false);
                         world.setThundering(false);
