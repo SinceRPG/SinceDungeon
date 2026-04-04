@@ -1,4 +1,4 @@
-image: gradle:8-jdk21
+image: gradle:9-jdk21
 
 variables:
   # Thay thế URL Webhook của bạn vào đây
