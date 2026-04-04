@@ -4,7 +4,7 @@
 settings:
   # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
   # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
-  locale: "vi"
+  locale: "en"
 
 # Debug mode: Enable to view detailed logs when an error occurs
 # Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
