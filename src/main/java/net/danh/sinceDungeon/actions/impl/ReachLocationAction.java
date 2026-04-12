@@ -29,7 +29,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         this.centerLoc = new Location(game.getWorld(), target.getX() + 0.5, target.getY() + 0.1, target.getZ() + 0.5);
-        game.sendMessage("action.reach_start", "<x>", String.valueOf(target.getBlockX()), "<z>", String.valueOf(target.getBlockZ()), "<y>", String.valueOf(target.getBlockY()));
+        game.sendActionMessage(getActionType(), "init", "action.reach_start", "<x>", String.valueOf(target.getBlockX()), "<z>", String.valueOf(target.getBlockZ()), "<y>", String.valueOf(target.getBlockY()));
     }
 
     @Override
@@ -57,7 +57,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
                 if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {
                     this.completed = true;
-                    game.sendMessage("action.reach_complete");
+                    game.sendActionMessage(getActionType(), "complete", "action.reach_complete");
                     game.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
                     break;
                 }

@@ -109,9 +109,9 @@ stages:
         type: LOOT_CHEST
         location: "28.0, 65, 28.0"
         items:
-          - "GOLDEN_APPLE;2;13" # Vanilla: MATERIAL;AMOUNT;SLOT
-          - "IRON_SWORD;1;14"
-          - "SWORD;SILVER_BLADE;1;15" # MMOItems: TYPE;ID;AMOUNT;SLOT
+          '13': "GOLDEN_APPLE:2" # Slot 13
+          '14': "IRON_SWORD:1"   # Slot 14
+          '15': "MMOITEMS:SWORD:SILVER_BLADE:1" # MMOItems format: MMOITEMS:TYPE:ID:AMOUNT (Slot 15)
         start_message:
           - "<gold>✦ TREASURE: <gray>A supply chest has appeared in the corner!"
           - "<gray>Take all the items inside to continue."

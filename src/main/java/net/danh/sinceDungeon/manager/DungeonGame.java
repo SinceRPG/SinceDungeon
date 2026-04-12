@@ -640,6 +640,7 @@ public class DungeonGame {
      * @param placeholders Key-value pair replacements
      */
     public void sendActionMessage(String actionName, String category, String key, String... placeholders) {
+        if (actionName == null) actionName = "unknown";
         boolean canShow = plugin.getConfigFile().getBoolean("action-notifications." + actionName.toLowerCase() + "." + category, true);
         if (canShow) {
             broadcastMessage(key, placeholders);

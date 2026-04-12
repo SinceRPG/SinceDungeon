@@ -6,9 +6,9 @@ settings:
   # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
   locale: "en"
 
-# Debug mode: Enable to view detailed logs when an error occurs
-# Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
-debug: false
+  # Debug mode: Enable to view detailed logs when an error occurs
+  # Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
+  debug: false
 
 party:
   # Maximum members allowed in a single party
@@ -138,7 +138,7 @@ action-defaults:
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
   loot_chest:
-    items: [ ]
+    items: {}
     start_message:
       - "&6A supply chest has appeared, loot it!"
   break_wall:

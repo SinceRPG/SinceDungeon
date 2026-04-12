@@ -98,7 +98,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             debug("All mobs eliminated. Completing wave.");
             unlockChunks();
             this.completed = true;
-            game.sendMessage("action.kill_complete", "<mob>", type.name());
+            game.sendActionMessage(getActionType(), "complete", "action.kill_complete", "<mob>", type.name());
         }
     }
 
@@ -175,7 +175,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             this.completed = true;
         } else {
             debug("Successfully spawned a total of " + count + " mobs.");
-            game.sendMessage("action.spawn_wave", "<amount>", String.valueOf(count), "<mob>", type.name());
+            game.sendActionMessage(getActionType(), "init", "action.spawn_wave", "<amount>", String.valueOf(count), "<mob>", type.name());
         }
     }
 
@@ -187,9 +187,9 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
-                    game.sendMessage("action.kill_complete", "<mob>", type.name());
+                    game.sendActionMessage(getActionType(), "complete", "action.kill_complete", "<mob>", type.name());
                 } else {
-                    game.sendMessage("action.kill_remain", "<amount>", String.valueOf(spawnedMobs.size()));
+                    game.sendActionMessage(getActionType(), "progress", "action.kill_remain", "<amount>", String.valueOf(spawnedMobs.size()));
                 }
             }
         }
