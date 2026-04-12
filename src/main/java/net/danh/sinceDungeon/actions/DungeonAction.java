@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.actions;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.entity.Player;
@@ -14,6 +15,7 @@ import java.util.List;
 public abstract class DungeonAction {
     public boolean completed = false;
     private List<String> startMessages = new ArrayList<>();
+    private String actionType = "UNKNOWN";
 
     /**
      * Starts the action within the provided dungeon game instance.
@@ -60,12 +62,29 @@ public abstract class DungeonAction {
     }
 
     /**
+     * Set internal action type (like SPAWN_WAVE, LOOT_CHEST) for logging and toggles
+     *
+     * @param actionType The exact type ID of this action.
+     */
+    public void setActionType(String actionType) {
+        this.actionType = actionType;
+    }
+
+    public String getActionType() {
+        return actionType;
+    }
+
+    /**
      * Announces the start messages to the player.
      *
      * @param game The current dungeon game.
      */
     public void announceStart(DungeonGame game) {
         if (startMessages == null || startMessages.isEmpty()) return;
+
+        boolean canShow = SinceDungeon.getPlugin().getConfigFile().getBoolean("action-notifications." + actionType.toLowerCase() + ".custom_start", true);
+        if (!canShow) return;
+
         for (String line : startMessages) {
             for (Player p : game.getParticipants()) {
                 if (p.isOnline() && p.getWorld().equals(game.getWorld())) {

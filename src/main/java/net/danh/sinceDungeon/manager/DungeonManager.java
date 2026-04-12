@@ -178,12 +178,15 @@ public class DungeonManager {
         try {
             DungeonAction action = parser != null ? parser.parse(data) : null;
 
-            if (action != null && data.containsKey("start_message")) {
-                Object msgObj = data.get("start_message");
-                List<String> msgs = new ArrayList<>();
-                if (msgObj instanceof String) msgs.add((String) msgObj);
-                else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
-                action.setStartMessages(msgs);
+            if (action != null) {
+                action.setActionType(type);
+                if (data.containsKey("start_message")) {
+                    Object msgObj = data.get("start_message");
+                    List<String> msgs = new ArrayList<>();
+                    if (msgObj instanceof String) msgs.add((String) msgObj);
+                    else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
+                    action.setStartMessages(msgs);
+                }
             }
             return action;
         } catch (Exception e) {

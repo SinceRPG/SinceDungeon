@@ -98,7 +98,6 @@ public final class SinceDungeon extends JavaPlugin {
             getLogger().warning("Warning: Your server version is below 1.21.11! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
         else if (ServerVersion.isAtLeast(26, 1))
             getLogger().warning("Warning: Your server version is below 26.1+! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
-
     }
 
     private void extractDefaultLocales() {

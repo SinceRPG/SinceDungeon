@@ -631,6 +631,21 @@ public class DungeonGame {
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }
 
+    /**
+     * Sends a specialized message respecting action toggles from config.yml
+     *
+     * @param actionName   The action type (e.g., spawn_wave, loot_chest)
+     * @param category     The category of message (e.g., init, progress, complete)
+     * @param key          The locale message key
+     * @param placeholders Key-value pair replacements
+     */
+    public void sendActionMessage(String actionName, String category, String key, String... placeholders) {
+        boolean canShow = plugin.getConfigFile().getBoolean("action-notifications." + actionName.toLowerCase() + "." + category, true);
+        if (canShow) {
+            broadcastMessage(key, placeholders);
+        }
+    }
+
     public void sendMessage(String key, String... placeholders) {
         broadcastMessage(key, placeholders);
     }

@@ -144,3 +144,34 @@ action-defaults:
   break_wall:
     start_message:
       - "&bDestroy the seal to open the path!"
+
+# =========================================================
+# [TÙY CHỈNH THÔNG BÁO]
+# [CUSTOMIZE NOTIFICATIONS]
+# Bật/tắt chi tiết các thông báo gửi lên kênh chat cho từng hành động
+# Enable/disable detailed notifications sent to the chat channel for each action.
+# =========================================================
+action-notifications:
+  spawn_wave:
+    custom_start: true # Dòng start_message tùy chỉnh trong file map / The custom start_message line in the map file
+    init: true         # Thông báo hệ thống khi quái được spawn / System notification when monsters spawn.
+    progress: true     # Thông báo nhắc nhở số lượng quái còn lại / Notification showing the remaining number of monsters.
+    complete: true     # Thông báo khi quái bị tiêu diệt hết / Notification when all monsters are eliminated.
+  mythic_wave:
+    custom_start: true
+    init: true
+    progress: true
+    complete: true
+  loot_chest:
+    custom_start: true
+    init: true         # Thông báo khi rương xuất hiện / Notification when the chest appears
+    progress: true     # Thông báo khi có người vừa chạm vào rương / Receive a notification when someone touches the chest.
+    warning: true      # Thông báo cảnh báo khi đóng rương mà chưa lấy hết đồ / Warning message appears when closing a chest without removing all items.
+    complete: true     # Thông báo khi rương đã được thu thập sạch / Notification when all chests have been collected.
+  reach_location:
+    custom_start: true
+    init: true         # Báo hiệu tọa độ mục tiêu cần đi đến / Signals the coordinates of the target to be reached.
+    complete: true     # Báo hiệu đã đến nơi thành công / Signal indicating successful arrival.
+  break_wall:
+    custom_start: true
+    complete: true     # Thông báo khi bức tường phong ấn bị phá vỡ / Notification when the sealing wall is broken
