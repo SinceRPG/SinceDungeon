@@ -7,10 +7,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
  * Utility wrapper for simplified YAML Configuration operations.
+ * Integrated with Auto-Updater to sync missing keys from plugin jar.
  */
 public class ConfigUtils {
     private final SinceDungeon plugin;
@@ -45,6 +49,40 @@ public class ConfigUtils {
             }
         }
         config = YamlConfiguration.loadConfiguration(file);
+        autoUpdateConfig(false);
+    }
+
+    /**
+     * Compares the current file with the original file inside the .jar to automatically update it.
+     *
+     * @param removeObsolete If set to true, the plugin will DELETE keys that exist in the external file
+     *                       but not in the .jar (Use with caution as this risks losing user's custom data).
+     */
+    private void autoUpdateConfig(boolean removeObsolete) {
+        InputStream defaultStream = plugin.getResource(name);
+        if (defaultStream == null) return;
+        YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStream, StandardCharsets.UTF_8));
+        boolean changed = false;
+
+        for (String key : defaultConfig.getKeys(true)) {
+            if (!config.contains(key)) {
+                config.set(key, defaultConfig.get(key));
+                changed = true;
+            }
+        }
+        if (removeObsolete) {
+            for (String key : config.getKeys(true)) {
+                if (!defaultConfig.contains(key)) {
+                    config.set(key, null);
+                    changed = true;
+                }
+            }
+        }
+
+        if (changed) {
+            save();
+            plugin.getLogger().info("[Auto-Updater] Automatically updated " + name + " with missing configuration keys.");
+        }
     }
 
     public void save() {
