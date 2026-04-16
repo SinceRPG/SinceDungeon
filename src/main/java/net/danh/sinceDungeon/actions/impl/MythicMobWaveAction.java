@@ -200,7 +200,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                     }
-                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc); // Đăng ký lại UUID mới
+                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc);
                     displayName.set(am.getDisplayName());
                     debug("Respawned missing MythicMob with new Bukkit UUID: " + bukkitEntity.getUniqueId());
                 }

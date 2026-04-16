@@ -52,6 +52,7 @@ public class DungeonManager {
 
     public void addTransitioning(UUID uuid) {
         transitioningPlayers.add(uuid);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> removeTransitioning(uuid), 200L);
     }
 
     public void removeTransitioning(UUID uuid) {
@@ -139,11 +140,17 @@ public class DungeonManager {
         if (!left.isEmpty()) {
             Location dropLoc = p.getLocation();
             DungeonGame game = getGame(p.getUniqueId());
+            String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
             if (game != null && dropLoc.getWorld() != null && dropLoc.getWorld().equals(game.getWorld())) {
                 Location safeLoc = game.getSavedLocation(p.getUniqueId());
                 if (safeLoc != null && safeLoc.getWorld() != null) {
                     dropLoc = safeLoc;
                 }
+            }
+
+            if (dropLoc.getWorld() != null && dropLoc.getWorld().getName().startsWith(prefix)) {
+                dropLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             }
 
             for (ItemStack drop : left.values()) {

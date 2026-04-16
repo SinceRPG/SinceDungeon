@@ -186,8 +186,10 @@ public class LootChestAction extends DungeonAction implements Tickable {
                     if (e.getCursor() != null && e.getCursor().getType() != Material.AIR) {
                         blockAction = true;
                     }
-                } else if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
-                    blockAction = true;
+                } else if (e.getClickedInventory() == e.getView().getBottomInventory()) {
+                    if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+                        blockAction = true;
+                    }
                 }
 
                 if (blockAction) {
