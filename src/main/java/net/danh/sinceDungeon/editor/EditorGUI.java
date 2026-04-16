@@ -618,6 +618,18 @@ public class EditorGUI implements Listener {
         }
 
         if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) {
+            e.setCancelled(true);
+            if (e.getClickedInventory() == e.getView().getBottomInventory()) {
+                if (e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR) {
+                    p.setItemOnCursor(e.getCurrentItem().clone());
+                }
+            } else if (e.getClickedInventory() == e.getView().getTopInventory()) {
+                if (e.getCursor() != null && e.getCursor().getType() != Material.AIR) {
+                    e.getClickedInventory().setItem(e.getRawSlot(), e.getCursor().clone());
+                } else {
+                    e.getClickedInventory().setItem(e.getRawSlot(), new ItemStack(Material.AIR));
+                }
+            }
             return;
         }
 
@@ -1034,8 +1046,17 @@ public class EditorGUI implements Listener {
                         int actualIdx = slot + page * 45;
                         if (actualIdx < keys.size()) {
                             String stage = keys.get(actualIdx);
-                            session.setCurrentStage(stage);
-                            openActionList(p, session, session.getPage("ACTIONS"));
+                            if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                                session.getConfig().set("stages." + stage, null);
+                                openStageList(p, session, page);
+                                String msg = getMsg("chat.stage_deleted");
+                                if (msg != null && !msg.isEmpty()) {
+                                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<stage>", stage)));
+                                }
+                            } else if (e.getClick() == ClickType.LEFT) {
+                                session.setCurrentStage(stage);
+                                openActionList(p, session, session.getPage("ACTIONS"));
+                            }
                         }
                     }
                 }

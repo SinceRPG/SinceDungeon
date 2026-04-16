@@ -41,6 +41,7 @@ public class DungeonGame {
     private boolean isPreparing = false;
     private boolean stageCompleting = false;
     private boolean isStopping = false;
+    private boolean isCleared = false;
 
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
@@ -361,6 +362,9 @@ public class DungeonGame {
     }
 
     private void finishDungeon() {
+        // [FIX LOGIC]: Đánh dấu hầm ngục đã hoàn thành để các hàm khác không gọi nhầm trạng thái FAILED
+        this.isCleared = true;
+
         broadcastMessage("game.finish");
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
         int chestCount = 1;
@@ -379,7 +383,6 @@ public class DungeonGame {
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
         int finalChestCount = finishEvent.getChestCount();
-
         boolean hasRewards = template.rewardPool() != null && !template.rewardPool().isEmpty();
 
         String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
@@ -388,7 +391,10 @@ public class DungeonGame {
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
 
-            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(initiatorId)) {
+            net.danh.sinceDungeon.party.PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            UUID currentLeader = party != null ? party.getLeader() : initiatorId;
+
+            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
                 continue;
             }
 
@@ -416,7 +422,6 @@ public class DungeonGame {
             p.teleportAsync(targetLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (p.isOnline() && !p.isDead()) {
                             if (finalChestCount > 0 && hasRewards) {
@@ -461,7 +466,9 @@ public class DungeonGame {
         savedStates.remove(p.getUniqueId());
 
         if (participants == null || participants.isEmpty()) {
-            stop(false, DungeonEndEvent.EndReason.FAILED);
+            if (!isCleared) {
+                stop(false, DungeonEndEvent.EndReason.FAILED);
+            }
         } else {
             broadcastMessage("game.player_disconnect", "<player>", p.getName());
         }

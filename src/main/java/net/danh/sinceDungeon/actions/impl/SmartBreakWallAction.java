@@ -114,8 +114,12 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 2500) {
-                    game.getWorld().getBlockAt(currentX, currentY, currentZ).setType(Material.AIR, false);
+                while (blocksProcessed < 200) {
+                    Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
+                    if (block.getType() != Material.AIR) {
+                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                        block.setType(Material.AIR, false);
+                    }
                     blocksProcessed++;
 
                     currentX++;

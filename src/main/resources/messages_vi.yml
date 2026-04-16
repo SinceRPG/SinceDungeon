@@ -412,3 +412,4 @@ editor:
     val_cleared: "&eĐã xóa trắng dữ liệu."
     line_removed: "&eĐã xóa dòng cuối cùng trong danh sách."
     list_empty: "&cDanh sách hiện tại đang trống."
+    stage_deleted: "&aĐã xóa thành công Giai đoạn <stage>."

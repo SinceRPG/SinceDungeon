@@ -412,3 +412,4 @@ editor:
     val_cleared: "&eData cleared."
     line_removed: "&eLast line removed from the list."
     list_empty: "&cThe list is currently empty."
+    stage_deleted: "&aSuccessfully deleted Stage <stage>."
