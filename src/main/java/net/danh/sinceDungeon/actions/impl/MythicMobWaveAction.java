@@ -18,7 +18,6 @@ import org.bukkit.event.Event;
 import org.bukkit.util.Vector;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
@@ -150,8 +149,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-        MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob(internalName).orElse(null);
-        AtomicReference<String> displayName = new AtomicReference<>(internalName);
+        io.lumine.mythic.api.mobs.MythicMob mob = io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMob(internalName).orElse(null);
+        java.util.concurrent.atomic.AtomicReference<String> displayName = new java.util.concurrent.atomic.AtomicReference<>(internalName);
 
         if (mob == null) {
             debug("MythicMob definition '" + internalName + "' went missing mid-wave. Aborting.");
@@ -166,7 +165,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                Optional<ActiveMob> amOpt = MythicBukkit.inst().getMobManager().getActiveMob(uuid);
+                Optional<io.lumine.mythic.core.mobs.ActiveMob> amOpt = io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getActiveMob(uuid);
                 amOpt.ifPresent(activeMob -> displayName.set(activeMob.getDisplayName()));
 
                 if (ent.isDead()) {
@@ -191,16 +190,17 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 }
             }
         });
+
         for (Location loc : mobsToRespawn) {
             try {
-                ActiveMob am = mob.spawn(BukkitAdapter.adapt(loc), this.level);
+                io.lumine.mythic.core.mobs.ActiveMob am = mob.spawn(io.lumine.mythic.bukkit.BukkitAdapter.adapt(loc), this.level);
                 if (am != null && am.getEntity() != null) {
                     Entity bukkitEntity = am.getEntity().getBukkitEntity();
                     if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                     }
-                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc);
+                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc); // Đăng ký lại UUID mới
                     displayName.set(am.getDisplayName());
                     debug("Respawned missing MythicMob with new Bukkit UUID: " + bukkitEntity.getUniqueId());
                 }

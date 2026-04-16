@@ -138,7 +138,7 @@ action-defaults:
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
   loot_chest:
-    items: {}
+    items: { }
     start_message:
       - "&6A supply chest has appeared, loot it!"
   break_wall:

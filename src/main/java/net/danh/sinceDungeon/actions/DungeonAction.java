@@ -61,6 +61,10 @@ public abstract class DungeonAction {
         this.startMessages = startMessages;
     }
 
+    public String getActionType() {
+        return actionType;
+    }
+
     /**
      * Set internal action type (like SPAWN_WAVE, LOOT_CHEST) for logging and toggles
      *
@@ -68,10 +72,6 @@ public abstract class DungeonAction {
      */
     public void setActionType(String actionType) {
         this.actionType = actionType;
-    }
-
-    public String getActionType() {
-        return actionType;
     }
 
     /**

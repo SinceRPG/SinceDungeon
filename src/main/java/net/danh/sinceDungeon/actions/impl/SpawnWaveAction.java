@@ -79,10 +79,11 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 }
             }
         });
+
         for (Location loc : mobsToRespawn) {
             try {
                 Entity ent = game.getWorld().spawnEntity(loc, type);
-                if (ent instanceof LivingEntity living) {
+                if (ent instanceof org.bukkit.entity.LivingEntity living) {
                     living.setRemoveWhenFarAway(false);
                     living.setPersistent(true);
                     spawnedMobs.put(ent.getUniqueId(), loc);
