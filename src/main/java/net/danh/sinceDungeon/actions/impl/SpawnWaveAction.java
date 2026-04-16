@@ -51,7 +51,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-
+        List<Location> mobsToRespawn = new ArrayList<>();
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
@@ -68,7 +68,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    debug("Mob " + uuid + " is missing in a loaded chunk. Assuming dead/despawned.");
+                    debug("Mob " + uuid + " is missing in a loaded chunk. Assuming despawned. Marking for respawn.");
+                    mobsToRespawn.add(lastLoc);
                     return true;
                 } else {
                     debug("Chunk unloaded for mob " + uuid + ". Forcing chunk load.");
@@ -78,6 +79,21 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 }
             }
         });
+        for (Location loc : mobsToRespawn) {
+            try {
+                Entity ent = game.getWorld().spawnEntity(loc, type);
+                if (ent instanceof LivingEntity living) {
+                    living.setRemoveWhenFarAway(false);
+                    living.setPersistent(true);
+                    spawnedMobs.put(ent.getUniqueId(), loc);
+                    debug("Respawned missing Vanilla mob with new UUID: " + ent.getUniqueId());
+                } else if (ent != null) {
+                    ent.remove();
+                }
+            } catch (Exception e) {
+                debug("EXCEPTION caught while respawning entity: " + e.getMessage());
+            }
+        }
 
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {

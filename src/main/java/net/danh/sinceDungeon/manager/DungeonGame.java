@@ -6,9 +6,6 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
-import net.danh.sinceDungeon.reward.RewardGUI;
-import net.danh.sinceDungeon.reward.RewardSession;
-import net.danh.sinceDungeon.reward.RewardSessionManager;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -383,8 +380,10 @@ public class DungeonGame {
         Bukkit.getPluginManager().callEvent(finishEvent);
         int finalChestCount = finishEvent.getChestCount();
 
+        boolean hasRewards = template.rewardPool() != null && !template.rewardPool().isEmpty();
+
         String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
-        RewardGUI rewardHelper = new RewardGUI(plugin);
+        net.danh.sinceDungeon.reward.RewardGUI rewardHelper = new net.danh.sinceDungeon.reward.RewardGUI(plugin);
 
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead()) continue;
@@ -393,13 +392,12 @@ public class DungeonGame {
                 continue;
             }
 
-            if (finalChestCount > 0) {
-                RewardSession oldSession = RewardSessionManager.getSession(p);
+            if (finalChestCount > 0 && hasRewards) {
+                net.danh.sinceDungeon.reward.RewardSession oldSession = net.danh.sinceDungeon.reward.RewardSessionManager.getSession(p);
                 if (oldSession != null && oldSession.getChestCount() > 0) {
                     rewardHelper.forceClaimAll(p, oldSession);
                 }
-
-                RewardSessionManager.addSession(p, new RewardSession(finalChestCount, template));
+                net.danh.sinceDungeon.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.reward.RewardSession(finalChestCount, template));
             }
 
             if (p.isInsideVehicle()) p.leaveVehicle();
@@ -421,7 +419,7 @@ public class DungeonGame {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (p.isOnline() && !p.isDead()) {
-                            if (finalChestCount > 0) {
+                            if (finalChestCount > 0 && hasRewards) {
                                 rewardHelper.openRewardGUI(p, finalChestCount, template);
                             } else {
                                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));

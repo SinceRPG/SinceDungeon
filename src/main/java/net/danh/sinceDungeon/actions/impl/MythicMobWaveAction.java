@@ -160,6 +160,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
+        List<Location> mobsToRespawn = new ArrayList<>();
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
@@ -179,7 +180,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    debug("MythicMob " + uuid + " is missing in a loaded chunk. Assuming dead/despawned.");
+                    debug("MythicMob " + uuid + " is missing in a loaded chunk. Assuming despawned. Marking for respawn.");
+                    mobsToRespawn.add(lastLoc);
                     return true;
                 } else {
                     debug("Chunk unloaded for MythicMob " + uuid + ". Forcing chunk load.");
@@ -189,6 +191,23 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 }
             }
         });
+        for (Location loc : mobsToRespawn) {
+            try {
+                ActiveMob am = mob.spawn(BukkitAdapter.adapt(loc), this.level);
+                if (am != null && am.getEntity() != null) {
+                    Entity bukkitEntity = am.getEntity().getBukkitEntity();
+                    if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
+                        le.setRemoveWhenFarAway(false);
+                        le.setPersistent(true);
+                    }
+                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc);
+                    displayName.set(am.getDisplayName());
+                    debug("Respawned missing MythicMob with new Bukkit UUID: " + bukkitEntity.getUniqueId());
+                }
+            } catch (Exception e) {
+                debug("EXCEPTION caught while respawning MythicMob: " + e.getMessage());
+            }
+        }
 
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {

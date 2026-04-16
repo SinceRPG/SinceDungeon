@@ -337,7 +337,7 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onBreak(BlockBreakEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
             e.setCancelled(true);
@@ -345,7 +345,7 @@ public class DungeonListener implements Listener {
         pass(e.getPlayer(), e);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     public void onPlace(BlockPlaceEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
             e.setCancelled(true);
