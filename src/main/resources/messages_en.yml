@@ -105,6 +105,7 @@ objective:
   reach_location: "&aReach the designated coordinates"
   break_wall: "&bFind and break the sealing block"
   spawn_wave: "&eEliminate &c<mob> &7(Left: <remain>)"
+  random_wave: "&eEliminate all enemies &7(Left: <remain>)"
 
 action:
   chest_appear: "&eA treasure chest has appeared!"
@@ -120,6 +121,9 @@ action:
   mythic_wave_start: "&cBoss <mob> has appeared!"
   mythic_wave_remain: "&e<amount> <mob> remaining."
   mythic_wave_complete: "&aBoss <mob> defeated!"
+  random_wave_start: "&c<amount> mixed enemies have appeared!"
+  random_wave_remain: "&e<amount> enemies remaining."
+  random_wave_complete: "&aAll enemies eliminated!"
 
 error:
   already_in: "&cYou or your party is already in another dungeon!"
@@ -186,12 +190,14 @@ editor:
     loot_chest: "Loot Treasure Chest"
     break_wall: "Break Wall via Block"
     mythic_wave: "Spawn Mythic Boss"
+    random_wave: "Random Mob Wave"
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"
     loot_chest: "Spawn a lootable treasure chest"
     break_wall: "Destroy wall when trigger block is broken"
     mythic_wave: "Spawn MythicMobs Boss"
+    random_wave: "Spawn a random mix of Vanilla and Mythic mobs from a pool"
   title:
     main: "&lDungeon Editor"
     dungeon: "&lEditing: <name>"
@@ -376,6 +382,15 @@ editor:
       edit_list:
         - "&7Enter text/value to add to the list."
         - "&7Tip: Type &cclear &7to empty this list."
+      edit_random_mobs:
+        - "&7Enter a mob entry to add to the random pool."
+        - "&7--- FORMAT ---"
+        - "&7Vanilla: &fVANILLA:<EntityType>:<weight>"
+        - "&7Example: &aVANILLA:ZOMBIE:50"
+        - "&7Mythic:  &fMYTHIC:<MobId>:<weight>[:<level>]"
+        - "&7Example: &aMYTHIC:SkeletonKing:20:2"
+        - "&7Weight: Higher = more likely to spawn. Does not need to sum to 100."
+        - "&7Tip: Type &cclear &7to empty the pool."
       edit_string:
         - "&7Please enter the text or new config value."
       default:

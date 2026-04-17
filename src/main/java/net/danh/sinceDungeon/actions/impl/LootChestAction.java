@@ -76,7 +76,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                     inv.setItem(entry.getKey(), item);
                 }
             }
-            game.sendActionMessage(getActionType(), "init", "action.chest_appear");
+            game.sendActionMessage(this, "init", "action.chest_appear");
         }
     }
 
@@ -154,7 +154,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
             Block b = e.getClickedBlock();
             if (isTargetChest(b) && !isOpened) {
                 isOpened = true;
-                game.sendActionMessage(getActionType(), "progress", "action.chest_found");
+                game.sendActionMessage(this, "progress", "action.chest_found");
             }
         } else if (event instanceof InventoryCloseEvent e) {
             Inventory inv = e.getInventory();
@@ -163,7 +163,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                     if (isInventoryEmpty(inv) && !completed) {
                         completeChestLogic(game, chest);
                     } else if (!completed) {
-                        game.sendActionMessage(getActionType(), "warning", "action.chest_not_empty");
+                        game.sendActionMessage(this, "warning", "action.chest_not_empty");
                     }
                 }
             }
@@ -215,7 +215,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     private void completeChestLogic(DungeonGame game, Chest chest) {
         this.completed = true;
-        game.sendActionMessage(getActionType(), "complete", "action.loot_complete");
+        game.sendActionMessage(this, "complete", "action.loot_complete");
 
         for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
             viewer.closeInventory();

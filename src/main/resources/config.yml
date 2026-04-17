@@ -1,6 +1,20 @@
 # config.yml
 # Main Configuration for SinceDungeon / Cấu hình chính của SinceDungeon
 
+# =========================================================
+# [DATABASE CONFIGURATION]
+# Configure the database backend for leaderboard storage.
+# type: "sqlite" (local file, recommended for small servers)
+#       "mysql"  (remote database, recommended for large/multi-server setups)
+# =========================================================
+database:
+  type: "sqlite"
+  host: "localhost"
+  port: 3306
+  database: "sincedungeon"
+  username: "root"
+  password: ""
+
 settings:
   # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
   # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
@@ -52,6 +66,12 @@ dungeon:
   # RESPAWN: Hồi sinh tại điểm xuất phát của Dungeon và chơi tiếp.
   # FAIL: Cả nhóm thất bại và bị đưa về sảnh ngay lập tức.
   death-action: "RESPAWN"
+
+  # Who receives a top (leaderboard) entry for Fastest Time and Most Clears when a dungeon is completed?
+  # ALL_MEMBERS: All party members who completed the dungeon get credit.
+  # LEADER_ONLY: Only the party leader gets credit for time and clear count.
+  # Note: Kills are ALWAYS tracked individually regardless of this setting.
+  top-awarded-to: "ALL_MEMBERS"
 
   # Xóa vật phẩm và kinh nghiệm (EXP) mặc định rơi ra từ quái vật trong Dungeon?
   # Clear default mob drops and EXP (like rotten flesh, bones, vanilla exp) inside the dungeon?
@@ -144,6 +164,16 @@ action-defaults:
   break_wall:
     start_message:
       - "&bDestroy the seal to open the path!"
+  random_wave:
+    amount: 5
+    # Each entry format: VANILLA:<EntityType>:<weight>  or  MYTHIC:<MobId>:<weight>[:<level>]
+    # Weight controls how often each mob is picked (higher = more likely). Does NOT need to sum to 100.
+    random_mobs:
+      - "VANILLA:ZOMBIE:50"
+      - "VANILLA:SKELETON:30"
+      - "MYTHIC:SkeletonKing:20:1"
+    start_message:
+      - "&cA horde of mixed enemies appears!"
 
 # =========================================================
 # [TÙY CHỈNH THÔNG BÁO]
@@ -174,4 +204,9 @@ action-notifications:
     complete: true     # Báo hiệu đã đến nơi thành công / Signal indicating successful arrival.
   break_wall:
     custom_start: true
-    complete: true     # Thông báo khi bức tường phong ấn bị phá vỡ / Notification when the sealing wall is broken
+    complete: true     # Notification when the sealing wall is broken
+  random_wave:
+    custom_start: true
+    init: true         # Notification when the random wave spawns.
+    progress: true     # Notification showing the remaining enemy count.
+    complete: true     # Notification when all enemies are eliminated.

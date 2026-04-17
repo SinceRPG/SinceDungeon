@@ -8,6 +8,7 @@ import org.bukkit.event.Event;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Base abstract class for all dungeon actions/objectives.
@@ -15,6 +16,7 @@ import java.util.List;
 public abstract class DungeonAction {
     public boolean completed = false;
     private List<String> startMessages = new ArrayList<>();
+    private Map<String, Boolean> notifications = new java.util.HashMap<>();
     private String actionType = "UNKNOWN";
 
     /**
@@ -74,6 +76,14 @@ public abstract class DungeonAction {
         this.actionType = actionType;
     }
 
+    public Map<String, Boolean> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(Map<String, Boolean> notifications) {
+        this.notifications = notifications != null ? notifications : new java.util.HashMap<>();
+    }
+
     /**
      * Announces the start messages to the player.
      *
@@ -83,6 +93,10 @@ public abstract class DungeonAction {
         if (startMessages == null || startMessages.isEmpty()) return;
 
         boolean canShow = SinceDungeon.getPlugin().getConfigFile().getBoolean("action-notifications." + actionType.toLowerCase() + ".custom_start", true);
+        if (notifications.containsKey("custom_start")) {
+            canShow = notifications.get("custom_start");
+        }
+        
         if (!canShow) return;
 
         for (String line : startMessages) {

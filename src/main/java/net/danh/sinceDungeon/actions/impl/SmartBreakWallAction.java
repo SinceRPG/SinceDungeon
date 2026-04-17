@@ -55,7 +55,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             isBreaking = true;
             removeWall(game);
             this.completed = true;
-            game.sendActionMessage(getActionType(), "complete", "action.wall_break");
+            game.sendActionMessage(this, "complete", "action.wall_break");
         }
     }
 
@@ -81,7 +81,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                 removeWall(game);
 
                 this.completed = true;
-                game.sendActionMessage(getActionType(), "complete", "action.wall_break");
+                game.sendActionMessage(this, "complete", "action.wall_break");
             }
         }
     }

@@ -194,6 +194,21 @@ public class DungeonManager {
                     else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
                     action.setStartMessages(msgs);
                 }
+                // Parse per-action notification overrides
+                if (data.containsKey("notifications")) {
+                    Object notifObj = data.get("notifications");
+                    Map<String, Boolean> notifMap = new java.util.HashMap<>();
+                    if (notifObj instanceof ConfigurationSection sec) {
+                        for (String k : sec.getKeys(false)) {
+                            notifMap.put(k, sec.getBoolean(k, true));
+                        }
+                    } else if (notifObj instanceof Map<?, ?> m) {
+                        for (Map.Entry<?, ?> entry : m.entrySet()) {
+                            try { notifMap.put(entry.getKey().toString(), Boolean.parseBoolean(entry.getValue().toString())); } catch (Exception ignored) {}
+                        }
+                    }
+                    action.setNotifications(notifMap);
+                }
             }
             return action;
         } catch (Exception e) {
@@ -303,9 +318,36 @@ public class DungeonManager {
                     int level = getInt(map.get("level"), (int) mmDefaults.get("level"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     return new MythicMobWaveAction(mob, amount, level, v);
-                }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
+                 }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
+
+        // ─── RANDOM_WAVE ───────────────────────────────────────────────────────
+        List<String> defaultRandomMobs = new ArrayList<>();
+        defaultRandomMobs.add("VANILLA:ZOMBIE:50");
+        defaultRandomMobs.add("VANILLA:SKELETON:30");
+        defaultRandomMobs.add("MYTHIC:SkeletonKing:20:1");
+
+        Map<String, Object> randomDefaults = new HashMap<>();
+        randomDefaults.put("amount", 5);
+        randomDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
+        randomDefaults.put("random_mobs", plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs").isEmpty()
+                ? defaultRandomMobs
+                : plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs"));
+        randomDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.random_wave.start_message"));
+
+        registerAction("RANDOM_WAVE", map -> {
+                    List<Vector> v = parseLocList(map.get("locations"));
+                    int amount = getInt(map.get("amount"), (int) randomDefaults.get("amount"));
+                    Object rawList = map.get("random_mobs");
+                    List<String> rawStrings = new ArrayList<>();
+                    if (rawList instanceof List<?> l) l.forEach(o -> rawStrings.add(o.toString()));
+                    else if (rawList instanceof String s) rawStrings.add(s);
+                    List<RandomWaveAction.MobOption> pool = RandomWaveAction.parseMobPool(rawStrings);
+                    return new RandomWaveAction(amount, v, pool);
+                }, plugin.getMessagesFile().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
+                plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
+                randomDefaults, new HashMap<>());
     }
 
     private int getInt(Object obj, int def) {

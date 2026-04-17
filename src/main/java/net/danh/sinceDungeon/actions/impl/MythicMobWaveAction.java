@@ -137,10 +137,10 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (count == 0) {
             debug("Failed to spawn any MythicMobs. Auto-completing stage.");
             this.completed = true;
-            game.sendActionMessage(getActionType(), "complete", "action.mythic_wave_complete", "<mob>", mobName);
+            game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
         } else {
             debug("Successfully spawned a total of " + count + " MythicMobs.");
-            game.sendActionMessage(getActionType(), "init", "action.mythic_wave_start", "<amount>", String.valueOf(count), "<mob>", mobName);
+            game.sendActionMessage(this, "init", "action.mythic_wave_start", "<amount>", String.valueOf(count), "<mob>", mobName);
         }
     }
 
@@ -228,7 +228,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             debug("All MythicMobs eliminated. Completing wave.");
             unlockChunks();
             this.completed = true;
-            game.sendActionMessage(getActionType(), "complete", "action.mythic_wave_complete", "<mob>", displayName.get());
+            game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", displayName.get());
         }
     }
 
@@ -240,9 +240,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
-                    game.sendActionMessage(getActionType(), "complete", "action.mythic_wave_complete", "<mob>", e.getMob().getDisplayName());
+                    game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", e.getMob().getDisplayName());
                 } else {
-                    game.sendActionMessage(getActionType(), "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", e.getMob().getDisplayName());
+                    game.sendActionMessage(this, "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", e.getMob().getDisplayName());
                 }
             }
         }

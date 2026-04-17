@@ -11,6 +11,8 @@ import net.danh.sinceDungeon.manager.DungeonGame;
 import net.danh.sinceDungeon.manager.DungeonListener;
 import net.danh.sinceDungeon.manager.DungeonManager;
 import net.danh.sinceDungeon.manager.MythicListener;
+import net.danh.sinceDungeon.database.DatabaseManager;
+import net.danh.sinceDungeon.database.TopManager;
 import net.danh.sinceDungeon.party.PartyCommand;
 import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
@@ -43,6 +45,8 @@ public final class SinceDungeon extends JavaPlugin {
     private PartyManager partyManager;
     private EditorManager editorManager;
     private EditorListener editorListener;
+    private DatabaseManager databaseManager;
+    private TopManager topManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -75,6 +79,11 @@ public final class SinceDungeon extends JavaPlugin {
         partyManager = new PartyManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
+
+        // Initialize database and top manager
+        databaseManager = new DatabaseManager(this);
+        databaseManager.connect();
+        topManager = new TopManager(this, databaseManager);
 
         SinceDungeonAPI.init(this);
 
@@ -138,6 +147,7 @@ public final class SinceDungeon extends JavaPlugin {
         if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();
         if (messagesFile != null) messagesFile.save();
+        if (databaseManager != null) databaseManager.disconnect();
     }
 
     public void reloadFiles(CommandSender sender) {
@@ -299,5 +309,13 @@ public final class SinceDungeon extends JavaPlugin {
 
     public PartyManager getPartyManager() {
         return partyManager;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
+    public TopManager getTopManager() {
+        return topManager;
     }
 }

@@ -105,6 +105,7 @@ objective:
   reach_location: "&aDi chuyển đến tọa độ mục tiêu"
   break_wall: "&bTìm và phá vỡ Khối đá phong ấn"
   spawn_wave: "&eTiêu diệt &c<mob> &7(Còn: <remain>)"
+  random_wave: "&eTiêu diệt tất cả kẻ địch &7(Còn: <remain>)"
 
 action:
   chest_appear: "&eMột rương kho báu vừa xuất hiện!"
@@ -120,6 +121,9 @@ action:
   mythic_wave_start: "&cBoss <mob> đã giáng lâm!"
   mythic_wave_remain: "&eCần tiêu diệt thêm <amount> <mob>."
   mythic_wave_complete: "&aBoss <mob> đã bị đánh bại hoàn toàn!"
+  random_wave_start: "&cMột đàn <amount> kẻ địch hỗn hợp xuất hiện!"
+  random_wave_remain: "&eCòn lại <amount> kẻ địch chưa bị tiêu diệt."
+  random_wave_complete: "&aToàn bộ kẻ địch đã bị tiêu diệt!"
 
 error:
   already_in: "&cBạn hoặc thành viên trong Tổ đội đang ở trong một Dungeon khác!"
@@ -186,12 +190,14 @@ editor:
     loot_chest: "Tạo Rương Tiếp Tế"
     break_wall: "Phá Tường Bằng Khối"
     mythic_wave: "Triệu hồi Boss Mythic"
+    random_wave: "Đợt Quái Ngẫu Nhiên"
   actions:
     spawn_wave: "Tạo đợt quái vật Vanilla cơ bản"
     reach_location: "Yêu cầu người chơi di chuyển tới tọa độ chỉ định"
     loot_chest: "Tạo rương kho báu và yêu cầu thu thập"
     break_wall: "Xóa bức tường chắn khi khối kích hoạt bị phá"
     mythic_wave: "Triệu hồi Boss từ hệ thống MythicMobs"
+    random_wave: "Tạo đợt quái ngẫu nhiên từ danh sách (Vanilla + MythicMobs)"
   title:
     main: "&lDungeon Editor"
     dungeon: "&lChỉnh sửa: <name>"
@@ -376,6 +382,15 @@ editor:
       edit_list:
         - "&7Nhập giá trị để thêm vào cấu hình."
         - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ dữ liệu ở đây."
+      edit_random_mobs:
+        - "&7Nhập một mục quái vật vào danh sách ngẫu nhiên."
+        - "&7--- ĐỊNH DẠNG ---"
+        - "&7Vanilla: &fVANILLA:<TênLoạiQuái>:<trọng_số>"
+        - "&7Ví dụ: &aVANILLA:ZOMBIE:50"
+        - "&7Mythic:  &fMYTHIC:<TênMob>:<trọng_số>[:<cấp_độ>]"
+        - "&7Ví dụ: &aMYTHIC:SkeletonKing:20:2"
+        - "&7Trọng số càng cao = xuất hiện càng nhiều. Không cần tổng bằng 100."
+        - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ danh sách."
       edit_string:
         - "&7Vui lòng nhập nội dung muốn lưu."
       default:

@@ -508,6 +508,9 @@ public class EditorGUI implements Listener {
             boolean isList = sec.isList(key);
             boolean isItems = key.equalsIgnoreCase("items");
 
+            boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
+            boolean isNotifications = key.equalsIgnoreCase("notifications");
+
             switch (key) {
                 case "type":
                     icon = Material.BARRIER;
@@ -521,12 +524,21 @@ public class EditorGUI implements Listener {
                     break;
                 case "start_message":
                     icon = Material.PAPER;
-                    hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
+                    hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Line | Right: Delete Last | <red>Shift-Right: Clear All");
+                    break;
+                case "random_mobs":
+                    icon = Material.TRIAL_SPAWNER;
+                    hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Entry | Right: Remove Last | <red>Shift-Right: Clear");
+                    isList = true;
+                    break;
+                case "notifications":
+                    icon = Material.BELL;
+                    hint = "<gray>Per-action notification overrides";
                     break;
                 case "items":
                     icon = Material.CHEST;
-                    hint = getMsg("items.action_val_hint_items", "<yellow>Chuột Trái: Mở giao diện xếp đồ");
-                    val = "<aqua>[Nhấn để xếp vật phẩm]";
+                    hint = getMsg("items.action_val_hint_items", "<yellow>Left Click: Open chest editor");
+                    val = "<aqua>[Click to arrange items]";
                     isList = false;
                     break;
                 default:
@@ -534,7 +546,7 @@ public class EditorGUI implements Listener {
                         icon = Material.COMPASS;
                         hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
                     } else if (isList) {
-                        hint = getMsg("items.action_val_hint_list", "<yellow>Trái: Thêm dòng | Phải: Xóa dòng cuối | <red>Shift-Phải: Xóa sạch");
+                        hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Line | Right: Delete Last | <red>Shift-Right: Clear All");
                     }
                     break;
             }
@@ -1111,10 +1123,24 @@ public class EditorGUI implements Listener {
                     return;
                 }
 
+                // Notifications field: not directly editable via GUI, show a hint instead
+                if (key.equalsIgnoreCase("notifications")) {
+                    String tipMsg = "&7[Notifications] Edit this field manually in the dungeon YAML file.\n"
+                            + "&7Format: notifications:\n"
+                            + "&7  init: false\n"
+                            + "&7  complete: true\n"
+                            + "&7Available keys: custom_start, init, progress, complete, warning";
+                    for (String line : tipMsg.split("\\n")) {
+                        p.sendMessage(ColorUtils.parse(line));
+                    }
+                    return;
+                }
+
                 boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
+                boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
-                boolean isList = session.getConfig().isList(fullPath);
+                boolean isList = isRandomMobs || session.getConfig().isList(fullPath);
 
                 EditorSession.InputType inputType;
                 if (isLocation) {
@@ -1174,7 +1200,8 @@ public class EditorGUI implements Listener {
                 }
 
                 if (e.getClick() == ClickType.LEFT) {
-                    String promptKey = "edit_action_" + key.toLowerCase();
+                    // Use specific prompt for random_mobs, otherwise fall back to generic key-based prompt
+                    String promptKey = isRandomMobs ? "edit_random_mobs" : "edit_action_" + key.toLowerCase();
 
                     session.awaitInput(inputType, promptKey, val -> {
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {

@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
+import net.danh.sinceDungeon.database.TopManager;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -16,6 +17,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -42,6 +44,9 @@ public class DungeonGame {
     private boolean stageCompleting = false;
     private boolean isStopping = false;
     private boolean isCleared = false;
+
+    // Per-player kill tracking for this dungeon run
+    private final Map<UUID, Integer> playerKills = new ConcurrentHashMap<>();
 
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
@@ -336,6 +341,14 @@ public class DungeonGame {
                 advanceNextAction();
             }
         }
+
+        // Track kills for leaderboard
+        if (event instanceof EntityDeathEvent ede) {
+            Player killer = ede.getEntity().getKiller();
+            if (killer != null && participants != null && participants.contains(killer)) {
+                playerKills.merge(killer.getUniqueId(), 1, Integer::sum);
+            }
+        }
     }
 
     private void checkStageCompletion() {
@@ -379,6 +392,32 @@ public class DungeonGame {
         isRunning = false;
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
+
+        // --- Save leaderboard stats ---
+        if (plugin.getTopManager() != null && template != null) {
+            String dungeonId = template.id();
+            String awardedTo = plugin.getConfigFile().getString("dungeon.top-awarded-to", "ALL_MEMBERS");
+            TopManager topManager = plugin.getTopManager();
+
+            // Determine which players are eligible for clear-time and clear-count top
+            net.danh.sinceDungeon.party.PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
+            UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
+
+            for (Player p : participants) {
+                if (!p.isOnline()) continue;
+                boolean isLeader = p.getUniqueId().equals(leaderId);
+
+                // Save individual kill count (always per-player, regardless of award setting)
+                int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
+                topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
+
+                // Save clear time and increment clear count based on setting
+                if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
+                    topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
+                    topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
+                }
+            }
+        }
 
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
@@ -637,16 +676,22 @@ public class DungeonGame {
     }
 
     /**
-     * Sends a specialized message respecting action toggles from config.yml
+     * Sends a specialized message respecting action toggles from config.yml and specific overrides.
      *
-     * @param actionName   The action type (e.g., spawn_wave, loot_chest)
+     * @param action       The action instance calling this
      * @param category     The category of message (e.g., init, progress, complete)
      * @param key          The locale message key
      * @param placeholders Key-value pair replacements
      */
-    public void sendActionMessage(String actionName, String category, String key, String... placeholders) {
+    public void sendActionMessage(DungeonAction action, String category, String key, String... placeholders) {
+        String actionName = action != null ? action.getActionType() : "unknown";
         if (actionName == null) actionName = "unknown";
+        
         boolean canShow = plugin.getConfigFile().getBoolean("action-notifications." + actionName.toLowerCase() + "." + category, true);
+        if (action != null && action.getNotifications().containsKey(category)) {
+            canShow = action.getNotifications().get(category);
+        }
+        
         if (canShow) {
             broadcastMessage(key, placeholders);
         }

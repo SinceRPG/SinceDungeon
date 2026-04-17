@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.gradleup.shadow") version "8.3.0"
 }
 
 group = 'net.danh'
@@ -33,6 +34,10 @@ dependencies {
     compileOnly("io.lumine:MythicLib-dist:1.7.1-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.7")
+    // SQLite JDBC driver (bundled via shadow jar)
+    implementation("org.xerial:sqlite-jdbc:3.47.1.0")
+    // MySQL connector (bundled via shadow jar)
+    implementation("com.mysql:mysql-connector-j:9.1.0")
 }
 
 tasks {
@@ -71,4 +76,11 @@ processResources {
     filesMatching('paper-plugin.yml') {
         expand props
     }
+}
+
+// Shadow jar: relocate JDBC drivers to avoid classpath conflicts
+shadowJar {
+    archiveClassifier.set('')
+    relocate 'org.sqlite', 'net.danh.sinceDungeon.libs.sqlite'
+    relocate 'com.mysql', 'net.danh.sinceDungeon.libs.mysql'
 }
