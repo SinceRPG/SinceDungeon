@@ -145,6 +145,12 @@ action-defaults:
   spawn_wave:
     mob: "ZOMBIE"
     amount: 1
+    custom_name: ""
+    is_baby: false
+    attributes: [ ]
+    equipment: [ ]
+    locations:
+      - "0,0,0"
     start_message:
       - "&cMonsters are approaching!"
   reach_location:

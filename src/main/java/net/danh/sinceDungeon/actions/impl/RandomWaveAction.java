@@ -9,7 +9,9 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.manager.DungeonGame;
 import org.bukkit.*;
 import org.bukkit.block.Block;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
@@ -19,38 +21,52 @@ import java.util.*;
 /**
  * A wave action that randomly selects mobs from a configured pool.
  * Supports both Vanilla (Bukkit EntityType) and MythicMobs.
- *
+ * <p>
  * Format for each entry in the random_mobs list:
- *   VANILLA:<EntityType>:<weight>
- *   MYTHIC:<MobId>:<weight>:<level>   (level is optional, defaults to 1)
- *
+ * VANILLA:<EntityType>:<weight>
+ * MYTHIC:<MobId>:<weight>:<level>   (level is optional, defaults to 1)
+ * <p>
  * Example:
- *   - VANILLA:ZOMBIE:50
- *   - VANILLA:SKELETON:30
- *   - MYTHIC:SkeletonKing:20:5
+ * - VANILLA:ZOMBIE:50
+ * - VANILLA:SKELETON:30
+ * - MYTHIC:SkeletonKing:20:5
  */
 public class RandomWaveAction extends DungeonAction implements Tickable {
-
-    /**
-     * Represents a single mob option in the random pool.
-     */
-    public record MobOption(boolean isMythic, String id, int level, double weight) {
-    }
 
     private final int amount;
     private final List<Vector> locations;
     private final List<MobOption> mobPool;
-
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
-
-    // Tracks what type each mob UUID spawned as (for display name)
     private final Map<UUID, String> mobDisplayNames = new HashMap<>();
 
     public RandomWaveAction(int amount, List<Vector> locations, List<MobOption> mobPool) {
         this.amount = amount;
         this.locations = locations;
         this.mobPool = mobPool;
+    }
+
+    /**
+     * Parses a list of raw mob pool strings into MobOption records.
+     * Format: VANILLA:<id>:<weight>  or  MYTHIC:<id>:<weight>[:<level>]
+     */
+    public static List<MobOption> parseMobPool(List<String> raw) {
+        List<MobOption> pool = new ArrayList<>();
+        for (String entry : raw) {
+            try {
+                String[] parts = entry.replace(" ", "").split(":");
+                if (parts.length < 3) continue;
+                boolean isMythic = parts[0].equalsIgnoreCase("MYTHIC");
+                String id = parts[1];
+                double weight = Double.parseDouble(parts[2]);
+                int level = parts.length >= 4 ? Integer.parseInt(parts[3]) : 1;
+                if (weight > 0) pool.add(new MobOption(isMythic, id, level, weight));
+            } catch (Exception ignored) {
+                SinceDungeon.getPlugin().getLogger().warning("[RandomWave] Failed to parse mob pool entry: " + entry
+                        + " — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]");
+            }
+        }
+        return pool;
     }
 
     // ─── Utility ──────────────────────────────────────────────────────────────
@@ -290,31 +306,15 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         for (Chunk c : lockedChunks) {
             try {
                 c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         lockedChunks.clear();
     }
 
     /**
-     * Parses a list of raw mob pool strings into MobOption records.
-     * Format: VANILLA:<id>:<weight>  or  MYTHIC:<id>:<weight>[:<level>]
+     * Represents a single mob option in the random pool.
      */
-    public static List<MobOption> parseMobPool(List<String> raw) {
-        List<MobOption> pool = new ArrayList<>();
-        for (String entry : raw) {
-            try {
-                String[] parts = entry.replace(" ", "").split(":");
-                if (parts.length < 3) continue;
-                boolean isMythic = parts[0].equalsIgnoreCase("MYTHIC");
-                String id = parts[1];
-                double weight = Double.parseDouble(parts[2]);
-                int level = parts.length >= 4 ? Integer.parseInt(parts[3]) : 1;
-                if (weight > 0) pool.add(new MobOption(isMythic, id, level, weight));
-            } catch (Exception ignored) {
-                SinceDungeon.getPlugin().getLogger().warning("[RandomWave] Failed to parse mob pool entry: " + entry
-                        + " — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]");
-            }
-        }
-        return pool;
+    public record MobOption(boolean isMythic, String id, int level, double weight) {
     }
 }

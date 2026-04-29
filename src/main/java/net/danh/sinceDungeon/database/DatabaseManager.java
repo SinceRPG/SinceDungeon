@@ -3,7 +3,10 @@ package net.danh.sinceDungeon.database;
 import net.danh.sinceDungeon.SinceDungeon;
 
 import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.logging.Level;
 
 /**
@@ -13,15 +16,14 @@ import java.util.logging.Level;
 public class DatabaseManager {
 
     private final SinceDungeon plugin;
-    private Connection connection;
     private final String type;
-
     // MySQL settings
     private final String host;
     private final int port;
     private final String database;
     private final String username;
     private final String password;
+    private Connection connection;
 
     public DatabaseManager(SinceDungeon plugin) {
         this.plugin = plugin;

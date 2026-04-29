@@ -12,7 +12,6 @@ public record EditorHolder(EditorSession session, String menuType, int page) imp
 
     @Override
     public @NotNull Inventory getInventory() {
-        // Return null as we strictly use this for instance checking
         return null;
     }
 }

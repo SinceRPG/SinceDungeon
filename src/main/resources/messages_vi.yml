@@ -395,6 +395,27 @@ editor:
         - "&7Vui lòng nhập nội dung muốn lưu."
       default:
         - "&7Vui lòng nhập giá trị mới vào khung chat."
+      edit_action_custom_name:
+        - "&7Nhập tên tùy chỉnh cho quái vật (Hỗ trợ mã màu)."
+        - "&7Ví dụ: &c&lHỏa Vương"
+        - "&7Mẹo: Gõ &cclear &7để xóa tên và quay về mặc định."
+      edit_action_is_baby:
+        - "&7Quái vật này có phải là con non (baby) không? Nhập &atrue &7hoặc &cfalse&7."
+      edit_action_attributes:
+        - "&7Cấu hình chỉ số sức mạnh cho quái vật."
+        - "&7Định dạng: &a<chỉ_số>:<giá_trị>"
+        - "&7Ví dụ: &fmax_health:500"
+        - "&7Ví dụ: &fattack_damage:20"
+        - "&7Ví dụ: &fscale:2.5"
+        - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ chỉ số tùy chỉnh."
+        - "&7Link Attributes: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html"
+      edit_action_equipment:
+        - "&7Thiết lập trang bị cho quái vật."
+        - "&7Định dạng: &a<vị_trí>:<dữ_liệu_vật_phẩm>"
+        - "&7Các vị trí hợp lệ: &fhelmet, chestplate, leggings, boots, mainhand, offhand"
+        - "&7Ví dụ Vanilla: &fmainhand:DIAMOND_SWORD:1"
+        - "&7Ví dụ MMOItems: &fmainhand:MMOITEMS:SWORD:FIERY_SWORD:1"
+        - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ trang bị."
   chat:
     input_start:
       - "&aHệ thống đang chờ bạn điền thông tin."

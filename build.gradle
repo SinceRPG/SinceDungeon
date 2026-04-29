@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'net.danh'
-version = '1.5.3.4'
+version = '1.5.4'
 
 repositories {
     mavenCentral()

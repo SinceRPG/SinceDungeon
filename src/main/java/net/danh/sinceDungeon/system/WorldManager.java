@@ -4,7 +4,10 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -72,17 +75,17 @@ public class WorldManager {
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
                         world.setAutoSave(false);
-                        if (ServerVersion.isAtMost(1, 21, 10)) {
-                            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-                            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-                            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                        } else {
-                            world.setGameRule(GameRules.SPAWN_MOBS, false);
-                            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                            world.setGameRule(GameRules.ADVANCE_TIME, false);
-                        }
+//                        if (ServerVersion.isAtMost(1, 21, 10)) {
+//                            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+//                            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+//                            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+//                            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+//                        } else {
+//                            world.setGameRule(GameRules.SPAWN_MOBS, false);
+//                            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+//                            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+//                            world.setGameRule(GameRules.ADVANCE_TIME, false);
+//                        }
                         world.setTime(6000);
                         world.setStorm(false);
                         world.setThundering(false);

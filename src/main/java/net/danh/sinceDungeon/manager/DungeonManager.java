@@ -82,16 +82,14 @@ public class DungeonManager {
     private void registerDefaultProcessors() {
         registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
-        registerRewardProcessor("COMMAND", (p, val, displayName) -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-                String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
-                if (displayName != null && msg != null) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
-                }
-            });
-        });
+        registerRewardProcessor("COMMAND", (p, val, displayName) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
+            String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
+            if (displayName != null && msg != null) {
+                p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+            }
+        }));
 
         registerRewardProcessor("ITEM", (p, val, displayName) -> {
             try {
@@ -150,7 +148,7 @@ public class DungeonManager {
             }
 
             if (dropLoc.getWorld() != null && dropLoc.getWorld().getName().startsWith(prefix)) {
-                dropLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
+                dropLoc = Bukkit.getWorlds().getFirst().getSpawnLocation();
             }
 
             for (ItemStack drop : left.values()) {
@@ -204,7 +202,10 @@ public class DungeonManager {
                         }
                     } else if (notifObj instanceof Map<?, ?> m) {
                         for (Map.Entry<?, ?> entry : m.entrySet()) {
-                            try { notifMap.put(entry.getKey().toString(), Boolean.parseBoolean(entry.getValue().toString())); } catch (Exception ignored) {}
+                            try {
+                                notifMap.put(entry.getKey().toString(), Boolean.parseBoolean(entry.getValue().toString()));
+                            } catch (Exception ignored) {
+                            }
                         }
                     }
                     action.setNotifications(notifMap);
@@ -219,9 +220,14 @@ public class DungeonManager {
     }
 
     private void registerDefaultActions() {
-        Map<String, Object> spawnDefaults = new HashMap<>();
+        // --- SPAWN_WAVE ---
+        Map<String, Object> spawnDefaults = new LinkedHashMap<>();
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
         spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
+        spawnDefaults.put("custom_name", plugin.getConfigFile().getString("action-defaults.spawn_wave.custom_name", ""));
+        spawnDefaults.put("is_baby", plugin.getConfigFile().getBoolean("action-defaults.spawn_wave.is_baby", false));
+        spawnDefaults.put("attributes", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.attributes"));
+        spawnDefaults.put("equipment", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.equipment"));
         spawnDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         spawnDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.start_message"));
 
@@ -235,11 +241,29 @@ public class DungeonManager {
                     }
                     int amount = getInt(map.get("amount"), (int) spawnDefaults.get("amount"));
                     List<Vector> v = parseLocList(map.get("locations"));
-                    return new SpawnWaveAction(mob, amount, v);
+
+                    String customName = String.valueOf(map.getOrDefault("custom_name", ""));
+                    boolean isBaby = false;
+                    if (map.containsKey("is_baby")) isBaby = Boolean.parseBoolean(map.get("is_baby").toString());
+
+                    List<String> attributesList = new ArrayList<>();
+                    Object attrObj = map.get("attributes");
+                    if (attrObj instanceof List<?> l) {
+                        l.forEach(o -> attributesList.add(o.toString()));
+                    }
+
+                    List<String> equipmentList = new ArrayList<>();
+                    Object equipObj = map.get("equipment");
+                    if (equipObj instanceof List<?> l) {
+                        l.forEach(o -> equipmentList.add(o.toString()));
+                    }
+
+                    return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList);
                 }, plugin.getMessagesFile().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
 
+        // --- REACH_LOCATION ---
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
         reachDefaults.put("radius", plugin.getConfigFile().getDouble("action-defaults.reach_location.radius", 3.0));
@@ -254,6 +278,7 @@ public class DungeonManager {
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
+        // --- LOOT_CHEST ---
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
         chestDefaults.put("items", new HashMap<String, String>());
@@ -291,6 +316,7 @@ public class DungeonManager {
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
 
+        // --- BREAK_WALL ---
         Map<String, Object> wallDefaults = new HashMap<>();
         wallDefaults.put("trigger", "0,0,0");
         wallDefaults.put("corner1", "0,0,0");
@@ -305,6 +331,7 @@ public class DungeonManager {
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults, new HashMap<>());
 
+        // --- MYTHIC_WAVE ---
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
@@ -318,11 +345,11 @@ public class DungeonManager {
                     int level = getInt(map.get("level"), (int) mmDefaults.get("level"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     return new MythicMobWaveAction(mob, amount, level, v);
-                 }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
+                }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
 
-        // ─── RANDOM_WAVE ───────────────────────────────────────────────────────
+        // --- RANDOM_WAVE ---
         List<String> defaultRandomMobs = new ArrayList<>();
         defaultRandomMobs.add("VANILLA:ZOMBIE:50");
         defaultRandomMobs.add("VANILLA:SKELETON:30");
@@ -380,13 +407,11 @@ public class DungeonManager {
 
     public CompletableFuture<Void> reload() {
         stopAllGames();
-        return loadTemplatesAsync().thenAccept(newTemplates -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                templates.clear();
-                templates.putAll(newTemplates);
-                plugin.getLogger().info("Dungeon templates reloaded asynchronously without disrupting joins!");
-            });
-        });
+        return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
+            templates.clear();
+            templates.putAll(newTemplates);
+            plugin.getLogger().info("Dungeon templates reloaded asynchronously without disrupting joins!");
+        }));
     }
 
     private CompletableFuture<Map<String, DungeonTemplate>> loadTemplatesAsync() {

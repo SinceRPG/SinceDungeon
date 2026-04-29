@@ -96,7 +96,7 @@ public abstract class DungeonAction {
         if (notifications.containsKey("custom_start")) {
             canShow = notifications.get("custom_start");
         }
-        
+
         if (!canShow) return;
 
         for (String line : startMessages) {

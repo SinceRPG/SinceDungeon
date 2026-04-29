@@ -9,9 +9,11 @@ import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
 import net.danh.sinceDungeon.database.TopManager;
 import net.danh.sinceDungeon.system.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.title.Title;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
@@ -32,6 +34,7 @@ public class DungeonGame {
     private final SinceDungeon plugin;
     private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
     private final String worldName;
+    private final Map<UUID, Integer> playerKills = new ConcurrentHashMap<>();
     private UUID initiatorId;
     private Set<Player> participants;
     private DungeonTemplate template;
@@ -44,10 +47,6 @@ public class DungeonGame {
     private boolean stageCompleting = false;
     private boolean isStopping = false;
     private boolean isCleared = false;
-
-    // Per-player kill tracking for this dungeon run
-    private final Map<UUID, Integer> playerKills = new ConcurrentHashMap<>();
-
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
     private long startTime;
@@ -111,17 +110,17 @@ public class DungeonGame {
                     }
 
                     this.dungeonWorld = world;
-                    if (ServerVersion.isAtMost(1, 21, 10)) {
-                        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-                        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-                        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-                        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-                    } else {
-                        world.setGameRule(GameRules.SPAWN_MOBS, false);
-                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
-                        world.setGameRule(GameRules.ADVANCE_TIME, false);
-                    }
+//                    if (ServerVersion.isAtMost(1, 21, 10)) {
+//                        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+//                        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+//                        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+//                        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+//                    } else {
+//                        world.setGameRule(GameRules.SPAWN_MOBS, false);
+//                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
+//                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
+//                        world.setGameRule(GameRules.ADVANCE_TIME, false);
+//                    }
                     dungeonWorld.setAutoSave(false);
 
                     if (template.settings().forceDaylightAndClearWeather()) {
@@ -375,7 +374,6 @@ public class DungeonGame {
     }
 
     private void finishDungeon() {
-        // [FIX LOGIC]: Đánh dấu hầm ngục đã hoàn thành để các hàm khác không gọi nhầm trạng thái FAILED
         this.isCleared = true;
 
         broadcastMessage("game.finish");
@@ -686,12 +684,12 @@ public class DungeonGame {
     public void sendActionMessage(DungeonAction action, String category, String key, String... placeholders) {
         String actionName = action != null ? action.getActionType() : "unknown";
         if (actionName == null) actionName = "unknown";
-        
+
         boolean canShow = plugin.getConfigFile().getBoolean("action-notifications." + actionName.toLowerCase() + "." + category, true);
         if (action != null && action.getNotifications().containsKey(category)) {
             canShow = action.getNotifications().get(category);
         }
-        
+
         if (canShow) {
             broadcastMessage(key, placeholders);
         }

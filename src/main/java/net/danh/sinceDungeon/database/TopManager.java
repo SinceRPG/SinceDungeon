@@ -3,8 +3,13 @@ package net.danh.sinceDungeon.database;
 import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Bukkit;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 
 /**
@@ -12,15 +17,6 @@ import java.util.logging.Level;
  * Tracks: fastest clear time, most kills per run, and most total clears.
  */
 public class TopManager {
-
-    public enum TopCategory {
-        FASTEST_TIME,
-        MOST_KILLS,
-        MOST_CLEARS
-    }
-
-    public record TopEntry(String playerUuid, String playerName, long value, long recordedAt) {
-    }
 
     private final SinceDungeon plugin;
     private final DatabaseManager db;
@@ -182,7 +178,9 @@ public class TopManager {
                     valueCol = "clear_count";
                     order = "DESC";
                 }
-                default -> { return results; }
+                default -> {
+                    return results;
+                }
             }
 
             String sql = "SELECT player_uuid, player_name, " + valueCol + ", recorded_at FROM " + table
@@ -206,5 +204,14 @@ public class TopManager {
         }
 
         return results;
+    }
+
+    public enum TopCategory {
+        FASTEST_TIME,
+        MOST_KILLS,
+        MOST_CLEARS
+    }
+
+    public record TopEntry(String playerUuid, String playerName, long value, long recordedAt) {
     }
 }

@@ -395,6 +395,27 @@ editor:
         - "&7Please enter the text or new config value."
       default:
         - "&7Please enter the new value in chat."
+      edit_action_custom_name:
+        - "&7Enter a custom name for the mob (Color codes supported)."
+        - "&7Example: &c&lFire Boss"
+        - "&7Tip: Type &cclear &7to remove the name."
+      edit_action_is_baby:
+        - "&7Is this mob a baby? Enter &atrue &7or &cfalse&7."
+      edit_action_attributes:
+        - "&7Set custom attributes for the monster."
+        - "&7Format: &a<attribute>:<value>"
+        - "&7Example: &fmax_health:500"
+        - "&7Example: &fattack_damage:20"
+        - "&7Example: &fscale:2.5"
+        - "&7Tip: Type &cclear &7to remove all custom attributes."
+        - "&7Link Attributes: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html"
+      edit_action_equipment:
+        - "&7Set the equipment for the monster."
+        - "&7Format: &a<slot>:<item_data>"
+        - "&7Valid Slots: &fhelmet, chestplate, leggings, boots, mainhand, offhand"
+        - "&7Vanilla Example: &fmainhand:DIAMOND_SWORD:1"
+        - "&7MMOItems Example: &fmainhand:MMOITEMS:SWORD:FIERY_SWORD:1"
+        - "&7Tip: Type &cclear &7to remove all equipment."
   chat:
     input_start:
       - "&aPlease enter a value in chat."
