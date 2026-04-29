@@ -5,6 +5,25 @@ cross_server:
   found: "&aAvailable server found (<server>). Teleporting your party..."
   timeout: "&cNo available Dungeon servers found. Please try again later!"
   already_searching: "&cSystem is already searching for a server, please wait!"
+lives:
+  party_member_not_enough: "&cMember <player> does not have enough lives. Aborting Dungeon entry."
+  player_not_found: "&cPlayer not found or offline."
+  check_other: "&e<player>'s Lives: &a<current>&7/&a<max> &7(Regens <amount> life every <time>s)."
+  admin_set_regen_amount: "&aSuccessfully set <player>'s custom regen amount to <amount>."
+  admin_set_regen_interval: "&aSuccessfully set <player>'s custom regen interval to <amount> seconds."
+  admin_reset_regen: "&aSuccessfully reset <player>'s regen settings to global defaults."
+  not_enough: "&cYou need at least <required> lives to enter this dungeon! You currently have <current>."
+  deducted: "&cYou died! You lost <amount> life/lives. Remaining: <current>/<max>."
+  out_of_lives: "&cYou have run out of lives and have been kicked from the dungeon!"
+  regenerated: "&aYou have regenerated <amount> lives while offline! Current: <current>/<max>."
+  check: "&eYour Lives: &a<current>&7/&a<max> &7(Regenerates 1 life every <time>)."
+  max_reached: "&aYour lives are already at maximum capacity."
+  item_received: "&aYou received a Life Item (+<amount> Lives)!"
+  item_used: "&aYou consumed a Life Item! (+<amount> Lives). Current: <current>/<max>."
+  admin_set: "&aSuccessfully set <player>'s lives to <amount>."
+  admin_add: "&aSuccessfully added <amount> lives to <player>."
+  admin_addmax: "&aSuccessfully added <amount> to <player>'s MAX lives."
+  admin_gave_item: "&aGave a Life Item (+<amount>) to <player>."
 
 admin:
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
@@ -223,6 +242,38 @@ editor:
     settings: "&lAdvanced Settings"
     edit_action_items: "&lChest Editor: <index>"
   items:
+    setting_req_lives: "&eRequired Lives to Join"
+    setting_req_lives_lore:
+      - "&7Current: &f<val>"
+      - "&eLeft Click to edit"
+    setting_deduct_lives: "&eLives Deducted on Death"
+    setting_deduct_lives_lore:
+      - "&7Current: &f<val>"
+      - "&eLeft Click to edit"
+    setting_keep_inv_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_prevent_drop_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_block_pearls_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_kick_delay_lore:
+      - "&7Current: &f<val>s"
+      - "&eLeft Click to edit"
+    setting_force_weather_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_save_stats_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_death_action_lore:
+      - "&7Current: &f<val>"
+      - "&eLeft Click to toggle (RESPAWN/FAIL)"
+    setting_clear_drops_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
     click_edit: "&eLeft Click: Edit"
     create_new: "&a&lCreate New Dungeon"
     world_template: "&eWorld Template"
@@ -327,6 +378,12 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_req_lives:
+        - "&7Enter the minimum amount of lives required to enter this Dungeon."
+        - "&7Example: &a1"
+      edit_deduct_lives:
+        - "&7Enter the amount of lives lost when a player dies in this Dungeon."
+        - "&7Example: &a1"
       create_filename:
         - "&7Enter a name for the new Dungeon."
         - "&7Allowed: &fLetters (a-z), Numbers (0-9), dash/underscore."

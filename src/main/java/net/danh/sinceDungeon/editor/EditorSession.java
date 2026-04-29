@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.editor;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -11,7 +12,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Locale;
@@ -59,12 +59,12 @@ public class EditorSession {
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     String soundName = plugin.getConfigFile().getString("sounds.editor_save");
-                    Sound sound = getSound(soundName);
+                    Sound sound = SoundUtils.getSound(soundName);
                     if (sound != null && player.isOnline()) {
                         player.playSound(player.getLocation(), sound, 1f, 1f);
                     }
                 });
-            } catch (IOException e) {
+            } catch (java.io.IOException e) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     String errorMsg = plugin.getMessagesFile().getString("editor.chat.save_error");
                     if (errorMsg != null && player.isOnline())

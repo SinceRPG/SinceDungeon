@@ -62,7 +62,6 @@ public class DatabaseManager {
      */
     private void createTables() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
-            // Fastest clear time (seconds) per player per dungeon
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_fastest (
                         dungeon_id VARCHAR(64) NOT NULL,
@@ -73,8 +72,6 @@ public class DatabaseManager {
                         PRIMARY KEY (dungeon_id, player_uuid)
                     )
                     """);
-
-            // Most mob kills per player per dungeon
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_kills (
                         dungeon_id VARCHAR(64) NOT NULL,
@@ -85,8 +82,6 @@ public class DatabaseManager {
                         PRIMARY KEY (dungeon_id, player_uuid)
                     )
                     """);
-
-            // Most clears per player per dungeon
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_clears (
                         dungeon_id VARCHAR(64) NOT NULL,
@@ -97,6 +92,24 @@ public class DatabaseManager {
                         PRIMARY KEY (dungeon_id, player_uuid)
                     )
                     """);
+            stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS player_lives (
+                        uuid VARCHAR(36) PRIMARY KEY,
+                        current_lives INT NOT NULL,
+                        max_lives INT NOT NULL,
+                        regen_amount INT NOT NULL DEFAULT -1,
+                        regen_interval INT NOT NULL DEFAULT -1,
+                        last_regen BIGINT NOT NULL
+                    )
+                    """);
+
+            // Auto-patch existing tables for older versions
+            try {
+                stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_amount INT DEFAULT -1");
+                stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_interval INT DEFAULT -1");
+            } catch (SQLException ignored) {
+                // Columns already exist
+            }
 
             plugin.getLogger().info("[Database] Tables verified/created successfully.");
         }

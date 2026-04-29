@@ -43,7 +43,10 @@ public class DungeonLoader {
         String deathAction = config.contains("settings.death-action") ? config.getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
         boolean clearMobDrops = config.contains("settings.clear-mob-drops") ? config.getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops);
+        int reqLives = config.getInt("settings.required-lives-to-join", 1);
+        int deductLives = config.getInt("settings.lives-deducted-per-death", 1);
+
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives);
 
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");

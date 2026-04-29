@@ -48,6 +48,105 @@ database:
   username: "root"
   password: ""
 
+# =========================================================
+# [LIVES SYSTEM CONFIGURATION]
+# =========================================================
+lives:
+  # Default maximum lives for a new player.
+  default-max-lives: 3
+
+  # Default starting lives for a new player.
+  default-start-lives: 3
+
+  # Regeneration interval in seconds (e.g., 3600 = 1 hour per life).
+  regen-interval-seconds: 3600
+
+  # How many lives to restore per interval.
+  regen-amount: 1
+
+  # ==================================
+  # LIFE ITEM CREATOR
+  # Advanced 1.21+ Item Configuration
+  # ==================================
+  life-item:
+    # The base material of the item.
+    material: "NETHER_STAR"
+
+    # Display name of the item. <amount> is dynamically replaced by the command.
+    name: "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives"
+
+    # The lore (description) of the item.
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7A mythical crystal pulsating with"
+      - "&7ancient life force. Consume it to"
+      - "&7restore your soul from the abyss."
+      - ""
+      - "&fRestores: &a<amount> &fLives"
+      - ""
+      - "&e&lRIGHT-CLICK &7to consume!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Sets the official Vanilla item rarity color (COMMON, UNCOMMON, RARE, EPIC).
+    rarity: "EPIC"
+
+    # Makes the item glow like an enchanted item.
+    glowing: true
+
+    # Makes the item completely unbreakable.
+    unbreakable: true
+
+    # Overrides the maximum stack size (1.21+ feature).
+    max-stack-size: 99
+
+    # Hides default vanilla tooltips to keep the item looking clean.
+    flags:
+      - "HIDE_ENCHANTS"
+      - "HIDE_ATTRIBUTES"
+      - "HIDE_UNBREAKABLE"
+
+    # (Optional) Apply vanilla attributes for extra flavor when holding the item.
+    # Operations: ADD_NUMBER, ADD_SCALAR, MULTIPLY_SCALAR_1
+    # Slots: ANY, MAIN_HAND, OFF_HAND, HEAD, CHEST, LEGS, FEET
+    #    attributes:
+    #      max_health:
+    #        amount: 4.0
+    #        operation: "ADD_NUMBER"
+    #        slot: "OFF_HAND"
+    #      luck:
+    #        amount: 1.0
+    #        operation: "ADD_NUMBER"
+    #        slot: "ANY"
+
+    # (Optional) Custom Model Data for Resource Packs.
+    # Supports legacy integer format or advanced 1.21+ component formats.
+    custom-model-data:
+      value: 1001
+      # floats: [1.0]
+      # strings: ["custom_texture_id"]
+      # colors: ["#FF55FF"]
+
+    # ==================================
+    # EFFECTS ON CONSUME
+    # Plays when the player successfully uses the item
+    # ==================================
+    consume-sound:
+      enabled: true
+      # You can use Bukkit Sound ENUM or minecraft: namespace
+      sound: "entity.player.levelup"
+      volume: 1.0
+      pitch: 0.5
+
+    consume-particle:
+      enabled: true
+      # Particle ENUM (e.g., TOTEM_OF_UNDYING, SOUL_FIRE_FLAME, END_ROD)
+      particle: "TOTEM_OF_UNDYING"
+      amount: 40
+      offset-x: 0.5
+      offset-y: 1.0
+      offset-z: 0.5
+      speed: 0.15
+
 settings:
   # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
   # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml

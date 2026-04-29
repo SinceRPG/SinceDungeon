@@ -73,8 +73,9 @@ public class DungeonManager {
         if (leader == null || !leader.isOnline()) return;
 
         PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
-        String foundMsg = plugin.getMessagesFile().getString("cross_server.found", "&aAvailable server found (<server>). Teleporting your party...");
-        leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
+        String foundMsg = plugin.getMessagesFile().getString("cross_server.found");
+        if (foundMsg != null)
+            leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
 
         if (party != null) {
             for (UUID memId : party.getMembers()) {
@@ -107,8 +108,8 @@ public class DungeonManager {
             }
 
             if (pendingRequests.containsKey(p.getUniqueId())) {
-                String spamMsg = plugin.getMessagesFile().getString("cross_server.already_searching", "&cSystem is already searching for a server, please wait!");
-                p.sendMessage(ColorUtils.parseWithPrefix(spamMsg));
+                String spamMsg = plugin.getMessagesFile().getString("cross_server.already_searching");
+                if (spamMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(spamMsg));
                 return;
             }
 
@@ -178,7 +179,7 @@ public class DungeonManager {
             String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
             String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
-            if (displayName != null && msg != null) {
+            if (displayName != null && msg != null && !msg.isEmpty()) {
                 p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
             }
         }));
@@ -601,39 +602,25 @@ public class DungeonManager {
                 return;
             }
 
-            if (!tmpl.isPublic() && !p.hasPermission("SinceDungeon.admin")) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.dungeon_maintenance")));
-                return;
-            }
+            int reqLives = tmpl.settings().requiredLivesToJoin();
+            if (reqLives > 0) {
+                for (Player participant : participants) {
+                    if (!plugin.getLivesManager().hasEnoughLives(participant.getUniqueId(), reqLives)) {
+                        net.danh.sinceDungeon.manager.LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
+                        int current = lives != null ? lives.getCurrentLives() : 0;
 
-            for (Player participant : participants) {
-                for (DungeonTemplate.Condition cond : tmpl.conditions()) {
-                    String req = cond.requirement();
-                    String type = "PAPI";
-                    String value = req;
+                        String msg = plugin.getMessagesFile().getString("lives.not_enough")
+                                .replace("<required>", String.valueOf(reqLives))
+                                .replace("<current>", String.valueOf(current));
 
-                    if (req.contains(":") && !req.contains(";") && conditionProcessors.containsKey(req.split(":")[0].toUpperCase())) {
-                        String[] parts = req.split(":", 2);
-                        type = parts[0].toUpperCase();
-                        value = parts[1];
-                    }
-
-                    ConditionProcessor processor = conditionProcessors.getOrDefault(type, conditionProcessors.get("PAPI"));
-
-                    if (processor != null && !processor.check(participant, value)) {
-                        if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
-                            participant.sendMessage(ColorUtils.parseWithPrefix("<red>" + cond.failMessage()));
-                        } else {
-                            String msg = plugin.getMessagesFile().getString("error.condition_fail");
-                            if (msg != null)
-                                participant.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<condition>", req)));
-                        }
-
+                        participant.sendMessage(ColorUtils.parseWithPrefix(msg));
                         if (!participant.equals(p)) {
-                            String failMsg = plugin.getMessagesFile().getString("party.member_failed_condition", "<red>Thành viên <player> không đạt điều kiện. Hủy quá trình vào Dungeon.");
-                            p.sendMessage(ColorUtils.parseWithPrefix(failMsg.replace("<player>", participant.getName())));
+                            String leaderMsg = plugin.getMessagesFile().getString("lives.party_member_not_enough");
+                            if (leaderMsg != null) {
+                                p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
+                            }
                         }
-                        return;
+                        return; // Abort join for party
                     }
                 }
             }

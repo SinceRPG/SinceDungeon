@@ -285,6 +285,7 @@ public class DungeonListener implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
         plugin.getPartyManager().updatePlayerName(p);
+        plugin.getLivesManager().loadPlayer(p.getUniqueId());
 
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
             plugin.getDungeonManager().checkPendingCrossServerJoin(p);
@@ -465,6 +466,7 @@ public class DungeonListener implements Listener {
         }
 
         plugin.getPartyManager().handlePlayerDisconnect(p);
+        plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 
     @EventHandler
@@ -511,8 +513,11 @@ public class DungeonListener implements Listener {
 
         if (game != null && p.getWorld().equals(game.getWorld())) {
             boolean keepInv = true;
+            int deductLives = 1;
+
             if (game.getTemplate() != null) {
                 keepInv = game.getTemplate().settings().keepInventoryOnDeath();
+                deductLives = game.getTemplate().settings().livesDeductedPerDeath();
             }
 
             if (keepInv) {
@@ -524,6 +529,27 @@ public class DungeonListener implements Listener {
 
             game.broadcastMessage("game.death", "<player>", p.getName());
 
+            // Process Lives Deduction
+            boolean outOfLives = false;
+            if (deductLives > 0) {
+                plugin.getLivesManager().removeLives(p.getUniqueId(), deductLives);
+                net.danh.sinceDungeon.manager.LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
+                int current = livesData != null ? livesData.getCurrentLives() : 0;
+                int max = livesData != null ? livesData.getMaxLives() : 0;
+
+                String lossMsg = plugin.getMessagesFile().getString("lives.deducted")
+                        .replace("<amount>", String.valueOf(deductLives))
+                        .replace("<current>", String.valueOf(current))
+                        .replace("<max>", String.valueOf(max));
+                p.sendMessage(ColorUtils.parseWithPrefix(lossMsg));
+
+                if (current <= 0) {
+                    outOfLives = true;
+                }
+            }
+
+            final boolean finalOutOfLives = outOfLives;
+
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (p.isOnline()) {
                     p.spigot().respawn();
@@ -533,7 +559,12 @@ public class DungeonListener implements Listener {
                         deathAction = game.getTemplate().settings().deathAction();
                     }
 
-                    if (deathAction.equalsIgnoreCase("FAIL")) {
+                    if (finalOutOfLives) {
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives")));
+                        game.handlePlayerDisconnect(p); // Kick player
+
+                        // If everyone is dead/kicked, the game fails automatically in handlePlayerDisconnect
+                    } else if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
                         p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());

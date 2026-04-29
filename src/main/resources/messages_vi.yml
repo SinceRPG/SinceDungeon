@@ -6,6 +6,26 @@ cross_server:
   timeout: "&cKhông có máy chủ Hầm ngục nào đang rảnh. Vui lòng thử lại sau!"
   already_searching: "&cHệ thống đang trong quá trình tìm kiếm, vui lòng đợi!"
 
+lives:
+  party_member_not_enough: "&cThành viên <player> không đủ mạng sống. Hủy tiến trình vào Hầm ngục."
+  player_not_found: "&cKhông tìm thấy người chơi hoặc đang ngoại tuyến."
+  check_other: "&eMạng của <player>: &a<current>&7/&a<max> &7(Hồi <amount> mạng mỗi <time>s)."
+  admin_set_regen_amount: "&aĐã cài đặt lượng mạng hồi phục riêng của <player> thành <amount>."
+  admin_set_regen_interval: "&aĐã cài đặt thời gian hồi mạng riêng của <player> thành <amount> giây."
+  admin_reset_regen: "&aĐã đặt lại cài đặt hồi mạng của <player> về mặc định toàn máy chủ."
+  not_enough: "&cBạn cần ít nhất <required> mạng để vào! Hiện tại bạn có: <current>."
+  deducted: "&cBạn đã chết và mất <amount> mạng! Còn lại: <current>/<max>."
+  out_of_lives: "&cBạn đã hết mạng và bị trục xuất khỏi Hầm ngục!"
+  regenerated: "&aBạn đã hồi phục <amount> mạng trong lúc vắng mặt! Hiện có: <current>/<max>."
+  check: "&eMạng sống: &a<current>&7/&a<max> &7(Hồi 1 mạng mỗi <time>)."
+  max_reached: "&aMạng của bạn đã đầy."
+  item_received: "&aBạn nhận được Vật phẩm Hồi Sinh (+<amount> Mạng)!"
+  item_used: "&aBạn đã sử dụng Vật phẩm Hồi Sinh (+<amount> Mạng). Hiện có: <current>/<max>."
+  admin_set: "&aĐã đặt số mạng của <player> thành <amount>."
+  admin_add: "&aĐã cộng <amount> mạng cho <player>."
+  admin_addmax: "&aĐã cộng <amount> giới hạn mạng tối đa cho <player>."
+  admin_gave_item: "&aĐã tặng vật phẩm hồi sinh mạng sống (+<amount>) cho <player>."
+
 admin:
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
   invalid_player: "&cKhông tìm thấy người chơi này."
@@ -223,6 +243,8 @@ editor:
     settings: "&lCài Đặt Chuyên Sâu"
     edit_action_items: "&lSắp xếp Rương: <index>"
   items:
+    setting_req_lives: "&eYêu Cầu Số Mạng Để Vào"
+    setting_deduct_lives: "&eSố Mạng Bị Trừ Khi Chết"
     click_edit: "&eChuột Trái: Chỉnh sửa"
     create_new: "&a&lTạo Dungeon Mới"
     world_template: "&eBản đồ Mẫu (World)"
@@ -327,6 +349,12 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_req_lives:
+        - "&7Nhập số lượng mạng TỐI THIỂU cần có để tham gia Dungeon này."
+        - "&7Ví dụ: &a1"
+      edit_deduct_lives:
+        - "&7Nhập số lượng mạng BỊ TRỪ mỗi khi người chơi chết trong Dungeon này."
+        - "&7Ví dụ: &a1"
       create_filename:
         - "&7Nhập ID cho Hầm ngục mới."
         - "&7Quy tắc: &fKhông dấu, không ký tự đặc biệt."

@@ -156,6 +156,16 @@ public class EditorGUI implements Listener {
         p.openInventory(inv);
     }
 
+    // Add this helper method to EditorGUI
+    private List<String> getDynamicLore(String path, String replacement) {
+        List<String> lore = new ArrayList<>();
+        for (String s : plugin.getMessagesFile().getStringList("editor.items." + path)) {
+            lore.add(s.replace("<val>", replacement));
+        }
+        return lore;
+    }
+
+    // Inside openSettingsMenu(Player p, EditorSession session)
     public void openSettingsMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openSettingsMenu(player, session));
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
@@ -168,21 +178,21 @@ public class EditorGUI implements Listener {
         boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
         String deathAction = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
         boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
+        int reqLives = session.getConfig().contains("settings.required-lives-to-join") ? session.getConfig().getInt("settings.required-lives-to-join") : 1;
+        int deductLives = session.getConfig().contains("settings.lives-deducted-per-death") ? session.getConfig().getInt("settings.lives-deducted-per-death") : 1;
 
-        inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getLoreToggle(keepInv)));
-        inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getLoreToggle(preventDrop)));
-        inv.setItem(12, makeItem(Material.ENDER_PEARL, getMsg("items.setting_block_pearls"), getLoreToggle(blockPearls)));
+        inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getDynamicLore("setting_keep_inv_lore", keepInv ? getWord("true_word") : getWord("false_word"))));
+        inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getDynamicLore("setting_prevent_drop_lore", preventDrop ? getWord("true_word") : getWord("false_word"))));
+        inv.setItem(12, makeItem(Material.ENDER_PEARL, getMsg("items.setting_block_pearls"), getDynamicLore("setting_block_pearls_lore", blockPearls ? getWord("true_word") : getWord("false_word"))));
+        inv.setItem(13, makeItem(Material.CLOCK, getMsg("items.setting_kick_delay"), getDynamicLore("setting_kick_delay_lore", String.valueOf(kickDelay))));
+        inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getDynamicLore("setting_force_weather_lore", forceWeather ? getWord("true_word") : getWord("false_word"))));
+        inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getDynamicLore("setting_save_stats_lore", saveStats ? getWord("true_word") : getWord("false_word"))));
+        inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), getDynamicLore("setting_death_action_lore", deathAction.toUpperCase())));
+        inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getDynamicLore("setting_clear_drops_lore", clearMobDrops ? getWord("true_word") : getWord("false_word"))));
 
-        List<String> delayLore = new ArrayList<>();
-        delayLore.add("<gray>Current: <white>" + kickDelay + "s");
-        delayLore.add("<yellow>Left Click to edit");
-        inv.setItem(13, makeItem(Material.CLOCK, getMsg("items.setting_kick_delay"), delayLore));
-
-        inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getLoreToggle(forceWeather)));
-        inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getLoreToggle(saveStats)));
-
-        inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), Arrays.asList("<gray>Current: <white>" + deathAction.toUpperCase(), "<yellow>Left Click to toggle (RESPAWN/FAIL)")));
-        inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getLoreToggle(clearMobDrops)));
+        // Lives Settings
+        inv.setItem(19, makeItem(Material.RED_BED, getMsg("items.setting_req_lives"), getDynamicLore("setting_req_lives_lore", String.valueOf(reqLives))));
+        inv.setItem(20, makeItem(Material.WITHER_ROSE, getMsg("items.setting_deduct_lives"), getDynamicLore("setting_deduct_lives_lore", String.valueOf(deductLives))));
 
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
@@ -774,7 +784,35 @@ public class EditorGUI implements Listener {
                     p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                     openSettingsMenu(p, session);
                     return;
-                } else if (slot == 17) path = "settings.clear-mob-drops";
+                } else if (slot == 17) {
+                    path = "settings.clear-mob-drops";
+                } else if (slot == 19) {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_req_lives", val -> {
+                        try {
+                            int newVal = Math.max(0, Integer.parseInt(val));
+                            session.getConfig().set("settings.required-lives-to-join", newVal);
+                            sendMessage(p, "update_val", "<key>", "Required Lives", "<val>", String.valueOf(newVal));
+                            openSettingsMenu(p, session);
+                        } catch (Exception ex) {
+                            sendMessage(p, "number_error");
+                            openSettingsMenu(p, session);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 20) {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_deduct_lives", val -> {
+                        try {
+                            int newVal = Math.max(0, Integer.parseInt(val));
+                            session.getConfig().set("settings.lives-deducted-per-death", newVal);
+                            sendMessage(p, "update_val", "<key>", "Deduct Lives", "<val>", String.valueOf(newVal));
+                            openSettingsMenu(p, session);
+                        } catch (Exception ex) {
+                            sendMessage(p, "number_error");
+                            openSettingsMenu(p, session);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                }
 
                 if (!path.isEmpty()) {
                     if (isBool) {
@@ -1125,11 +1163,7 @@ public class EditorGUI implements Listener {
 
                 // Notifications field: not directly editable via GUI, show a hint instead
                 if (key.equalsIgnoreCase("notifications")) {
-                    String tipMsg = "&7[Notifications] Edit this field manually in the dungeon YAML file.\n"
-                            + "&7Format: notifications:\n"
-                            + "&7  init: false\n"
-                            + "&7  complete: true\n"
-                            + "&7Available keys: custom_start, init, progress, complete, warning";
+                    String tipMsg = "&7[Notifications] Edit this field manually in the dungeon YAML file.\n" + "&7Format: notifications:\n" + "&7  init: false\n" + "&7  complete: true\n" + "&7Available keys: custom_start, init, progress, complete, warning";
                     for (String line : tipMsg.split("\\n")) {
                         p.sendMessage(ColorUtils.parse(line));
                     }

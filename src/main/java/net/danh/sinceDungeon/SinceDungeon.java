@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
@@ -9,15 +10,13 @@ import net.danh.sinceDungeon.database.TopManager;
 import net.danh.sinceDungeon.editor.EditorGUI;
 import net.danh.sinceDungeon.editor.EditorListener;
 import net.danh.sinceDungeon.editor.EditorManager;
-import net.danh.sinceDungeon.manager.DungeonGame;
-import net.danh.sinceDungeon.manager.DungeonListener;
-import net.danh.sinceDungeon.manager.DungeonManager;
-import net.danh.sinceDungeon.manager.MythicListener;
+import net.danh.sinceDungeon.manager.*;
 import net.danh.sinceDungeon.party.PartyCommand;
 import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
+import net.danh.sinceDungeon.system.LifeItemListener;
 import net.danh.sinceDungeon.system.RedisManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
@@ -49,6 +48,7 @@ public final class SinceDungeon extends JavaPlugin {
     private DatabaseManager databaseManager;
     private TopManager topManager;
     private RedisManager redisManager;
+    private LivesManager livesManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -86,6 +86,7 @@ public final class SinceDungeon extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.connect();
         topManager = new TopManager(this, databaseManager);
+        livesManager = new LivesManager(this);
 
         if (configFile.getBoolean("cross-server.enabled", false)) {
             getLogger().warning("======================================================");
@@ -101,6 +102,13 @@ public final class SinceDungeon extends JavaPlugin {
             getServer().getMessenger().registerOutgoingPluginChannel(this, bungeeChannel);
         }
 
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new net.danh.sinceDungeon.system.LivesExpansion(this).register();
+            getLogger().info("Successfully registered PlaceholderAPI integration for SinceDungeon.");
+        } else {
+            getLogger().warning("PlaceholderAPI not found. Custom placeholders will be disabled.");
+        }
+
         SinceDungeonAPI.init(this);
 
         RewardSessionManager.startCleanupTask(this);
@@ -110,6 +118,7 @@ public final class SinceDungeon extends JavaPlugin {
         listeners.add(editorListener);
         listeners.add(new RewardGUI(this));
         listeners.add(new EditorGUI(this));
+        listeners.add(new LifeItemListener(this));
 
         if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
             listeners.add(new MythicListener(this));
@@ -123,6 +132,9 @@ public final class SinceDungeon extends JavaPlugin {
             getLogger().warning("Warning: Your server version is below 1.21.11! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
         else if (ServerVersion.isAtLeast(26, 1))
             getLogger().warning("Warning: Your server version is below 26.1+! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            livesManager.loadPlayer(p.getUniqueId());
+        }
     }
 
     private void extractDefaultLocales() {
@@ -159,6 +171,7 @@ public final class SinceDungeon extends JavaPlugin {
 
         RewardSessionManager.clearAll();
 
+        if (livesManager != null) livesManager.forceSaveAll();
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();
@@ -230,10 +243,148 @@ public final class SinceDungeon extends JavaPlugin {
                                 return 1;
                             })
                     )
+                    .then(Commands.literal("lives")
+                            .then(Commands.argument("target", StringArgumentType.word())
+                                    .then(Commands.literal("add").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    livesManager.addLives(target.getUniqueId(), amount);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_add").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    ))
+                                    .then(Commands.literal("set").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    livesManager.setLives(target.getUniqueId(), amount);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_set").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    ))
+                                    .then(Commands.literal("addmax").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    livesManager.addMaxLives(target.getUniqueId(), amount);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_addmax").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    ))
+                                    .then(Commands.literal("setregenamount").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    livesManager.setCustomRegenAmount(target.getUniqueId(), amount);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_set_regen_amount").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    ))
+                                    .then(Commands.literal("setregeninterval").then(Commands.argument("seconds", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+                                                    livesManager.setCustomRegenInterval(target.getUniqueId(), seconds);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_set_regen_interval").replace("<amount>", String.valueOf(seconds)).replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    ))
+                                    .then(Commands.literal("resetregen")
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    livesManager.setCustomRegenAmount(target.getUniqueId(), -1);
+                                                    livesManager.setCustomRegenInterval(target.getUniqueId(), -1);
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_reset_regen").replace("<player>", target.getName())));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    )
+                                    .then(Commands.literal("check")
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    net.danh.sinceDungeon.manager.LivesManager.PlayerLives l = livesManager.getLives(target.getUniqueId());
+                                                    int interval = l.getCustomRegenInterval() != -1 ? l.getCustomRegenInterval() : getConfigFile().getInt("lives.regen-interval-seconds", 3600);
+                                                    int amt = l.getCustomRegenAmount() != -1 ? l.getCustomRegenAmount() : getConfigFile().getInt("lives.regen-amount", 1);
+
+                                                    String msg = getMessagesFile().getString("lives.check_other")
+                                                            .replace("<player>", target.getName())
+                                                            .replace("<current>", String.valueOf(l.getCurrentLives()))
+                                                            .replace("<max>", String.valueOf(l.getMaxLives()))
+                                                            .replace("<amount>", String.valueOf(amt))
+                                                            .replace("<time>", String.valueOf(interval));
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg));
+                                                } else
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.player_not_found")));
+                                                return 1;
+                                            })
+                                    )
+                            )
+                    )
+                    .then(Commands.literal("givelifeitem")
+                            .then(Commands.argument("target", StringArgumentType.word())
+                                    .then(Commands.argument("amount", IntegerArgumentType.integer())
+                                            .executes(ctx -> {
+                                                Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                if (target != null) {
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+
+                                                    // Use ItemCreator directly
+                                                    net.danh.sinceDungeon.utils.ItemCreator creator = new net.danh.sinceDungeon.utils.ItemCreator(plugin);
+                                                    org.bukkit.inventory.ItemStack item = creator.createLifeItem(amount);
+
+                                                    target.getInventory().addItem(item);
+
+                                                    target.sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.item_received").replace("<amount>", String.valueOf(amount))));
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("lives.admin_gave_item")
+                                                            .replace("<amount>", String.valueOf(amount))
+                                                            .replace("<player>", target.getName())));
+                                                } else {
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(getMessagesFile().getString("admin.invalid_player")));
+                                                }
+                                                return 1;
+                                            })
+                                    )
+                            )
+                    )
                     .build(), "SinceDungeon Admin"
             );
 
             event.registrar().register(Commands.literal("dungeon")
+                    .then(Commands.literal("lives")
+                            .executes(ctx -> {
+                                if (ctx.getSource().getExecutor() instanceof Player p) {
+                                    net.danh.sinceDungeon.manager.LivesManager.PlayerLives l = livesManager.getLives(p.getUniqueId());
+                                    if (l != null) {
+                                        String time = getConfigFile().getInt("lives.regen-interval-seconds", 3600) + "s";
+                                        String msg = getMessagesFile().getString("lives.check")
+                                                .replace("<current>", String.valueOf(l.getCurrentLives()))
+                                                .replace("<max>", String.valueOf(l.getMaxLives()))
+                                                .replace("<time>", time);
+                                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                                    }
+                                }
+                                return 1;
+                            })
+                    )
                     .then(Commands.literal("join")
                             .then(Commands.argument("name", StringArgumentType.word())
                                     .suggests((ctx, builder) -> {
@@ -340,5 +491,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public RedisManager getRedisManager() {
         return redisManager;
+    }
+
+    public LivesManager getLivesManager() {
+        return livesManager;
     }
 }
