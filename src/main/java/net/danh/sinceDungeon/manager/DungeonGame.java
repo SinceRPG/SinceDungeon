@@ -543,16 +543,22 @@ public class DungeonGame {
 
                         plugin.getDungeonManager().addTransitioning(p.getUniqueId());
 
-                        p.teleportAsync(targetLoc).thenAccept(success -> {
-                            if (success) {
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                            } else {
-                                Bukkit.getScheduler().runTask(plugin, () -> {
-                                    p.teleport(targetLoc);
+                        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+                            String returnServer = plugin.getConfigFile().getString("cross-server.return-server", "lobby");
+                            restorePlayerState(p);
+                            net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(p, returnServer);
+                        } else {
+                            p.teleportAsync(targetLoc).thenAccept(success -> {
+                                if (success) {
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                                });
-                            }
-                        });
+                                } else {
+                                    Bukkit.getScheduler().runTask(plugin, () -> {
+                                        p.teleport(targetLoc);
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                                    });
+                                }
+                            });
+                        }
                     } else {
                         restorePlayerState(p);
                     }

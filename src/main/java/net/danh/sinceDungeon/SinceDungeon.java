@@ -18,6 +18,7 @@ import net.danh.sinceDungeon.party.PartyManager;
 import net.danh.sinceDungeon.reward.RewardGUI;
 import net.danh.sinceDungeon.reward.RewardSession;
 import net.danh.sinceDungeon.reward.RewardSessionManager;
+import net.danh.sinceDungeon.system.RedisManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -47,6 +48,7 @@ public final class SinceDungeon extends JavaPlugin {
     private EditorListener editorListener;
     private DatabaseManager databaseManager;
     private TopManager topManager;
+    private RedisManager redisManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -84,6 +86,20 @@ public final class SinceDungeon extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.connect();
         topManager = new TopManager(this, databaseManager);
+
+        if (configFile.getBoolean("cross-server.enabled", false)) {
+            getLogger().warning("======================================================");
+            getLogger().warning("⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)");
+            getLogger().warning("This feature is completely untested in production.");
+            getLogger().warning("The author has no experience setting up or using this");
+            getLogger().warning("infrastructure. Expect bugs and use at your own risk!");
+            getLogger().warning("Official support for cross-server issues is NOT provided.");
+            getLogger().warning("======================================================");
+            redisManager = new RedisManager(this);
+            redisManager.connect();
+            String bungeeChannel = configFile.getString("cross-server.bungee-channel", "BungeeCord");
+            getServer().getMessenger().registerOutgoingPluginChannel(this, bungeeChannel);
+        }
 
         SinceDungeonAPI.init(this);
 
@@ -148,6 +164,9 @@ public final class SinceDungeon extends JavaPlugin {
         if (configFile != null) configFile.save();
         if (messagesFile != null) messagesFile.save();
         if (databaseManager != null) databaseManager.disconnect();
+        if (redisManager != null) {
+            redisManager.disconnect();
+        }
     }
 
     public void reloadFiles(CommandSender sender) {
@@ -317,5 +336,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public TopManager getTopManager() {
         return topManager;
+    }
+
+    public RedisManager getRedisManager() {
+        return redisManager;
     }
 }

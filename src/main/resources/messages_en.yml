@@ -1,5 +1,11 @@
 prefix: "&6&lSinceDungeon &8» &7"
 
+cross_server:
+  searching: "&eSearching for an available Node Server to initialize the Dungeon..."
+  found: "&aAvailable server found (<server>). Teleporting your party..."
+  timeout: "&cNo available Dungeon servers found. Please try again later!"
+  already_searching: "&cSystem is already searching for a server, please wait!"
+
 admin:
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
   invalid_player: "&cPlayer not found."
@@ -15,6 +21,10 @@ admin:
     not_found: "&cSystem Error: MMOItems <type>:<id> not found."
     error: "&cSystem Error: Item <item> is misconfigured or does not exist."
   log:
+    redis_connected: "[Redis] Connected to Redis successfully!"
+    redis_disconnected: "[Redis] Redis connection closed."
+    redis_listen_error: "[Redis] Listener error: "
+    redis_publish_error: "[Redis] Cannot publish message: "
     leave_dungeon: " has left the Dungeon via teleportation. Stopping game instance."
     unauthorized_entry: "Intercepted unauthorized entry by <player> into <world>"
     rescuing_ghost: "Rescuing ghosted player <player> from deleted instance."

@@ -27,6 +27,20 @@ public class PartyManager {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::purgeExpiredInvites, 1200L, 1200L);
     }
 
+    public void forceCreateCrossServerParty(UUID leader, String[] members) {
+        Party party = new Party(leader, "Leader");
+        for (String mem : members) {
+            String[] split = mem.split("~");
+            if (split.length == 2) {
+                UUID memId = UUID.fromString(split[0]);
+                String memName = split[1];
+                party.forceAddMember(memId, memName);
+                activeParties.put(memId, party);
+            }
+        }
+        activeParties.put(leader, party);
+    }
+
     public Party createParty(Player leader) {
         Party party = new Party(leader);
         if (activeParties.putIfAbsent(leader.getUniqueId(), party) != null) {
@@ -64,6 +78,11 @@ public class PartyManager {
 
     public void disbandParty(Party party) {
         if (party == null) return;
+
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false) && plugin.getRedisManager() != null) {
+            plugin.getRedisManager().syncDisbandParty(party.getLeader());
+        }
+
         synchronized (party) {
             party.getMembers().forEach(uuid -> {
                 activeParties.remove(uuid);
@@ -95,6 +114,9 @@ public class PartyManager {
             }
         }
         ejectFromDungeon(uuid);
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false) && plugin.getRedisManager() != null) {
+            plugin.getRedisManager().syncLeaveParty(uuid);
+        }
     }
 
     public void kickPlayer(Party party, UUID target) {
@@ -111,6 +133,9 @@ public class PartyManager {
             }
         }
         ejectFromDungeon(target);
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false) && plugin.getRedisManager() != null) {
+            plugin.getRedisManager().syncLeaveParty(target);
+        }
     }
 
     public void handlePlayerDisconnect(Player p) {
@@ -302,6 +327,29 @@ public class PartyManager {
         });
     }
 
+    public void silentDisband(Party party) {
+        if (party == null) return;
+        synchronized (party) {
+            party.getMembers().forEach(uuid -> {
+                activeParties.remove(uuid);
+                partyChatToggled.remove(uuid);
+            });
+        }
+    }
+
+    public void silentQuit(UUID uuid) {
+        Party party = getParty(uuid);
+        if (party == null) return;
+        synchronized (party) {
+            party.removeMember(uuid);
+            activeParties.remove(uuid);
+            partyChatToggled.remove(uuid);
+            if (party.getMembers().isEmpty()) {
+                silentDisband(party);
+            }
+        }
+    }
+
     public static class Party {
         private final Map<UUID, String> members = new ConcurrentHashMap<>();
         private UUID leader;
@@ -309,6 +357,11 @@ public class PartyManager {
         public Party(Player leader) {
             this.leader = leader.getUniqueId();
             this.members.put(leader.getUniqueId(), leader.getName());
+        }
+
+        public Party(UUID leader, String leaderName) {
+            this.leader = leader;
+            this.members.put(leader, leaderName);
         }
 
         public UUID getLeader() {
@@ -329,6 +382,10 @@ public class PartyManager {
 
         public void addMember(Player p) {
             members.put(p.getUniqueId(), p.getName());
+        }
+
+        public void forceAddMember(UUID uuid, String name) {
+            members.put(uuid, name);
         }
 
         public void removeMember(UUID uuid) {
