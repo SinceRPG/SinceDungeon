@@ -1,5 +1,38 @@
-# config.yml
-# Main Configuration for SinceDungeon / Cấu hình chính của SinceDungeon
+# =========================================================
+# [CROSS-SERVER CONFIGURATION]
+# ⚠️ EXPERIMENTAL FEATURE (v1.5.5+) - USE AT YOUR OWN RISK! ⚠️
+# This feature is largely untested in production environments.
+# Please proceed with caution and consider the risks before enabling.
+# The plugin author has no personal experience in setting up or using
+# this Redis/BungeeCord infrastructure, so support for this specific
+# feature will be strictly limited or completely unavailable.
+# =========================================================
+cross-server:
+  # Set to true to enable cross-server dungeon matchmaking
+  enabled: false
+
+  # The exact name of THIS specific server as defined in your proxy config (e.g., BungeeCord's config.yml)
+  # When a dungeon is created here, players will be sent to this server name.
+  server-name: "dungeon-node-1"
+
+  # The plugin messaging channel used to send players across servers.
+  # Usually "BungeeCord" for BungeeCord/Waterfall or "velocity:main" for Velocity.
+  bungee-channel: "BungeeCord"
+  # The Lobby server name is used to send players back after completing a Dungeon.
+  return-server: "lobby"
+
+# =========================================================
+# [REDIS CONFIGURATION]
+# Required if cross-server is enabled. Used for inter-server communication.
+# =========================================================
+redis:
+  host: "localhost"
+  port: 6379
+  password: ""
+
+  # The Pub/Sub channel name used by SinceDungeon to communicate.
+  # All servers in the network must share the exact same channel name.
+  channel: "SinceDungeon"
 
 # =========================================================
 # [DATABASE CONFIGURATION]

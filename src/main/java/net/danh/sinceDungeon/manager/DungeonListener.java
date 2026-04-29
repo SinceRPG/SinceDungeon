@@ -286,6 +286,10 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         plugin.getPartyManager().updatePlayerName(p);
 
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+            plugin.getDungeonManager().checkPendingCrossServerJoin(p);
+        }
+
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {

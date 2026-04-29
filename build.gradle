@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'net.danh'
-version = '1.5.4'
+version = '1.5.5'
 
 repositories {
     mavenCentral()
@@ -38,6 +38,7 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.47.1.0")
     // MySQL connector (bundled via shadow jar)
     implementation("com.mysql:mysql-connector-j:9.1.0")
+    implementation("redis.clients:jedis:7.2.0")
 }
 
 tasks {
@@ -83,4 +84,5 @@ shadowJar {
     archiveClassifier.set('')
     relocate 'org.sqlite', 'net.danh.sinceDungeon.libs.sqlite'
     relocate 'com.mysql', 'net.danh.sinceDungeon.libs.mysql'
+    relocate 'redis.clients', 'net.danh.sinceDungeon.libs.redis.clients'
 }

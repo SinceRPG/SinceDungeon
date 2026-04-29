@@ -40,6 +40,8 @@ public class DungeonManager {
     private final Object joinLock = new Object();
 
     private final Set<UUID> transitioningPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, String> pendingCrossServerGames = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -48,6 +50,96 @@ public class DungeonManager {
         Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
         this.templates.putAll(initialTemplates);
         plugin.getLogger().info("Loaded " + initialTemplates.size() + " Dungeon!");
+    }
+
+    public void addPendingCrossServerGame(UUID leader, String templateId) {
+        pendingCrossServerGames.put(leader, templateId);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (pendingCrossServerGames.containsKey(leader)) {
+                pendingCrossServerGames.remove(leader);
+                plugin.getPartyManager().disbandParty(plugin.getPartyManager().getParty(leader));
+                plugin.getLogger().warning("[CrossServer] Cancelled the session of " + leader + " because BungeeCord failed to transfer the player in time.");
+            }
+        }, 600L);
+    }
+
+    public void handleCrossServerReady(UUID leaderUuid, String targetServer) {
+        if (!pendingRequests.containsKey(leaderUuid)) return;
+
+        pendingRequests.remove(leaderUuid);
+
+        Player leader = Bukkit.getPlayer(leaderUuid);
+        if (leader == null || !leader.isOnline()) return;
+
+        PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
+        String foundMsg = plugin.getMessagesFile().getString("cross_server.found", "&aAvailable server found (<server>). Teleporting your party...");
+        leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
+
+        if (party != null) {
+            for (UUID memId : party.getMembers()) {
+                Player mem = Bukkit.getPlayer(memId);
+                if (mem != null && mem.isOnline()) {
+                    net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(mem, targetServer);
+                }
+            }
+        } else {
+            net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(leader, targetServer);
+        }
+    }
+
+    // Logic: Khi người chơi join Server Node, tự động cho họ vào Dungeon nếu họ nằm trong pending
+    public void checkPendingCrossServerJoin(Player p) {
+        if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
+            String templateId = pendingCrossServerGames.remove(p.getUniqueId());
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                joinDungeonLocal(p, templateId);
+            }, 40L);
+        }
+    }
+
+    public void joinDungeon(Player p, String id) {
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            if (party != null && !party.getLeader().equals(p.getUniqueId())) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                return;
+            }
+
+            if (pendingRequests.containsKey(p.getUniqueId())) {
+                String spamMsg = plugin.getMessagesFile().getString("cross_server.already_searching", "&cSystem is already searching for a server, please wait!");
+                p.sendMessage(ColorUtils.parseWithPrefix(spamMsg));
+                return;
+            }
+
+            String searchingMsg = plugin.getMessagesFile().getString("cross_server.searching", "&eSearching for an available Node Server to initialize the Dungeon...");
+            p.sendMessage(ColorUtils.parseWithPrefix(searchingMsg));
+
+            pendingRequests.put(p.getUniqueId(), System.currentTimeMillis());
+
+            String partyDataRaw = p.getUniqueId().toString() + "~" + p.getName();
+            if (party != null) {
+                partyDataRaw = party.getMembers().stream()
+                        .map(uuid -> uuid.toString() + "~" + party.getMemberName(uuid))
+                        .reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
+            }
+
+            plugin.getRedisManager().requestDungeonServer(id, p.getUniqueId(), partyDataRaw);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (pendingRequests.containsKey(p.getUniqueId())) {
+                    pendingRequests.remove(p.getUniqueId());
+                    if (p.isOnline()) {
+                        String timeoutMsg = plugin.getMessagesFile().getString("cross_server.timeout", "&cNo available Dungeon servers found. Please try again later!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(timeoutMsg));
+                    }
+                }
+            }, 100L);
+
+            return;
+        }
+
+        joinDungeonLocal(p, id);
     }
 
     public void addTransitioning(UUID uuid) {
@@ -441,7 +533,7 @@ public class DungeonManager {
                 .thenApply(v -> bufferMap);
     }
 
-    public void joinDungeon(Player p, String id) {
+    private void joinDungeonLocal(Player p, String id) {
         synchronized (joinLock) {
             PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             Set<Player> participants = new HashSet<>();

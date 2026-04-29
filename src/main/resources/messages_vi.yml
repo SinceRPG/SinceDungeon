@@ -1,5 +1,11 @@
 prefix: "&6&lSinceDungeon &8» &7"
 
+cross_server:
+  searching: "&eHệ thống đang tìm kiếm Máy chủ trống để khởi tạo Hầm ngục..."
+  found: "&aĐã tìm thấy máy chủ (<server>). Đang dịch chuyển toàn đội..."
+  timeout: "&cKhông có máy chủ Hầm ngục nào đang rảnh. Vui lòng thử lại sau!"
+  already_searching: "&cHệ thống đang trong quá trình tìm kiếm, vui lòng đợi!"
+
 admin:
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
   invalid_player: "&cKhông tìm thấy người chơi này."
@@ -15,6 +21,10 @@ admin:
     not_found: "&cLỗi hệ thống: Không tìm thấy vật phẩm MMOItems <type>:<id>"
     error: "&cLỗi hệ thống: Vật phẩm <item> cấu hình sai tên hoặc không tồn tại trong server."
   log:
+    redis_connected: "[Redis] Đã kết nối tới Redis thành công!"
+    redis_disconnected: "[Redis] Đã đóng kết nối Redis."
+    redis_listen_error: "[Redis] Lỗi lắng nghe tín hiệu: "
+    redis_publish_error: "[Redis] Không thể gửi tin nhắn: "
     leave_dungeon: " đã rời khỏi Dungeon bằng cách dịch chuyển. Hệ thống tự động hủy tiến trình."
     unauthorized_entry: "Phát hiện kẻ xâm nhập <player> lọt vào <world>. Đã chặn!"
     rescuing_ghost: "Đang giải cứu bóng ma <player> khỏi khu vực lỗi."
