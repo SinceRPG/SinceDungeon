@@ -181,6 +181,8 @@ public class EditorGUI {
         boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
         int reqLives = session.getConfig().contains("settings.required-lives-to-join") ? session.getConfig().getInt("settings.required-lives-to-join") : 1;
         int deductLives = session.getConfig().contains("settings.lives-deducted-per-death") ? session.getConfig().getInt("settings.lives-deducted-per-death") : 1;
+        boolean randomizeStages = session.getConfig().contains("settings.randomize-stages") ? session.getConfig().getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
+        inv.setItem(21, makeItem(Material.ENDER_PEARL, getMsg("items.setting_randomize_stages"), getDynamicLore("setting_randomize_stages_lore", randomizeStages ? getWord("true_word") : getWord("false_word"))));
 
         inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getDynamicLore("setting_keep_inv_lore", keepInv ? getWord("true_word") : getWord("false_word"))));
         inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getDynamicLore("setting_prevent_drop_lore", preventDrop ? getWord("true_word") : getWord("false_word"))));
@@ -381,11 +383,20 @@ public class EditorGUI {
             String key = keys.get(idx);
             String name = getMsg("items.stage_item").replace("<stage>", key);
             inv.setItem(i, makeItem(Material.FILLED_MAP, name, plugin.getMessagesFile().getStringList("editor.items.stage_lore")));
+
+            double chance = session.getConfig().getDouble("stages." + key + ".chance", 100.0);
+            List<String> lore = new ArrayList<>();
+            lore.add("&7Chance to spawn: &a" + chance + "%");
+            lore.add("&cRight Click: Edit Chance");
+            lore.addAll(plugin.getMessagesFile().getStringList("editor.items.stage_lore"));
+
+            inv.setItem(i, makeItem(Material.FILLED_MAP, name, lore));
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
         setPagination(inv, page, maxPage);
+
         p.openInventory(inv);
     }
 

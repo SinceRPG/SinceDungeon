@@ -7,16 +7,19 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                               List<Condition> conditions,
                               Map<Integer, Integer> rewardTiers,
                               List<DungeonReward> rewardPool,
-                              Map<Integer, List<Map<String, Object>>> stages,
+                              Map<Integer, StageData> stages,
                               Settings settings) {
 
-    public record Condition(String id, String name, String requirement, String failMessage) {
-    }
+    public record Condition(String id, String name, String requirement, String failMessage) {}
+
+    // MỚI: Thêm dữ liệu tỷ lệ xuất hiện của Stage
+    public record StageData(double chance, List<Map<String, Object>> actions) {}
 
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
                            boolean blockEnderPearls, int kickDelayAfterFinish,
                            boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats,
                            String deathAction, boolean clearMobDrops,
-                           int requiredLivesToJoin, int livesDeductedPerDeath) {
+                           int requiredLivesToJoin, int livesDeductedPerDeath,
+                           boolean randomizeStages) { // MỚI: Cài đặt xáo trộn Stage
     }
 }

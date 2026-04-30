@@ -26,6 +26,7 @@ lives:
   admin_gave_item: "&aGave a Life Item (+<amount>) to <player>."
   out_of_lives_spectate: "&cYou have run out of lives! You are now spectating your party."
   out_of_lives_kick: "&cYou have run out of lives and have been kicked from the dungeon!"
+  time_out_penalty: "&cYou failed to complete the task in time and lost <amount> lives! Current: <current>"
 
 admin:
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
@@ -117,6 +118,7 @@ game:
   hud:
     objective_prefix: "&6&lOBJECTIVES: &r"
     objective_separator: " &8| "
+    time_left: " &c(<time>s)"
   title:
     loading_main: "&e&lLOADING..."
     loading_sub: "&7Please wait a moment"
@@ -129,6 +131,8 @@ game:
   player_disconnect: "&eMember <player> has disconnected and left the Dungeon!"
   death_spectate: "&cYou died! You are now spectating."
   wipeout: "&cAll party members have fallen. Mission Failed!"
+  time_out: "&cTime is up! Restarting the stage..."
+
 
 lobby:
   preparing: "&eInitializing dungeon world..."
@@ -260,6 +264,10 @@ editor:
     settings: "&lAdvanced Settings"
     edit_action_items: "&lChest Editor: <index>"
   items:
+    setting_randomize_stages: "&eRandomize Middle Stages"
+    setting_randomize_stages_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
     setting_req_lives: "&eRequired Lives to Join"
     setting_req_lives_lore:
       - "&7Current: &f<val>"
@@ -396,6 +404,16 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_stage_chance:
+        - "&7Enter the spawn chance for this stage (0-100)."
+        - "&7Example: &a50.5"
+      edit_action_time_limit:
+        - "&7Enter the time limit in seconds for this action."
+        - "&7Enter &c-1 &7to disable time limit."
+        - "&7Example: &a60"
+      edit_action_time_penalty:
+        - "&7Enter the amount of lives lost if the time limit is reached."
+        - "&7Example: &a1"
       edit_action_scale_with_party:
         - "&7Should this stage multiply the spawn amount by the party size?"
         - "&7Enter &atrue &7or &cfalse&7."
@@ -525,6 +543,12 @@ editor:
         - "&7MMOItems Example: &aMMOITEMS:KEY:DUNGEON_KEY:1"
 
   chat:
+    notifications_hint:
+      - "&7[Notifications] Edit this field manually in the dungeon YAML file."
+      - "&7Format: notifications:"
+      - "&7  init: false"
+      - "&7  complete: true"
+      - "&7Available keys: custom_start, init, progress, complete, warning"
     input_start:
       - "&aPlease enter a value in chat."
       - "&7Type &ccancel&7 to abort."

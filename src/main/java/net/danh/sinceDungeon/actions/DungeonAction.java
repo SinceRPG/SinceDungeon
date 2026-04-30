@@ -19,6 +19,10 @@ public abstract class DungeonAction {
     private Map<String, Boolean> notifications = new java.util.HashMap<>();
     private String actionType = "UNKNOWN";
 
+    private int timeLimitSeconds = -1;
+    private int timeLimitPenalty = 1;
+    private long startTimeMillis = -1;
+
     /**
      * Starts the action within the provided dungeon game instance.
      *
@@ -82,6 +86,30 @@ public abstract class DungeonAction {
 
     public void setNotifications(Map<String, Boolean> notifications) {
         this.notifications = notifications != null ? notifications : new java.util.HashMap<>();
+    }
+
+    public int getTimeLimitSeconds() {
+        return timeLimitSeconds;
+    }
+
+    public void setTimeLimitSeconds(int timeLimitSeconds) {
+        this.timeLimitSeconds = timeLimitSeconds;
+    }
+
+    public int getTimeLimitPenalty() {
+        return timeLimitPenalty;
+    }
+
+    public void setTimeLimitPenalty(int timeLimitPenalty) {
+        this.timeLimitPenalty = timeLimitPenalty;
+    }
+
+    public long getStartTimeMillis() {
+        return startTimeMillis;
+    }
+
+    public void setStartTimeMillis(long startTimeMillis) {
+        this.startTimeMillis = startTimeMillis;
     }
 
     /**

@@ -91,6 +91,8 @@ public class DefaultRegistry {
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
         spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
         spawnDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.spawn_wave.scale_with_party", false));
+        spawnDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.spawn_wave.time_limit", -1));
+        spawnDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.spawn_wave.time_penalty", 1));
         spawnDefaults.put("custom_name", plugin.getConfigFile().getString("action-defaults.spawn_wave.custom_name", ""));
         spawnDefaults.put("is_baby", plugin.getConfigFile().getBoolean("action-defaults.spawn_wave.is_baby", false));
         spawnDefaults.put("attributes", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.attributes"));
@@ -131,6 +133,8 @@ public class DefaultRegistry {
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
         reachDefaults.put("radius", plugin.getConfigFile().getDouble("action-defaults.reach_location.radius", 3.0));
+        reachDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.reach_location.time_limit", -1));
+        reachDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.reach_location.time_penalty", 1));
         reachDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.reach_location.start_message"));
 
         manager.registerAction("REACH_LOCATION", map -> {
@@ -144,6 +148,8 @@ public class DefaultRegistry {
         // --- LOOT_CHEST ---
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
+        chestDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.loot_chest.time_limit", -1));
+        chestDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.loot_chest.time_penalty", 1));
         chestDefaults.put("items", new HashMap<String, String>());
         chestDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.loot_chest.start_message"));
 
@@ -177,6 +183,8 @@ public class DefaultRegistry {
         wallDefaults.put("trigger", "0,0,0");
         wallDefaults.put("corner1", "0,0,0");
         wallDefaults.put("corner2", "0,0,0");
+        wallDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.break_wall.time_limit", -1));
+        wallDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.break_wall.time_penalty", 1));
         wallDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.break_wall.start_message"));
 
         manager.registerAction("BREAK_WALL", map -> new SmartBreakWallAction(
@@ -193,6 +201,8 @@ public class DefaultRegistry {
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
         mmDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.mythic_wave.scale_with_party", false));
         mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
+        mmDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.mythic_wave.time_limit", -1));
+        mmDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.mythic_wave.time_penalty", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         mmDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.mythic_wave.start_message"));
 
@@ -213,6 +223,8 @@ public class DefaultRegistry {
         Map<String, Object> randomDefaults = new HashMap<>();
         randomDefaults.put("amount", 5);
         randomDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.random_wave.scale_with_party", false));
+        randomDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.random_wave.time_limit", -1));
+        randomDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.random_wave.time_penalty", 1));
         randomDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         randomDefaults.put("random_mobs", plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs").isEmpty() ? defaultRandomMobs : plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs"));
         randomDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.random_wave.start_message"));
@@ -240,6 +252,8 @@ public class DefaultRegistry {
         zoneDefaults.put("required_time", 20);
         zoneDefaults.put("mob_type", "NONE");
         zoneDefaults.put("mob_interval", 60);
+        zoneDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.control_zone.time_limit", -1));
+        zoneDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.control_zone.time_penalty", 1));
         zoneDefaults.put("start_message", Collections.singletonList("&eCapture and hold the zone!"));
 
         manager.registerAction("CONTROL_ZONE", map -> {
@@ -261,6 +275,8 @@ public class DefaultRegistry {
         doorDefaults.put("corner1", "0,0,0");
         doorDefaults.put("corner2", "0,0,0");
         doorDefaults.put("key_item", "TRIPWIRE_HOOK:1");
+        doorDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.unlock_door.time_limit", -1));
+        doorDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.unlock_door.time_penalty", 1));
         doorDefaults.put("start_message", Collections.singletonList("&eFind the key and unlock the door!"));
 
         manager.registerAction("UNLOCK_DOOR", map -> {

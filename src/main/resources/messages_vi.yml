@@ -27,6 +27,7 @@ lives:
   admin_gave_item: "&aĐã tặng vật phẩm hồi sinh mạng sống (+<amount>) cho <player>."
   out_of_lives_spectate: "&cBạn đã cạn kiệt mạng sống! Bạn đã được chuyển sang chế độ Khán giả."
   out_of_lives_kick: "&cBạn đã cạn kiệt mạng sống và bị trục xuất khỏi Hầm ngục!"
+  time_out_penalty: "&cBạn không hoàn thành nhiệm vụ kịp lúc và bị trừ <amount> mạng! Hiện tại: <current>"
 
 admin:
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
@@ -118,6 +119,7 @@ game:
   hud:
     objective_prefix: "&6&lMỤC TIÊU: &r"
     objective_separator: " &8| "
+    time_left: " &c(<time>s)"
   title:
     loading_main: "&e&lĐANG KHỞI TẠO..."
     loading_sub: "&7Vui lòng chờ trong giây lát"
@@ -130,6 +132,7 @@ game:
   player_disconnect: "&eThành viên <player> đã mất kết nối và tự động rời khỏi Dungeon!"
   death_spectate: "&cBạn đã tử trận! Hiện đang theo dõi đồng đội."
   wipeout: "&cToàn bộ đội hình đã bị tiêu diệt. Nhiệm vụ Thất Bại!"
+  time_out: "&cĐã hết thời gian! Đang khởi động lại giai đoạn..."
 
 lobby:
   preparing: "&eĐang tải bản đồ Dungeon, vui lòng không di chuyển..."
@@ -261,6 +264,10 @@ editor:
     settings: "&lCài Đặt Chuyên Sâu"
     edit_action_items: "&lSắp xếp Rương: <index>"
   items:
+    setting_randomize_stages: "&eTrộn Ngẫu Nhiên Các Giai Đoạn (Rogue-like)"
+    setting_randomize_stages_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Chuyển đổi Bật/Tắt"
     setting_req_lives: "&eYêu Cầu Số Mạng Để Vào"
     setting_deduct_lives: "&eSố Mạng Bị Trừ Khi Chết"
     click_edit: "&eChuột Trái: Chỉnh sửa"
@@ -367,6 +374,16 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_stage_chance:
+        - "&7Nhập tỉ lệ xuất hiện của Giai đoạn này (0-100)."
+        - "&7Ví dụ: &a50.5"
+      edit_action_time_limit:
+        - "&7Nhập giới hạn thời gian (giây) cho nhiệm vụ này."
+        - "&7Nhập &c-1 &7để tắt giới hạn thời gian."
+        - "&7Ví dụ: &a60"
+      edit_action_time_penalty:
+        - "&7Nhập số mạng bị trừ nếu hết thời gian."
+        - "&7Ví dụ: &a1"
       edit_action_scale_with_party:
         - "&7Nhiệm vụ này có nhân số lượng quái với số người trong Tổ đội không?"
         - "&7Hãy nhập &atrue &7hoặc &cfalse&7."
@@ -495,6 +512,12 @@ editor:
         - "&7Ví dụ Vanilla: &aTRIPWIRE_HOOK:1"
         - "&7Ví dụ MMOItems: &aMMOITEMS:KEY:DUNGEON_KEY:1"
   chat:
+    notifications_hint:
+      - "&7[Thông báo] Vui lòng chỉnh sửa mục này thủ công trong file YAML."
+      - "&7Định dạng: notifications:"
+      - "&7  init: false"
+      - "&7  complete: true"
+      - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"
     input_start:
       - "&aHệ thống đang chờ bạn điền thông tin."
       - "&7Gõ &ccancel&7 để hủy toàn bộ."

@@ -221,6 +221,15 @@ public class DungeonManager {
 
             if (action != null) {
                 action.setActionType(type);
+
+                // MỚI: Parse time limits
+                if (data.containsKey("time_limit")) {
+                    action.setTimeLimitSeconds(getInt(data.get("time_limit"), -1));
+                }
+                if (data.containsKey("time_penalty")) {
+                    action.setTimeLimitPenalty(getInt(data.get("time_penalty"), 1));
+                }
+
                 if (data.containsKey("start_message")) {
                     Object msgObj = data.get("start_message");
                     List<String> msgs = new ArrayList<>();
@@ -228,7 +237,6 @@ public class DungeonManager {
                     else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
                     action.setStartMessages(msgs);
                 }
-                // Parse per-action notification overrides
                 if (data.containsKey("notifications")) {
                     Object notifObj = data.get("notifications");
                     Map<String, Boolean> notifMap = new java.util.HashMap<>();
@@ -255,6 +263,10 @@ public class DungeonManager {
         }
     }
 
+    private int getInt(Object obj, int def) {
+        if (obj instanceof Number) return ((Number) obj).intValue();
+        try { return Integer.parseInt(obj.toString()); } catch (Exception e) { return def; }
+    }
 
     public CompletableFuture<Void> reload() {
         stopAllGames();

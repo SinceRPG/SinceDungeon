@@ -82,17 +82,45 @@ public class DungeonGame {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
 
+        List<CopyOnWriteArrayList<DungeonAction>> parsedStages = new ArrayList<>();
+
         for (Integer key : keys) {
-            List<Map<String, Object>> rawActions = template.stages().get(key);
+            DungeonTemplate.StageData stageData = template.stages().get(key);
+
+            // 1. Kiểm tra Percent Chance (Tỉ lệ xuất hiện)
+            if (stageData.chance() < 100.0) {
+                double roll = Math.random() * 100.0;
+                if (roll > stageData.chance()) {
+                    continue; // Skip Giai đoạn này do xui xẻo (Rogue-like)
+                }
+            }
+
             CopyOnWriteArrayList<DungeonAction> actions = new CopyOnWriteArrayList<>();
-            for (Map<String, Object> map : rawActions) {
+            for (Map<String, Object> map : stageData.actions()) {
                 String type = (String) map.get("type");
                 if (type != null) {
                     DungeonAction action = plugin.getDungeonManager().createAction(type, map);
                     if (action != null) actions.add(action);
                 }
             }
-            stages.add(actions);
+            if (!actions.isEmpty()) {
+                parsedStages.add(actions);
+            }
+        }
+
+        // 2. Rogue-like Randomization (Trộn vị trí ngẫu nhiên các Map ở giữa)
+        if (template.settings().randomizeStages() && parsedStages.size() > 2) {
+            CopyOnWriteArrayList<DungeonAction> firstStage = parsedStages.get(0);
+            CopyOnWriteArrayList<DungeonAction> lastStage = parsedStages.get(parsedStages.size() - 1);
+
+            List<CopyOnWriteArrayList<DungeonAction>> middleStages = new ArrayList<>(parsedStages.subList(1, parsedStages.size() - 1));
+            Collections.shuffle(middleStages); // Đảo lộn ngẫu nhiên
+
+            this.stages.add(firstStage);
+            this.stages.addAll(middleStages);
+            this.stages.add(lastStage);
+        } else {
+            this.stages.addAll(parsedStages);
         }
     }
 
@@ -252,6 +280,16 @@ public class DungeonGame {
         DungeonAction action = currentStageActions.get(currentActionIndex);
 
         if (!action.isCompleted()) {
+
+            // --- TIME LIMIT LOGIC (Giới hạn Thời gian) ---
+            if (action.getTimeLimitSeconds() > 0 && action.getStartTimeMillis() > 0) {
+                long elapsed = (System.currentTimeMillis() - action.getStartTimeMillis()) / 1000;
+                if (elapsed >= action.getTimeLimitSeconds()) {
+                    handleTimeLimitPenalty(action);
+                    return; // Ngừng tick hành động này vì bị phạt và Reset
+                }
+            }
+
             if (action instanceof Tickable tickable) {
                 try {
                     tickable.onTick(this);
@@ -263,6 +301,13 @@ public class DungeonGame {
             if (!action.isCompleted()) {
                 String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>MỤC TIÊU: <reset>");
                 String objText = action.getObjectiveText();
+
+                // MỚI: Thêm hiển thị đếm ngược nếu có Time Limit
+                if (action.getTimeLimitSeconds() > 0) {
+                    long timeLeft = action.getTimeLimitSeconds() - ((System.currentTimeMillis() - action.getStartTimeMillis()) / 1000);
+                    objText += " <red>(" + timeLeft + "s)";
+                }
+
                 for (Player p : participants) {
                     if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
                         p.sendActionBar(ColorUtils.parse(objPrefix + objText));
@@ -273,6 +318,49 @@ public class DungeonGame {
             }
         } else {
             advanceNextAction();
+        }
+    }
+
+    private void handleTimeLimitPenalty(DungeonAction action) {
+        broadcastMessage("game.time_out");
+        int penalty = action.getTimeLimitPenalty();
+
+        boolean outOfLives = false;
+        for (Player p : participants) {
+            if (!p.isOnline() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) continue;
+
+            plugin.getLivesManager().removeLives(p.getUniqueId(), penalty);
+            net.danh.sinceDungeon.managers.LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
+            int current = livesData != null ? livesData.getCurrentLives() : 0;
+
+            String lossMsg = plugin.getMessagesFile().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>")
+                    .replace("<amount>", String.valueOf(penalty))
+                    .replace("<current>", String.valueOf(current));
+            p.sendMessage(ColorUtils.parseWithPrefix(lossMsg));
+
+            if (current <= 0) {
+                outOfLives = true;
+                String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
+                if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
+                    p.setGameMode(GameMode.SPECTATOR);
+                } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                    stop(true, DungeonEndEvent.EndReason.FAILED);
+                    return;
+                } else {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                    handlePlayerDisconnect(p);
+                }
+            }
+        }
+
+        checkWipeout();
+
+        // Nếu Đội không chết sạch -> Reset lại Giai đoạn (Stage) này từ đầu
+        if (isRunning && !isStopping) {
+            action.cleanup(this);
+            startStage(currentStageIndex);
         }
     }
 
@@ -304,6 +392,7 @@ public class DungeonGame {
         }
 
         DungeonAction action = currentStageActions.get(currentActionIndex);
+        action.setStartTimeMillis(System.currentTimeMillis()); // Bắt đầu tính giờ
         try {
             action.announceStart(this);
             action.start(this);

@@ -271,6 +271,9 @@ dungeon:
     # Block commands inside dungeons to prevent cheating?
     block-commands: true
 
+    # Shuffle the middle stages (Rogue-like mode). First and last stages will remain locked.
+    randomize-stages: false
+
     # Danh sách các lệnh ĐƯỢC PHÉP dùng (Nhớ ghi chữ thường)
     # List of allowed commands inside dungeons.
     allowed-commands:
@@ -306,6 +309,8 @@ action-defaults:
     mob: "ZOMBIE"
     amount: 1
     scale_with_party: false
+    time_limit: -1
+    time_penalty: 1
     custom_name: ""
     is_baby: false
     attributes: [ ]
@@ -316,6 +321,8 @@ action-defaults:
       - "&cMonsters are approaching!"
   reach_location:
     radius: 3.0
+    time_limit: -1
+    time_penalty: 1
     start_message:
       - "&eMove to the next checkpoint!"
   mythic_wave:
@@ -323,20 +330,28 @@ action-defaults:
     amount: 1
     scale_with_party: false
     level: 1
+    time_limit: -1
+    time_penalty: 1
     locations:
       - "0,0,0"
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
   loot_chest:
+    time_limit: -1
+    time_penalty: 1
     items: { }
     start_message:
       - "&6A supply chest has appeared, loot it!"
   break_wall:
+    time_limit: -1
+    time_penalty: 1
     start_message:
       - "&bDestroy the seal to open the path!"
   random_wave:
     amount: 5
     scale_with_party: false
+    time_limit: -1
+    time_penalty: 1
     # Each entry format: VANILLA:<EntityType>:<weight>  or  MYTHIC:<MobId>:<weight>[:<level>]
     # Weight controls how often each mob is picked (higher = more likely). Does NOT need to sum to 100.
     random_mobs:
@@ -350,6 +365,8 @@ action-defaults:
     start_radius: 10.0
     end_radius: 3.0
     required_time: 20
+    time_limit: -1
+    time_penalty: 1
     mob_type: "NONE"
     mob_interval: 60
     start_message:
@@ -358,6 +375,8 @@ action-defaults:
     trigger: "0,0,0"
     corner1: "0,0,0"
     corner2: "0,0,0"
+    time_limit: -1
+    time_penalty: 1
     key_item: "TRIPWIRE_HOOK:1"
     start_message:
       - "&eFind the key and unlock the door!"

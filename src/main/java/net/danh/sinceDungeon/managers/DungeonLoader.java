@@ -35,19 +35,19 @@ public class DungeonLoader {
 
         boolean isPublic = config.getBoolean("public", false);
 
-        boolean keepInv = config.contains("settings.keep-inventory-on-death") ? config.getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
-        boolean preventDrop = config.contains("settings.prevent-item-dropping") ? config.getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
-        boolean blockPearls = config.contains("settings.block-ender-pearls") ? config.getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.block-ender-pearls", true);
+        boolean keepInv = config.contains("settings.keep-inventory-on-death") ? config.getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
+        boolean preventDrop = config.contains("settings.prevent-item-dropping") ? config.getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
+        boolean blockPearls = config.contains("settings.block-ender-pearls") ? config.getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getBoolean("dungeon.gameplay.block-ender-pearls", true);
         int kickDelay = config.contains("settings.kick-delay-after-finish") ? config.getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
-        boolean forceWeather = config.contains("settings.force-daylight-and-clear-weather") ? config.getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getConfig().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
-        boolean saveStats = config.contains("settings.save-and-restore-stats") ? config.getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getConfig().getBoolean("dungeon.save-and-restore-stats", false);
+        boolean forceWeather = config.contains("settings.force-daylight-and-clear-weather") ? config.getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
+        boolean saveStats = config.contains("settings.save-and-restore-stats") ? config.getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
         String deathAction = config.contains("settings.death-action") ? config.getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
-        boolean clearMobDrops = config.contains("settings.clear-mob-drops") ? config.getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getConfig().getBoolean("dungeon.clear-mob-drops", true);
-
+        boolean clearMobDrops = config.contains("settings.clear-mob-drops") ? config.getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
         int reqLives = config.getInt("settings.required-lives-to-join", 1);
         int deductLives = config.getInt("settings.lives-deducted-per-death", 1);
+        boolean randomizeStages = config.contains("settings.randomize-stages") ? config.getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives);
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages);
 
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
@@ -57,12 +57,7 @@ public class DungeonLoader {
                 if (c != null) {
                     String check = c.getString("check");
                     if (check != null) {
-                        conditions.add(new DungeonTemplate.Condition(
-                                key,
-                                c.getString("name", key),
-                                check,
-                                c.getString("msg")
-                        ));
+                        conditions.add(new DungeonTemplate.Condition(key, c.getString("name", key), check, c.getString("msg")));
                     }
                 }
             }
@@ -85,28 +80,22 @@ public class DungeonLoader {
             for (String key : poolSec.getKeys(false)) {
                 ConfigurationSection itemSec = poolSec.getConfigurationSection(key);
                 if (itemSec == null) continue;
-
                 String type = itemSec.getString("type");
                 String value = itemSec.getString("value");
                 if (type == null || value == null) continue;
-
-                rewards.add(new DungeonReward(
-                        type,
-                        value,
-                        itemSec.getDouble("chance", 100.0),
-                        itemSec.getString("name"),
-                        itemSec.getStringList("lore")
-                ));
+                rewards.add(new DungeonReward(type, value, itemSec.getDouble("chance", 100.0), itemSec.getString("name"), itemSec.getStringList("lore")));
             }
         }
 
-        Map<Integer, List<Map<String, Object>>> stages = new HashMap<>();
+        Map<Integer, DungeonTemplate.StageData> stages = new HashMap<>();
         ConfigurationSection stageSec = config.getConfigurationSection("stages");
 
         if (stageSec != null) {
             for (String stageKey : stageSec.getKeys(false)) {
                 try {
                     int stageNum = Integer.parseInt(stageKey);
+                    double chance = stageSec.getDouble(stageKey + ".chance", 100.0); // MỚI: Tải Tỷ lệ
+
                     ConfigurationSection actionSec = stageSec.getConfigurationSection(stageKey + ".actions");
                     List<Map<String, Object>> actionList = new ArrayList<>();
 
@@ -119,7 +108,7 @@ public class DungeonLoader {
                             }
                         }
                     }
-                    stages.put(stageNum, actionList);
+                    stages.put(stageNum, new DungeonTemplate.StageData(chance, actionList));
                 } catch (NumberFormatException e) {
                     plugin.getLogger().warning("Invalid stage key in " + id + ": " + stageKey);
                 }

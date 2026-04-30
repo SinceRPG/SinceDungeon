@@ -235,6 +235,8 @@ public class EditorMenuListener implements Listener {
                         }
                     });
                     plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 21) {
+                    path = "settings.randomize-stages";
                 }
 
                 if (!path.isEmpty()) {
@@ -530,6 +532,19 @@ public class EditorMenuListener implements Listener {
                             } else if (e.getClick() == ClickType.LEFT) {
                                 session.setCurrentStage(stage);
                                 gui.openActionList(p, session, session.getPage("ACTIONS"));
+                            } else if (e.getClick() == ClickType.RIGHT) {
+                                session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_stage_chance", val -> {
+                                    try {
+                                        double c = Math.clamp(Double.parseDouble(val), 0.0, 100.0);
+                                        session.getConfig().set("stages." + stage + ".chance", c);
+                                        gui.sendMessage(p, "update_val", "<key>", "Stage Chance", "<val>", String.valueOf(c) + "%");
+                                        gui.openStageList(p, session, page);
+                                    } catch (Exception ex) {
+                                        gui.sendMessage(p, "number_error");
+                                        gui.openStageList(p, session, page);
+                                    }
+                                });
+                                plugin.getEditorListener().startListening(p, session);
                             }
                         }
                     }
