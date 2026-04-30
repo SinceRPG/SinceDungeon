@@ -141,6 +141,8 @@ objective:
   break_wall: "&bFind and break the sealing block"
   spawn_wave: "&eEliminate &c<mob> &7(Left: <remain>)"
   random_wave: "&eEliminate all enemies &7(Left: <remain>)"
+  control_zone: "&bControl the Zone: <percent>%"
+  unlock_door: "&6Find the Key and Unlock the Door"
 
 action:
   chest_appear: "&eA treasure chest has appeared!"
@@ -159,6 +161,11 @@ action:
   random_wave_start: "&c<amount> mixed enemies have appeared!"
   random_wave_remain: "&e<amount> enemies remaining."
   random_wave_complete: "&aAll enemies eliminated!"
+  zone_start: "&bA strategic zone has appeared. Capture it!"
+  zone_warning: "&cWarning: At least <required> player(s) must stay in the circle!"
+  zone_complete: "&aZone captured successfully!"
+  door_start: "&eThe path is locked! Search the area for a Key."
+  door_unlocked: "&a<player> has unlocked the door!"
 
 error:
   already_in: "&cYou or your party is already in another dungeon!"
@@ -178,6 +185,7 @@ error:
   dungeon_sealed_entry: "&cArea sealed. Unauthorized entry detected!"
   dungeon_sealed_teleport: "&cArea sealed. Teleportation magic nullified!"
   not_in_dungeon: "&cYou are not currently in any Dungeon."
+  wrong_key: "&cYou don't have the correct key!"
 
 reward:
   gui_title: "&6&lDungeon Rewards"
@@ -226,6 +234,8 @@ editor:
     break_wall: "Break Wall via Block"
     mythic_wave: "Spawn Mythic Boss"
     random_wave: "Random Mob Wave"
+    control_zone: "Control The Zone"
+    unlock_door: "Find Key & Unlock Door"
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"
@@ -233,6 +243,8 @@ editor:
     break_wall: "Destroy wall when trigger block is broken"
     mythic_wave: "Spawn MythicMobs Boss"
     random_wave: "Spawn a random mix of Vanilla and Mythic mobs from a pool"
+    control_zone: "Hold the area for X seconds. Circle can shrink over time."
+    unlock_door: "Requires player to find a key item to open the door."
   title:
     main: "&lDungeon Editor"
     dungeon: "&lEditing: <name>"
@@ -492,6 +504,26 @@ editor:
         - "&7Vanilla Example: &fmainhand:DIAMOND_SWORD:1"
         - "&7MMOItems Example: &fmainhand:MMOITEMS:SWORD:FIERY_SWORD:1"
         - "&7Tip: Type &cclear &7to remove all equipment."
+      edit_action_start_radius:
+        - "&7Enter the initial radius of the zone."
+        - "&7Example: &a10.0"
+      edit_action_end_radius:
+        - "&7Enter the final radius of the zone (if < start_radius, it shrinks)."
+        - "&7Example: &a3.0"
+      edit_action_required_time:
+        - "&7Enter the time in seconds players must hold the zone."
+        - "&7Example: &a20"
+      edit_action_mob_type:
+        - "&7Enter the EntityType of the mob to spawn (or NONE to disable)."
+        - "&7Example: &aZOMBIE"
+      edit_action_mob_interval:
+        - "&7Enter the interval in ticks to spawn a mob (20 ticks = 1s)."
+        - "&7Example: &a60"
+      edit_action_key_item:
+        - "&7Enter the required Key Item format."
+        - "&7Vanilla Example: &aTRIPWIRE_HOOK:1"
+        - "&7MMOItems Example: &aMMOITEMS:KEY:DUNGEON_KEY:1"
+
   chat:
     input_start:
       - "&aPlease enter a value in chat."

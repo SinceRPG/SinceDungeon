@@ -231,6 +231,48 @@ public class DefaultRegistry {
                 }, plugin.getMessagesFile().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
                 plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
                 randomDefaults, new HashMap<>());
+
+        // --- CONTROL_ZONE ---
+        Map<String, Object> zoneDefaults = new HashMap<>();
+        zoneDefaults.put("center", "0,0,0");
+        zoneDefaults.put("start_radius", 10.0);
+        zoneDefaults.put("end_radius", 3.0);
+        zoneDefaults.put("required_time", 20);
+        zoneDefaults.put("mob_type", "NONE");
+        zoneDefaults.put("mob_interval", 60);
+        zoneDefaults.put("start_message", Collections.singletonList("&eCapture and hold the zone!"));
+
+        manager.registerAction("CONTROL_ZONE", map -> {
+                    Vector center = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("center", "0,0,0")));
+                    double startRadius = getDouble(map.get("start_radius"), (double) zoneDefaults.get("start_radius"));
+                    double endRadius = getDouble(map.get("end_radius"), (double) zoneDefaults.get("end_radius"));
+                    int requiredTime = getInt(map.get("required_time"), (int) zoneDefaults.get("required_time"));
+                    String mobType = String.valueOf(map.getOrDefault("mob_type", "NONE"));
+                    int mobInterval = getInt(map.get("mob_interval"), (int) zoneDefaults.get("mob_interval"));
+
+                    return new ControlZoneAction(center, startRadius, endRadius, requiredTime, mobType, mobInterval);
+                }, plugin.getMessagesFile().getString("editor.actions_name.control_zone", "Control The Zone"), Material.BEACON,
+                plugin.getMessagesFile().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
+                zoneDefaults, new HashMap<>());
+
+        // --- UNLOCK_DOOR ---
+        Map<String, Object> doorDefaults = new HashMap<>();
+        doorDefaults.put("trigger", "0,0,0");
+        doorDefaults.put("corner1", "0,0,0");
+        doorDefaults.put("corner2", "0,0,0");
+        doorDefaults.put("key_item", "TRIPWIRE_HOOK:1");
+        doorDefaults.put("start_message", Collections.singletonList("&eFind the key and unlock the door!"));
+
+        manager.registerAction("UNLOCK_DOOR", map -> {
+                    Vector trigger = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0")));
+                    Vector c1 = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0")));
+                    Vector c2 = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")));
+                    String keyItem = String.valueOf(map.getOrDefault("key_item", "TRIPWIRE_HOOK:1"));
+
+                    return new UnlockDoorAction(trigger, c1, c2, keyItem);
+                }, plugin.getMessagesFile().getString("editor.actions_name.unlock_door", "Find Key & Unlock Door"), Material.IRON_DOOR,
+                plugin.getMessagesFile().getString("editor.actions.unlock_door", "Requires player to find a key item to open the door."),
+                doorDefaults, new HashMap<>());
     }
 
     private static int getInt(Object obj, int def) {

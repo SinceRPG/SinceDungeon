@@ -142,6 +142,8 @@ objective:
   break_wall: "&bTìm và phá vỡ Khối đá phong ấn"
   spawn_wave: "&eTiêu diệt &c<mob> &7(Còn: <remain>)"
   random_wave: "&eTiêu diệt tất cả kẻ địch &7(Còn: <remain>)"
+  control_zone: "&bChiếm đóng Khu vực: <percent>%"
+  unlock_door: "&6Tìm Chìa khóa và mở Cửa"
 
 action:
   chest_appear: "&eMột rương kho báu vừa xuất hiện!"
@@ -160,6 +162,11 @@ action:
   random_wave_start: "&cMột đàn <amount> kẻ địch hỗn hợp xuất hiện!"
   random_wave_remain: "&eCòn lại <amount> kẻ địch chưa bị tiêu diệt."
   random_wave_complete: "&aToàn bộ kẻ địch đã bị tiêu diệt!"
+  zone_start: "&bMột vòng tròn cứ điểm đã xuất hiện. Hãy bảo vệ nó!"
+  zone_warning: "&cCảnh báo: Yêu cầu ít nhất <required> người đứng trong vòng!"
+  zone_complete: "&aBảo vệ cứ điểm thành công!"
+  door_start: "&eLối đi đã bị khóa! Hãy tìm Chìa khóa xung quanh."
+  door_unlocked: "&a<player> đã mở khóa cửa thành công!"
 
 error:
   already_in: "&cBạn hoặc thành viên trong Tổ đội đang ở trong một Dungeon khác!"
@@ -179,6 +186,7 @@ error:
   dungeon_sealed_entry: "&cKhu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"
   dungeon_sealed_teleport: "&cKhu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"
   not_in_dungeon: "&cBạn hiện không ở trong Dungeon nào."
+  wrong_key: "&cBạn không cầm đúng Chìa khóa trên tay!"
 
 reward:
   gui_title: "&6&lPhần Thưởng Dungeon"
@@ -227,6 +235,8 @@ editor:
     break_wall: "Phá Tường Bằng Khối"
     mythic_wave: "Triệu hồi Boss Mythic"
     random_wave: "Đợt Quái Ngẫu Nhiên"
+    control_zone: "Bảo Vệ Cứ Điểm"
+    unlock_door: "Tìm Chìa Khóa & Mở Cửa"
   actions:
     spawn_wave: "Tạo đợt quái vật Vanilla cơ bản"
     reach_location: "Yêu cầu người chơi di chuyển tới tọa độ chỉ định"
@@ -234,6 +244,8 @@ editor:
     break_wall: "Xóa bức tường chắn khi khối kích hoạt bị phá"
     mythic_wave: "Triệu hồi Boss từ hệ thống MythicMobs"
     random_wave: "Tạo đợt quái ngẫu nhiên từ danh sách (Vanilla + MythicMobs)"
+    control_zone: "Giữ vị trí trong X giây. Vòng bo có thể thu hẹp dần."
+    unlock_door: "Yêu cầu tìm chìa khóa để mở khóa cửa sắt."
   title:
     main: "&lDungeon Editor"
     dungeon: "&lChỉnh sửa: <name>"
@@ -463,6 +475,25 @@ editor:
         - "&7Ví dụ Vanilla: &fmainhand:DIAMOND_SWORD:1"
         - "&7Ví dụ MMOItems: &fmainhand:MMOITEMS:SWORD:FIERY_SWORD:1"
         - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ trang bị."
+      edit_action_start_radius:
+        - "&7Nhập bán kính ban đầu của vòng bo."
+        - "&7Ví dụ: &a10.0"
+      edit_action_end_radius:
+        - "&7Nhập bán kính khi kết thúc đếm ngược (nhỏ hơn ban đầu sẽ thu hẹp vòng)."
+        - "&7Ví dụ: &a3.0"
+      edit_action_required_time:
+        - "&7Nhập số giây yêu cầu người chơi phải phòng thủ trong vòng."
+        - "&7Ví dụ: &a20"
+      edit_action_mob_type:
+        - "&7Nhập EntityType quái cản đường (Để NONE nếu không muốn sinh quái)."
+        - "&7Ví dụ: &aZOMBIE"
+      edit_action_mob_interval:
+        - "&7Khoảng cách sinh quái cản đường (Tính bằng Ticks: 20 Ticks = 1s)."
+        - "&7Ví dụ: &a60"
+      edit_action_key_item:
+        - "&7Nhập định dạng Vật phẩm Chìa khóa."
+        - "&7Ví dụ Vanilla: &aTRIPWIRE_HOOK:1"
+        - "&7Ví dụ MMOItems: &aMMOITEMS:KEY:DUNGEON_KEY:1"
   chat:
     input_start:
       - "&aHệ thống đang chờ bạn điền thông tin."
