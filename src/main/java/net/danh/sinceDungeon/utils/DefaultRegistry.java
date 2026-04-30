@@ -42,7 +42,6 @@ public class DefaultRegistry {
                 int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
 
-                // Need to use private helper logic here, simpler to just give item directly
                 HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
                 if (!left.isEmpty()) {
                     for (ItemStack drop : left.values()) {
@@ -91,6 +90,7 @@ public class DefaultRegistry {
         Map<String, Object> spawnDefaults = new LinkedHashMap<>();
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
         spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
+        spawnDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.spawn_wave.scale_with_party", false));
         spawnDefaults.put("custom_name", plugin.getConfigFile().getString("action-defaults.spawn_wave.custom_name", ""));
         spawnDefaults.put("is_baby", plugin.getConfigFile().getBoolean("action-defaults.spawn_wave.is_baby", false));
         spawnDefaults.put("attributes", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.attributes"));
@@ -108,6 +108,7 @@ public class DefaultRegistry {
                     }
                     int amount = getInt(map.get("amount"), (int) spawnDefaults.get("amount"));
                     List<Vector> v = parseLocList(map.get("locations"));
+                    boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) spawnDefaults.get("scale_with_party");
 
                     String customName = String.valueOf(map.getOrDefault("custom_name", ""));
                     boolean isBaby = false;
@@ -121,7 +122,7 @@ public class DefaultRegistry {
                     Object equipObj = map.get("equipment");
                     if (equipObj instanceof List<?> l) l.forEach(o -> equipmentList.add(o.toString()));
 
-                    return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList);
+                    return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList, scaleWithParty);
                 }, plugin.getMessagesFile().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
@@ -190,6 +191,7 @@ public class DefaultRegistry {
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
+        mmDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.mythic_wave.scale_with_party", false));
         mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         mmDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.mythic_wave.start_message"));
@@ -199,7 +201,9 @@ public class DefaultRegistry {
                     int amount = getInt(map.get("amount"), (int) mmDefaults.get("amount"));
                     int level = getInt(map.get("level"), (int) mmDefaults.get("level"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
-                    return new MythicMobWaveAction(mob, amount, level, v);
+                    boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) mmDefaults.get("scale_with_party");
+
+                    return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty);
                 }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
@@ -208,6 +212,7 @@ public class DefaultRegistry {
         List<String> defaultRandomMobs = new ArrayList<>(Arrays.asList("VANILLA:ZOMBIE:50", "VANILLA:SKELETON:30", "MYTHIC:SkeletonKing:20:1"));
         Map<String, Object> randomDefaults = new HashMap<>();
         randomDefaults.put("amount", 5);
+        randomDefaults.put("scale_with_party", plugin.getConfigFile().getBoolean("action-defaults.random_wave.scale_with_party", false));
         randomDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         randomDefaults.put("random_mobs", plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs").isEmpty() ? defaultRandomMobs : plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs"));
         randomDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.random_wave.start_message"));
@@ -215,12 +220,14 @@ public class DefaultRegistry {
         manager.registerAction("RANDOM_WAVE", map -> {
                     List<Vector> v = parseLocList(map.get("locations"));
                     int amount = getInt(map.get("amount"), (int) randomDefaults.get("amount"));
+                    boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) randomDefaults.get("scale_with_party");
+
                     List<String> rawStrings = new ArrayList<>();
                     Object rawList = map.get("random_mobs");
                     if (rawList instanceof List<?> l) l.forEach(o -> rawStrings.add(o.toString()));
                     else if (rawList instanceof String s) rawStrings.add(s);
 
-                    return new RandomWaveAction(amount, v, RandomWaveAction.parseMobPool(rawStrings));
+                    return new RandomWaveAction(amount, v, RandomWaveAction.parseMobPool(rawStrings), scaleWithParty);
                 }, plugin.getMessagesFile().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
                 plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
                 randomDefaults, new HashMap<>());

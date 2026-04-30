@@ -355,6 +355,9 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_scale_with_party:
+        - "&7Nhiệm vụ này có nhân số lượng quái với số người trong Tổ đội không?"
+        - "&7Hãy nhập &atrue &7hoặc &cfalse&7."
       edit_req_lives:
         - "&7Nhập số lượng mạng TỐI THIỂU cần có để tham gia Dungeon này."
         - "&7Ví dụ: &a1"

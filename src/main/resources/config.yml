@@ -305,6 +305,7 @@ action-defaults:
   spawn_wave:
     mob: "ZOMBIE"
     amount: 1
+    scale_with_party: false
     custom_name: ""
     is_baby: false
     attributes: [ ]
@@ -320,6 +321,7 @@ action-defaults:
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
+    scale_with_party: false
     level: 1
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
@@ -332,6 +334,7 @@ action-defaults:
       - "&bDestroy the seal to open the path!"
   random_wave:
     amount: 5
+    scale_with_party: false
     # Each entry format: VANILLA:<EntityType>:<weight>  or  MYTHIC:<MobId>:<weight>[:<level>]
     # Weight controls how often each mob is picked (higher = more likely). Does NOT need to sum to 100.
     random_mobs:

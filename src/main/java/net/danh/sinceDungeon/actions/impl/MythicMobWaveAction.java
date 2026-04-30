@@ -24,14 +24,16 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final int amount;
     private final int level;
     private final List<Vector> locations;
+    private final boolean scaleWithParty;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
 
-    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations) {
+    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty) {
         this.internalName = internalName;
         this.amount = amount;
         this.level = Math.max(1, level);
         this.locations = locations;
+        this.scaleWithParty = scaleWithParty;
     }
 
     private void debug(String message) {
@@ -93,11 +95,15 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
+        // --- SCALING LOGIC ---
+        int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
+        if (finalAmount <= 0) finalAmount = 1;
+
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
             debug("Processing base location: " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
 
-            for (int i = 0; i < amount; i++) {
+            for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));

@@ -30,12 +30,13 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final boolean isBaby;
     private final List<String> attributesList;
     private final List<String> equipmentList;
+    private final boolean scaleWithParty;
 
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations,
-                           String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList) {
+                           String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList, boolean scaleWithParty) {
         this.type = type;
         this.amount = amount;
         this.locations = locations;
@@ -43,6 +44,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         this.isBaby = isBaby;
         this.attributesList = attributesList;
         this.equipmentList = equipmentList;
+        this.scaleWithParty = scaleWithParty;
     }
 
     private void debug(String message) {
@@ -224,7 +226,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
-
     @SuppressWarnings("deprecation")
     private Attribute getLegacyAttribute(String attrName) {
         Attribute attr = null;
@@ -272,10 +273,14 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
+        // --- SCALING LOGIC ---
+        int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
+        if (finalAmount <= 0) finalAmount = 1;
+
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
 
-            for (int i = 0; i < amount; i++) {
+            for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));

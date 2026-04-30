@@ -36,14 +36,16 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     private final int amount;
     private final List<Vector> locations;
     private final List<MobOption> mobPool;
+    private final boolean scaleWithParty;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
     private final Map<UUID, String> mobDisplayNames = new HashMap<>();
 
-    public RandomWaveAction(int amount, List<Vector> locations, List<MobOption> mobPool) {
+    public RandomWaveAction(int amount, List<Vector> locations, List<MobOption> mobPool, boolean scaleWithParty) {
         this.amount = amount;
         this.locations = locations;
         this.mobPool = mobPool;
+        this.scaleWithParty = scaleWithParty;
     }
 
     /**
@@ -68,8 +70,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         }
         return pool;
     }
-
-    // ─── Utility ──────────────────────────────────────────────────────────────
 
     private void debug(String message) {
         if (SinceDungeon.getPlugin().getConfigFile().getBoolean("settings.debug", false)) {
@@ -156,8 +156,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         return null;
     }
 
-    // ─── DungeonAction overrides ───────────────────────────────────────────────
-
     @Override
     public String getObjectiveText() {
         String base = SinceDungeon.getPlugin().getMessagesFile().getString(
@@ -179,8 +177,13 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         }
 
         int count = 0;
+
+        // --- SCALING LOGIC ---
+        int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
+        if (finalAmount <= 0) finalAmount = 1;
+
         for (Vector vec : locations) {
-            for (int i = 0; i < amount; i++) {
+            for (int i = 0; i < finalAmount; i++) {
                 MobOption opt = pickRandom();
                 if (opt == null) continue;
 
@@ -243,7 +246,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
         });
 
-        // Respawn vanished mobs with a new random selection
         for (Map.Entry<UUID, Location> entry : toRespawn) {
             MobOption opt = pickRandom();
             if (opt == null) continue;
@@ -255,7 +257,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
         }
 
-        // Update chunk tickets
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {
                 c.addPluginChunkTicket(SinceDungeon.getPlugin());

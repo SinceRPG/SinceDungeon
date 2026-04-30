@@ -384,6 +384,9 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_scale_with_party:
+        - "&7Should this stage multiply the spawn amount by the party size?"
+        - "&7Enter &atrue &7or &cfalse&7."
       edit_req_lives:
         - "&7Enter the minimum amount of lives required to enter this Dungeon."
         - "&7Example: &a1"
