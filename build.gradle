@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("com.gradleup.shadow") version "8.3.0"
+    id("com.gradleup.shadow") version "9.4.1"
 }
 
 group = 'net.danh'
@@ -34,10 +34,7 @@ dependencies {
     compileOnly("io.lumine:MythicLib-dist:1.7.1-SNAPSHOT")
     compileOnly("net.Indyuce:MMOItems-API:6.10.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.7")
-    // SQLite JDBC driver (bundled via shadow jar)
-    implementation("org.xerial:sqlite-jdbc:3.47.1.0")
-    // MySQL connector (bundled via shadow jar)
-    implementation("com.mysql:mysql-connector-j:9.1.0")
+    implementation("com.zaxxer:HikariCP:7.0.2")
     implementation("redis.clients:jedis:7.2.0")
 }
 

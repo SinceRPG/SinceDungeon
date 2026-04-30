@@ -1,13 +1,13 @@
 package net.danh.sinceDungeon.managers;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import net.danh.sinceDungeon.SinceDungeon;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.logging.Level;
 
 /**
  * Manages the database connection for SinceDungeon.
@@ -17,51 +17,67 @@ public class DatabaseManager {
 
     private final SinceDungeon plugin;
     private final String type;
-    // MySQL settings
-    private final String host;
-    private final int port;
-    private final String database;
-    private final String username;
-    private final String password;
-    private Connection connection;
+    private HikariDataSource dataSource;
 
     public DatabaseManager(SinceDungeon plugin) {
         this.plugin = plugin;
         this.type = plugin.getConfigFile().getString("database.type", "sqlite").toLowerCase();
-        this.host = plugin.getConfigFile().getString("database.host", "localhost");
-        this.port = plugin.getConfigFile().getInt("database.port", 3306);
-        this.database = plugin.getConfigFile().getString("database.database", "sincedungeon");
-        this.username = plugin.getConfigFile().getString("database.username", "root");
-        this.password = plugin.getConfigFile().getString("database.password", "");
     }
 
     /**
      * Opens the database connection and creates tables if they don't exist.
      */
     public void connect() {
+        HikariConfig config = new HikariConfig();
+
+        // General Hikari Settings for performance
+        config.setMaximumPoolSize(plugin.getConfigFile().getInt("database.pool.max-size", 10));
+        config.setMinimumIdle(plugin.getConfigFile().getInt("database.pool.min-idle", 2));
+        config.setMaxLifetime(plugin.getConfigFile().getInt("database.pool.max-lifetime", 1800000)); // 30 mins
+        config.setConnectionTimeout(plugin.getConfigFile().getInt("database.pool.timeout", 5000)); // 5 secs
+        config.setPoolName("SinceDungeon-Pool");
+
+        if (type.equals("mysql")) {
+            String host = plugin.getConfigFile().getString("database.host", "localhost");
+            int port = plugin.getConfigFile().getInt("database.port", 3306);
+            String database = plugin.getConfigFile().getString("database.database", "sincedungeon");
+            String username = plugin.getConfigFile().getString("database.username", "root");
+            String password = plugin.getConfigFile().getString("database.password", "");
+
+            config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&autoReconnect=true");
+            config.setUsername(username);
+            config.setPassword(password);
+
+            // MySQL specific optimizations
+            config.addDataSourceProperty("cachePrepStmts", "true");
+            config.addDataSourceProperty("prepStmtCacheSize", "250");
+            config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+            plugin.getLogger().info("[Database] Initializing MySQL connection pool via HikariCP...");
+
+        } else {
+            // Default: SQLite
+            File dbFile = new File(plugin.getDataFolder(), "data.db");
+            config.setJdbcUrl("jdbc:sqlite:" + dbFile.getAbsolutePath());
+            // SQLite doesn't need a large pool, 1 connection is safer to prevent "database is locked" errors
+            config.setMaximumPoolSize(1);
+            plugin.getLogger().info("[Database] Initializing SQLite database...");
+        }
+
         try {
-            if (type.equals("mysql")) {
-                String url = "jdbc:mysql://" + host + ":" + port + "/" + database
-                        + "?useSSL=false&autoReconnect=true&characterEncoding=utf8";
-                connection = DriverManager.getConnection(url, username, password);
-                plugin.getLogger().info("[Database] Connected to MySQL database: " + database);
-            } else {
-                // Default: SQLite
-                File dbFile = new File(plugin.getDataFolder(), "data.db");
-                connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath());
-                plugin.getLogger().info("[Database] Connected to SQLite database: data.db");
-            }
+            dataSource = new HikariDataSource(config);
             createTables();
-        } catch (SQLException e) {
-            plugin.getLogger().severe("[Database] Failed to connect to database: " + e.getMessage());
+            plugin.getLogger().info("[Database] Successfully connected!");
+        } catch (Exception e) {
+            plugin.getLogger().severe("[Database] Failed to initialize HikariCP: " + e.getMessage());
         }
     }
 
     /**
      * Creates the required tables if they don't exist.
      */
-    private void createTables() throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
+    private void createTables() {
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_fastest (
                         dungeon_id VARCHAR(64) NOT NULL,
@@ -108,10 +124,10 @@ public class DatabaseManager {
                 stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_amount INT DEFAULT -1");
                 stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_interval INT DEFAULT -1");
             } catch (SQLException ignored) {
-                // Columns already exist
             }
 
-            plugin.getLogger().info("[Database] Tables verified/created successfully.");
+        } catch (SQLException e) {
+            plugin.getLogger().severe("[Database] Failed to create tables: " + e.getMessage());
         }
     }
 
@@ -119,38 +135,23 @@ public class DatabaseManager {
      * Closes the database connection gracefully.
      */
     public void disconnect() {
-        if (connection != null) {
-            try {
-                if (!connection.isClosed()) {
-                    connection.close();
-                    plugin.getLogger().info("[Database] Connection closed.");
-                }
-            } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[Database] Error closing connection.", e);
-            }
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+            plugin.getLogger().info("[Database] Hikari pool closed.");
         }
     }
 
     /**
      * Ensures the connection is alive, reconnecting if needed.
      */
-    public Connection getConnection() {
-        try {
-            if (connection == null || connection.isClosed()) {
-                plugin.getLogger().warning("[Database] Connection was closed. Reconnecting...");
-                connect();
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("[Database] Failed to check connection state: " + e.getMessage());
+    public Connection getConnection() throws SQLException {
+        if (dataSource == null || dataSource.isClosed()) {
+            throw new SQLException("HikariDataSource is null or closed.");
         }
-        return connection;
+        return dataSource.getConnection();
     }
 
     public boolean isConnected() {
-        try {
-            return connection != null && !connection.isClosed();
-        } catch (SQLException e) {
-            return false;
-        }
+        return dataSource != null && !dataSource.isClosed();
     }
 }

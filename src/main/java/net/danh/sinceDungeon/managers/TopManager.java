@@ -31,25 +31,21 @@ public class TopManager {
      */
     public void saveClearTime(String dungeonId, UUID playerUuid, String playerName, int timeSeconds) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                Connection conn = db.getConnection();
-                if (conn == null) return;
+            try (Connection conn = db.getConnection()) {
 
-                // Check existing record
                 try (PreparedStatement check = conn.prepareStatement(
                         "SELECT time_seconds FROM top_fastest WHERE dungeon_id = ? AND player_uuid = ?")) {
                     check.setString(1, dungeonId);
                     check.setString(2, playerUuid.toString());
-                    ResultSet rs = check.executeQuery();
-                    if (rs.next()) {
-                        int existing = rs.getInt("time_seconds");
-                        if (timeSeconds >= existing) return; // Not a new record
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (rs.next()) {
+                            int existing = rs.getInt("time_seconds");
+                            if (timeSeconds >= existing) return;
+                        }
                     }
                 }
 
-                // Upsert (INSERT or REPLACE)
-                String sql = db.isConnected() && plugin.getConfigFile().getString("database.type", "sqlite")
-                        .equalsIgnoreCase("mysql")
+                String sql = plugin.getConfigFile().getString("database.type", "sqlite").equalsIgnoreCase("mysql")
                         ? "INSERT INTO top_fastest (dungeon_id, player_uuid, player_name, time_seconds, recorded_at) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE player_name=VALUES(player_name), time_seconds=VALUES(time_seconds), recorded_at=VALUES(recorded_at)"
                         : "INSERT OR REPLACE INTO top_fastest (dungeon_id, player_uuid, player_name, time_seconds, recorded_at) VALUES (?,?,?,?,?)";
 
@@ -73,18 +69,17 @@ public class TopManager {
     public void saveKills(String dungeonId, UUID playerUuid, String playerName, int kills) {
         if (kills <= 0) return;
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                Connection conn = db.getConnection();
-                if (conn == null) return;
+            try (Connection conn = db.getConnection()) {
 
                 try (PreparedStatement check = conn.prepareStatement(
                         "SELECT kill_count FROM top_kills WHERE dungeon_id = ? AND player_uuid = ?")) {
                     check.setString(1, dungeonId);
                     check.setString(2, playerUuid.toString());
-                    ResultSet rs = check.executeQuery();
-                    if (rs.next()) {
-                        int existing = rs.getInt("kill_count");
-                        if (kills <= existing) return;
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (rs.next()) {
+                            int existing = rs.getInt("kill_count");
+                            if (kills <= existing) return;
+                        }
                     }
                 }
 
@@ -111,17 +106,16 @@ public class TopManager {
      */
     public void incrementClears(String dungeonId, UUID playerUuid, String playerName) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                Connection conn = db.getConnection();
-                if (conn == null) return;
-
+            try (Connection conn = db.getConnection()) {
                 int existing = 0;
+
                 try (PreparedStatement check = conn.prepareStatement(
                         "SELECT clear_count FROM top_clears WHERE dungeon_id = ? AND player_uuid = ?")) {
                     check.setString(1, dungeonId);
                     check.setString(2, playerUuid.toString());
-                    ResultSet rs = check.executeQuery();
-                    if (rs.next()) existing = rs.getInt("clear_count");
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (rs.next()) existing = rs.getInt("clear_count");
+                    }
                 }
 
                 int newCount = existing + 1;
@@ -156,8 +150,7 @@ public class TopManager {
         List<TopEntry> results = new ArrayList<>();
         if (!db.isConnected()) return results;
 
-        try {
-            Connection conn = db.getConnection();
+        try (Connection conn = db.getConnection()) {
             String table;
             String valueCol;
             String order;
@@ -166,7 +159,7 @@ public class TopManager {
                 case FASTEST_TIME -> {
                     table = "top_fastest";
                     valueCol = "time_seconds";
-                    order = "ASC"; // Lower is better
+                    order = "ASC";
                 }
                 case MOST_KILLS -> {
                     table = "top_kills";
@@ -189,14 +182,15 @@ public class TopManager {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, dungeonId);
                 ps.setInt(2, limit);
-                ResultSet rs = ps.executeQuery();
-                while (rs.next()) {
-                    results.add(new TopEntry(
-                            rs.getString("player_uuid"),
-                            rs.getString("player_name"),
-                            rs.getLong(valueCol),
-                            rs.getLong("recorded_at")
-                    ));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        results.add(new TopEntry(
+                                rs.getString("player_uuid"),
+                                rs.getString("player_name"),
+                                rs.getLong(valueCol),
+                                rs.getLong("recorded_at")
+                        ));
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -207,9 +201,7 @@ public class TopManager {
     }
 
     public enum TopCategory {
-        FASTEST_TIME,
-        MOST_KILLS,
-        MOST_CLEARS
+        FASTEST_TIME, MOST_KILLS, MOST_CLEARS
     }
 
     public record TopEntry(String playerUuid, String playerName, long value, long recordedAt) {

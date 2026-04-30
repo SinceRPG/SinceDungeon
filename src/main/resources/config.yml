@@ -48,6 +48,28 @@ database:
   username: "root"
   password: ""
 
+  # ==================================
+  # HIKARICP CONNECTION POOL SETTINGS
+  # Optimized for MySQL performance. Defaults are fine for most servers.
+  # Cấu hình tối ưu hóa kết nối cơ sở dữ liệu. Mặc định là ổn cho hầu hết server.
+  # ==================================
+  pool:
+    # Maximum number of concurrent connections to the database. (Recommended: 10 - 20)
+    # Số lượng kết nối tối đa được mở cùng lúc tới MySQL. Tránh nghẽn khi nhiều người chơi cùng lúc. (Khuyên dùng: 10 - 20)
+    max-size: 10
+
+    # Minimum number of idle connections maintained in the pool. (Recommended: 2 - 5)
+    # Số lượng kết nối nhàn rỗi (chờ sẵn) luôn được duy trì để phản hồi ngay lập tức. (Khuyên dùng: 2 - 5)
+    min-idle: 2
+
+    # Maximum lifetime of a connection in milliseconds (1800000ms = 30 minutes). Prevents database disconnects.
+    # Thời gian sống tối đa của một kết nối tính bằng mili-giây (1800000 = 30 phút). Tránh lỗi MySQL tự ngắt kết nối.
+    max-lifetime: 1800000
+
+    # Maximum time to wait for a connection from the pool in milliseconds (5000ms = 5 seconds).
+    # Thời gian chờ tối đa để lấy một kết nối tính bằng mili-giây (5000 = 5 giây).
+    timeout: 5000
+
 # =========================================================
 # [LIVES SYSTEM CONFIGURATION]
 # =========================================================

@@ -30,27 +30,27 @@ public class LivesManager {
 
     public void loadPlayer(UUID uuid) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                Connection conn = plugin.getDatabaseManager().getConnection();
-                if (conn == null) return;
+            try (Connection conn = plugin.getDatabaseManager().getConnection()) {
 
                 int defaultMax = plugin.getConfigFile().getInt("lives.default-max-lives", 3);
                 int defaultCurrent = plugin.getConfigFile().getInt("lives.default-start-lives", 3);
 
-                try (PreparedStatement ps = conn.prepareStatement("SELECT current_lives, max_lives, regen_amount, regen_interval, last_regen FROM player_lives WHERE uuid = ?")) {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "SELECT current_lives, max_lives, regen_amount, regen_interval, last_regen FROM player_lives WHERE uuid = ?")) {
                     ps.setString(1, uuid.toString());
-                    ResultSet rs = ps.executeQuery();
 
-                    PlayerLives data;
-                    if (rs.next()) {
-                        data = new PlayerLives(uuid, rs.getInt("current_lives"), rs.getInt("max_lives"), rs.getInt("regen_amount"), rs.getInt("regen_interval"), rs.getLong("last_regen"));
-                    } else {
-                        data = new PlayerLives(uuid, defaultCurrent, defaultMax, -1, -1, System.currentTimeMillis());
-                        data.setModified(true);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        PlayerLives data;
+                        if (rs.next()) {
+                            data = new PlayerLives(uuid, rs.getInt("current_lives"), rs.getInt("max_lives"), rs.getInt("regen_amount"), rs.getInt("regen_interval"), rs.getLong("last_regen"));
+                        } else {
+                            data = new PlayerLives(uuid, defaultCurrent, defaultMax, -1, -1, System.currentTimeMillis());
+                            data.setModified(true);
+                        }
+
+                        calculateRegeneration(data);
+                        cache.put(uuid, data);
                     }
-
-                    calculateRegeneration(data);
-                    cache.put(uuid, data);
                 }
             } catch (SQLException e) {
                 plugin.getLogger().severe("Failed to load lives for " + uuid + ": " + e.getMessage());
@@ -66,9 +66,7 @@ public class LivesManager {
     }
 
     private void saveToDatabase(PlayerLives data) {
-        try {
-            Connection conn = plugin.getDatabaseManager().getConnection();
-            if (conn == null) return;
+        try (Connection conn = plugin.getDatabaseManager().getConnection()) {
 
             String sql = plugin.getConfigFile().getString("database.type", "sqlite").equalsIgnoreCase("mysql")
                     ? "INSERT INTO player_lives (uuid, current_lives, max_lives, regen_amount, regen_interval, last_regen) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE current_lives=VALUES(current_lives), max_lives=VALUES(max_lives), regen_amount=VALUES(regen_amount), regen_interval=VALUES(regen_interval), last_regen=VALUES(last_regen)"
