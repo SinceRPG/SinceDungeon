@@ -133,7 +133,6 @@ game:
   wipeout: "&cAll party members have fallen. Mission Failed!"
   time_out: "&cTime is up! Restarting the stage..."
 
-
 lobby:
   preparing: "&eInitializing dungeon world..."
   countdown: "&eDungeon starts in <time> seconds..."
@@ -395,7 +394,7 @@ editor:
     action_val_hint_loc_single: "&eLeft: Type | Right: Current Pos | &cShift-Right: Delete"
     action_val_hint_loc_list: "&eLeft: Type | Right: Current Pos | &cShift-Right: Clear list"
     action_val_hint_list: "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All"
-    action_val_hint_items: "&eLeft Click: Open chest editor"
+    action_val_hint_items: "&eLeft Click: Open GUI | Read YAML config to add Keys"
     action_type_cant_edit: "&cCannot change action type after creation"
     prev_page: "&e⬅ Previous Page"
     next_page: "&eNext Page ➡"
@@ -475,11 +474,13 @@ editor:
         - "&7Enter the start message for this action (colors supported)."
         - "&7Tip: Type &cclear &7to empty the message list."
       edit_action_items:
-        - "&7Enter Vanilla Item: &aMATERIAL;AMOUNT;SLOT"
-        - "&7Example: &fDIAMOND;10;13"
-        - "&7Enter MMOItems: &aTYPE;ID;AMOUNT;SLOT"
-        - "&7MMOItems Example: &fSWORD;FIERY_SWORD;1;14"
-        - "&7Tip: Type &cclear &7to empty the chest."
+        - "&7--- LOOT CHEST CONFIGURATION ---"
+        - "&7To add a Key that opens a door, edit the YAML file directly."
+        - "&7Dungeon Key Syntax: &aKEY:<key_id>:<amount>"
+        - "&7Example: &fKEY:door_1:1 &8(Drops a key for door_1)"
+        - "&7Vanilla Item: &aMATERIAL:AMOUNT"
+        - "&7MMOItems: &aMMOITEMS:TYPE:ID:AMOUNT"
+        - "&7Tip: Close the chest GUI to save your normal items."
       edit_location:
         - "&7Enter coordinates format: &fX,Y,Z"
         - "&7Tip: Type &ahere &7to use your current location."

@@ -272,7 +272,37 @@ editor:
       - "&7Hiện tại: <val>"
       - "&eChuột Trái: Chuyển đổi Bật/Tắt"
     setting_req_lives: "&eYêu Cầu Số Mạng Để Vào"
+    setting_req_lives_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Chỉnh sửa"
     setting_deduct_lives: "&eSố Mạng Bị Trừ Khi Chết"
+    setting_deduct_lives_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Chỉnh sửa"
+    setting_keep_inv_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_prevent_drop_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_block_pearls_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_kick_delay_lore:
+      - "&7Hiện tại: &f<val>s"
+      - "&eChuột Trái: Chỉnh sửa"
+    setting_force_weather_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_save_stats_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_death_action_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Đổi (RESPAWN/FAIL)"
+    setting_clear_drops_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
     click_edit: "&eChuột Trái: Chỉnh sửa"
     create_new: "&a&lTạo Dungeon Mới"
     world_template: "&eBản đồ Mẫu (World)"
@@ -365,7 +395,7 @@ editor:
     action_val_hint_loc_single: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Xóa"
     action_val_hint_loc_list: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Làm sạch"
     action_val_hint_list: "&eTrái: Thêm dòng | Phải: Xóa dòng cuối | &cShift-Phải: Xóa sạch"
-    action_val_hint_items: "&eChuột Trái: Mở giao diện xếp đồ trực quan"
+    action_val_hint_items: "&eChuột Trái: Xếp đồ | Đọc Config YAML để biết cách nạp Key"
     action_type_cant_edit: "&cKhông thể đổi loại hình nhiệm vụ sau khi đã tạo"
     prev_page: "&e⬅ Trang Trước"
     next_page: "&eTrang Tiếp ➡"
@@ -445,11 +475,13 @@ editor:
         - "&7Nhập tin nhắn thông báo khi bắt đầu nhiệm vụ (Hỗ trợ mã màu)."
         - "&7Mẹo: Gõ &cclear &7để xóa danh sách tin nhắn này."
       edit_action_items:
-        - "&7Nhập vật phẩm Vanilla: &aMATERIAL;AMOUNT;SLOT"
-        - "&7Ví dụ: &fDIAMOND;10;13"
-        - "&7Nhập MMOItems: &aTYPE;ID;AMOUNT;SLOT"
-        - "&7Ví dụ MMOItems: &fSWORD;FIERY_SWORD;1;14"
-        - "&7Mẹo: Gõ &cclear &7để làm trống rương."
+        - "&7--- HƯỚNG DẪN TẠO RƯƠNG TIẾP TẾ ---"
+        - "&7Để rương rơi ra Chìa Khóa mở cửa, hãy chỉnh sửa file YAML thủ công."
+        - "&7Cú pháp Chìa Khóa: &aKEY:<id_chìa_khóa>:<số_lượng>"
+        - "&7Ví dụ: &fKEY:door_1:1 &8(Rơi ra chìa khóa để mở door_1)"
+        - "&7Vật phẩm Vanilla: &aMATERIAL:AMOUNT"
+        - "&7Vật phẩm MMOItems: &aMMOITEMS:TYPE:ID:AMOUNT"
+        - "&7Mẹo: Đóng giao diện Rương để tự động lưu các vật phẩm bình thường."
       edit_location:
         - "&7Nhập tọa độ theo định dạng: &fX,Y,Z"
         - "&7Mẹo: Gõ &ahere &7để copy tọa độ bạn đang đứng."

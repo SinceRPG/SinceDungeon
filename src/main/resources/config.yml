@@ -293,6 +293,9 @@ editor:
 
 # Sound configuration for the entire plugin / Cấu hình âm thanh cho toàn bộ plugin
 sounds:
+  door_locked: "block.chest.locked"
+  door_unlock: "block.iron_door.open"
+  compass_receive: "entity.item.pickup"
   lobby_countdown: "block.note_block.pling"
   game_start: "entity.ender_dragon.growl"
   stage_start: "block.note_block.chime"
@@ -301,9 +304,6 @@ sounds:
   editor_save: "block.anvil.use"
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
-  door_locked: "block.chest.locked"
-  door_unlock: "block.iron_door.open"
-  compass_receive: "entity.item.pickup"
 
 dungeon-items:
   key:
@@ -361,6 +361,21 @@ action-defaults:
       - "0,0,0"
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
+
+  # ========================================================
+  # [HOW TO ADD A DOOR KEY TO THIS CHEST?]
+  # To make this chest drop a Key for the "Unlock Door" action,
+  # you must configure the 'items' section manually in your map's YAML file.
+  #
+  # Syntax Format:
+  # <Slot_Number>: "<Item_Type>:<ID>:<Amount>"
+  #
+  # Examples:
+  # items:
+  #   13: "KEY:door_1:1"               # Spawns 1 Key to open 'door_1'
+  #   14: "MMOITEMS:SWORD:FROST:1"     # Spawns 1 MMOItem
+  #   15: "DIAMOND:10"                 # Spawns 10 Vanilla Diamonds
+  # ========================================================
   loot_chest:
     time_limit: -1
     time_penalty: 1
