@@ -1,6 +1,6 @@
 package net.danh.sinceDungeon.api.events;
 
-import net.danh.sinceDungeon.reward.DungeonReward;
+import net.danh.sinceDungeon.models.DungeonReward;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;

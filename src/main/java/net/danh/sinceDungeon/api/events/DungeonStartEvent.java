@@ -1,6 +1,6 @@
 package net.danh.sinceDungeon.api.events;
 
-import net.danh.sinceDungeon.manager.DungeonTemplate;
+import net.danh.sinceDungeon.models.DungeonTemplate;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;

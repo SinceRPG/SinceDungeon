@@ -3,7 +3,8 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.hooks.MMOItemsHook;
+import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
@@ -248,7 +249,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                     int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
-                    return net.danh.sinceDungeon.system.MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
+                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
                 }
             } else {
                 Material mat = Material.matchMaterial(parts[0]);

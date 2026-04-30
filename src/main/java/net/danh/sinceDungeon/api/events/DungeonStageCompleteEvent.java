@@ -1,6 +1,6 @@
 package net.danh.sinceDungeon.api.events;
 
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jspecify.annotations.NonNull;

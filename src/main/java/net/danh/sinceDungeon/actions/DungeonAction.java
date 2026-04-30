@@ -1,7 +1,7 @@
 package net.danh.sinceDungeon.actions;
 
 import net.danh.sinceDungeon.SinceDungeon;
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;

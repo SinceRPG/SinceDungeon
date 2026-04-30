@@ -3,7 +3,7 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;

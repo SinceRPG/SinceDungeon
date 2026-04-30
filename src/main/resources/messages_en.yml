@@ -24,6 +24,8 @@ lives:
   admin_add: "&aSuccessfully added <amount> lives to <player>."
   admin_addmax: "&aSuccessfully added <amount> to <player>'s MAX lives."
   admin_gave_item: "&aGave a Life Item (+<amount>) to <player>."
+  out_of_lives_spectate: "&cYou have run out of lives! You are now spectating your party."
+  out_of_lives_kick: "&cYou have run out of lives and have been kicked from the dungeon!"
 
 admin:
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
@@ -55,6 +57,8 @@ admin:
     vector_parse_fail: "Failed to parse Vector coordinates: '<data>'. Falling back to 0,0,0. Check your Map Config!"
     wall_too_large: "DANGER: Wall volume is too large (<volume> blocks). Action cancelled to prevent Server Crash!"
   ghost_rescued: "&eThe system rescued you from a deleted or corrupted Dungeon instance."
+  spectate_success: "&aNow spectating &e<player>'s &adungeon!"
+  target_not_in_dungeon: "&cThat player is not inside any active dungeon."
 
 party:
   chat_format: "&b[Party] &a<sender>&8: &f<msg>"
@@ -123,6 +127,8 @@ game:
     countdown_main: "&c&l<time>"
     countdown_sub: "&6Prepare for battle!"
   player_disconnect: "&eMember <player> has disconnected and left the Dungeon!"
+  death_spectate: "&cYou died! You are now spectating."
+  wipeout: "&cAll party members have fallen. Mission Failed!"
 
 lobby:
   preparing: "&eInitializing dungeon world..."

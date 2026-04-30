@@ -1,6 +1,6 @@
 package net.danh.sinceDungeon.actions;
 
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonGame;
 
 /**
  * Interface indicating that an action requires tick-based updates.

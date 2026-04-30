@@ -1,0 +1,448 @@
+package net.danh.sinceDungeon.managers;
+
+import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.actions.ActionParser;
+import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.api.events.DungeonStartEvent;
+import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
+import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
+import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonTemplate;
+import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.DefaultRegistry;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.inventory.ItemStack;
+
+import java.io.File;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class DungeonManager {
+    private final SinceDungeon plugin;
+    private final Map<UUID, DungeonGame> activeGames = new ConcurrentHashMap<>();
+    private final Map<String, DungeonTemplate> templates = new ConcurrentHashMap<>();
+
+    private final Map<String, ActionParser> actionParsers = new ConcurrentHashMap<>();
+    private final Map<String, ActionMeta> actionMeta = new ConcurrentHashMap<>();
+
+    private final Map<String, RewardProcessor> rewardProcessors = new ConcurrentHashMap<>();
+    private final Map<String, ConditionProcessor> conditionProcessors = new ConcurrentHashMap<>();
+    private final Object joinLock = new Object();
+
+    private final Set<UUID> transitioningPlayers = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, String> pendingCrossServerGames = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
+
+    public DungeonManager(SinceDungeon plugin) {
+        this.plugin = plugin;
+        DefaultRegistry.registerAll(plugin, this);
+
+        Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
+        this.templates.putAll(initialTemplates);
+        plugin.getLogger().info("Loaded " + initialTemplates.size() + " Dungeon!");
+    }
+
+    public void addPendingCrossServerGame(UUID leader, String templateId) {
+        pendingCrossServerGames.put(leader, templateId);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (pendingCrossServerGames.containsKey(leader)) {
+                pendingCrossServerGames.remove(leader);
+                plugin.getPartyManager().disbandParty(plugin.getPartyManager().getParty(leader));
+                plugin.getLogger().warning("[CrossServer] Cancelled the session of " + leader + " because BungeeCord failed to transfer the player in time.");
+            }
+        }, 600L);
+    }
+
+    public void handleCrossServerReady(UUID leaderUuid, String targetServer) {
+        if (!pendingRequests.containsKey(leaderUuid)) return;
+
+        pendingRequests.remove(leaderUuid);
+
+        Player leader = Bukkit.getPlayer(leaderUuid);
+        if (leader == null || !leader.isOnline()) return;
+
+        PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
+        String foundMsg = plugin.getMessagesFile().getString("cross_server.found");
+        if (foundMsg != null)
+            leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
+
+        if (party != null) {
+            for (UUID memId : party.getMembers()) {
+                Player mem = Bukkit.getPlayer(memId);
+                if (mem != null && mem.isOnline()) {
+                    net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(mem, targetServer);
+                }
+            }
+        } else {
+            net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(leader, targetServer);
+        }
+    }
+
+    // Logic: Khi người chơi join Server Node, tự động cho họ vào Dungeon nếu họ nằm trong pending
+    public void checkPendingCrossServerJoin(Player p) {
+        if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
+            String templateId = pendingCrossServerGames.remove(p.getUniqueId());
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                joinDungeonLocal(p, templateId);
+            }, 40L);
+        }
+    }
+
+    public void joinDungeon(Player p, String id) {
+        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            if (party != null && !party.getLeader().equals(p.getUniqueId())) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                return;
+            }
+
+            if (pendingRequests.containsKey(p.getUniqueId())) {
+                String spamMsg = plugin.getMessagesFile().getString("cross_server.already_searching");
+                if (spamMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(spamMsg));
+                return;
+            }
+
+            String searchingMsg = plugin.getMessagesFile().getString("cross_server.searching", "&eSearching for an available Node Server to initialize the Dungeon...");
+            p.sendMessage(ColorUtils.parseWithPrefix(searchingMsg));
+
+            pendingRequests.put(p.getUniqueId(), System.currentTimeMillis());
+
+            String partyDataRaw = p.getUniqueId().toString() + "~" + p.getName();
+            if (party != null) {
+                partyDataRaw = party.getMembers().stream()
+                        .map(uuid -> uuid.toString() + "~" + party.getMemberName(uuid))
+                        .reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
+            }
+
+            plugin.getRedisManager().requestDungeonServer(id, p.getUniqueId(), partyDataRaw);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (pendingRequests.containsKey(p.getUniqueId())) {
+                    pendingRequests.remove(p.getUniqueId());
+                    if (p.isOnline()) {
+                        String timeoutMsg = plugin.getMessagesFile().getString("cross_server.timeout", "&cNo available Dungeon servers found. Please try again later!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(timeoutMsg));
+                    }
+                }
+            }, 100L);
+
+            return;
+        }
+
+        joinDungeonLocal(p, id);
+    }
+
+    public void addTransitioning(UUID uuid) {
+        transitioningPlayers.add(uuid);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> removeTransitioning(uuid), 200L);
+    }
+
+    public void removeTransitioning(UUID uuid) {
+        transitioningPlayers.remove(uuid);
+    }
+
+    public void registerTemplate(DungeonTemplate template) {
+        if (template != null && template.id() != null) templates.put(template.id(), template);
+    }
+
+    public void unregisterTemplate(String id) {
+        templates.remove(id);
+    }
+
+    public void registerRewardProcessor(String type, RewardProcessor processor) {
+        rewardProcessors.put(type.toUpperCase(), processor);
+    }
+
+    public RewardProcessor getRewardProcessor(String type) {
+        return rewardProcessors.get(type.toUpperCase());
+    }
+
+    public void registerConditionProcessor(String type, ConditionProcessor processor) {
+        conditionProcessors.put(type.toUpperCase(), processor);
+    }
+
+
+    private void handleItemDrop(Player p, ItemStack item, String displayName) {
+        HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
+        if (!left.isEmpty()) {
+            Location dropLoc = p.getLocation();
+            DungeonGame game = getGame(p.getUniqueId());
+            String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
+            if (game != null && dropLoc.getWorld() != null && dropLoc.getWorld().equals(game.getWorld())) {
+                Location safeLoc = game.getSavedLocation(p.getUniqueId());
+                if (safeLoc != null && safeLoc.getWorld() != null) {
+                    dropLoc = safeLoc;
+                }
+            }
+
+            if (dropLoc.getWorld() != null && dropLoc.getWorld().getName().startsWith(prefix)) {
+                dropLoc = Bukkit.getWorlds().getFirst().getSpawnLocation();
+            }
+
+            for (ItemStack drop : left.values()) {
+                dropLoc.getWorld().dropItem(dropLoc, drop);
+            }
+
+            String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
+            if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
+        }
+        String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
+        if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+    }
+
+    public void registerAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaults, Map<String, List<String>> customPrompts) {
+        String key = type.toUpperCase();
+        actionParsers.put(key, parser);
+        actionMeta.put(key, new ActionMeta(displayName, icon, description, defaults, customPrompts != null ? customPrompts : new HashMap<>()));
+    }
+
+    public Set<String> getRegisteredActions() {
+        return actionMeta.keySet();
+    }
+
+    public ActionMeta getActionMeta(String type) {
+        return actionMeta.get(type.toUpperCase());
+    }
+
+    public DungeonAction createAction(String type, Map<String, Object> data) {
+        if (type == null) return null;
+        ActionParser parser = actionParsers.get(type.toUpperCase());
+
+        try {
+            DungeonAction action = parser != null ? parser.parse(data) : null;
+
+            if (action != null) {
+                action.setActionType(type);
+                if (data.containsKey("start_message")) {
+                    Object msgObj = data.get("start_message");
+                    List<String> msgs = new ArrayList<>();
+                    if (msgObj instanceof String) msgs.add((String) msgObj);
+                    else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
+                    action.setStartMessages(msgs);
+                }
+                // Parse per-action notification overrides
+                if (data.containsKey("notifications")) {
+                    Object notifObj = data.get("notifications");
+                    Map<String, Boolean> notifMap = new java.util.HashMap<>();
+                    if (notifObj instanceof ConfigurationSection sec) {
+                        for (String k : sec.getKeys(false)) {
+                            notifMap.put(k, sec.getBoolean(k, true));
+                        }
+                    } else if (notifObj instanceof Map<?, ?> m) {
+                        for (Map.Entry<?, ?> entry : m.entrySet()) {
+                            try {
+                                notifMap.put(entry.getKey().toString(), Boolean.parseBoolean(entry.getValue().toString()));
+                            } catch (Exception ignored) {
+                            }
+                        }
+                    }
+                    action.setNotifications(notifMap);
+                }
+            }
+            return action;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to create action " + type + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    public CompletableFuture<Void> reload() {
+        stopAllGames();
+        return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
+            templates.clear();
+            templates.putAll(newTemplates);
+            plugin.getLogger().info("Dungeon templates reloaded asynchronously without disrupting joins!");
+        }));
+    }
+
+    private CompletableFuture<Map<String, DungeonTemplate>> loadTemplatesAsync() {
+        File folder = new File(plugin.getDataFolder(), "dungeons");
+        if (!folder.exists()) folder.mkdirs();
+
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (files == null || files.length == 0) return CompletableFuture.completedFuture(new HashMap<>());
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        Map<String, DungeonTemplate> bufferMap = new ConcurrentHashMap<>();
+
+        for (File f : files) {
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                String id = f.getName().replace(".yml", "");
+                try {
+                    DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
+                    if (t != null) bufferMap.put(id, t);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Error loading template " + id + ": " + e.getMessage());
+                }
+            });
+            futures.add(future);
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> bufferMap);
+    }
+
+    private void joinDungeonLocal(Player p, String id) {
+        synchronized (joinLock) {
+            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            Set<Player> participants = new HashSet<>();
+
+            int offlineCount = 0;
+            int deadCount = 0;
+            int farCount = 0;
+
+            if (party != null) {
+                if (!party.getLeader().equals(p.getUniqueId())) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                    return;
+                }
+
+                double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
+
+                for (UUID uid : party.getMembers()) {
+                    Player mem = Bukkit.getPlayer(uid);
+                    if (mem == null || !mem.isOnline()) {
+                        offlineCount++;
+                    } else if (mem.isDead()) {
+                        deadCount++;
+                    } else {
+                        if (maxDist > 0 && (!mem.getWorld().equals(p.getWorld()) || mem.getLocation().distanceSquared(p.getLocation()) > maxDist * maxDist)) {
+                            farCount++;
+                        } else {
+                            participants.add(mem);
+                        }
+                    }
+                }
+
+                if (offlineCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
+                }
+                if (deadCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(deadCount))));
+                }
+                if (farCount > 0) {
+                    String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
+                }
+            } else {
+                participants.add(p);
+            }
+
+            for (Player participant : participants) {
+                if (activeGames.containsKey(participant.getUniqueId())) {
+                    String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
+                    p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
+                    return;
+                }
+
+                if (transitioningPlayers.contains(participant.getUniqueId())) {
+                    String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>Hệ thống đang xử lý dữ liệu, vui lòng thử lại sau giây lát!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
+                    return;
+                }
+            }
+
+            DungeonTemplate tmpl = templates.get(id);
+            if (tmpl == null) {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", id)));
+                return;
+            }
+
+            int reqLives = tmpl.settings().requiredLivesToJoin();
+            if (reqLives > 0) {
+                for (Player participant : participants) {
+                    if (!plugin.getLivesManager().hasEnoughLives(participant.getUniqueId(), reqLives)) {
+                        net.danh.sinceDungeon.managers.LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
+                        int current = lives != null ? lives.getCurrentLives() : 0;
+
+                        String msg = plugin.getMessagesFile().getString("lives.not_enough")
+                                .replace("<required>", String.valueOf(reqLives))
+                                .replace("<current>", String.valueOf(current));
+
+                        participant.sendMessage(ColorUtils.parseWithPrefix(msg));
+                        if (!participant.equals(p)) {
+                            String leaderMsg = plugin.getMessagesFile().getString("lives.party_member_not_enough");
+                            if (leaderMsg != null) {
+                                p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
+                            }
+                        }
+                        return; // Abort join for party
+                    }
+                }
+            }
+
+            DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
+            Bukkit.getPluginManager().callEvent(startEvent);
+
+            if (startEvent.isCancelled() || participants.isEmpty()) return;
+
+            DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
+
+            for (Player participant : participants) {
+                activeGames.put(participant.getUniqueId(), game);
+            }
+
+            try {
+                game.startLobby();
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
+                e.printStackTrace();
+                for (Player participant : participants) {
+                    activeGames.remove(participant.getUniqueId());
+                }
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.init_failed")));
+            }
+        }
+    }
+
+    public void quitDungeon(Player p) {
+        if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
+    }
+
+    public void dispatchEvent(Player p, Event event) {
+        if (p == null) return;
+        DungeonGame game = activeGames.get(p.getUniqueId());
+        if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
+            game.onEvent(event);
+        }
+    }
+
+    public void stopAllGames() {
+        for (DungeonGame game : new HashSet<>(activeGames.values())) {
+            game.forceShutdown();
+        }
+        activeGames.clear();
+    }
+
+    public DungeonGame getGame(UUID uuid) {
+        return activeGames.get(uuid);
+    }
+
+    public Map<UUID, DungeonGame> getActiveGames() {
+        return activeGames;
+    }
+
+    public Map<String, DungeonTemplate> getTemplates() {
+        return templates;
+    }
+
+    public void removeGame(UUID uuid) {
+        activeGames.remove(uuid);
+    }
+
+    public record ActionMeta(String displayName, Material icon, String description, Map<String, Object> defaults,
+                             Map<String, List<String>> customPrompts) {
+    }
+}

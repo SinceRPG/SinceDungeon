@@ -25,6 +25,8 @@ lives:
   admin_add: "&aĐã cộng <amount> mạng cho <player>."
   admin_addmax: "&aĐã cộng <amount> giới hạn mạng tối đa cho <player>."
   admin_gave_item: "&aĐã tặng vật phẩm hồi sinh mạng sống (+<amount>) cho <player>."
+  out_of_lives_spectate: "&cBạn đã cạn kiệt mạng sống! Bạn đã được chuyển sang chế độ Khán giả."
+  out_of_lives_kick: "&cBạn đã cạn kiệt mạng sống và bị trục xuất khỏi Hầm ngục!"
 
 admin:
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
@@ -56,6 +58,8 @@ admin:
     vector_parse_fail: "Lỗi phân tích tọa độ Vector: '<data>'. Hệ thống tạm thời trả về tọa độ 0,0,0. Hãy sửa lại Config Map!"
     wall_too_large: "NGUY HIỂM: Tọa độ phá tường quá lớn (<volume> khối). Đã tự động hủy hành động để chống sập Server!"
   ghost_rescued: "&eHệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi hoặc đã đóng cửa."
+  spectate_success: "&aĐang theo dõi Hầm ngục của &e<player>&a!"
+  target_not_in_dungeon: "&cNgoài chơi đó hiện không ở trong Hầm ngục nào."
 
 party:
   chat_format: "&b[Tổ đội] &a<sender>&8: &f<msg>"
@@ -124,6 +128,8 @@ game:
     countdown_main: "&c&l<time>"
     countdown_sub: "&6Chuẩn bị chiến đấu!"
   player_disconnect: "&eThành viên <player> đã mất kết nối và tự động rời khỏi Dungeon!"
+  death_spectate: "&cBạn đã tử trận! Hiện đang theo dõi đồng đội."
+  wipeout: "&cToàn bộ đội hình đã bị tiêu diệt. Nhiệm vụ Thất Bại!"
 
 lobby:
   preparing: "&eĐang tải bản đồ Dungeon, vui lòng không di chuyển..."

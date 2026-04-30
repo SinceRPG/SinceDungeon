@@ -216,6 +216,12 @@ dungeon:
   # If false, players will keep their current stats when entering and leaving.
   save-and-restore-stats: false
 
+  # Actions when a player LOSES A LIVE in a Dungeon:
+  # SPECTATE: Become a spectator and watch your teammates continue fighting.
+  # KICK: Be immediately kicked out of the Dungeon.
+  # FAIL: Cause the entire team to fail immediately.
+  out-of-lives-action: "SPECTATE"
+
   # Các Tùy chọn Gameplay trong lúc đánh Dungeon
   gameplay:
     # Có giữ lại túi đồ và cấp độ khi người chơi chết trong Dungeon không?

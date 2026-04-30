@@ -6,7 +6,7 @@ import io.lumine.mythic.core.mobs.ActiveMob;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.manager.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;

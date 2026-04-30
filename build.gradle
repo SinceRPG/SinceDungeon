@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'net.danh'
-version = '1.5.6'
+version = '1.5.7'
 
 repositories {
     mavenCentral()
@@ -86,3 +86,5 @@ shadowJar {
     relocate 'com.mysql', 'net.danh.sinceDungeon.libs.mysql'
     relocate 'redis.clients', 'net.danh.sinceDungeon.libs.redis.clients'
 }
+
+build.dependsOn shadowJar

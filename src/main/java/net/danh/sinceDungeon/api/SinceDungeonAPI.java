@@ -4,10 +4,10 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.ActionParser;
 import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
-import net.danh.sinceDungeon.manager.DungeonGame;
-import net.danh.sinceDungeon.manager.DungeonManager;
-import net.danh.sinceDungeon.manager.DungeonTemplate;
-import net.danh.sinceDungeon.party.PartyManager;
+import net.danh.sinceDungeon.managers.DungeonManager;
+import net.danh.sinceDungeon.managers.PartyManager;
+import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonTemplate;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
