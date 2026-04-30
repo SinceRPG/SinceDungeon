@@ -3,12 +3,14 @@ package net.danh.sinceDungeon.listeners;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
+import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.PartyManager.Party;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -442,7 +444,7 @@ public class DungeonListener implements Listener {
             Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             if (party != null) {
                 e.setCancelled(true);
-                String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
+                String msg = PlainTextComponentSerializer.plainText().serialize(e.message());
                 plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
             } else {
                 plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
@@ -450,16 +452,25 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Handles memory and state cleanup when a player disconnects from the server.
+     * Includes aborting any active cross-server matchmaking requests.
+     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
+
+        // [NEW FIX] Instantly cancel any pending cross-server requests to prevent memory leaks and ghost states
+        plugin.getDungeonManager().cancelPendingRequest(p.getUniqueId());
+
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null) {
             game.handlePlayerDisconnect(p);
         }
 
-        if (p.getOpenInventory().getTopInventory().getHolder() instanceof net.danh.sinceDungeon.guis.reward.RewardHolder) {
+        // Restore cursor item if the player disconnects while interacting with the Reward GUI
+        if (p.getOpenInventory().getTopInventory().getHolder() instanceof RewardHolder) {
             if (p.getItemOnCursor().getType() != Material.AIR) {
                 p.getInventory().addItem(p.getItemOnCursor());
                 p.setItemOnCursor(null);

@@ -4,7 +4,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.guis.top.TopGUI;
 import net.danh.sinceDungeon.managers.LivesManager;
+import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
@@ -31,6 +33,32 @@ public class DungeonCommand {
                             }
                             return 1;
                         })
+                )
+                .then(Commands.literal("top")
+                        .then(Commands.argument("map", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    String remaining = builder.getRemainingLowerCase();
+                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                        if (mapName.toLowerCase().startsWith(remaining)) {
+                                            builder.suggest(mapName);
+                                        }
+                                    }
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    if (ctx.getSource().getExecutor() instanceof Player p) {
+                                        String map = StringArgumentType.getString(ctx, "map");
+                                        if (plugin.getDungeonManager().getTemplates().containsKey(map)) {
+                                            new TopGUI(plugin).openTopGUI(p, map, TopManager.TopCategory.FASTEST_TIME, 0);
+                                        } else {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                        }
+                                    } else {
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                    }
+                                    return 1;
+                                })
+                        )
                 )
                 .then(Commands.literal("join")
                         .then(Commands.argument("name", StringArgumentType.word())

@@ -141,6 +141,7 @@ public class SinceDungeonAPI {
 
     /**
      * Registers a completely custom action via code for third-party integration.
+     * Logs the successful registration utilizing config-based strings.
      *
      * @param type          The unique ID of the action (e.g., "MY_CUSTOM_ACTION").
      * @param parser        The parser interface handling the logic.
@@ -152,7 +153,9 @@ public class SinceDungeonAPI {
      */
     public void registerCustomAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaultParams, Map<String, List<String>> customPrompts) {
         plugin.getDungeonManager().registerAction(type, parser, displayName, icon, description, defaultParams, customPrompts);
-        plugin.getLogger().info("[API] Registered Custom Action: " + type.toUpperCase());
+
+        String logMsg = plugin.getMessagesFile().getString("admin.log.api_action_registered", "[API] Registered Custom Action: <type>");
+        plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
     /**
@@ -163,7 +166,9 @@ public class SinceDungeonAPI {
      */
     public void registerRewardProcessor(String type, RewardProcessor processor) {
         plugin.getDungeonManager().registerRewardProcessor(type, processor);
-        plugin.getLogger().info("[API] Registered Reward Processor: " + type.toUpperCase());
+
+        String logMsg = plugin.getMessagesFile().getString("admin.log.api_reward_registered", "[API] Registered Reward Processor: <type>");
+        plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
     /**
@@ -174,7 +179,9 @@ public class SinceDungeonAPI {
      */
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         plugin.getDungeonManager().registerConditionProcessor(type, processor);
-        plugin.getLogger().info("[API] Registered Condition Processor: " + type.toUpperCase());
+
+        String logMsg = plugin.getMessagesFile().getString("admin.log.api_condition_registered", "[API] Registered Condition Processor: <type>");
+        plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
     /**

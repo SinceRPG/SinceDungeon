@@ -30,11 +30,10 @@ public class DatabaseManager {
     public void connect() {
         HikariConfig config = new HikariConfig();
 
-        // General Hikari Settings for performance
         config.setMaximumPoolSize(plugin.getConfigFile().getInt("database.pool.max-size", 10));
         config.setMinimumIdle(plugin.getConfigFile().getInt("database.pool.min-idle", 2));
-        config.setMaxLifetime(plugin.getConfigFile().getInt("database.pool.max-lifetime", 1800000)); // 30 mins
-        config.setConnectionTimeout(plugin.getConfigFile().getInt("database.pool.timeout", 5000)); // 5 secs
+        config.setMaxLifetime(plugin.getConfigFile().getInt("database.pool.max-lifetime", 1800000));
+        config.setConnectionTimeout(plugin.getConfigFile().getInt("database.pool.timeout", 5000));
         config.setPoolName("SinceDungeon-Pool");
 
         if (type.equals("mysql")) {
@@ -48,28 +47,25 @@ public class DatabaseManager {
             config.setUsername(username);
             config.setPassword(password);
 
-            // MySQL specific optimizations
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            plugin.getLogger().info("[Database] Initializing MySQL connection pool via HikariCP...");
-
+            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_mysql_init"));
         } else {
-            // Default: SQLite
             File dbFile = new File(plugin.getDataFolder(), "data.db");
             config.setJdbcUrl("jdbc:sqlite:" + dbFile.getAbsolutePath());
-            // SQLite doesn't need a large pool, 1 connection is safer to prevent "database is locked" errors
             config.setMaximumPoolSize(1);
-            plugin.getLogger().info("[Database] Initializing SQLite database...");
+            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_sqlite_init"));
         }
 
         try {
             dataSource = new HikariDataSource(config);
             createTables();
-            plugin.getLogger().info("[Database] Successfully connected!");
+            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_connected"));
         } catch (Exception e) {
-            plugin.getLogger().severe("[Database] Failed to initialize HikariCP: " + e.getMessage());
+            String errorMsg = plugin.getMessagesFile().getString("admin.log.db_error_hikari", "[Database] Failed to initialize: <error>");
+            plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
         }
     }
 
@@ -137,7 +133,7 @@ public class DatabaseManager {
     public void disconnect() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            plugin.getLogger().info("[Database] Hikari pool closed.");
+            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_closed"));
         }
     }
 

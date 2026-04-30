@@ -66,11 +66,11 @@ public class LivesExpansion extends PlaceholderExpansion {
 
             case "lives_time_to_regen":
                 if (lives.getCurrentLives() >= lives.getMaxLives()) {
-                    return "Full";
+                    return plugin.getMessagesFile().getString("papi.time_full", "Full");
                 }
 
                 if (customInterval <= 0 || customAmount <= 0) {
-                    return "Never";
+                    return plugin.getMessagesFile().getString("papi.time_never", "Never");
                 }
 
                 long intervalMillis = customInterval * 1000L;

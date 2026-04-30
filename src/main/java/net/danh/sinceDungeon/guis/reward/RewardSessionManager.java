@@ -1,7 +1,6 @@
 package net.danh.sinceDungeon.guis.reward;
 
 import net.danh.sinceDungeon.SinceDungeon;
-import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -19,22 +18,34 @@ public class RewardSessionManager {
     private static final Map<UUID, RewardSession> sessions = new ConcurrentHashMap<>();
     private static BukkitTask cleanupTask;
 
+    /**
+     * Starts the automated garbage collection task to clear orphaned or expired reward sessions.
+     * Expiration time is dynamically fetched from config.yml instead of being hardcoded to 5 minutes.
+     *
+     * @param plugin The main plugin instance.
+     */
     public static void startCleanupTask(SinceDungeon plugin) {
         cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             RewardGUI gui = new RewardGUI(plugin);
 
+            // Retrieve expiration time from config, default to 300 seconds (5 minutes)
+            int expireSeconds = plugin.getConfigFile().getInt("reward.session-expire-seconds", 300);
+            long expireMillis = expireSeconds * 1000L;
+
             for (Map.Entry<UUID, RewardSession> entry : sessions.entrySet()) {
-                if (now - entry.getValue().getCreationTime() > 300000L) {
+                if (now - entry.getValue().getCreationTime() > expireMillis) {
                     Player p = Bukkit.getPlayer(entry.getKey());
                     if (p != null && p.isOnline()) {
                         gui.forceClaimAll(p, entry.getValue());
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.auto_claimed_expired", "<yellow>Phần thưởng Dungeon đã được tự động mở do hết thời gian chờ.")));
+                        p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(
+                                plugin.getMessagesFile().getString("reward.messages.auto_claimed_expired", "<yellow>Your rewards were auto-claimed due to timeout.")
+                        ));
                     }
                     sessions.remove(entry.getKey());
                 }
             }
-        }, 1200L, 1200L);
+        }, 1200L, 1200L); // Task runs every 60 seconds to check for expired sessions
     }
 
     public static void addSession(Player p, RewardSession session) {

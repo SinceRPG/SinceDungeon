@@ -11,6 +11,9 @@ cross-server:
   # Set to true to enable cross-server dungeon matchmaking
   enabled: false
 
+  # Time in seconds to wait for BungeeCord to transfer the player before cancelling the request
+  transfer-timeout-seconds: 30
+
   # The exact name of THIS specific server as defined in your proxy config (e.g., BungeeCord's config.yml)
   # When a dungeon is created here, players will be sent to this server name.
   server-name: "dungeon-node-1"
@@ -69,6 +72,27 @@ database:
     # Maximum time to wait for a connection from the pool in milliseconds (5000ms = 5 seconds).
     # Thời gian chờ tối đa để lấy một kết nối tính bằng mili-giây (5000 = 5 giây).
     timeout: 5000
+
+reward:
+  # Time in seconds before an unopened reward session expires and auto-claims (Default: 300 = 5 minutes)
+  session-expire-seconds: 300
+
+
+# =========================================================
+# [LEADERBOARD CONFIGURATION]
+# =========================================================
+leaderboard:
+  # Maximum number of records retrieved from the database (Limited to prevent lag)
+  fetch-limit: 50
+  gui-size: 54
+  items:
+    rank_1: GOLD_BLOCK
+    rank_2: IRON_BLOCK
+    rank_3: COPPER_BLOCK
+    rank_other: COAL_BLOCK
+    category_time: CLOCK
+    category_kills: DIAMOND_SWORD
+    category_clears: NETHER_STAR
 
 # =========================================================
 # [LIVES SYSTEM CONFIGURATION]

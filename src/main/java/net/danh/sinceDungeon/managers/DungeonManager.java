@@ -45,19 +45,28 @@ public class DungeonManager {
 
         Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
         this.templates.putAll(initialTemplates);
-        plugin.getLogger().info("Loaded " + initialTemplates.size() + " Dungeon!");
+
+        String msg = plugin.getMessagesFile().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
+        plugin.getLogger().info(msg.replace("<count>", String.valueOf(initialTemplates.size())));
     }
 
     public void addPendingCrossServerGame(UUID leader, String templateId) {
         pendingCrossServerGames.put(leader, templateId);
 
+        int timeoutSeconds = plugin.getConfigFile().getInt("cross-server.transfer-timeout-seconds", 30);
+        long timeoutTicks = timeoutSeconds * 20L;
+
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (pendingCrossServerGames.containsKey(leader)) {
                 pendingCrossServerGames.remove(leader);
                 plugin.getPartyManager().disbandParty(plugin.getPartyManager().getParty(leader));
-                plugin.getLogger().warning("[CrossServer] Cancelled the session of " + leader + " because BungeeCord failed to transfer the player in time.");
+
+                String logMsg = plugin.getMessagesFile().getString("admin.log.cross_server_timeout_cancel");
+                if (logMsg != null) {
+                    plugin.getLogger().warning(logMsg.replace("<player>", leader.toString()));
+                }
             }
-        }, 600L);
+        }, timeoutTicks);
     }
 
     public void handleCrossServerReady(UUID leaderUuid, String targetServer) {
@@ -272,12 +281,15 @@ public class DungeonManager {
         }
     }
 
+    /**
+     * Reloads all dungeon templates asynchronously without kicking players currently inside.
+     */
     public CompletableFuture<Void> reload() {
         stopAllGames();
         return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
             templates.clear();
             templates.putAll(newTemplates);
-            plugin.getLogger().info("Dungeon templates reloaded asynchronously without disrupting joins!");
+            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.dungeon_reloaded"));
         }));
     }
 
@@ -425,6 +437,25 @@ public class DungeonManager {
 
     public void quitDungeon(Player p) {
         if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
+    }
+
+    /**
+     * Cancels a pending cross-server request if the player disconnects
+     * while waiting for the Redis node to respond.
+     * This prevents ghost requests from soaking up RAM indefinitely.
+     *
+     * @param uuid The UUID of the player who disconnected.
+     */
+    public void cancelPendingRequest(UUID uuid) {
+        if (pendingRequests.containsKey(uuid)) {
+            pendingRequests.remove(uuid);
+
+            // Log the cancellation to the console cleanly using the messages file
+            String logMsg = plugin.getMessagesFile().getString("admin.log.cross_server_request_cancelled_quit", "[CrossServer] Cancelled pending request for <player>.");
+            if (logMsg != null && !logMsg.isEmpty()) {
+                plugin.getLogger().info(logMsg.replace("<player>", uuid.toString()));
+            }
+        }
     }
 
     public void dispatchEvent(Player p, Event event) {

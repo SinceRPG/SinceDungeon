@@ -5,6 +5,11 @@ cross_server:
   found: "&aAvailable server found (<server>). Teleporting your party..."
   timeout: "&cNo available Dungeon servers found. Please try again later!"
   already_searching: "&cSystem is already searching for a server, please wait!"
+
+papi:
+  time_full: "Full"
+  time_never: "Never"
+
 lives:
   party_member_not_enough: "&cMember <player> does not have enough lives. Aborting Dungeon entry."
   player_not_found: "&cPlayer not found or offline."
@@ -28,6 +33,25 @@ lives:
   out_of_lives_kick: "&cYou have run out of lives and have been kicked from the dungeon!"
   time_out_penalty: "&cYou failed to complete the task in time and lost <amount> lives! Current: <current>"
 
+top:
+  gui_title: "&6&lLeaderboard: &e<map>"
+  loading: "&eLoading leaderboard data from database..."
+  category_time: "&b&lFastest Clears"
+  category_kills: "&c&lMost Kills"
+  category_clears: "&a&lMost Clears"
+  item_format: "&e#<rank> &f<player>"
+  time_lore:
+    - "&7Time: &a<value>"
+    - "&7Date: &f<date>"
+  kills_lore:
+    - "&7Total Kills: &c<value>"
+    - "&7Date: &f<date>"
+  clears_lore:
+    - "&7Total Clears: &a<value>"
+    - "&7Date: &f<date>"
+  click_to_switch:
+    - "&eLeft Click to view this category!"
+
 admin:
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
   invalid_player: "&cPlayer not found."
@@ -43,6 +67,7 @@ admin:
     not_found: "&cSystem Error: MMOItems <type>:<id> not found."
     error: "&cSystem Error: Item <item> is misconfigured or does not exist."
   log:
+    cross_server_request_cancelled_quit: "[CrossServer] Cancelled pending dungeon request for <player> because they disconnected."
     redis_connected: "[Redis] Connected to Redis successfully!"
     redis_disconnected: "[Redis] Redis connection closed."
     redis_listen_error: "[Redis] Listener error: "
@@ -51,6 +76,24 @@ admin:
     unauthorized_entry: "Intercepted unauthorized entry by <player> into <world>"
     rescuing_ghost: "Rescuing ghosted player <player> from deleted instance."
     deleting_ghost_world: "Ghost World <world> is now empty. Deleting permanently..."
+    api_action_registered: "[API] Registered Custom Action: <type>"
+    api_reward_registered: "[API] Registered Reward Processor: <type>"
+    api_condition_registered: "[API] Registered Condition Processor: <type>"
+    db_mysql_init: "[Database] Initializing MySQL connection pool via HikariCP..."
+    db_sqlite_init: "[Database] Initializing SQLite database..."
+    db_connected: "[Database] Successfully connected!"
+    db_error_hikari: "[Database] Failed to initialize HikariCP: <error>"
+    db_error_tables: "[Database] Failed to create tables: <error>"
+    db_closed: "[Database] Database pool closed."
+    dungeon_loaded: "Loaded <count> Dungeon templates!"
+    dungeon_reloaded: "Dungeon templates reloaded asynchronously without disrupting joins!"
+    cross_server_timeout_cancel: "[CrossServer] Cancelled the session of <player> because BungeeCord failed to transfer the player in time."
+    startup_paper_modern: "Running natively for Paper 1.21+ | NMS Version: <nms>"
+    startup_paper_legacy: "Running natively for Paper 26.1+ | Version: <version>"
+    papi_registered: "Successfully registered PlaceholderAPI integration for SinceDungeon."
+    papi_missing: "PlaceholderAPI not found. Custom placeholders will be disabled."
+    cleanup_deleted: "[Cleanup] Deleted leftover generated dungeon world: <world>"
+    version_warning: "Warning: Your server version is below required/unsupported! If it has any errors, report to the author."
   warning:
     vanilla_parse_fail: "Could not parse Vanilla item: <data>"
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"

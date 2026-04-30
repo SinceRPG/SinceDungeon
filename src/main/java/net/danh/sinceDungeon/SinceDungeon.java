@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.guis.editor.EditorMenuListener;
 import net.danh.sinceDungeon.guis.reward.RewardGUI;
 import net.danh.sinceDungeon.guis.reward.RewardSession;
 import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
+import net.danh.sinceDungeon.guis.top.TopMenuListener;
 import net.danh.sinceDungeon.hooks.LivesExpansion;
 import net.danh.sinceDungeon.listeners.DungeonListener;
 import net.danh.sinceDungeon.listeners.LifeItemListener;
@@ -53,24 +54,28 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
-        if (ServerVersion.isAtMost(1, 21, 11))
-            getLogger().info("Running natively for Paper 1.21+ | NMS Version: " + ServerVersion.getNmsVersion());
-        else {
-            getLogger().info("Running natively for Paper 26.1+ | Version: v" + ServerVersion.getMajor() + "_" + ServerVersion.getMinor() + "_" + ServerVersion.getPatch());
-            getLogger().info("Running natively for Paper 26.1+ | NMS Version: v" + ServerVersion.getMajor() + "_" + ServerVersion.getMinor() + "_R" + ServerVersion.getRevisionNumber());
+        // The messagesFile is not loaded yet at onLoad, so we load a temporary config or keep basic startup info.
+        // However, to strictly remove hardcode, we can rely on Java's String formatting if config is unavailable,
+        // but since config isn't loaded until onEnable, we initialize ConfigUtils early here just for startup logs.
+        configFile = new ConfigUtils(this, "config.yml");
+        String lang = configFile.getString("settings.locale", "en");
+        messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
+
+        if (ServerVersion.isAtMost(1, 21, 11)) {
+            String msg = messagesFile.getString("admin.log.startup_paper_modern", "Running natively for Paper 1.21+ | NMS Version: <nms>");
+            getLogger().info(msg.replace("<nms>", ServerVersion.getNmsVersion()));
+        } else {
+            String msg = messagesFile.getString("admin.log.startup_paper_legacy", "Running natively for Paper 26.1+ | Version: <version>");
+            getLogger().info(msg.replace("<version>", "v" + ServerVersion.getMajor() + "_" + ServerVersion.getMinor() + "_" + ServerVersion.getPatch()));
         }
     }
 
     @Override
     public void onEnable() {
         miniMessage = MiniMessage.miniMessage();
-
-        configFile = new ConfigUtils(this, "config.yml");
-
+        if (configFile == null) configFile = new ConfigUtils(this, "config.yml");
         extractDefaultLocales();
-
-        setupLanguage();
-
+        if (messagesFile == null) setupLanguage();
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         dungeonManager = new DungeonManager(this);
@@ -78,7 +83,6 @@ public final class SinceDungeon extends JavaPlugin {
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
 
-        // Initialize database and top managers
         databaseManager = new DatabaseManager(this);
         databaseManager.connect();
         topManager = new TopManager(this, databaseManager);
@@ -87,10 +91,6 @@ public final class SinceDungeon extends JavaPlugin {
         if (configFile.getBoolean("cross-server.enabled", false)) {
             getLogger().warning("======================================================");
             getLogger().warning("⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)");
-            getLogger().warning("This feature is completely untested in production.");
-            getLogger().warning("The author has no experience setting up or using this");
-            getLogger().warning("infrastructure. Expect bugs and use at your own risk!");
-            getLogger().warning("Official support for cross-server issues is NOT provided.");
             getLogger().warning("======================================================");
             redisManager = new RedisManager(this);
             redisManager.connect();
@@ -100,13 +100,12 @@ public final class SinceDungeon extends JavaPlugin {
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new LivesExpansion(this).register();
-            getLogger().info("Successfully registered PlaceholderAPI integration for SinceDungeon.");
+            getLogger().info(messagesFile.getString("admin.log.papi_registered"));
         } else {
-            getLogger().warning("PlaceholderAPI not found. Custom placeholders will be disabled.");
+            getLogger().warning(messagesFile.getString("admin.log.papi_missing"));
         }
 
         SinceDungeonAPI.init(this);
-
         RewardSessionManager.startCleanupTask(this);
 
         List<Listener> listeners = new ArrayList<>();
@@ -115,6 +114,7 @@ public final class SinceDungeon extends JavaPlugin {
         listeners.add(new RewardGUI(this));
         listeners.add(new EditorMenuListener(this));
         listeners.add(new LifeItemListener(this));
+        listeners.add(new TopMenuListener(this));
 
         if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
             listeners.add(new MythicListener(this));
@@ -124,10 +124,11 @@ public final class SinceDungeon extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> PartyCommand.register(this, event));
         registerCommands();
         cleanUpStuckWorlds();
-        if (ServerVersion.isOlderThan(1, 21, 11))
-            getLogger().warning("Warning: Your server version is below 1.21.11! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
-        else if (ServerVersion.isAtLeast(26, 1))
-            getLogger().warning("Warning: Your server version is below 26.1+! If it have any error, join discord and report to author: https://discord.gg/zbMPtcM3wq");
+
+        if (ServerVersion.isOlderThan(1, 21, 11) || ServerVersion.isAtLeast(26, 1)) {
+            getLogger().warning(messagesFile.getString("admin.log.version_warning"));
+        }
+
         for (Player p : Bukkit.getOnlinePlayers()) {
             livesManager.loadPlayer(p.getUniqueId());
         }
@@ -215,7 +216,8 @@ public final class SinceDungeon extends JavaPlugin {
                                 Bukkit.unloadWorld(w, false);
                             }
                             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                                getLogger().info("[Cleanup] Deleted leftover generated dungeon world: " + file.getName());
+                                String msg = messagesFile.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
+                                getLogger().info(msg.replace("<world>", file.getName()));
                                 WorldUtils.deleteWorld(file);
                             });
                         });

@@ -6,6 +6,10 @@ cross_server:
   timeout: "&cKhông có máy chủ Hầm ngục nào đang rảnh. Vui lòng thử lại sau!"
   already_searching: "&cHệ thống đang trong quá trình tìm kiếm, vui lòng đợi!"
 
+papi:
+  time_full: "Đã đầy"
+  time_never: "Không hồi"
+
 lives:
   party_member_not_enough: "&cThành viên <player> không đủ mạng sống. Hủy tiến trình vào Hầm ngục."
   player_not_found: "&cKhông tìm thấy người chơi hoặc đang ngoại tuyến."
@@ -29,6 +33,25 @@ lives:
   out_of_lives_kick: "&cBạn đã cạn kiệt mạng sống và bị trục xuất khỏi Hầm ngục!"
   time_out_penalty: "&cBạn không hoàn thành nhiệm vụ kịp lúc và bị trừ <amount> mạng! Hiện tại: <current>"
 
+top:
+  gui_title: "&6&lBảng Xếp Hạng: &e<map>"
+  loading: "&eĐang tải dữ liệu từ máy chủ..."
+  category_time: "&b&lKỷ Lục Tốc Độ"
+  category_kills: "&c&lSát Thủ Kills"
+  category_clears: "&a&lChăm Chỉ Nhất"
+  item_format: "&e#<rank> &f<player>"
+  time_lore:
+    - "&7Thời gian: &a<value>"
+    - "&7Ngày lập: &f<date>"
+  kills_lore:
+    - "&7Tổng Kills: &c<value>"
+    - "&7Ngày lập: &f<date>"
+  clears_lore:
+    - "&7Lượt hoàn thành: &a<value>"
+    - "&7Ngày lập: &f<date>"
+  click_to_switch:
+    - "&eChuột Trái để xem hạng mục này!"
+
 admin:
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
   invalid_player: "&cKhông tìm thấy người chơi này."
@@ -44,6 +67,7 @@ admin:
     not_found: "&cLỗi hệ thống: Không tìm thấy vật phẩm MMOItems <type>:<id>"
     error: "&cLỗi hệ thống: Vật phẩm <item> cấu hình sai tên hoặc không tồn tại trong server."
   log:
+    cross_server_request_cancelled_quit: "[CrossServer] Đã hủy yêu cầu tìm kiếm máy chủ của <player> vì họ đã thoát game đột ngột."
     redis_connected: "[Redis] Đã kết nối tới Redis thành công!"
     redis_disconnected: "[Redis] Đã đóng kết nối Redis."
     redis_listen_error: "[Redis] Lỗi lắng nghe tín hiệu: "
@@ -52,6 +76,24 @@ admin:
     unauthorized_entry: "Phát hiện kẻ xâm nhập <player> lọt vào <world>. Đã chặn!"
     rescuing_ghost: "Đang giải cứu bóng ma <player> khỏi khu vực lỗi."
     deleting_ghost_world: "Khu vực <world> đã trống. Đang xóa vĩnh viễn..."
+    api_action_registered: "[API] Đã đăng ký Hành động (Action) tùy chỉnh: <type>"
+    api_reward_registered: "[API] Đã đăng ký Trình xử lý Phần thưởng (Reward Processor): <type>"
+    api_condition_registered: "[API] Đã đăng ký Trình xử lý Điều kiện (Condition Processor): <type>"
+    db_mysql_init: "[Database] Đang khởi tạo pool kết nối MySQL thông qua HikariCP..."
+    db_sqlite_init: "[Database] Đang khởi tạo cơ sở dữ liệu SQLite..."
+    db_connected: "[Database] Kết nối cơ sở dữ liệu thành công!"
+    db_error_hikari: "[Database] Khởi tạo HikariCP thất bại: <error>"
+    db_error_tables: "[Database] Khởi tạo bảng dữ liệu thất bại: <error>"
+    db_closed: "[Database] Đã đóng pool kết nối cơ sở dữ liệu."
+    dungeon_loaded: "Đã tải thành công <count> bản đồ (template) Dungeon!"
+    dungeon_reloaded: "Đã tải lại toàn bộ bản đồ Dungeon dưới nền (async) mà không làm gián đoạn người chơi đang tham gia!"
+    cross_server_timeout_cancel: "[CrossServer] Đã hủy phiên của <player> vì BungeeCord không thể dịch chuyển người chơi kịp thời gian quy định."
+    startup_paper_modern: "Đang chạy tối ưu hóa nguyên bản trên Paper 1.21+ | Phiên bản NMS: <nms>"
+    startup_paper_legacy: "Đang chạy tối ưu hóa nguyên bản trên Paper 26.1+ | Phiên bản: <version>"
+    papi_registered: "Đã đăng ký tích hợp PlaceholderAPI cho SinceDungeon thành công."
+    papi_missing: "Không tìm thấy PlaceholderAPI. Các placeholder (biến) tùy chỉnh sẽ bị vô hiệu hóa."
+    cleanup_deleted: "[Dọn dẹp] Đã xóa thế giới Dungeon được tạo ra còn sót lại (do crash/lỗi): <world>"
+    version_warning: "Cảnh báo: Phiên bản server của bạn thấp hơn yêu cầu hoặc không được hỗ trợ chính thức! Nếu có bất kỳ lỗi nào xảy ra, vui lòng báo cáo lại cho tác giả."
   warning:
     vanilla_parse_fail: "Không thể nhận diện vật phẩm Vanilla: <data>"
     mmoitems_parse_fail: "Không thể nhận diện vật phẩm MMOItems: <data>"
