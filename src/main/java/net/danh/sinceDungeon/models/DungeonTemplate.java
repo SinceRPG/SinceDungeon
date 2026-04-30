@@ -10,10 +10,12 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                               Map<Integer, StageData> stages,
                               Settings settings) {
 
-    public record Condition(String id, String name, String requirement, String failMessage) {}
+    public record Condition(String id, String name, String requirement, String failMessage) {
+    }
 
     // MỚI: Thêm dữ liệu tỷ lệ xuất hiện của Stage
-    public record StageData(double chance, List<Map<String, Object>> actions) {}
+    public record StageData(double chance, List<Map<String, Object>> actions) {
+    }
 
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
                            boolean blockEnderPearls, int kickDelayAfterFinish,

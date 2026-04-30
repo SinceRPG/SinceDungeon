@@ -265,7 +265,11 @@ public class DungeonManager {
 
     private int getInt(Object obj, int def) {
         if (obj instanceof Number) return ((Number) obj).intValue();
-        try { return Integer.parseInt(obj.toString()); } catch (Exception e) { return def; }
+        try {
+            return Integer.parseInt(obj.toString());
+        } catch (Exception e) {
+            return def;
+        }
     }
 
     public CompletableFuture<Void> reload() {

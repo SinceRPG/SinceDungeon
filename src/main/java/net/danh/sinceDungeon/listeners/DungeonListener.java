@@ -4,7 +4,6 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
-import net.danh.sinceDungeon.managers.PartyManager;
 import net.danh.sinceDungeon.managers.PartyManager.Party;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
@@ -30,6 +29,11 @@ import org.bukkit.event.player.*;
 
 import java.util.List;
 
+/**
+ * Handles all core gameplay events occurring within an active Dungeon instance.
+ * Protects the dungeon environment from unauthorized destruction, manages player deaths,
+ * and intercepts cross-world teleportations.
+ */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
 
@@ -37,6 +41,10 @@ public class DungeonListener implements Listener {
         this.plugin = plugin;
     }
 
+    /**
+     * Helper method to delegate Bukkit events to the specific DungeonGame instance
+     * handling the player's session.
+     */
     private void pass(Player p, Event e) {
         if (p == null) return;
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
@@ -45,6 +53,9 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Resolves the true attacker in a damage event (e.g., getting the shooter of an arrow).
+     */
     private Player getRealAttacker(Entity damager) {
         if (damager instanceof Player p) return p;
         if (damager instanceof Projectile proj && proj.getShooter() instanceof Player p) return p;
@@ -124,9 +135,7 @@ public class DungeonListener implements Listener {
                     e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                    if (MythicMobsHook.isMythicMob(e.getEntity())) {
-                        return;
-                    }
+                    if (MythicMobsHook.isMythicMob(e.getEntity())) return;
                 }
                 e.setCancelled(true);
             }
@@ -167,19 +176,16 @@ public class DungeonListener implements Listener {
             boolean blockCommands = plugin.getConfigFile().getBoolean("dungeon.gameplay.block-commands", true);
             if (blockCommands && !p.hasPermission("SinceDungeon.admin")) {
                 String cmd = e.getMessage().split(" ")[0].toLowerCase();
-
                 if (cmd.contains(":")) {
                     String[] parts = cmd.split(":");
                     if (parts.length > 1) {
                         cmd = "/" + parts[1];
                     }
                 }
-
                 List<String> allowed = plugin.getConfigFile().getStringList("dungeon.gameplay.allowed-commands");
-
                 if (!allowed.contains(cmd)) {
                     e.setCancelled(true);
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.command_blocked", "<red>Bạn không được phép dùng lệnh này trong Dungeon!")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.command_blocked")));
                 }
             }
         }
@@ -233,9 +239,7 @@ public class DungeonListener implements Listener {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (getRealAttacker(e.getDamager()) != null) {
                     if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                        if (MythicMobsHook.isMythicMob(e.getEntity())) {
-                            return;
-                        }
+                        if (MythicMobsHook.isMythicMob(e.getEntity())) return;
                     }
                     e.setCancelled(true);
                     return;
@@ -252,9 +256,7 @@ public class DungeonListener implements Listener {
 
         if (trueVictim != null) {
             Player attacker = getRealAttacker(e.getDamager());
-
             if (attacker != null && !attacker.equals(trueVictim)) {
-
                 boolean sameParty = false;
 
                 Party party = plugin.getPartyManager().getParty(trueVictim.getUniqueId());
@@ -293,16 +295,14 @@ public class DungeonListener implements Listener {
         }
 
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             World ghostWorld = p.getLocation().getWorld();
-
             String logMsg = plugin.getMessagesFile().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
 
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
-                    String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "<yellow>Hệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi/đóng cửa.");
+                    String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "&eThe system rescued you from a deleted or corrupted Dungeon instance.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -439,7 +439,7 @@ public class DungeonListener implements Listener {
     public void onAsyncChat(AsyncChatEvent e) {
         Player p = e.getPlayer();
         if (plugin.getPartyManager().isPartyChatEnabled(p.getUniqueId())) {
-            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+            Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             if (party != null) {
                 e.setCancelled(true);
                 String msg = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.message());
@@ -470,18 +470,28 @@ public class DungeonListener implements Listener {
         plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 
+    /**
+     * Intercepts unauthorized entry into active dungeons.
+     * If the player is an admin in spectator mode, they are permitted to stay.
+     */
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
-
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
         if (p.getWorld().getName().startsWith(prefix)) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
+
+                // Allow Server Admins in Spectator Mode to bypass the kick
+                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                    return;
+                }
+
                 String logMsg = plugin.getMessagesFile().getString("admin.log.unauthorized_entry", "Intercepted unauthorized entry by <player> into <world>");
                 plugin.getLogger().warning(logMsg.replace("<player>", p.getName()).replace("<world>", p.getWorld().getName()));
 
-                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_entry", "<red>Khu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!");
+                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_entry", "<red>Area sealed. Unauthorized entry detected!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
 
                 p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
@@ -507,6 +517,9 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Manages death consequences such as life deduction, game mode shifting, and inventory retention.
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getEntity();
@@ -530,7 +543,6 @@ public class DungeonListener implements Listener {
 
             game.broadcastMessage("game.death", "<player>", p.getName());
 
-            // Process Lives Deduction
             boolean outOfLives = false;
             if (deductLives > 0) {
                 plugin.getLivesManager().removeLives(p.getUniqueId(), deductLives);
@@ -560,30 +572,26 @@ public class DungeonListener implements Listener {
                         deathAction = game.getTemplate().settings().deathAction();
                     }
 
-                    // Handles players who have exactly 0 lives left
                     if (finalOutOfLives) {
                         String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
-
                         if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
                             p.setGameMode(org.bukkit.GameMode.SPECTATOR);
-                            game.checkWipeout(); // End game if everyone is dead
+                            game.checkWipeout();
                         } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
                             game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                        } else { // KICK
+                        } else {
                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
-                            game.handlePlayerDisconnect(p); // Kick player from the dungeon instance
+                            game.handlePlayerDisconnect(p);
                         }
-                    }
-                    // Handles standard death actions (if lives are not the limiting factor)
-                    else if (deathAction.equalsIgnoreCase("FAIL")) {
+                    } else if (deathAction.equalsIgnoreCase("FAIL")) {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.death_spectate")));
                         p.setGameMode(org.bukkit.GameMode.SPECTATOR);
                         game.checkWipeout();
-                    } else { // RESPAWN
+                    } else {
                         p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
                         p.setFoodLevel(20);
                     }
@@ -592,12 +600,15 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Blocks unauthorized teleports via End Pearls or Commands within the dungeon.
+     * Allows server administrators to bypass if they are using commands to spectate.
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
-        // Logic 1: Player is teleporting INTO a dungeon world
         if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(prefix)) {
             DungeonGame targetGame = null;
             for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
@@ -607,16 +618,12 @@ public class DungeonListener implements Listener {
                 }
             }
 
-            // If the dungeon doesn't exist, or the player is NOT a participant
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
-
-                // Allow Server Admins to teleport in as Spectators for supervision
                 if (p.hasPermission("SinceDungeon.admin") && e.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND) {
-                    p.setGameMode(org.bukkit.GameMode.SPECTATOR); // Force spectator to prevent gameplay interference
-                    return; // Allow teleport
+                    p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                    return;
                 }
 
-                // Normal player trying to glitch/teleport in -> Block them
                 e.setCancelled(true);
                 String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Area sealed!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
@@ -624,7 +631,6 @@ public class DungeonListener implements Listener {
             }
         }
 
-        // Logic 2: Player is inside a dungeon trying to teleport around (e.g. Ender Pearls)
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
@@ -639,7 +645,6 @@ public class DungeonListener implements Listener {
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
                     cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
 
-                // Exception: Admins can use spectator teleport
                 if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
                     return;
                 }

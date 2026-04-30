@@ -601,8 +601,7 @@ public class EditorMenuListener implements Listener {
                 }
 
                 if (key.equalsIgnoreCase("notifications")) {
-                    String tipMsg = "&7[Notifications] Edit this field manually in the dungeon YAML file.\n" + "&7Format: notifications:\n" + "&7  init: false\n" + "&7  complete: true\n" + "&7Available keys: custom_start, init, progress, complete, warning";
-                    for (String line : tipMsg.split("\\n")) {
+                    for (String line : plugin.getMessagesFile().getStringList("editor.chat.notifications_hint")) {
                         p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse(line));
                     }
                     return;

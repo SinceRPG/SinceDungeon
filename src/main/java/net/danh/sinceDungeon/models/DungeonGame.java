@@ -31,6 +31,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Represents an active instance of a Dungeon.
+ * Manages player lifecycles, active stages, actions, timer ticking,
+ * and memory cleanup upon termination.
+ */
 public class DungeonGame {
     private final SinceDungeon plugin;
     private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
@@ -78,6 +83,10 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
+    /**
+     * Parses the stages provided by the Template.
+     * Incorporates Percent Chance logic to skip stages and Shuffle logic for Rogue-like experiences.
+     */
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -87,11 +96,10 @@ public class DungeonGame {
         for (Integer key : keys) {
             DungeonTemplate.StageData stageData = template.stages().get(key);
 
-            // 1. Kiểm tra Percent Chance (Tỉ lệ xuất hiện)
             if (stageData.chance() < 100.0) {
                 double roll = Math.random() * 100.0;
                 if (roll > stageData.chance()) {
-                    continue; // Skip Giai đoạn này do xui xẻo (Rogue-like)
+                    continue;
                 }
             }
 
@@ -108,13 +116,12 @@ public class DungeonGame {
             }
         }
 
-        // 2. Rogue-like Randomization (Trộn vị trí ngẫu nhiên các Map ở giữa)
         if (template.settings().randomizeStages() && parsedStages.size() > 2) {
             CopyOnWriteArrayList<DungeonAction> firstStage = parsedStages.get(0);
             CopyOnWriteArrayList<DungeonAction> lastStage = parsedStages.get(parsedStages.size() - 1);
 
             List<CopyOnWriteArrayList<DungeonAction>> middleStages = new ArrayList<>(parsedStages.subList(1, parsedStages.size() - 1));
-            Collections.shuffle(middleStages); // Đảo lộn ngẫu nhiên
+            Collections.shuffle(middleStages);
 
             this.stages.add(firstStage);
             this.stages.addAll(middleStages);
@@ -137,19 +144,7 @@ public class DungeonGame {
                         WorldManager.unloadAndDeleteWorld(plugin, world);
                         return;
                     }
-
                     this.dungeonWorld = world;
-//                    if (ServerVersion.isAtMost(1, 21, 10)) {
-//                        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-//                        world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-//                        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-//                        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-//                    } else {
-//                        world.setGameRule(GameRules.SPAWN_MOBS, false);
-//                        world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-//                        world.setGameRule(GameRules.ADVANCE_WEATHER, false);
-//                        world.setGameRule(GameRules.ADVANCE_TIME, false);
-//                    }
                     dungeonWorld.setAutoSave(false);
 
                     if (template.settings().forceDaylightAndClearWeather()) {
@@ -157,7 +152,6 @@ public class DungeonGame {
                         dungeonWorld.setStorm(false);
                         dungeonWorld.setThundering(false);
                     }
-
                     startCountdown();
                 }))
                 .exceptionally(ex -> {
@@ -195,7 +189,6 @@ public class DungeonGame {
                         playSound(p, "lobby_countdown", 1f, 2f);
                     }
                 }
-
                 broadcastMessage("lobby.countdown", "<time>", String.valueOf(count));
                 count--;
             }
@@ -205,10 +198,8 @@ public class DungeonGame {
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
-
         Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
         boolean saveStats = template.settings().saveAndRestoreStats();
-
         Set<Player> failedToEnter = new HashSet<>();
 
         for (Player p : participants) {
@@ -216,21 +207,17 @@ public class DungeonGame {
                 failedToEnter.add(p);
                 continue;
             }
-
             if (p.isInsideVehicle()) p.leaveVehicle();
-
             p.setVelocity(new Vector(0, 0, 0));
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     p.setNoDamageTicks(60);
-
                     if (saveStats) {
                         AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                         p.setHealth(attr != null ? attr.getValue() : 20.0);
                         p.setFoodLevel(20);
                         p.setGameMode(GameMode.SURVIVAL);
-
                         for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
                         p.setFireTicks(0);
                     }
@@ -271,6 +258,10 @@ public class DungeonGame {
         startStage(0);
     }
 
+    /**
+     * Ticks the active action.
+     * Enforces the time limit and handles drawing the Action Bar objective text.
+     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -281,12 +272,11 @@ public class DungeonGame {
 
         if (!action.isCompleted()) {
 
-            // --- TIME LIMIT LOGIC (Giới hạn Thời gian) ---
             if (action.getTimeLimitSeconds() > 0 && action.getStartTimeMillis() > 0) {
                 long elapsed = (System.currentTimeMillis() - action.getStartTimeMillis()) / 1000;
                 if (elapsed >= action.getTimeLimitSeconds()) {
                     handleTimeLimitPenalty(action);
-                    return; // Ngừng tick hành động này vì bị phạt và Reset
+                    return;
                 }
             }
 
@@ -302,10 +292,10 @@ public class DungeonGame {
                 String objPrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>MỤC TIÊU: <reset>");
                 String objText = action.getObjectiveText();
 
-                // MỚI: Thêm hiển thị đếm ngược nếu có Time Limit
                 if (action.getTimeLimitSeconds() > 0) {
                     long timeLeft = action.getTimeLimitSeconds() - ((System.currentTimeMillis() - action.getStartTimeMillis()) / 1000);
-                    objText += " <red>(" + timeLeft + "s)";
+                    String timeFormat = plugin.getMessagesFile().getString("game.hud.time_left", " <red>(<time>s)");
+                    objText += timeFormat.replace("<time>", String.valueOf(timeLeft));
                 }
 
                 for (Player p : participants) {
@@ -321,6 +311,10 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Deducts the configured lives penalty from the players upon action time out.
+     * Evaluates if the dungeon needs to be failed or if the stage should reset.
+     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
@@ -357,7 +351,6 @@ public class DungeonGame {
 
         checkWipeout();
 
-        // Nếu Đội không chết sạch -> Reset lại Giai đoạn (Stage) này từ đầu
         if (isRunning && !isStopping) {
             action.cleanup(this);
             startStage(currentStageIndex);
@@ -392,7 +385,7 @@ public class DungeonGame {
         }
 
         DungeonAction action = currentStageActions.get(currentActionIndex);
-        action.setStartTimeMillis(System.currentTimeMillis()); // Bắt đầu tính giờ
+        action.setStartTimeMillis(System.currentTimeMillis());
         try {
             action.announceStart(this);
             action.start(this);
@@ -431,7 +424,6 @@ public class DungeonGame {
             }
         }
 
-        // Track kills for leaderboard
         if (event instanceof EntityDeathEvent ede) {
             Player killer = ede.getEntity().getKiller();
             if (killer != null && participants != null && participants.contains(killer)) {
@@ -473,12 +465,11 @@ public class DungeonGame {
 
         for (Player p : participants) {
             if (p.isOnline() && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
-                allDeadOrSpectating = false; // Found at least one player still fighting
+                allDeadOrSpectating = false;
                 break;
             }
         }
 
-        // If everyone is spectating/dead and the game hasn't ended yet -> Fail the dungeon
         if (allDeadOrSpectating && !isCleared && !isStopping) {
             broadcastMessage("game.wipeout");
             stop(true, DungeonEndEvent.EndReason.FAILED);
@@ -503,13 +494,11 @@ public class DungeonGame {
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
 
-        // --- Save leaderboard stats ---
         if (plugin.getTopManager() != null && template != null) {
             String dungeonId = template.id();
             String awardedTo = plugin.getConfigFile().getString("dungeon.top-awarded-to", "ALL_MEMBERS");
             TopManager topManager = plugin.getTopManager();
 
-            // Determine which players are eligible for clear-time and clear-count top
             PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
             UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
 
@@ -517,11 +506,9 @@ public class DungeonGame {
                 if (!p.isOnline()) continue;
                 boolean isLeader = p.getUniqueId().equals(leaderId);
 
-                // Save individual kill count (always per-player, regardless of award setting)
                 int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
                 topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
 
-                // Save clear time and increment clear count based on setting
                 if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
                     topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
                     topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
@@ -624,7 +611,6 @@ public class DungeonGame {
             }
         } else {
             broadcastMessage("game.player_disconnect", "<player>", p.getName());
-
             checkWipeout();
         }
     }
@@ -702,6 +688,7 @@ public class DungeonGame {
     }
 
     public void forceShutdown() {
+        if (isStopping) return;
         isStopping = true;
         isRunning = false;
 
@@ -790,6 +777,10 @@ public class DungeonGame {
                     }
                 }
                 p.setFireTicks(state.fireTicks);
+            } else {
+                if (p.getGameMode() == GameMode.SPECTATOR) {
+                    p.setGameMode(GameMode.SURVIVAL);
+                }
             }
             p.setFallDistance(0);
             p.setVelocity(new Vector(0, 0, 0));

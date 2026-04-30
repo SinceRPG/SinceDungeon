@@ -29,7 +29,8 @@ public class PartyManager {
     }
 
     public void forceCreateCrossServerParty(UUID leader, String[] members) {
-        Party party = new Party(leader, "Leader");
+        String defaultLeaderName = plugin.getMessagesFile().getString("party.leader_default_name", "Leader");
+        Party party = new Party(leader, defaultLeaderName);
         for (String mem : members) {
             String[] split = mem.split("~");
             if (split.length == 2) {
