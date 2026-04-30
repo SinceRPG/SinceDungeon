@@ -6,12 +6,11 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
@@ -19,11 +18,16 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Handles spawning a lootable chest that players must empty to proceed.
+ * Supports Vanilla items, MMOItems, and dynamically generated Custom Dungeon Keys.
+ */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
     private final Map<Integer, String> dynamicItemsConfig = new HashMap<>();
@@ -35,7 +39,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
         this.chestLocation = location;
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
             String data = entry.getValue();
-            if (data.toUpperCase().startsWith("MMOITEMS")) {
+            if (data.toUpperCase().startsWith("MMOITEMS") || data.toUpperCase().startsWith("KEY:")) {
                 dynamicItemsConfig.put(entry.getKey(), data);
             } else {
                 ItemStack is = parseVanilla(data);
@@ -123,10 +127,29 @@ public class LootChestAction extends DungeonAction implements Tickable {
         return null;
     }
 
+    /**
+     * Parses dynamic item configurations, specifically MMOItems and Internal Dungeon Keys.
+     */
     private ItemStack parseDynamic(String data) {
         try {
             String cleanData = data.replace(" ", "");
             String[] parts = cleanData.split(":");
+
+            // Generate Custom Dungeon Key using Builder
+            if (parts[0].equalsIgnoreCase("KEY") && parts.length >= 2) {
+                String keyId = parts[1];
+                int amount = parts.length >= 3 ? Integer.parseInt(parts[2]) : 1;
+
+                NamespacedKey keyTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_key_id");
+                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
+
+                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "dungeon-items.key", "TRIPWIRE_HOOK")
+                        .amount(amount)
+                        .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
+                        .setTag(keyTag, PersistentDataType.STRING, keyId)
+                        .build();
+            }
+
             if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                     int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
@@ -137,7 +160,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 }
             }
         } catch (Throwable e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Cannot parse MMOItems: <data>");
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Cannot parse dynamic item: <data>");
             SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
         }
         return null;
@@ -195,7 +218,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 if (blockAction) {
                     e.setCancelled(true);
                     if (e.getWhoClicked() instanceof Player p) {
-                        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.cannot_store_in_lootchest", "<red>Bạn không thể cất vật phẩm vào rương nhiệm vụ này!");
+                        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.cannot_store_in_lootchest", "<red>You cannot store items here!");
                         p.sendMessage(ColorUtils.parseWithPrefix(msg));
                     }
                 }

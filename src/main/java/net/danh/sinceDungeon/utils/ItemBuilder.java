@@ -25,29 +25,94 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class ItemCreator {
-
+/**
+ * Advanced ItemBuilder utility using the Builder Pattern.
+ * Replaces hardcoded generation methods with a flexible chainable API.
+ * Centralizes configuration parsing and PersistentData (NBT) handling.
+ */
+public class ItemBuilder {
     private final SinceDungeon plugin;
+    private final ItemStack item;
+    private final ItemMeta meta;
 
-    public ItemCreator(SinceDungeon plugin) {
+    public ItemBuilder(SinceDungeon plugin, Material material) {
         this.plugin = plugin;
+        this.item = new ItemStack(material);
+        this.meta = this.item.getItemMeta();
     }
 
-    public ItemStack buildItem(String configPath, String defMat, int amount) {
-        String matStr = plugin.getConfigFile().getString(configPath + ".material", defMat);
+    public ItemBuilder(SinceDungeon plugin, ItemStack itemStack) {
+        this.plugin = plugin;
+        this.item = itemStack.clone();
+        this.meta = this.item.getItemMeta();
+    }
+
+    /**
+     * Instantiates a new ItemBuilder dynamically reading the material from the config.
+     *
+     * @param plugin           The plugin instance.
+     * @param configPath       The path to check for the material.
+     * @param fallbackMaterial The default material if the config path is missing/invalid.
+     * @return A new ItemBuilder instance.
+     */
+    public static ItemBuilder fromConfig(SinceDungeon plugin, String configPath, String fallbackMaterial) {
+        String matStr = plugin.getConfigFile().getString(configPath + ".material", fallbackMaterial);
         Material mat = Material.matchMaterial(matStr.toUpperCase());
-        if (mat == null) mat = Material.valueOf(defMat.toUpperCase());
-        return new ItemStack(mat, amount);
+        if (mat == null) mat = Material.valueOf(fallbackMaterial.toUpperCase());
+        return new ItemBuilder(plugin, mat);
     }
 
-    public void applyItemMeta(ItemStack item, ConfigurationSection cfg, String defName, String... replacements) {
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return;
+    /**
+     * Checks if an ItemStack contains a specific NBT Tag securely.
+     */
+    public static boolean hasTag(ItemStack item, NamespacedKey key, PersistentDataType<?, ?> type) {
+        if (item == null || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(key, type);
+    }
+
+    /**
+     * Retrieves the value of a specific NBT Tag from an ItemStack.
+     */
+    public static <T, Z> Z getTag(ItemStack item, NamespacedKey key, PersistentDataType<T, Z> type) {
+        if (item == null || !item.hasItemMeta()) return null;
+        return item.getItemMeta().getPersistentDataContainer().get(key, type);
+    }
+
+    /**
+     * Sets the stack amount.
+     */
+    public ItemBuilder amount(int amount) {
+        this.item.setAmount(amount);
+        return this;
+    }
+
+    /**
+     * Applies a persistent NBT tag to the item.
+     */
+    public <T, Z> ItemBuilder setTag(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
+        if (meta != null) {
+            meta.getPersistentDataContainer().set(key, type, value);
+        }
+        return this;
+    }
+
+    // --- Static Utilities for Reading Tags ---
+
+    /**
+     * Parses and applies a wide range of metadata from a ConfigurationSection.
+     * Supports legacy 1.20 tags and advanced 1.21+ components (Tooltips, Models, etc.).
+     *
+     * @param cfg          The config section to read from.
+     * @param defName      Default name if none is provided in the config.
+     * @param replacements Key-Value pairs for replacing placeholders.
+     * @return The ItemBuilder instance for chaining.
+     */
+    public ItemBuilder applyConfig(ConfigurationSection cfg, String defName, String... replacements) {
+        if (meta == null) return this;
 
         if (cfg == null) {
             meta.displayName(ColorUtils.parse(defName).decoration(TextDecoration.ITALIC, false));
-            item.setItemMeta(meta);
-            return;
+            return this;
         }
 
         // 1. Display Name
@@ -55,7 +120,7 @@ public class ItemCreator {
         for (int i = 0; i < replacements.length; i += 2) name = name.replace(replacements[i], replacements[i + 1]);
         meta.displayName(ColorUtils.parse(name).decoration(TextDecoration.ITALIC, false));
 
-        // 2. Item Name (1.21+ API)
+        // 2. Item Name (1.21+)
         if (cfg.contains("item-name")) {
             try {
                 String itemName = cfg.getString("item-name");
@@ -78,7 +143,7 @@ public class ItemCreator {
             meta.lore(compLore);
         }
 
-        // 4. Custom Model Data (Compatible with Legacy and 1.21+ Components)
+        // 4. Custom Model Data
         if (cfg.contains("custom-model-data")) {
             if (cfg.isConfigurationSection("custom-model-data")) {
                 ConfigurationSection cmdSec = cfg.getConfigurationSection("custom-model-data");
@@ -255,22 +320,14 @@ public class ItemCreator {
             dmgMeta.setDamage(cfg.getInt("damage"));
         }
 
-        item.setItemMeta(meta);
+        return this;
     }
 
     /**
-     * Specifically creates the Life Consumable item and injects the persistent data.
+     * Finalizes the item creation process.
      */
-    public ItemStack createLifeItem(int amount) {
-        ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
-        ItemStack item = buildItem("lives.life-item", "TOTEM_OF_UNDYING", 1); // Give 1 physical item
-
-        applyItemMeta(item, cfg, "&a&lExtra Life (+<amount>)", "<amount>", String.valueOf(amount));
-
-        ItemMeta meta = item.getItemMeta();
+    public ItemStack build() {
         if (meta != null) {
-            NamespacedKey key = new NamespacedKey(plugin, "life_amount");
-            meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, amount);
             item.setItemMeta(meta);
         }
         return item;

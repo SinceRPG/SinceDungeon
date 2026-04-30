@@ -7,10 +7,13 @@ import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEven
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ItemCreator;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 public class SinceDungeonCommand {
 
@@ -127,8 +130,14 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
 
-                                                ItemCreator creator = new ItemCreator(plugin);
-                                                ItemStack item = creator.createLifeItem(amount);
+                                                NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+                                                ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+
+                                                ItemStack item = ItemBuilder.fromConfig(plugin, "lives.life-item", "TOTEM_OF_UNDYING")
+                                                        .amount(amount)
+                                                        .applyConfig(cfg, "&a&lExtra Life (+<amount>)", "<amount>", String.valueOf(amount))
+                                                        .setTag(lifeKey, PersistentDataType.INTEGER, amount)
+                                                        .build();
 
                                                 target.getInventory().addItem(item);
 

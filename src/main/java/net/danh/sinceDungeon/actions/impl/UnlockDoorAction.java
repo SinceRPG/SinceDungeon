@@ -3,35 +3,54 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.Locale;
+
+/**
+ * Requires players to find a specific generated Dungeon Key and use it
+ * to unlock a defined trigger block. Provides tracking compasses dynamically.
+ */
 public class UnlockDoorAction extends DungeonAction implements Tickable {
     private final Vector trigger;
     private final Vector c1;
     private final Vector c2;
-    private final String keyItemData;
+    private final String keyId;
+    private final Particle lockedParticle;
 
     private Location triggerLoc;
     private BukkitTask breakTask = null;
     private boolean isUnlocking = false;
 
-    public UnlockDoorAction(Vector trigger, Vector c1, Vector c2, String keyItemData) {
+    public UnlockDoorAction(Vector trigger, Vector c1, Vector c2, String keyId, String particleName) {
         this.trigger = trigger;
         this.c1 = c1;
         this.c2 = c2;
-        this.keyItemData = keyItemData;
+        this.keyId = keyId;
+
+        Particle p = Particle.ENCHANT;
+        try {
+            if (particleName != null && !particleName.equalsIgnoreCase("NONE")) {
+                p = Particle.valueOf(particleName.toUpperCase(Locale.ROOT));
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        this.lockedParticle = p;
     }
 
     @Override
@@ -43,6 +62,30 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
         this.triggerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+
+        // Phát la bàn truy vết cho mọi người
+        NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
+        ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("dungeon-items.compass");
+
+        ItemStack compass = ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "dungeon-items.compass", "COMPASS")
+                .applyConfig(cfg, "&b&lTracking Compass")
+                .setTag(compassTag, PersistentDataType.BYTE, (byte) 1)
+                .build();
+
+        String compassMsg = SinceDungeon.getPlugin().getMessagesFile().getString("action.compass_received", "&bYou received a Tracking Compass!");
+        String soundPickup = SinceDungeon.getPlugin().getConfigFile().getString("sounds.compass_receive", "entity.item.pickup");
+
+        for (Player p : game.getParticipants()) {
+            if (p.isOnline() && !p.isDead()) {
+                p.getInventory().addItem(compass.clone());
+                p.setCompassTarget(triggerLoc);
+                p.sendMessage(ColorUtils.parseWithPrefix(compassMsg));
+                if (soundPickup != null) {
+                    p.playSound(p.getLocation(), SoundUtils.getSound(soundPickup), 1f, 1f);
+                }
+            }
+        }
+
         game.sendActionMessage(this, "init", "action.door_start");
     }
 
@@ -51,16 +94,18 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         if (breakTask != null && !breakTask.isCancelled()) {
             breakTask.cancel();
         }
+        removeCompasses(game);
     }
 
     @Override
     public void onTick(DungeonGame game) {
         if (completed || triggerLoc == null) return;
 
-        // Tạo hạt cho người chơi dễ nhận biết vị trí ổ khóa
-        game.getWorld().spawnParticle(Particle.ENCHANT, triggerLoc, 5, 0.2, 0.2, 0.2, 0.1);
+        if (lockedParticle != null) {
+            game.getWorld().spawnParticle(lockedParticle, triggerLoc, 5, 0.2, 0.2, 0.2, 0.1);
+        }
 
-        // La bàn tự động chỉ đường tới cánh cửa cho toàn bộ người chơi
+        // Liên tục ép hướng la bàn về ổ khóa
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && p.getWorld().equals(game.getWorld())) {
                 p.setCompassTarget(triggerLoc);
@@ -84,50 +129,72 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                     b.getY() == trigger.getBlockY() &&
                     b.getZ() == trigger.getBlockZ()) {
 
+                e.setCancelled(true);
                 ItemStack handItem = e.getItem();
 
-                if (isMatchingKey(handItem)) {
-                    // Trừ 1 chìa khóa
+                if (handItem == null || handItem.getType() == Material.AIR) {
+                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.key_not_found", "&cYou need a Key!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    playDenySound(p);
+                    return;
+                }
+
+                NamespacedKey keyTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_key_id");
+
+                // Kiểm tra xem item cầm trên tay có tag chuẩn hay không
+                if (ItemBuilder.hasTag(handItem, keyTag, PersistentDataType.STRING) &&
+                        this.keyId.equals(ItemBuilder.getTag(handItem, keyTag, PersistentDataType.STRING))) {
+
                     handItem.setAmount(handItem.getAmount() - 1);
 
                     isUnlocking = true;
                     b.setType(Material.AIR);
                     removeWall(game);
+                    removeCompasses(game);
 
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.door_unlocked", "<player>", p.getName());
 
-                    // Reset lại la bàn của người chơi
                     Location spawnLoc = game.getWorld().getSpawnLocation();
                     game.getParticipants().forEach(player -> {
                         if (player.isOnline()) player.setCompassTarget(spawnLoc);
                     });
                 } else {
-                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.wrong_key", "<red>You don't have the correct key!");
+                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.wrong_key", "&cWrong key!");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    playDenySound(p);
                 }
             }
         }
     }
 
-    private boolean isMatchingKey(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) return false;
+    private void playDenySound(Player p) {
+        String soundLocked = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_locked", "block.chest.locked");
+        if (soundLocked != null) {
+            p.playSound(p.getLocation(), SoundUtils.getSound(soundLocked), 1f, 1f);
+        }
+    }
 
-        try {
-            String cleanData = keyItemData.replace(" ", "");
-            String[] parts = cleanData.split(":");
+    /**
+     * Iterates through active participants and purges the tracking compass
+     * from their inventories once the objective is met.
+     */
+    private void removeCompasses(DungeonGame game) {
+        NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
+        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("action.compass_removed", "&7The Tracking Compass faded away.");
 
-            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                String mType = parts[1];
-                String mId = parts[2];
-                String itemString = MMOItemsHook.getMMOItemString(item);
-                return itemString != null && itemString.startsWith("MMOITEMS:" + mType + ":" + mId);
-            } else {
-                Material requiredMat = Material.matchMaterial(parts[0]);
-                return item.getType() == requiredMat;
+        for (Player p : game.getParticipants()) {
+            if (!p.isOnline()) continue;
+            boolean removed = false;
+            for (ItemStack item : p.getInventory().getContents()) {
+                if (ItemBuilder.hasTag(item, compassTag, PersistentDataType.BYTE)) {
+                    item.setAmount(0);
+                    removed = true;
+                }
             }
-        } catch (Exception e) {
-            return false;
+            if (removed) {
+                p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            }
         }
     }
 
@@ -139,7 +206,10 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
-        game.getWorld().playSound(triggerLoc, Sound.BLOCK_IRON_DOOR_OPEN, 1f, 0.5f);
+        String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
+        if (soundUnlock != null) {
+            game.getWorld().playSound(triggerLoc, SoundUtils.getSound(soundUnlock), 1f, 0.5f);
+        }
 
         breakTask = new BukkitRunnable() {
             int currentX = minX;
@@ -154,7 +224,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 50) { // Phá cửa chậm gọn nhẹ hơn phá tường
+                while (blocksProcessed < 50) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
                         game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());

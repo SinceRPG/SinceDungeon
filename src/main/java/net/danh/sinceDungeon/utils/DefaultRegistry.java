@@ -274,18 +274,20 @@ public class DefaultRegistry {
         doorDefaults.put("trigger", "0,0,0");
         doorDefaults.put("corner1", "0,0,0");
         doorDefaults.put("corner2", "0,0,0");
-        doorDefaults.put("key_item", "TRIPWIRE_HOOK:1");
         doorDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.unlock_door.time_limit", -1));
         doorDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.unlock_door.time_penalty", 1));
+        doorDefaults.put("key_id", "door_1");
+        doorDefaults.put("particle", "ENCHANT");
         doorDefaults.put("start_message", Collections.singletonList("&eFind the key and unlock the door!"));
 
         manager.registerAction("UNLOCK_DOOR", map -> {
                     Vector trigger = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0")));
                     Vector c1 = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0")));
                     Vector c2 = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")));
-                    String keyItem = String.valueOf(map.getOrDefault("key_item", "TRIPWIRE_HOOK:1"));
+                    String keyId = String.valueOf(map.getOrDefault("key_id", "door_1"));
+                    String particle = String.valueOf(map.getOrDefault("particle", "ENCHANT"));
 
-                    return new UnlockDoorAction(trigger, c1, c2, keyItem);
+                    return new UnlockDoorAction(trigger, c1, c2, keyId, particle);
                 }, plugin.getMessagesFile().getString("editor.actions_name.unlock_door", "Find Key & Unlock Door"), Material.IRON_DOOR,
                 plugin.getMessagesFile().getString("editor.actions.unlock_door", "Requires player to find a key item to open the door."),
                 doorDefaults, new HashMap<>());

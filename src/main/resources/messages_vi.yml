@@ -149,6 +149,8 @@ objective:
   unlock_door: "&6Tìm Chìa khóa và mở Cửa"
 
 action:
+  compass_received: "&bBạn đã nhận được La bàn theo dõi!"
+  compass_removed: "&7La bàn theo dõi đã biến mất."
   chest_appear: "&eMột rương kho báu vừa xuất hiện!"
   chest_found: "&aBạn đã tìm ra rương ẩn!"
   chest_not_empty: "&cBạn phải lấy toàn bộ vật phẩm trong rương để tiếp tục!"
@@ -172,6 +174,8 @@ action:
   door_unlocked: "&a<player> đã mở khóa cửa thành công!"
 
 error:
+  wrong_key: "&cBạn không có chìa khóa chính xác cho cánh cửa này!"
+  key_not_found: "&cBạn cần có Chìa khóa để mở cánh cửa này!"
   already_in: "&cBạn hoặc thành viên trong Tổ đội đang ở trong một Dungeon khác!"
   file_not_found: "&cKhông tìm thấy dữ liệu Dungeon: <file>"
   dungeon_maintenance: "&cDungeon này hiện đang được bảo trì."
@@ -189,7 +193,6 @@ error:
   dungeon_sealed_entry: "&cKhu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"
   dungeon_sealed_teleport: "&cKhu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"
   not_in_dungeon: "&cBạn hiện không ở trong Dungeon nào."
-  wrong_key: "&cBạn không cầm đúng Chìa khóa trên tay!"
 
 reward:
   gui_title: "&6&lPhần Thưởng Dungeon"
@@ -374,6 +377,9 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_key_id:
+        - "&7Nhập ID duy nhất cho chìa khóa/cửa này."
+        - "&7Ví dụ: &adoor_1"
       edit_stage_chance:
         - "&7Nhập tỉ lệ xuất hiện của Giai đoạn này (0-100)."
         - "&7Ví dụ: &a50.5"

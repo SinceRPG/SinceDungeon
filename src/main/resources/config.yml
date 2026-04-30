@@ -301,6 +301,31 @@ sounds:
   editor_save: "block.anvil.use"
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
+  door_locked: "block.chest.locked"
+  door_unlock: "block.iron_door.open"
+  compass_receive: "entity.item.pickup"
+
+dungeon-items:
+  key:
+    material: "TRIPWIRE_HOOK"
+    name: "&6&lDungeon Key &7(#<id>)"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+      - "&7A mysterious key used to"
+      - "&7unlock a sealed door."
+      - ""
+      - "&eFind the matching door!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+    glowing: true
+  compass:
+    material: "COMPASS"
+    name: "&b&lTracking Compass"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+      - "&7Follow the compass needle"
+      - "&7to find your objective."
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+    glowing: true
 
 # Default values configuration when creating a new Action in the editor
 # Cấu hình giá trị mặc định khi tạo Action mới trong Editor
@@ -377,9 +402,10 @@ action-defaults:
     corner2: "0,0,0"
     time_limit: -1
     time_penalty: 1
-    key_item: "TRIPWIRE_HOOK:1"
+    key_id: "door_1"
+    particle: "ENCHANT"
     start_message:
-      - "&eFind the key and unlock the door!"
+      - "&eFind the key and unlock the door! A compass has been provided."
 
 # =========================================================
 # [TÙY CHỈNH THÔNG BÁO]

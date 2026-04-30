@@ -149,6 +149,8 @@ objective:
   unlock_door: "&6Find the Key and Unlock the Door"
 
 action:
+  compass_received: "&bYou received a Tracking Compass!"
+  compass_removed: "&7The Tracking Compass faded away."
   chest_appear: "&eA treasure chest has appeared!"
   chest_found: "&aYou found a hidden chest!"
   chest_not_empty: "&cYou must empty the chest to proceed!"
@@ -172,6 +174,8 @@ action:
   door_unlocked: "&a<player> has unlocked the door!"
 
 error:
+  wrong_key: "&cYou don't have the correct key for this door!"
+  key_not_found: "&cYou need a Key to open this door!"
   already_in: "&cYou or your party is already in another dungeon!"
   file_not_found: "&cDungeon file not found: <file>"
   dungeon_maintenance: "&cThis dungeon is currently under maintenance."
@@ -189,7 +193,6 @@ error:
   dungeon_sealed_entry: "&cArea sealed. Unauthorized entry detected!"
   dungeon_sealed_teleport: "&cArea sealed. Teleportation magic nullified!"
   not_in_dungeon: "&cYou are not currently in any Dungeon."
-  wrong_key: "&cYou don't have the correct key!"
 
 reward:
   gui_title: "&6&lDungeon Rewards"
@@ -404,6 +407,9 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_key_id:
+        - "&7Enter the unique ID for this key/door."
+        - "&7Example: &adoor_1"
       edit_stage_chance:
         - "&7Enter the spawn chance for this stage (0-100)."
         - "&7Example: &a50.5"
