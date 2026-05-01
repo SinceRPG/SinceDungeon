@@ -33,8 +33,33 @@ public class TopManager {
      * @param map The map identifier to reset.
      */
     public void resetLeaderboard(String map) {
-        // Hand over the execution to DatabaseManager
         plugin.getDatabaseManager().resetLeaderboard(map);
+    }
+
+    /**
+     * Synchronously retrieves the total number of times a specific player has cleared a specific dungeon.
+     *
+     * @param dungeonId  The ID of the dungeon.
+     * @param playerUuid The UUID of the player.
+     * @return The total clear count, or 0 if never cleared.
+     */
+    public int getPlayerClears(String dungeonId, UUID playerUuid) {
+        if (!db.isConnected()) return 0;
+        try (Connection conn = db.getConnection()) {
+            try (PreparedStatement check = conn.prepareStatement(
+                    "SELECT clear_count FROM top_clears WHERE dungeon_id = ? AND player_uuid = ?")) {
+                check.setString(1, dungeonId);
+                check.setString(2, playerUuid.toString());
+                try (ResultSet rs = check.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt("clear_count");
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to fetch clear count for player.", e);
+        }
+        return 0;
     }
 
     /**
@@ -151,11 +176,6 @@ public class TopManager {
     /**
      * Retrieves the top entries for a category, sorted appropriately.
      * This is synchronous - call it from an async context or use CompletableFuture.
-     *
-     * @param dungeonId The dungeon ID to query.
-     * @param category  The category to retrieve.
-     * @param limit     Maximum number of results.
-     * @return List of TopEntry records.
      */
     public List<TopEntry> getTop(String dungeonId, TopCategory category, int limit) {
         List<TopEntry> results = new ArrayList<>();

@@ -3,6 +3,9 @@ package net.danh.sinceDungeon.guis.editor;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.managers.DungeonManager;
+import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -191,6 +194,10 @@ public class EditorMenuListener implements Listener {
             case "SETTINGS" -> {
                 if (slot == 18 && cur.getType() == gui.getNavItem()) {
                     gui.openDungeonMenu(p, session);
+                    return;
+                } else if (slot == 24 || slot == 25 || slot == 26) {
+                    String cmdPath = (slot == 24) ? "settings.commands.on-start" : (slot == 25) ? "settings.commands.on-finish" : "settings.commands.on-first-finish";
+                    gui.openStringListEditor(p, session, cmdPath, "SETTINGS", 0);
                     return;
                 }
                 if (slot == 21 && cur.getType() == gui.getNavItem()) {
@@ -560,7 +567,7 @@ public class EditorMenuListener implements Listener {
                                 gui.openStageList(p, session, page);
                                 String msg = gui.getMsg("chat.stage_deleted");
                                 if (msg != null && !msg.isEmpty()) {
-                                    p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg.replace("<stage>", stage)));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<stage>", stage)));
                                 }
                             } else if (e.getClick() == ClickType.LEFT) {
                                 session.setCurrentStage(stage);
@@ -570,7 +577,6 @@ public class EditorMenuListener implements Listener {
                                     try {
                                         double c = Math.clamp(Double.parseDouble(val), 0.0, 100.0);
                                         session.getConfig().set("stages." + stage + ".chance", c);
-                                        gui.sendMessage(p, "update_val", "<key>", "Stage Chance", "<val>", String.valueOf(c) + "%");
                                         gui.openStageList(p, session, page);
                                     } catch (Exception ex) {
                                         gui.sendMessage(p, "number_error");
@@ -578,6 +584,9 @@ public class EditorMenuListener implements Listener {
                                     }
                                 });
                                 plugin.getEditorListener().startListening(p, session);
+                            } else if (e.getClick() == ClickType.SHIFT_LEFT) {
+                                session.setCurrentStage(stage);
+                                gui.openStringListEditor(p, session, "stages." + stage + ".commands", "STAGES", 0);
                             }
                         }
                     }
@@ -624,7 +633,7 @@ public class EditorMenuListener implements Listener {
                 }
                 if (cur.getType() == Material.BARRIER) return;
 
-                String key = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
+                String key = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
 
                 if (key.equalsIgnoreCase("type")) return;
 
@@ -635,7 +644,7 @@ public class EditorMenuListener implements Listener {
 
                 if (key.equalsIgnoreCase("notifications")) {
                     for (String line : plugin.getMessagesFile().getStringList("editor.chat.notifications_hint")) {
-                        p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse(line));
+                        p.sendMessage(ColorUtils.parse(line));
                     }
                     return;
                 }
@@ -752,8 +761,8 @@ public class EditorMenuListener implements Listener {
                         String itemStr = null;
                         NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
 
-                        if (net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {
-                            String keyId = net.danh.sinceDungeon.utils.ItemBuilder.getTag(item, keyTag, PersistentDataType.STRING);
+                        if (ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {
+                            String keyId = ItemBuilder.getTag(item, keyTag, PersistentDataType.STRING);
                             itemStr = "KEY:" + keyId + ":" + item.getAmount();
                         } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                             itemStr = MMOItemsHook.getMMOItemString(item);

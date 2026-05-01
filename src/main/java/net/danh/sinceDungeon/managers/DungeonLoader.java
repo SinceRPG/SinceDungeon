@@ -51,9 +51,9 @@ public class DungeonLoader {
         int cooldownSeconds = config.getInt("settings.cooldown-seconds", 0);
         List<String> onStartCmds = config.getStringList("settings.commands.on-start");
         List<String> onFinishCmds = config.getStringList("settings.commands.on-finish");
-        List<String> onStageCmds = config.getStringList("settings.commands.on-stage-complete");
+        List<String> onFirstFinishCmds = config.getStringList("settings.commands.on-first-finish");
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers, cooldownSeconds, onStartCmds, onFinishCmds, onStageCmds);
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers, cooldownSeconds, onStartCmds, onFinishCmds, onFirstFinishCmds);
 
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
@@ -101,6 +101,7 @@ public class DungeonLoader {
                 try {
                     int stageNum = Integer.parseInt(stageKey);
                     double chance = stageSec.getDouble(stageKey + ".chance", 100.0);
+                    List<String> stageCommands = stageSec.getStringList(stageKey + ".commands");
 
                     ConfigurationSection actionSec = stageSec.getConfigurationSection(stageKey + ".actions");
                     List<Map<String, Object>> actionList = new ArrayList<>();
@@ -114,7 +115,7 @@ public class DungeonLoader {
                             }
                         }
                     }
-                    stages.put(stageNum, new DungeonTemplate.StageData(chance, actionList));
+                    stages.put(stageNum, new DungeonTemplate.StageData(chance, stageCommands, actionList));
                 } catch (NumberFormatException e) {
                     plugin.getLogger().warning("Invalid stage key in " + id + ": " + stageKey);
                 }

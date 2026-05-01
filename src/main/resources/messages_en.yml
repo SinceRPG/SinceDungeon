@@ -337,6 +337,10 @@ editor:
     edit_action_items: "&lChest Editor: <index>"
     string_list: "&lEditing List"
   items:
+    setting_cmd_first_finish: "&eCommands On First Finish"
+    setting_cmd_first_finish_lore:
+      - "&7Current: &f<val> commands"
+      - "&eLeft Click to manage list"
     setting_cooldown: "&eCooldown Time"
     setting_cooldown_lore:
       - "&7Current: &f<val>s"
@@ -477,7 +481,13 @@ editor:
       - "&eLeft Click: Edit name"
     stage_item: "&eStage <stage>"
     stage_lore:
-      - "&7Click to edit actions"
+      - "&7Chance to spawn: &a<chance>%"
+      - "&7Stage Commands: &f<cmds>"
+      - ""
+      - "&eLeft Click: Edit Actions"
+      - "&cRight Click: Edit Chance"
+      - "&bShift-Left: Edit Commands"
+      - "&cShift-Right: Delete Stage"
     add_stage: "&aAdd Stage"
     action_item: "&eAction #<index>"
     action_lore:
@@ -507,8 +517,10 @@ editor:
         - "&7Enter the cooldown time in seconds."
         - "&7Example: &a1800 &7(for 30 minutes)"
       edit_commands:
-        - "&7Enter the text or command (without slash /)."
-        - "&7Supported variables: &a%player%, %dungeon%, %stage%"
+        - "&7Enter the command (without slash /)."
+        - "&7Variables: &a%player%, %dungeon%, %stage%"
+        - "&7Condition format: &e[condition] command"
+        - "&7Example: &a[%vault_eco_balance%;>=;500] eco give %player% 100"
         - "&7Tip: Type &cclear &7to empty the list."
       edit_action_mob_level:
         - "&7Enter the level for the MythicMob (Default: 1)."

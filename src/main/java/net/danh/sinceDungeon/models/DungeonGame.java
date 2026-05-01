@@ -156,7 +156,7 @@ public class DungeonGame {
     }
 
     /**
-     * Executes defined console commands corresponding to map lifecycle events.
+     * Executes defined console commands globally for all active participants.
      * Resolves multiple variations of placeholders (e.g., %player%, <player>)
      * to ensure absolute foolproof configuration, then integrates with PlaceholderAPI.
      *
@@ -167,28 +167,47 @@ public class DungeonGame {
         if (commands == null || commands.isEmpty()) return;
 
         for (Player p : participants) {
-            if (!p.isOnline()) continue;
-            for (String cmd : commands) {
-                // Replace all common variants of internal variables to prevent config mistakes
-                String parsed = cmd.replace("<player>", p.getName())
-                        .replace("%player%", p.getName())
-                        .replace("{player}", p.getName())
-                        .replace("<dungeon>", template.id())
-                        .replace("%dungeon%", template.id())
-                        .replace("<stage>", String.valueOf(stageIndex + 1))
-                        .replace("%stage%", String.valueOf(stageIndex + 1));
+            executeActionCommandsForPlayer(commands, p, stageIndex);
+        }
+    }
 
-                // Process through PlaceholderAPI for external variables (e.g., %vault_eco_balance%)
-                parsed = PAPIHook.setPlaceholders(p, parsed);
+    /**
+     * Executes defined console commands explicitly targeted at a single player.
+     * Includes intelligent condition parsing using brackets (e.g., [condition] command).
+     *
+     * @param commands   List of raw command strings to execute.
+     * @param p          The target player to evaluate placeholders against.
+     * @param stageIndex Current stage integer index.
+     */
+    private void executeActionCommandsForPlayer(List<String> commands, Player p, int stageIndex) {
+        if (commands == null || commands.isEmpty() || p == null || !p.isOnline()) return;
 
-                // Strip leading slash if the admin accidentally included it
-                if (parsed.startsWith("/")) {
-                    parsed = parsed.substring(1);
+        for (String cmd : commands) {
+            if (cmd.startsWith("[") && cmd.contains("]")) {
+                int endIdx = cmd.indexOf("]");
+                String condition = cmd.substring(1, endIdx).trim();
+                cmd = cmd.substring(endIdx + 1).trim();
+
+                if (!condition.isEmpty() && !PAPIHook.checkCondition(p, condition)) {
+                    continue; // Skip execution if the PAPI condition evaluation returns false
                 }
-
-                // Safely dispatch the formatted command as the Console
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
             }
+
+            String parsed = cmd.replace("<player>", p.getName())
+                    .replace("%player%", p.getName())
+                    .replace("{player}", p.getName())
+                    .replace("<dungeon>", template.id())
+                    .replace("%dungeon%", template.id())
+                    .replace("<stage>", String.valueOf(stageIndex + 1))
+                    .replace("%stage%", String.valueOf(stageIndex + 1));
+
+            parsed = PAPIHook.setPlaceholders(p, parsed);
+
+            if (parsed.startsWith("/")) {
+                parsed = parsed.substring(1);
+            }
+
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
         }
     }
 
@@ -557,7 +576,10 @@ public class DungeonGame {
         broadcastMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
         participants.forEach(p -> playSound(p, "stage_complete", 1f, 1f));
 
-        executeActionCommands(template.settings().onStageCompleteCmds(), currentStageIndex);
+        DungeonTemplate.StageData stageData = template.stages().get(currentStageIndex);
+        if (stageData != null) {
+            executeActionCommands(stageData.commands(), currentStageIndex);
+        }
 
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
@@ -660,8 +682,9 @@ public class DungeonGame {
 
     /**
      * Executes the conclusion routines of the dungeon.
-     * Submits scores to the database, fires conclusion commands, registers player cooldowns,
-     * initiates victory titles, and launches the kick countdown.
+     * Submits scores to the database asynchronously, validates First-Time completion commands,
+     * fires standard conclusion commands, registers player cooldowns, initiates victory titles,
+     * and launches the kick countdown.
      */
     private void finishDungeon() {
         this.isCleared = true;
@@ -688,24 +711,37 @@ public class DungeonGame {
             PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
             UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
 
-            for (Player p : participants) {
-                if (!p.isOnline()) continue;
-                boolean isLeader = p.getUniqueId().equals(leaderId);
-                int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                for (Player p : participants) {
+                    if (!p.isOnline()) continue;
 
-                topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
+                    // Evaluate if the player is eligible for First-Time Commands BEFORE incrementing clears.
+                    int previousClears = topManager.getPlayerClears(dungeonId, p.getUniqueId());
+                    boolean isFirstTime = (previousClears == 0);
 
-                if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
-                    topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
-                    topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
+                    if (isFirstTime) {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            executeActionCommandsForPlayer(template.settings().onFirstFinishCmds(), p, currentStageIndex);
+                        });
+                    }
+
+                    boolean isLeader = p.getUniqueId().equals(leaderId);
+                    int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
+
+                    topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
+
+                    if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
+                        topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
+                        topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
+                    }
+
+                    int cooldownSeconds = template.settings().cooldownSeconds();
+                    if (cooldownSeconds > 0) {
+                        long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
+                        plugin.getCooldownManager().setCooldown(p.getUniqueId(), dungeonId, expireEpoch);
+                    }
                 }
-
-                int cooldownSeconds = template.settings().cooldownSeconds();
-                if (cooldownSeconds > 0) {
-                    long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
-                    plugin.getCooldownManager().setCooldown(p.getUniqueId(), dungeonId, expireEpoch);
-                }
-            }
+            });
         }
 
         executeActionCommands(template.settings().onFinishCmds(), currentStageIndex);

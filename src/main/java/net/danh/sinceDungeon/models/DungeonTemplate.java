@@ -3,6 +3,9 @@ package net.danh.sinceDungeon.models;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Immutable data record that holds the complete parsed structure of a Dungeon.
+ */
 public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                               List<Condition> conditions,
                               Map<Integer, Integer> rewardTiers,
@@ -13,7 +16,11 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
     public record Condition(String id, String name, String requirement, String failMessage) {
     }
 
-    public record StageData(double chance, List<Map<String, Object>> actions) {
+    /**
+     * Holds the configuration for a specific dungeon stage.
+     * Contains the spawn chance, stage-specific completion commands, and actions.
+     */
+    public record StageData(double chance, List<String> commands, List<Map<String, Object>> actions) {
     }
 
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
@@ -23,9 +30,6 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                            int requiredLivesToJoin, int livesDeductedPerDeath,
                            boolean randomizeStages, int maxPlayers,
                            int cooldownSeconds, List<String> onStartCmds,
-                           List<String> onFinishCmds, List<String> onStageCompleteCmds) {
-        /**
-         * Added commands triggering system and cooldown limits natively to the template object.
-         */
+                           List<String> onFinishCmds, List<String> onFirstFinishCmds) {
     }
 }

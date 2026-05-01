@@ -337,6 +337,10 @@ editor:
     edit_action_items: "&lSắp xếp Rương: <index>"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    setting_cmd_first_finish: "&eLệnh Chạy Lần Đầu Vượt Ải"
+    setting_cmd_first_finish_lore:
+      - "&7Hiện tại: &f<val> lệnh"
+      - "&eChuột Trái: Quản lý danh sách"
     setting_cooldown: "&eThời Gian Chờ (Cooldown)"
     setting_cooldown_lore:
       - "&7Hiện tại: &f<val>s"
@@ -477,7 +481,13 @@ editor:
       - "&eChuột Trái: Đổi tên hiển thị"
     stage_item: "&eGiai đoạn <stage>"
     stage_lore:
-      - "&7Bấm vào để cấu hình nhiệm vụ"
+      - "&7Tỉ lệ xuất hiện: &a<chance>%"
+      - "&7Lệnh qua màn: &f<cmds>"
+      - ""
+      - "&eChuột Trái: Sửa Hành Động"
+      - "&cChuột Phải: Sửa Tỉ lệ"
+      - "&bShift-Trái: Quản lý Lệnh"
+      - "&cShift-Phải: Xóa Màn chơi"
     add_stage: "&aThêm Giai Đoạn"
     action_item: "&eNhiệm vụ #<index>"
     action_lore:
@@ -507,8 +517,10 @@ editor:
         - "&7Nhập thời gian chờ cho Hầm ngục tính bằng giây."
         - "&7Ví dụ: &a1800 &7(Dành cho 30 phút)"
       edit_commands:
-        - "&7Nhập nội dung hoặc lệnh Console (không cần /)."
-        - "&7Các biến hỗ trợ: &a%player%, %dungeon%, %stage%"
+        - "&7Nhập lệnh Console (không cần /)."
+        - "&7Biến hỗ trợ: &a%player%, %dungeon%, %stage%"
+        - "&7Kèm điều kiện: &e[điều_kiện] lệnh_cần_chạy"
+        - "&7Ví dụ: &a[%vault_eco_balance%;>=;500] eco give %player% 100"
         - "&7Mẹo: Gõ &cclear &7để xóa sạch danh sách lệnh."
       edit_action_mob_level:
         - "&7Nhập cấp độ (level) cho quái MythicMobs (Mặc định: 1)."

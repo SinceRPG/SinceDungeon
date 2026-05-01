@@ -443,10 +443,12 @@ public class EditorGUI {
             String name = getMsg("items.stage_item").replace("<stage>", key);
 
             double chance = session.getConfig().getDouble("stages." + key + ".chance", 100.0);
+            int cmdsCount = session.getConfig().getStringList("stages." + key + ".commands").size();
+
             List<String> lore = new ArrayList<>();
-            lore.add("&7Chance to spawn: &a" + chance + "%");
-            lore.add("&cRight Click: Edit Chance");
-            lore.addAll(plugin.getMessagesFile().getStringList("editor.items.stage_lore"));
+            for (String s : plugin.getMessagesFile().getStringList("editor.items.stage_lore")) {
+                lore.add(s.replace("<chance>", String.valueOf(chance)).replace("<cmds>", String.valueOf(cmdsCount)));
+            }
 
             inv.setItem(i, makeItem(Material.FILLED_MAP, name, lore));
         }

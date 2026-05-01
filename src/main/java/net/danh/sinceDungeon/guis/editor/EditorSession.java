@@ -223,7 +223,7 @@ public class EditorSession {
         COOLDOWN("settings.cooldown-seconds", null, Material.CAMPFIRE, "setting_cooldown", "INT", 0),
         CMD_START("settings.commands.on-start", null, Material.COMMAND_BLOCK, "setting_cmd_start", "LIST", null),
         CMD_FINISH("settings.commands.on-finish", null, Material.REPEATING_COMMAND_BLOCK, "setting_cmd_finish", "LIST", null),
-        CMD_STAGE("settings.commands.on-stage-complete", null, Material.CHAIN_COMMAND_BLOCK, "setting_cmd_stage", "LIST", null);
+        CMD_FIRST_FINISH("settings.commands.on-first-finish", null, Material.COMMAND_BLOCK_MINECART, "setting_cmd_first_finish", "LIST", null);
 
         private final String localPath;
         private final String globalFallbackPath;
