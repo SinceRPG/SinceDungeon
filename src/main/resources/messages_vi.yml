@@ -189,7 +189,7 @@ objective:
   spawn_wave: "&eTiêu diệt &c<mob> &7(Còn: <remain>)"
   random_wave: "&eTiêu diệt tất cả kẻ địch &7(Còn: <remain>)"
   control_zone: "&bChiếm đóng Khu vực: <percent>%"
-  unlock_door: "&6Tìm Chìa khóa và mở Cửa"
+  unlock_door: "&6Hãy dùng la bàn để tìm đường đến mở cửa."
 
 action:
   compass_received: "&bBạn đã nhận được La bàn theo dõi!"
@@ -213,7 +213,7 @@ action:
   zone_start: "&bMột vòng tròn cứ điểm đã xuất hiện. Hãy bảo vệ nó!"
   zone_warning: "&cCảnh báo: Yêu cầu ít nhất <required> người đứng trong vòng!"
   zone_complete: "&aBảo vệ cứ điểm thành công!"
-  door_start: "&eLối đi đã bị khóa! Hãy tìm Chìa khóa xung quanh."
+  door_start: "&eBạn đang giữ chìa khóa... Hãy dùng la bàn để tìm ổ khóa!"
   door_unlocked: "&a<player> đã mở khóa cửa thành công!"
 
 error:

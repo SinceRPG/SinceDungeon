@@ -189,7 +189,7 @@ objective:
   spawn_wave: "&eEliminate &c<mob> &7(Left: <remain>)"
   random_wave: "&eEliminate all enemies &7(Left: <remain>)"
   control_zone: "&bControl the Zone: <percent>%"
-  unlock_door: "&6Find the Key and Unlock the Door"
+  unlock_door: "&6Follow the compass and unlock the door"
 
 action:
   compass_received: "&bYou received a Tracking Compass!"
@@ -213,7 +213,7 @@ action:
   zone_start: "&bA strategic zone has appeared. Capture it!"
   zone_warning: "&cWarning: At least <required> player(s) must stay in the circle!"
   zone_complete: "&aZone captured successfully!"
-  door_start: "&eThe path is locked! Search the area for a Key."
+  door_start: "&eYou hold the key... Follow the compass to find the lock!"
   door_unlocked: "&a<player> has unlocked the door!"
 
 error:

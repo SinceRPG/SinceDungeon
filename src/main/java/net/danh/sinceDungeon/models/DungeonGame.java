@@ -135,9 +135,6 @@ public class DungeonGame {
         if (isPreparing || isRunning) return;
         isPreparing = true;
 
-        /**
-         * Fetching dynamic Title animation timings from the configuration file to prevent hardcoding.
-         */
         int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
         int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
         int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
@@ -594,26 +591,30 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
     }
 
+    /**
+     * Handles logic when a player leaves the server or is forcefully kicked.
+     * Safely processes inventory restoration regardless of their online state.
+     */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
-        if (wasInDungeon) {
-            if (p.isDead()) {
-                p.spigot().respawn();
-            }
-            if (p.isInsideVehicle()) p.leaveVehicle();
-            p.setVelocity(new Vector(0, 0, 0));
-
-            PlayerState state = savedStates.get(p.getUniqueId());
-            Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
-
-            p.teleport(targetLoc);
-            restorePlayerState(p);
+        if (p.isDead()) {
+            p.spigot().respawn();
         }
+        if (p.isInsideVehicle()) p.leaveVehicle();
+        p.setVelocity(new Vector(0, 0, 0));
+
+        PlayerState state = savedStates.get(p.getUniqueId());
+        Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+        if (wasInDungeon) {
+            p.teleport(targetLoc);
+        }
+
+        restorePlayerState(p);
 
         if (participants != null) participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
-        savedStates.remove(p.getUniqueId());
 
         if (participants == null || participants.isEmpty()) {
             if (!isCleared) {
@@ -676,11 +677,11 @@ public class DungeonGame {
                     } else {
                         restorePlayerState(p);
                     }
+                } else {
+                    restorePlayerState(p);
                 }
             }
         }
-
-        savedStates.clear();
 
         if (dungeonWorld != null) {
             World w = dungeonWorld;
@@ -723,6 +724,8 @@ public class DungeonGame {
                     p.teleport(targetLoc);
                     restorePlayerState(p);
                     p.sendActionBar(ColorUtils.parse(" "));
+                } else if (p.isOnline()) {
+                    restorePlayerState(p);
                 }
             }
         }
@@ -760,18 +763,15 @@ public class DungeonGame {
         this.template = null;
     }
 
+    /**
+     * Reverts a player back to their original state captured before entering the dungeon.
+     * Safely executes even if the player has disconnected from the server.
+     *
+     * @param p The player to restore.
+     */
     public void restorePlayerState(Player p) {
-        if (!p.isOnline()) {
-            plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
-            return;
-        }
-
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
-            /**
-             * Deep clean any leftover dungeon mission items (like Keys or Compasses)
-             * to prevent them from leaking into the outside survival world.
-             */
             NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
             for (ItemStack item : p.getInventory().getContents()) {
@@ -812,6 +812,8 @@ public class DungeonGame {
             }
             p.setFallDistance(0);
             p.setVelocity(new Vector(0, 0, 0));
+
+            savedStates.remove(p.getUniqueId());
         }
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }

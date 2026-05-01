@@ -461,7 +461,7 @@ action-defaults:
     key_id: "door_1"
     particle: "ENCHANT"
     start_message:
-      - "&eFind the key and unlock the door! A compass has been provided."
+      - "&eYou found a Key! Follow your compass to unlock the path forward."
 
 # =========================================================
 # [TÙY CHỈNH THÔNG BÁO]

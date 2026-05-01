@@ -1,9 +1,10 @@
 package net.danh.sinceDungeon.guis.editor;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.managers.DungeonLoader;
+import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
-import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -44,6 +45,12 @@ public class EditorSession {
         }
     }
 
+    /**
+     * Asynchronously saves the current YAML configuration to the disk.
+     * Once saved, it hot-reloads the specific DungeonTemplate back into the
+     * DungeonManager's live cache so changes take effect immediately without
+     * needing a full server reload.
+     */
     public void save() {
         if (file == null) return;
 
@@ -59,9 +66,20 @@ public class EditorSession {
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     String soundName = plugin.getConfigFile().getString("sounds.editor_save");
-                    Sound sound = SoundUtils.getSound(soundName);
+                    Sound sound = net.danh.sinceDungeon.utils.SoundUtils.getSound(soundName);
                     if (sound != null && player.isOnline()) {
                         player.playSound(player.getLocation(), sound, 1f, 1f);
+                    }
+
+                    // --- BUG FIX: Hot-Reload the template into live memory ---
+                    try {
+                        String id = file.getName().replace(".yml", "");
+                        DungeonTemplate updatedTemplate = DungeonLoader.loadTemplate(plugin, id);
+                        if (updatedTemplate != null) {
+                            plugin.getDungeonManager().registerTemplate(updatedTemplate);
+                        }
+                    } catch (Exception ex) {
+                        plugin.getLogger().warning("Failed to hot-reload template after saving: " + file.getName());
                     }
                 });
             } catch (java.io.IOException e) {
