@@ -10,7 +10,6 @@ import net.danh.sinceDungeon.managers.PartyManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -20,7 +19,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -60,12 +58,6 @@ public class DungeonGame {
     private long startTime;
     private int serverTicksActive = 0;
 
-
-    /**
-     * Constructs a new DungeonGame instance.
-     * Initializes participants, clones their states, and caches HUD messages
-     * to prevent high CPU/RAM overhead during the active ticking loop.
-     */
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiatorId = initiator.getUniqueId();
@@ -79,6 +71,7 @@ public class DungeonGame {
 
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         this.worldName = prefix + initiator.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
+
         this.cachedObjectivePrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
         this.cachedTimeLeftFormat = plugin.getMessagesFile().getString("game.hud.time_left", " <red>(<time>s)");
 
@@ -94,10 +87,6 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
-    /**
-     * Parses the stages provided by the Template.
-     * Incorporates Percent Chance logic to skip stages and Shuffle logic for Rogue-like experiences.
-     */
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -146,7 +135,14 @@ public class DungeonGame {
         if (isPreparing || isRunning) return;
         isPreparing = true;
 
-        broadcastTitle("game.title.loading_main", "game.title.loading_sub", 200, 3000, 500);
+        /**
+         * Fetching dynamic Title animation timings from the configuration file to prevent hardcoding.
+         */
+        int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
+        int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
+        int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
+
+        broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
         WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
@@ -206,11 +202,6 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    /**
-     * Teleports all active participants into the generated dungeon world.
-     * If configured, it strips the players of their outside items and resets their stats
-     * to provide a fair and balanced starting point within the dungeon environment.
-     */
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
@@ -238,7 +229,6 @@ public class DungeonGame {
                         for (PotionEffect effect : p.getActivePotionEffects()) p.removePotionEffect(effect.getType());
                         p.setFireTicks(0);
 
-                        // Clear the inventory and experience securely to prevent exploits
                         p.getInventory().clear();
                         p.getInventory().setArmorContents(null);
                         p.getInventory().setExtraContents(null);
@@ -261,7 +251,11 @@ public class DungeonGame {
             return;
         }
 
-        broadcastTitle("game.title.start_main", "game.title.start_sub", 200, 2000, 500);
+        int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
+        int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
+        int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
+
+        broadcastTitle("game.title.start_main", "game.title.start_sub", fadeIn, stay, fadeOut);
         broadcastMessage("game.start");
         participants.forEach(p -> playSound(p, "game_start", 0.5f, 1f));
 
@@ -282,11 +276,6 @@ public class DungeonGame {
         startStage(0);
     }
 
-    /**
-     * Ticks the active action continuously.
-     * Enforces the time limit and handles drawing the Action Bar objective text.
-     * Highly optimized: Reads from pre-cached memory instead of executing I/O YAML lookups.
-     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -296,7 +285,6 @@ public class DungeonGame {
         DungeonAction action = currentStageActions.get(currentActionIndex);
 
         if (!action.isCompleted()) {
-
             if (action.getTimeLimitSeconds() > 0 && action.getStartTimeMillis() > 0) {
                 long elapsed = (System.currentTimeMillis() - action.getStartTimeMillis()) / 1000;
                 if (elapsed >= action.getTimeLimitSeconds()) {
@@ -314,16 +302,13 @@ public class DungeonGame {
             }
 
             if (!action.isCompleted()) {
-                // Use cached strings instead of querying plugin.getMessagesFile().getString(...)
                 String objText = action.getObjectiveText();
 
                 if (action.getTimeLimitSeconds() > 0) {
                     long timeLeft = action.getTimeLimitSeconds() - ((System.currentTimeMillis() - action.getStartTimeMillis()) / 1000);
-                    // Fast string replacement using the cached time format
                     objText += cachedTimeLeftFormat.replace("<time>", String.valueOf(timeLeft));
                 }
 
-                // Render the Action Bar efficiently for all active participants
                 String finalBar = cachedObjectivePrefix + objText;
                 for (Player p : participants) {
                     if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
@@ -338,10 +323,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Deducts the configured lives penalty from the players upon action time out.
-     * Evaluates if the dungeon needs to be failed or if the stage should reset.
-     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
@@ -379,10 +360,6 @@ public class DungeonGame {
         checkWipeout();
 
         if (isRunning && !isStopping) {
-            /**
-             * Clean up ALL actions executed so far in the current stage before restarting it.
-             * This ensures no orphaned monsters or objects remain when the stage resets.
-             */
             List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
             for (int i = 0; i <= currentActionIndex; i++) {
                 try {
@@ -493,11 +470,6 @@ public class DungeonGame {
         return String.format("%02d:%02d", m, s);
     }
 
-    /**
-     * Checks if all active participants are dead or in Spectator mode.
-     * If no players are left actively fighting (survival/adventure),
-     * the dungeon is considered wiped out and fails immediately.
-     */
     public void checkWipeout() {
         boolean allDeadOrSpectating = true;
 
@@ -586,9 +558,13 @@ public class DungeonGame {
             PlayerState state = savedStates.get(p.getUniqueId());
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
+            int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
+            int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
+            int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
+
             String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
             String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
-            p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(500))));
+            p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut))));
             p.sendActionBar(ColorUtils.parse(" "));
 
             plugin.getDungeonManager().addTransitioning(p.getUniqueId());
@@ -618,10 +594,6 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
     }
 
-    /**
-     * Handles logic when a player leaves the server, uses a leave command,
-     * or is forcefully kicked from the dungeon.
-     */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
@@ -788,13 +760,6 @@ public class DungeonGame {
         this.template = null;
     }
 
-    /**
-     * Reverts a player back to their original state captured before entering the dungeon.
-     * This safely restores their entire inventory layout, equipment, experience levels,
-     * and correctly calculates remaining potion effect durations.
-     *
-     * @param p The player to restore.
-     */
     public void restorePlayerState(Player p) {
         if (!p.isOnline()) {
             plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
@@ -810,10 +775,11 @@ public class DungeonGame {
             NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
             for (ItemStack item : p.getInventory().getContents()) {
-                if (item != null && (ItemBuilder.hasTag(item, compassTag, PersistentDataType.BYTE) || ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING))) {
+                if (item != null && (net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, compassTag, org.bukkit.persistence.PersistentDataType.BYTE) || net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, keyTag, org.bukkit.persistence.PersistentDataType.STRING))) {
                     item.setAmount(0);
                 }
             }
+
             if (template != null && template.settings().saveAndRestoreStats()) {
                 p.setGameMode(state.gameMode);
                 AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
@@ -834,7 +800,6 @@ public class DungeonGame {
                 }
                 p.setFireTicks(state.fireTicks);
 
-                // Re-apply the previously cloned inventory state and experience points
                 p.getInventory().setContents(state.inventoryContents);
                 p.getInventory().setArmorContents(state.armorContents);
                 p.getInventory().setExtraContents(state.extraContents);
@@ -851,14 +816,6 @@ public class DungeonGame {
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }
 
-    /**
-     * Sends a specialized message respecting action toggles from config.yml and specific overrides.
-     *
-     * @param action       The action instance calling this
-     * @param category     The category of message (e.g., init, progress, complete)
-     * @param key          The locale message key
-     * @param placeholders Key-value pair replacements
-     */
     public void sendActionMessage(DungeonAction action, String category, String key, String... placeholders) {
         String actionName = action != null ? action.getActionType() : "unknown";
         if (actionName == null) actionName = "unknown";
@@ -938,11 +895,6 @@ public class DungeonGame {
         return cachedTimeLeftFormat;
     }
 
-    /**
-     * Inner class to capture a snapshot of a player's physical and statistical state.
-     * Includes deep cloning of ItemStacks to prevent reference manipulation,
-     * saving completely their inventory, armor, extra contents (offhand), and EXP levels.
-     */
     private static class PlayerState {
         final Location location;
         final GameMode gameMode;
@@ -951,7 +903,6 @@ public class DungeonGame {
         final Collection<PotionEffect> potionEffects;
         final int fireTicks;
 
-        // Extended state data for anti-exploit
         final ItemStack[] inventoryContents;
         final ItemStack[] armorContents;
         final ItemStack[] extraContents;
@@ -966,7 +917,6 @@ public class DungeonGame {
             this.potionEffects = p.getActivePotionEffects();
             this.fireTicks = p.getFireTicks();
 
-            // Perform a deep clone of the inventory to prevent Bukkit ghost item bugs
             this.inventoryContents = cloneItemArray(p.getInventory().getContents());
             this.armorContents = cloneItemArray(p.getInventory().getArmorContents());
             this.extraContents = cloneItemArray(p.getInventory().getExtraContents());
@@ -975,11 +925,6 @@ public class DungeonGame {
             this.exp = p.getExp();
         }
 
-        /**
-         * Helper method to perform a deep clone of an ItemStack array.
-         * Ensures that any modifications happening inside the dungeon
-         * do not affect the saved state references.
-         */
         private ItemStack[] cloneItemArray(ItemStack[] original) {
             if (original == null) return new ItemStack[0];
             ItemStack[] copy = new ItemStack[original.length];

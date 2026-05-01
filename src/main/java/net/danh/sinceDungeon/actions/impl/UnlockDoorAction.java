@@ -20,6 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
@@ -76,7 +77,17 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && !p.isDead()) {
-                p.getInventory().addItem(compass.clone());
+                /**
+                 * Safely give the item. If the inventory is full, drop it at the player's feet
+                 * instead of letting the system delete the item entirely.
+                 */
+                HashMap<Integer, ItemStack> leftover = p.getInventory().addItem(compass.clone());
+                if (!leftover.isEmpty()) {
+                    for (ItemStack drop : leftover.values()) {
+                        p.getWorld().dropItem(p.getLocation(), drop);
+                    }
+                }
+
                 p.setCompassTarget(triggerLoc);
                 p.sendMessage(ColorUtils.parseWithPrefix(compassMsg));
                 if (soundPickup != null) {
@@ -114,10 +125,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
-            /**
-             * Prevent WorldEdit exploits and item misuses by cancelling the event
-             * if the player interacts using the Dungeon Tracking Compass.
-             */
             if (e.getItem() != null) {
                 NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
                 if (ItemBuilder.hasTag(e.getItem(), compassTag, PersistentDataType.BYTE)) {
@@ -183,10 +190,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Iterates through active participants and purges the tracking compass
-     * from their inventories once the objective is met.
-     */
     private void removeCompasses(DungeonGame game) {
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
         String msg = SinceDungeon.getPlugin().getMessagesFile().getString("action.compass_removed", "&7The Tracking Compass faded away.");
@@ -214,12 +217,9 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
-        long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-
-        if (volume > 50000) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
-            SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
-            return;
+        String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
+        if (soundUnlock != null) {
+            game.getWorld().playSound(triggerLoc, SoundUtils.getSound(soundUnlock), 1f, 0.5f);
         }
 
         breakTask = new BukkitRunnable() {
@@ -235,7 +235,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 500) {
+                while (blocksProcessed < 50) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
                         game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
@@ -251,9 +251,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                             currentY = minY;
                             currentZ++;
                             if (currentZ > maxZ) {
-                                Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
-                                game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
-                                game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
                                 cancel();
                                 return;
                             }

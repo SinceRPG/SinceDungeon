@@ -18,7 +18,11 @@ public class MythicListener implements Listener {
 
     @EventHandler
     public void onMMDeath(MythicMobDeathEvent e) {
-        if (e.getEntity() != null && e.getEntity() != null) {
+        /**
+         * Wait for the mob entity to fully register its death before delegating
+         * it to the active dungeon instance to progress the wave action.
+         */
+        if (e.getEntity() != null) {
             org.bukkit.World w = e.getEntity().getWorld();
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(w)) {

@@ -336,6 +336,12 @@ particles:
   reach_location_idle: "HAPPY_VILLAGER"
   reach_location_complete: "TOTEM_OF_UNDYING"
 
+titles:
+  # The duration of Title animations displayed in milliseconds (1000ms = 1 second)
+  fade-in: 200
+  stay: 3000
+  fade-out: 500
+
 dungeon-items:
   key:
     material: "TRIPWIRE_HOOK"

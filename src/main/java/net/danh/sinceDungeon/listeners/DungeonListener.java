@@ -43,10 +43,6 @@ public class DungeonListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Helper method to delegate Bukkit events to the specific DungeonGame instance
-     * handling the player's session.
-     */
     private void pass(Player p, Event e) {
         if (p == null) return;
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
@@ -55,9 +51,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Resolves the true attacker in a damage event (e.g., getting the shooter of an arrow).
-     */
     private Player getRealAttacker(Entity damager) {
         if (damager instanceof Player p) return p;
         if (damager instanceof Projectile proj && proj.getShooter() instanceof Player p) return p;
@@ -239,13 +232,15 @@ public class DungeonListener implements Listener {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
-                if (getRealAttacker(e.getDamager()) != null) {
-                    if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                        if (MythicMobsHook.isMythicMob(e.getEntity())) return;
-                    }
-                    e.setCancelled(true);
-                    return;
+                /**
+                 * FIXED: Decorations are now universally protected from ALL damage sources
+                 * (Creepers, TNT, Mob Projectiles) to prevent map destruction.
+                 */
+                if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                    if (MythicMobsHook.isMythicMob(e.getEntity())) return;
                 }
+                e.setCancelled(true);
+                return;
             }
         }
 
@@ -452,10 +447,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Handles memory and state cleanup when a player disconnects from the server.
-     * Includes aborting any active cross-server matchmaking requests.
-     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
@@ -479,10 +470,6 @@ public class DungeonListener implements Listener {
         plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 
-    /**
-     * Intercepts unauthorized entry into active dungeons.
-     * If the player is an admin in spectator mode, they are permitted to stay.
-     */
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
@@ -492,7 +479,6 @@ public class DungeonListener implements Listener {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
 
-                // Allow Server Admins in Spectator Mode to bypass the kick
                 if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
                     return;
                 }
@@ -526,9 +512,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Manages death consequences such as life deduction, game mode shifting, and inventory retention.
-     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent e) {
         Player p = e.getEntity();
@@ -615,10 +598,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Blocks unauthorized teleports via End Pearls or Commands within the dungeon.
-     * Allows server administrators to bypass if they are using commands to spectate.
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();

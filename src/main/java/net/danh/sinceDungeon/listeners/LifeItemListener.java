@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -28,6 +29,11 @@ public class LifeItemListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
+        /**
+         * Prevent the event from firing twice (once for MAIN_HAND, once for OFF_HAND).
+         * This strictly fixes the bug where players could consume 1 item but receive double lives.
+         */
+        if (e.getHand() != EquipmentSlot.HAND) return;
         if (!e.getAction().isRightClick()) return;
 
         Player p = e.getPlayer();
@@ -49,7 +55,7 @@ public class LifeItemListener implements Listener {
                 return;
             }
 
-            // Consume item
+            // Consume item safely
             item.setAmount(item.getAmount() - 1);
             plugin.getLivesManager().addLives(p.getUniqueId(), amount);
 
@@ -74,7 +80,7 @@ public class LifeItemListener implements Listener {
             String soundName = soundSec.getString("sound", "ENTITY_PLAYER_LEVELUP");
             float volume = (float) soundSec.getDouble("volume", 1.0);
             float pitch = (float) soundSec.getDouble("pitch", 0.5);
-            // Call our new utility class
+
             Sound sound = net.danh.sinceDungeon.utils.SoundUtils.getSound(soundName);
             if (sound != null) {
                 p.playSound(p.getLocation(), sound, volume, pitch);
@@ -93,7 +99,6 @@ public class LifeItemListener implements Listener {
 
             try {
                 Particle particle = Particle.valueOf(particleName.toUpperCase(Locale.ROOT));
-                // Spawn particles slightly above the player's feet (at chest/head level)
                 p.getWorld().spawnParticle(particle, p.getLocation().add(0, 1.0, 0), amount, offsetX, offsetY, offsetZ, speed);
             } catch (IllegalArgumentException ignored) {
                 plugin.getLogger().warning("Invalid particle name in config: " + particleName);
