@@ -27,14 +27,12 @@ public class TopManager {
     }
 
     /**
-     * Wipes the leaderboard for a given map and clears any active cache.
+     * Wipes the leaderboard for a given map.
+     * Since this manager fetches directly from the DB, no local cache needs clearing.
      *
      * @param map The map identifier to reset.
      */
     public void resetLeaderboard(String map) {
-        // Clear local cache if your TopManager utilizes one (e.g., Map<String, List<Record>> cache)
-        // this.leaderboardCache.remove(map);
-
         // Hand over the execution to DatabaseManager
         plugin.getDatabaseManager().resetLeaderboard(map);
     }

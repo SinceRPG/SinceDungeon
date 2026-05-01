@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -152,23 +153,39 @@ public class DatabaseManager {
     }
 
     /**
-     * Executes the SQL DELETE command to wipe records for a specific map asynchronously.
+     * Executes the SQL DELETE commands to wipe all records for a specific map asynchronously.
+     * Clears records from top_fastest, top_kills, and top_clears.
      *
-     * @param map The map identifier to wipe.
+     * @param map The map identifier (dungeon_id) to wipe.
      */
     public void resetLeaderboard(String map) {
         org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            // Replace 'dungeon_leaderboard' and 'map_name' with your actual database schema names
-            String sql = "DELETE FROM dungeon_leaderboard WHERE map_name = ?";
+            String sqlFastest = "DELETE FROM top_fastest WHERE dungeon_id = ?";
+            String sqlKills = "DELETE FROM top_kills WHERE dungeon_id = ?";
+            String sqlClears = "DELETE FROM top_clears WHERE dungeon_id = ?";
 
-            try (java.sql.Connection conn = this.getConnection(); // Adjust this depending on your HikariCP/SQLite setup
-                 java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (Connection conn = this.getConnection()) {
 
-                ps.setString(1, map);
-                ps.executeUpdate();
+                // Delete from top_fastest
+                try (PreparedStatement ps = conn.prepareStatement(sqlFastest)) {
+                    ps.setString(1, map);
+                    ps.executeUpdate();
+                }
 
-                plugin.getLogger().info("[Database] Successfully wiped leaderboard records for map: " + map);
-            } catch (java.sql.SQLException e) {
+                // Delete from top_kills
+                try (PreparedStatement ps = conn.prepareStatement(sqlKills)) {
+                    ps.setString(1, map);
+                    ps.executeUpdate();
+                }
+
+                // Delete from top_clears
+                try (PreparedStatement ps = conn.prepareStatement(sqlClears)) {
+                    ps.setString(1, map);
+                    ps.executeUpdate();
+                }
+
+                plugin.getLogger().info("[Database] Successfully wiped all leaderboard records for map: " + map);
+            } catch (SQLException e) {
                 plugin.getLogger().severe("[Database] Failed to wipe leaderboard for map " + map + "!");
                 e.printStackTrace();
             }
