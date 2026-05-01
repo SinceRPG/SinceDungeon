@@ -1,5 +1,9 @@
 package net.danh.sinceDungeon.hooks;
 
+import io.lumine.mythic.api.mobs.MythicMob;
+import io.lumine.mythic.bukkit.BukkitAdapter;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.mobs.ActiveMob;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
@@ -7,7 +11,7 @@ import java.util.UUID;
 
 /**
  * Centralized bridge for MythicMobs API.
- * Strictly isolates all io.lumine.mythic.* imports to prevent NoClassDefFoundError
+ * Strictly isolates all imports to prevent NoClassDefFoundError
  * when the MythicMobs plugin is not installed on the server.
  */
 public class MythicMobsHook {
@@ -17,7 +21,7 @@ public class MythicMobsHook {
      */
     public static boolean isMythicMob(Entity entity) {
         try {
-            return io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMobInstance(entity) != null;
+            return MythicBukkit.inst().getMobManager().getMythicMobInstance(entity) != null;
         } catch (Exception | NoClassDefFoundError e) {
             return false;
         }
@@ -28,7 +32,7 @@ public class MythicMobsHook {
      */
     public static boolean isValidMythicMob(String internalName) {
         try {
-            return io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMob(internalName).isPresent();
+            return MythicBukkit.inst().getMobManager().getMythicMob(internalName).isPresent();
         } catch (Exception | NoClassDefFoundError e) {
             return false;
         }
@@ -40,11 +44,10 @@ public class MythicMobsHook {
      */
     public static Entity spawnMythicMob(Location loc, String mobId, int level) {
         try {
-            io.lumine.mythic.api.mobs.MythicMob mythicMob = io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMob(mobId).orElse(null);
+            MythicMob mythicMob = MythicBukkit.inst().getMobManager().getMythicMob(mobId).orElse(null);
             if (mythicMob != null) {
-                // Ensure chunk is loaded before spawning
                 loc.getChunk().load(true);
-                io.lumine.mythic.core.mobs.ActiveMob am = mythicMob.spawn(io.lumine.mythic.bukkit.BukkitAdapter.adapt(loc), level);
+                ActiveMob am = mythicMob.spawn(BukkitAdapter.adapt(loc), level);
                 if (am != null && am.getEntity() != null) {
                     return am.getEntity().getBukkitEntity();
                 }
@@ -60,8 +63,8 @@ public class MythicMobsHook {
      */
     public static String getActiveMobName(UUID uuid) {
         try {
-            return io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getActiveMob(uuid)
-                    .map(io.lumine.mythic.core.mobs.ActiveMob::getDisplayName).orElse(null);
+            return MythicBukkit.inst().getMobManager().getActiveMob(uuid)
+                    .map(ActiveMob::getDisplayName).orElse(null);
         } catch (Exception | NoClassDefFoundError e) {
             return null;
         }

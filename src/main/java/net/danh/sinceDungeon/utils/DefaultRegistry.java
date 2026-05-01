@@ -11,17 +11,31 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
 import java.util.*;
 
+/**
+ * Registers default dungeon actions, processors, and configurations during plugin initialization.
+ * Translates external configuration rules into functional internal components.
+ */
 public class DefaultRegistry {
 
+    /**
+     * Bootstraps the entire default registry suite.
+     *
+     * @param plugin  The plugin instance.
+     * @param manager The DungeonManager to register components into.
+     */
     public static void registerAll(SinceDungeon plugin, DungeonManager manager) {
         registerDefaultProcessors(plugin, manager);
         registerDefaultActions(plugin, manager);
     }
 
+    /**
+     * Registers default processors such as condition checks and reward deliveries.
+     */
     private static void registerDefaultProcessors(SinceDungeon plugin, DungeonManager manager) {
         manager.registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
@@ -43,12 +57,11 @@ public class DefaultRegistry {
                 String[] parts = parsedVal.split(":");
                 Material mat = Material.valueOf(parts[0].toUpperCase());
 
-                // NEW: Parse random amount if a range is provided
                 int amount = parts.length > 1 ? parseRandomAmount(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
 
                 if (displayName != null && !displayName.isEmpty()) {
-                    org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+                    ItemMeta meta = item.getItemMeta();
                     if (meta != null) {
                         meta.displayName(ColorUtils.parse("<!i>" + displayName));
                         item.setItemMeta(meta);
@@ -80,7 +93,6 @@ public class DefaultRegistry {
                 String mType = parts[0];
                 String mId = parts[1];
 
-                // NEW: Parse random amount if a range is provided
                 int amount = parts.length > 2 ? parseRandomAmount(parts[2]) : 1;
 
                 ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
@@ -102,7 +114,7 @@ public class DefaultRegistry {
     }
 
     /**
-     * Helper method to parse amounts that might be a range (e.g., "1-5").
+     * Helper method to parse amounts that might be an algorithmic range (e.g., "1-5").
      */
     private static int parseRandomAmount(String amtStr) {
         try {
@@ -115,17 +127,19 @@ public class DefaultRegistry {
                     min = max;
                     max = temp;
                 }
-                return min + new java.util.Random().nextInt(max - min + 1);
+                return min + new Random().nextInt(max - min + 1);
             } else {
                 return Integer.parseInt(amtStr);
             }
         } catch (Exception e) {
-            return 1; // Fallback to 1 if the format is entirely broken
+            return 1;
         }
     }
 
+    /**
+     * Registers all standard dungeon actions and binds them to the configuration layout.
+     */
     private static void registerDefaultActions(SinceDungeon plugin, DungeonManager manager) {
-        // --- SPAWN_WAVE ---
         Map<String, Object> spawnDefaults = new LinkedHashMap<>();
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));
         spawnDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.spawn_wave.amount", 1));
@@ -168,7 +182,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
 
-        // --- REACH_LOCATION ---
         Map<String, Object> reachDefaults = new HashMap<>();
         reachDefaults.put("target", "0,0,0");
         reachDefaults.put("radius", plugin.getConfigFile().getDouble("action-defaults.reach_location.radius", 3.0));
@@ -184,7 +197,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
-        // --- LOOT_CHEST ---
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
         chestDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.loot_chest.time_limit", -1));
@@ -217,7 +229,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
 
-        // --- BREAK_WALL ---
         Map<String, Object> wallDefaults = new HashMap<>();
         wallDefaults.put("trigger", "0,0,0");
         wallDefaults.put("corner1", "0,0,0");
@@ -234,7 +245,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults, new HashMap<>());
 
-        // --- MYTHIC_WAVE ---
         Map<String, Object> mmDefaults = new HashMap<>();
         mmDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.mythic_wave.mob", "SkeletonKing"));
         mmDefaults.put("amount", plugin.getConfigFile().getInt("action-defaults.mythic_wave.amount", 1));
@@ -257,7 +267,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
 
-        // --- RANDOM_WAVE ---
         List<String> defaultRandomMobs = new ArrayList<>(Arrays.asList("VANILLA:ZOMBIE:50", "VANILLA:SKELETON:30", "MYTHIC:SkeletonKing:20:1"));
         Map<String, Object> randomDefaults = new HashMap<>();
         randomDefaults.put("amount", 5);
@@ -283,7 +292,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
                 randomDefaults, new HashMap<>());
 
-        // --- CONTROL_ZONE ---
         Map<String, Object> zoneDefaults = new HashMap<>();
         zoneDefaults.put("center", "0,0,0");
         zoneDefaults.put("start_radius", 10.0);
@@ -298,7 +306,7 @@ public class DefaultRegistry {
         zoneDefaults.put("equipment", new ArrayList<String>());
         zoneDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.control_zone.time_limit", -1));
         zoneDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.control_zone.time_penalty", 1));
-        zoneDefaults.put("start_message", Collections.singletonList("&eCapture and hold the zone!"));
+        zoneDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.control_zone.start_message"));
 
         manager.registerAction("CONTROL_ZONE", map -> {
                     Vector center = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("center", "0,0,0")));
@@ -326,7 +334,6 @@ public class DefaultRegistry {
                 plugin.getMessagesFile().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
                 zoneDefaults, new HashMap<>());
 
-        // --- UNLOCK_DOOR ---
         Map<String, Object> doorDefaults = new HashMap<>();
         doorDefaults.put("trigger", "0,0,0");
         doorDefaults.put("corner1", "0,0,0");
@@ -335,7 +342,7 @@ public class DefaultRegistry {
         doorDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.unlock_door.time_penalty", 1));
         doorDefaults.put("key_id", "door_1");
         doorDefaults.put("particle", "ENCHANT");
-        doorDefaults.put("start_message", Collections.singletonList("&eFind the key and unlock the door!"));
+        doorDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.unlock_door.start_message"));
 
         manager.registerAction("UNLOCK_DOOR", map -> {
                     Vector trigger = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0")));

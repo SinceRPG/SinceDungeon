@@ -4,11 +4,13 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
@@ -17,6 +19,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
+/**
+ * Objective that requires players to locate and physically attack a trigger block.
+ * Upon success, it visually dismantles an entire boundary to unlock a new path.
+ */
 public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector trigger;
     private final Vector c1;
@@ -91,11 +97,9 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
     /**
      * Executes the asynchronous block removal process to simulate a wall crumbling.
-     * Iterates through the predefined coordinate boundaries and replaces solid blocks with air.
-     * Features a hard-limit volume check to prevent server crashes from excessive block updates.
-     * All visual particles and sound effects are fetched dynamically from the configuration.
+     * Modifies blocks in chunks of 50 per tick to prevent main-thread lag spikes.
      *
-     * @param game The active dungeon game instance handling the task.
+     * @param game The active dungeon instance handling the task.
      */
     private void removeWall(DungeonGame game) {
         int minX = Math.min(c1.getBlockX(), c2.getBlockX());
@@ -136,18 +140,17 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 500) {
+                while (blocksProcessed < 50) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
                         try {
-                            if (finalCrumble.getDataType() == org.bukkit.block.data.BlockData.class) {
+                            if (finalCrumble.getDataType() == BlockData.class) {
                                 game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
                             } else {
                                 game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05);
                             }
                         } catch (Exception ignored) {
                         }
-
                         block.setType(Material.AIR, false);
                     }
                     blocksProcessed++;
@@ -163,7 +166,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                                 Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
 
                                 String soundExplode = SinceDungeon.getPlugin().getConfigFile().getString("sounds.wall_break", "entity.generic.explode");
-                                game.getWorld().playSound(center, net.danh.sinceDungeon.utils.SoundUtils.getSound(soundExplode), 1f, 1f);
+                                game.getWorld().playSound(center, SoundUtils.getSound(soundExplode), 1f, 1f);
 
                                 String explosionName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
                                 try {

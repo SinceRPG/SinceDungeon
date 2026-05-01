@@ -72,6 +72,11 @@ public class DungeonGame {
     /**
      * Constructs a new DungeonGame instance.
      * Prepares player states, generates a unique world name, and parses dungeon stages.
+     *
+     * @param plugin          The plugin instance.
+     * @param initiator       The player initiating the session.
+     * @param rawParticipants The unmodifiable set of players joining.
+     * @param template        The structured layout of the dungeon map.
      */
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
@@ -306,7 +311,6 @@ public class DungeonGame {
             return;
         }
 
-        // Trigger on-start commands globally defined in this map's template
         executeActionCommands(template.settings().onStartCmds(), 0);
 
         int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
@@ -388,6 +392,8 @@ public class DungeonGame {
     /**
      * Evaluates the timeout sequence for a specific action.
      * Deducts lives, manages spectator transitions, and attempts to restart the stage if possible.
+     *
+     * @param action The active action that breached its time limit.
      */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
@@ -441,6 +447,8 @@ public class DungeonGame {
     /**
      * Instantiates the progression of a specific stage by index.
      * Identifies the end of the dungeon if the stages are depleted.
+     *
+     * @param index The ordinal tier of the stage.
      */
     private void startStage(int index) {
         if (!isRunning) return;
@@ -494,6 +502,8 @@ public class DungeonGame {
 
     /**
      * Funnels server events to the currently active action object for assessment.
+     *
+     * @param event The Bukkit Event triggering the check.
      */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
@@ -681,7 +691,6 @@ public class DungeonGame {
                     topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
                 }
 
-                // Add Cooldown if requested by config
                 int cooldownSeconds = template.settings().cooldownSeconds();
                 if (cooldownSeconds > 0) {
                     long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
@@ -690,7 +699,6 @@ public class DungeonGame {
             }
         }
 
-        // Trigger on-finish commands globally defined in this map's template
         executeActionCommands(template.settings().onFinishCmds(), currentStageIndex);
 
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, finalChestCount);
@@ -772,6 +780,8 @@ public class DungeonGame {
     /**
      * Handles logic when a player leaves the server or is forcefully kicked.
      * Safely processes inventory restoration regardless of their online state.
+     *
+     * @param p The player entity.
      */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
@@ -807,6 +817,8 @@ public class DungeonGame {
     /**
      * Interrupts and halts the dungeon sequence cleanly.
      * Identical to explicitly defining the EndReason as a FORCE_STOPPED state.
+     *
+     * @param teleport Should players be returned to their saved locations.
      */
     public void stop(boolean teleport) {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
@@ -815,6 +827,9 @@ public class DungeonGame {
     /**
      * Executes the overarching unloader mechanism, detaching all players
      * and signaling the WorldManager to safely purge the dungeon environment.
+     *
+     * @param teleport Should players be returned.
+     * @param reason   The technical reason for closure.
      */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;

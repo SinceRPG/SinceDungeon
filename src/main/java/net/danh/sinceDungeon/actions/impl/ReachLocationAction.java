@@ -10,6 +10,10 @@ import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+/**
+ * Objective mandating players to step into a predefined circular radius.
+ * Periodically renders border markers to indicate the checkpoint threshold.
+ */
 public class ReachLocationAction extends DungeonAction implements Tickable {
     private final Vector target;
     private final double radiusSq;

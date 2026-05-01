@@ -203,10 +203,6 @@ public class EditorSession {
         NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK, EDIT_KICK_DELAY
     }
 
-    public interface EditorCallback {
-        void onInput(String value);
-    }
-
     /**
      * Enumerates all configurable map-specific settings.
      * Contains definitions required to dynamically construct the Settings Editor GUI.
@@ -268,5 +264,9 @@ public class EditorSession {
         public Object getDefaultValue() {
             return defaultValue;
         }
+    }
+
+    public interface EditorCallback {
+        void onInput(String value);
     }
 }

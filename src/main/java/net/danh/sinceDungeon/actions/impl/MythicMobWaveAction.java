@@ -15,6 +15,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
@@ -146,7 +147,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-        java.util.concurrent.atomic.AtomicReference<String> displayName = new java.util.concurrent.atomic.AtomicReference<>(internalName);
+        AtomicReference<String> displayName = new AtomicReference<>(internalName);
 
         if (!MythicMobsHook.isValidMythicMob(internalName)) {
             this.completed = true;

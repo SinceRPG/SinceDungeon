@@ -11,6 +11,7 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
@@ -21,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,9 +59,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        /**
-         * Safely removes the physical chest block if the action is aborted or timed out.
-         */
         if (chestBlock != null && !completed) {
             chestBlock.setType(Material.AIR);
         }
@@ -100,9 +99,8 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
         if (chestBlock.getState() instanceof Chest chest) {
             if (isInventoryEmpty(chest.getBlockInventory())) {
-
                 boolean cursorHasItem = false;
-                for (org.bukkit.entity.HumanEntity viewer : chest.getBlockInventory().getViewers()) {
+                for (HumanEntity viewer : chest.getBlockInventory().getViewers()) {
                     if (viewer.getItemOnCursor() != null && viewer.getItemOnCursor().getType() != Material.AIR) {
                         cursorHasItem = true;
                         break;
@@ -249,7 +247,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
         this.completed = true;
         game.sendActionMessage(this, "complete", "action.loot_complete");
 
-        for (org.bukkit.entity.HumanEntity viewer : new java.util.ArrayList<>(chest.getBlockInventory().getViewers())) {
+        for (HumanEntity viewer : new ArrayList<>(chest.getBlockInventory().getViewers())) {
             viewer.closeInventory();
         }
 

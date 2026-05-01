@@ -77,10 +77,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && !p.isDead()) {
-                /**
-                 * Safely give the item. If the inventory is full, drop it at the player's feet
-                 * instead of letting the system delete the item entirely.
-                 */
                 HashMap<Integer, ItemStack> leftover = p.getInventory().addItem(compass.clone());
                 if (!leftover.isEmpty()) {
                     for (ItemStack drop : leftover.values()) {

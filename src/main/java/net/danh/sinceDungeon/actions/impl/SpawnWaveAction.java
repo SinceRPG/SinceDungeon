@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -320,7 +321,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
 
         String sName = SinceDungeon.getPlugin().getConfigFile().getString("sounds.mob_spawn", "entity.zombie.break_wooden_door");
-        org.bukkit.Sound sType = net.danh.sinceDungeon.utils.SoundUtils.getSound(sName);
+        Sound sType = SoundUtils.getSound(sName);
 
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());

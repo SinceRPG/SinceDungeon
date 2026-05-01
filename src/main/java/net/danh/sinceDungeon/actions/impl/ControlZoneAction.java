@@ -21,12 +21,13 @@ import java.util.*;
  * Handles the logic for the Control Zone objective.
  * Players must stay within a shrinking circular radius for a specific duration.
  * Spawns interference mobs dynamically and cleans them up upon completion.
+ * Uses real-time millisecond tracking to ensure absolute accuracy against TPS drops.
  */
 public class ControlZoneAction extends DungeonAction implements Tickable {
     private final Vector center;
     private final double startRadius;
     private final double endRadius;
-    private final int requiredTicks;
+    private final long requiredMillis;
     private final String mob;
     private final int mobInterval;
     private final int mobLevel;
@@ -35,7 +36,8 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     private final List<String> attributesList;
     private final List<String> equipmentList;
     private final Set<UUID> spawnedMobs = new HashSet<>();
-    private int currentTicks = 0;
+    private long accumulatedMillis = 0;
+    private long lastTickTime = 0;
     private int tickCounter = 0;
     private Location centerLoc;
 
@@ -45,7 +47,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         this.center = center;
         this.startRadius = startRadius;
         this.endRadius = endRadius;
-        this.requiredTicks = requiredSeconds * 20;
+        this.requiredMillis = requiredSeconds * 1000L;
         this.mob = mob;
         this.mobInterval = mobInterval;
         this.mobLevel = mobLevel;
@@ -57,7 +59,8 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        int percent = (int) (((double) currentTicks / requiredTicks) * 100);
+        int percent = (int) (((double) accumulatedMillis / requiredMillis) * 100);
+        percent = Math.min(100, Math.max(0, percent));
         String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.control_zone", "<aqua>Control the Zone: <percent>%");
         return base.replace("<percent>", String.valueOf(percent));
     }
@@ -66,15 +69,20 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
         this.centerLoc = new Location(game.getWorld(), center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5);
+        this.lastTickTime = System.currentTimeMillis();
         game.sendActionMessage(this, "init", "action.zone_start");
     }
 
     @Override
     public void onTick(DungeonGame game) {
         if (completed || centerLoc == null) return;
+
+        long now = System.currentTimeMillis();
+        long delta = now - lastTickTime;
+        lastTickTime = now;
         tickCounter++;
 
-        double progress = (double) currentTicks / requiredTicks;
+        double progress = (double) accumulatedMillis / requiredMillis;
         double currentRadius = startRadius - ((startRadius - endRadius) * progress);
         if (currentRadius <= 0) currentRadius = 1.0;
 
@@ -111,13 +119,13 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         int requiredPlayers = Math.max(1, (int) Math.ceil(activePlayers * 0.75));
 
         if (insideCount >= requiredPlayers) {
-            currentTicks++;
+            accumulatedMillis += delta;
 
             if (mob != null && !mob.equalsIgnoreCase("NONE") && tickCounter % mobInterval == 0) {
                 spawnInterferenceMob(game, currentRadius);
             }
 
-            if (currentTicks >= requiredTicks) {
+            if (accumulatedMillis >= requiredMillis) {
                 this.completed = true;
                 game.sendActionMessage(this, "complete", "action.zone_complete");
 
@@ -139,11 +147,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     /**
      * Calculates the exact perimeter of the current control zone circle and generates
      * an interference monster on the edge to disrupt the players.
-     * Supports both Vanilla entities and MythicMobs integration.
      * Keeps track of the generated entities to clear them upon action completion.
-     *
-     * @param game          The active dungeon game instance.
-     * @param currentRadius The current dynamically shrinking radius of the control zone.
      */
     private void spawnInterferenceMob(DungeonGame game, double currentRadius) {
         try {
@@ -211,8 +215,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
 
     /**
      * Injects configured attributes and properties into the newly spawned Vanilla entity.
-     *
-     * @param living The entity instance that will receive the custom properties.
      */
     private void applyCustomProperties(LivingEntity living) {
         living.setRemoveWhenFarAway(false);
@@ -225,7 +227,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
 
         if (isBaby && living instanceof Ageable ageable) {
             ageable.setBaby();
-        } else if (isBaby && living instanceof org.bukkit.entity.Zombie zombie) {
+        } else if (isBaby && living instanceof Zombie zombie) {
             zombie.setBaby();
         }
 
