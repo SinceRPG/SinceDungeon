@@ -116,6 +116,17 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
+            /**
+             * Prevent WorldEdit exploits and item misuses by cancelling the event
+             * if the player interacts using the Dungeon Tracking Compass.
+             */
+            if (e.getItem() != null) {
+                NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
+                if (ItemBuilder.hasTag(e.getItem(), compassTag, PersistentDataType.BYTE)) {
+                    e.setCancelled(true);
+                }
+            }
+
             if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
             Player p = e.getPlayer();
@@ -141,7 +152,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
                 NamespacedKey keyTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_key_id");
 
-                // Kiểm tra xem item cầm trên tay có tag chuẩn hay không
                 if (ItemBuilder.hasTag(handItem, keyTag, PersistentDataType.STRING) &&
                         this.keyId.equals(ItemBuilder.getTag(handItem, keyTag, PersistentDataType.STRING))) {
 

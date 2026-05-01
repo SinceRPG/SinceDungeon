@@ -50,7 +50,17 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        debug("Cleaning up MythicMobWaveAction, unlocking chunks.");
+        /**
+         * Cleans up the action by removing all spawned mobs and unlocking chunks.
+         */
+        debug("Cleaning up MythicMobWaveAction, removing entities and unlocking chunks.");
+        for (UUID uuid : spawnedMobs.keySet()) {
+            Entity ent = Bukkit.getEntity(uuid);
+            if (ent != null && !ent.isDead()) {
+                ent.remove();
+            }
+        }
+        spawnedMobs.clear();
         unlockChunks();
     }
 

@@ -525,8 +525,11 @@ public class EditorGUI {
             String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
             String hint = getMsg("items.action_val_hint_edit", "<yellow>Trái: Sửa | <red>Shift-Phải: Xóa");
-
-            boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
+            /**
+             * Checks if the configuration key represents a location coordinate.
+             * Added "center" to support the ControlZoneAction properties.
+             */
+            boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
             boolean isList = sec.isList(key);
             boolean isItems = key.equalsIgnoreCase("items");
 

@@ -575,37 +575,43 @@ public class DungeonListener implements Listener {
             final boolean finalOutOfLives = outOfLives;
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                if (p.isOnline()) {
-                    p.spigot().respawn();
+                /**
+                 * Verifies if the game instance is still active and the player is still participating
+                 * BEFORE forcing respawns or spectator modes. Prevents ghost states outside the dungeon.
+                 */
+                if (!p.isOnline()) return;
+                DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
+                if (checkGame == null || !checkGame.isRunning()) return;
 
-                    String deathAction = "RESPAWN";
-                    if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
-                        deathAction = game.getTemplate().settings().deathAction();
-                    }
+                p.spigot().respawn();
 
-                    if (finalOutOfLives) {
-                        String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
-                        if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
-                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
-                            p.setGameMode(org.bukkit.GameMode.SPECTATOR);
-                            game.checkWipeout();
-                        } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
-                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
-                            game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                        } else {
-                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
-                            game.handlePlayerDisconnect(p);
-                        }
-                    } else if (deathAction.equalsIgnoreCase("FAIL")) {
-                        game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                    } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.death_spectate")));
+                String deathAction = "RESPAWN";
+                if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
+                    deathAction = game.getTemplate().settings().deathAction();
+                }
+
+                if (finalOutOfLives) {
+                    String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
+                    if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
                         p.setGameMode(org.bukkit.GameMode.SPECTATOR);
                         game.checkWipeout();
+                    } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                        game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
-                        p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
-                        p.setFoodLevel(20);
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                        game.handlePlayerDisconnect(p);
                     }
+                } else if (deathAction.equalsIgnoreCase("FAIL")) {
+                    game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.death_spectate")));
+                    p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                    game.checkWipeout();
+                } else {
+                    p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
+                    p.setFoodLevel(20);
                 }
             }, 2L);
         }

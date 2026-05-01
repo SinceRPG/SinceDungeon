@@ -56,6 +56,16 @@ public class LootChestAction extends DungeonAction implements Tickable {
     }
 
     @Override
+    public void cleanup(DungeonGame game) {
+        /**
+         * Safely removes the physical chest block if the action is aborted or timed out.
+         */
+        if (chestBlock != null && !completed) {
+            chestBlock.setType(Material.AIR);
+        }
+    }
+
+    @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
         Location loc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());

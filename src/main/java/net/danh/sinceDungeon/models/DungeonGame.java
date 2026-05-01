@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.managers.PartyManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -19,6 +20,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -380,7 +382,18 @@ public class DungeonGame {
         checkWipeout();
 
         if (isRunning && !isStopping) {
-            action.cleanup(this);
+            /**
+             * Clean up ALL actions executed so far in the current stage before restarting it.
+             * This ensures no orphaned monsters or objects remain when the stage resets.
+             */
+            List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+            for (int i = 0; i <= currentActionIndex; i++) {
+                try {
+                    currentStageActions.get(i).cleanup(this);
+                } catch (Exception ex) {
+                    plugin.getLogger().warning("Cleanup error on timeout: " + ex.getMessage());
+                }
+            }
             startStage(currentStageIndex);
         }
     }
@@ -793,6 +806,17 @@ public class DungeonGame {
 
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
+            /**
+             * Deep clean any leftover dungeon mission items (like Keys or Compasses)
+             * to prevent them from leaking into the outside survival world.
+             */
+            NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
+            NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+            for (ItemStack item : p.getInventory().getContents()) {
+                if (item != null && (ItemBuilder.hasTag(item, compassTag, PersistentDataType.BYTE) || ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING))) {
+                    item.setAmount(0);
+                }
+            }
             if (template != null && template.settings().saveAndRestoreStats()) {
                 p.setGameMode(state.gameMode);
                 AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
