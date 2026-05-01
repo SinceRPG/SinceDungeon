@@ -613,13 +613,13 @@ public class DungeonListener implements Listener {
             }
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
-                if (p.hasPermission("SinceDungeon.admin") && e.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND) {
-                    p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                // FIX: Check if they are an admin in Spectator mode instead of relying on TeleportCause
+                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
                     return;
                 }
 
                 e.setCancelled(true);
-                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Area sealed!");
+                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Area sealed. Teleportation magic nullified!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
                 return;
             }
