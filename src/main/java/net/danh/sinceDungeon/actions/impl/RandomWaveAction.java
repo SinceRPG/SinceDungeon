@@ -1,11 +1,9 @@
 package net.danh.sinceDungeon.actions.impl;
 
-import io.lumine.mythic.bukkit.BukkitAdapter;
-import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.core.mobs.ActiveMob;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -18,19 +16,6 @@ import org.bukkit.util.Vector;
 
 import java.util.*;
 
-/**
- * A wave action that randomly selects mobs from a configured pool.
- * Supports both Vanilla (Bukkit EntityType) and MythicMobs.
- * <p>
- * Format for each entry in the random_mobs list:
- * VANILLA:<EntityType>:<weight>
- * MYTHIC:<MobId>:<weight>:<level>   (level is optional, defaults to 1)
- * <p>
- * Example:
- * - VANILLA:ZOMBIE:50
- * - VANILLA:SKELETON:30
- * - MYTHIC:SkeletonKing:20:5
- */
 public class RandomWaveAction extends DungeonAction implements Tickable {
 
     private final int amount;
@@ -48,10 +33,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         this.scaleWithParty = scaleWithParty;
     }
 
-    /**
-     * Parses a list of raw mob pool strings into MobOption records.
-     * Format: VANILLA:<id>:<weight>  or  MYTHIC:<id>:<weight>[:<level>]
-     */
     public static List<MobOption> parseMobPool(List<String> raw) {
         List<MobOption> pool = new ArrayList<>();
         for (String entry : raw) {
@@ -77,9 +58,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Picks a MobOption from the pool using weighted random selection.
-     */
     private MobOption pickRandom() {
         if (mobPool.isEmpty()) return null;
         double totalWeight = mobPool.stream().mapToDouble(MobOption::weight).sum();
@@ -92,14 +70,8 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         return mobPool.get(mobPool.size() - 1);
     }
 
-    /**
-     * Enhanced safe spawn logic: Scans both upwards and downwards to ensure
-     * mobs don't suffocate in ceilings or spawn on unreachable roofs.
-     */
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
-
-        // Check downwards first to snap to the floor
         for (int i = 0; i < 5; i++) {
             if (check.getBlock().getType().isSolid()) {
                 check.add(0, 1, 0);
@@ -107,44 +79,56 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
             check.subtract(0, 1, 0);
         }
-
-        // Check upwards for head clearance
         for (int i = 0; i < 5; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
-            if (!block.getType().isSolid() && !head.getType().isSolid()) {
-                return check;
-            }
+            if (!block.getType().isSolid() && !head.getType().isSolid()) return check;
             check.add(0, 1, 0);
         }
-        return original; // Fallback
+        return original;
     }
 
     /**
-     * Spawns a mob at a given location based on the MobOption.
-     * Returns the entity UUID if successful, else null.
+     * Executes the internal spawning logic based on the provided MobOption configuration.
+     * Dynamically routes the request to either the Vanilla Bukkit entity spawner or the MythicMobs API hook.
+     * Applies visual particle effects and sound cues upon successful generation.
+     *
+     * @param game The active dungeon game instance.
+     * @param loc  The pre-calculated safe location to spawn the entity.
+     * @param opt  The selected mob configuration containing type, ID, and level data.
+     * @return The UUID of the spawned entity, or null if the spawn process failed.
      */
     private UUID spawnMob(DungeonGame game, Location loc, MobOption opt) {
         try {
+            String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.mob_spawn", "CAMPFIRE_COSY_SMOKE");
+            Particle pType;
+            try {
+                pType = Particle.valueOf(pName.toUpperCase());
+            } catch (Exception e) {
+                pType = Particle.CAMPFIRE_COSY_SMOKE;
+            }
+
+            String sName = SinceDungeon.getPlugin().getConfigFile().getString("sounds.mob_spawn", "entity.zombie.break_wooden_door");
+            Sound sType = net.danh.sinceDungeon.utils.SoundUtils.getSound(sName);
+
             if (opt.isMythic()) {
                 if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     debug("MythicMobs not installed. Cannot spawn MYTHIC mob.");
                     return null;
                 }
-                io.lumine.mythic.api.mobs.MythicMob mythicMob =
-                        MythicBukkit.inst().getMobManager().getMythicMob(opt.id()).orElse(null);
-                if (mythicMob == null) {
+                if (!MythicMobsHook.isValidMythicMob(opt.id())) {
                     debug("MythicMob ID '" + opt.id() + "' not found.");
                     return null;
                 }
-                loc.getChunk().load(true);
-                ActiveMob am = mythicMob.spawn(BukkitAdapter.adapt(loc), opt.level());
-                if (am != null && am.getEntity() != null) {
-                    Entity e = am.getEntity().getBukkitEntity();
-                    if (e instanceof LivingEntity le) {
-                        le.setRemoveWhenFarAway(false);
-                        le.setPersistent(true);
-                    }
+
+                Entity e = MythicMobsHook.spawnMythicMob(loc, opt.id(), opt.level());
+                if (e instanceof LivingEntity le) {
+                    le.setRemoveWhenFarAway(false);
+                    le.setPersistent(true);
+
+                    game.getWorld().spawnParticle(pType, loc.clone().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
+                    if (sType != null) game.getWorld().playSound(loc, sType, 0.5f, 0.8f);
+
                     return e.getUniqueId();
                 }
             } else {
@@ -160,8 +144,10 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 if (e instanceof LivingEntity le) {
                     le.setRemoveWhenFarAway(false);
                     le.setPersistent(true);
-                    game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, loc.clone().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
-                    game.getWorld().playSound(loc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.8f);
+
+                    game.getWorld().spawnParticle(pType, loc.clone().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
+                    if (sType != null) game.getWorld().playSound(loc, sType, 0.5f, 0.8f);
+
                     return e.getUniqueId();
                 } else if (e != null) {
                     e.remove();
@@ -182,20 +168,12 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        if (mobPool.isEmpty()) {
-            debug("mob pool is empty — completing immediately.");
-            this.completed = true;
-            return;
-        }
-        if (locations.isEmpty()) {
-            debug("locations list is empty — completing immediately.");
+        if (mobPool.isEmpty() || locations.isEmpty()) {
             this.completed = true;
             return;
         }
 
         int count = 0;
-
-        // --- SCALING LOGIC ---
         int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
         if (finalAmount <= 0) finalAmount = 1;
 
@@ -219,13 +197,11 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                     c.addPluginChunkTicket(SinceDungeon.getPlugin());
                     lockedChunks.add(c);
                     count++;
-                    debug("Spawned " + (opt.isMythic() ? "MYTHIC" : "VANILLA") + ":" + opt.id() + " at " + spawnLoc.toVector());
                 }
             }
         }
 
         if (count == 0) {
-            debug("Failed to spawn any mobs — auto-completing.");
             this.completed = true;
         } else {
             game.sendActionMessage(this, "init", "action.random_wave_start", "<amount>", String.valueOf(count));
@@ -252,7 +228,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    debug("Mob " + uuid + " vanished in loaded chunk — marking for respawn.");
                     toRespawn.add(Map.entry(uuid, lastLoc));
                     return true;
                 } else {
@@ -270,7 +245,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             if (newUid != null) {
                 spawnedMobs.put(newUid, entry.getValue());
                 mobDisplayNames.put(newUid, opt.id());
-                debug("Respawned missing mob with new selection: " + opt.id());
             }
         }
 
@@ -289,7 +263,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         });
 
         if (spawnedMobs.isEmpty()) {
-            debug("All random mobs eliminated — completing wave.");
             unlockChunks();
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.random_wave_complete");
@@ -302,7 +275,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             UUID uid = e.getEntity().getUniqueId();
             if (spawnedMobs.remove(uid) != null) {
                 mobDisplayNames.remove(uid);
-                debug("Mob " + uid + " killed via event. Remaining: " + spawnedMobs.size());
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
@@ -317,10 +289,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        /**
-         * Cleans up the action by removing all spawned mobs and unlocking chunks.
-         */
-        debug("Cleaning up RandomWaveAction, removing entities and unlocking chunks.");
         for (UUID uuid : spawnedMobs.keySet()) {
             Entity ent = Bukkit.getEntity(uuid);
             if (ent != null && !ent.isDead()) {
@@ -341,9 +309,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         lockedChunks.clear();
     }
 
-    /**
-     * Represents a single mob option in the random pool.
-     */
     public record MobOption(boolean isMythic, String id, int level, double weight) {
     }
 }

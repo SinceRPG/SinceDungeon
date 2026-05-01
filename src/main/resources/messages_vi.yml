@@ -53,6 +53,7 @@ top:
     - "&eChuột Trái để xem hạng mục này!"
 
 admin:
+  getkey_success: "&aĐã nhận Chìa khóa hệ thống: &e<id>"
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
   invalid_player: "&cKhông tìm thấy người chơi này."
   in_editor: "&cBạn đang trong chế độ chỉnh sửa! Vui lòng gõ &ecancel&c vào kênh chat để hủy trước khi dùng lệnh."
@@ -455,6 +456,9 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_mob_level:
+        - "&7Nhập cấp độ (level) cho quái MythicMobs (Mặc định: 1)."
+        - "&7Ví dụ: &a5"
       edit_max_players:
         - "&7Nhập giới hạn người chơi tối đa cho Dungeon này."
         - "&7Nhập &c-1 &7hoặc &c0 &7nếu không muốn giới hạn (Mặc định theo số lượng Party)."

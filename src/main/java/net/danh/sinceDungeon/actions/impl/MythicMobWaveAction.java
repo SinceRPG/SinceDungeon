@@ -1,13 +1,9 @@
 package net.danh.sinceDungeon.actions.impl;
 
-import io.lumine.mythic.api.mobs.MythicMob;
-import io.lumine.mythic.bukkit.BukkitAdapter;
-import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
-import io.lumine.mythic.core.mobs.ActiveMob;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -15,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -50,9 +47,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        /**
-         * Cleans up the action by removing all spawned mobs and unlocking chunks.
-         */
         debug("Cleaning up MythicMobWaveAction, removing entities and unlocking chunks.");
         for (UUID uuid : spawnedMobs.keySet()) {
             Entity ent = Bukkit.getEntity(uuid);
@@ -64,14 +58,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         unlockChunks();
     }
 
-    /**
-     * Enhanced safe spawn logic: Scans both upwards and downwards to ensure
-     * mobs don't suffocate in ceilings or spawn on unreachable roofs.
-     */
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
-
-        // Check downwards first to snap to the floor
         for (int i = 0; i < 5; i++) {
             if (check.getBlock().getType().isSolid()) {
                 check.add(0, 1, 0);
@@ -79,8 +67,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             }
             check.subtract(0, 1, 0);
         }
-
-        // Check upwards for head clearance
         for (int i = 0; i < 5; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
@@ -89,23 +75,18 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             }
             check.add(0, 1, 0);
         }
-        return original; // Fallback
+        return original;
     }
 
     @Override
     public void start(DungeonGame game) {
-        debug("Starting MythicMobWaveAction for: " + internalName + " | Amount per loc: " + amount + " | Level: " + level);
-
         if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-            debug("MythicMobs plugin is NOT enabled. Aborting.");
             game.sendMessage("error.mob_spawn_fail", "<mob>", internalName, "<error>", "MythicMobs not installed");
             this.completed = true;
             return;
         }
 
-        MythicMob mob = MythicBukkit.inst().getMobManager().getMythicMob(internalName).orElse(null);
-        if (mob == null) {
-            debug("MythicMob ID '" + internalName + "' not found in MythicMobs registry. Aborting.");
+        if (!MythicMobsHook.isValidMythicMob(internalName)) {
             game.sendMessage("error.mythic_mob_not_found", "<mob>", internalName);
             this.completed = true;
             return;
@@ -115,62 +96,47 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         String mobName = internalName;
 
         if (locations.isEmpty()) {
-            debug("Locations list is empty! Completing immediately.");
             this.completed = true;
             return;
         }
 
-        // --- SCALING LOGIC ---
         int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
         if (finalAmount <= 0) finalAmount = 1;
 
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
-            debug("Processing base location: " + loc.getBlockX() + ", " + loc.getBlockY() + ", " + loc.getBlockZ());
-
             for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location finalLoc = findSafeSpawn(loc.clone().add(0.5 + offsetX, 0, 0.5 + offsetZ));
 
-                debug("Attempting to spawn at calculated safe location: " + finalLoc.getBlockX() + ", " + finalLoc.getBlockY() + ", " + finalLoc.getBlockZ());
-                boolean chunkLoaded = finalLoc.getChunk().load(true);
-                debug("Chunk loaded status: " + chunkLoaded);
-
                 try {
-                    ActiveMob am = mob.spawn(BukkitAdapter.adapt(finalLoc), this.level);
-                    if (am != null && am.getEntity() != null) {
-                        Entity bukkitEntity = am.getEntity().getBukkitEntity();
+                    Entity bukkitEntity = MythicMobsHook.spawnMythicMob(finalLoc, internalName, this.level);
+                    if (bukkitEntity != null) {
                         if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
                             le.setRemoveWhenFarAway(false);
                             le.setPersistent(true);
                         }
-
                         Chunk c = finalLoc.getChunk();
                         c.addPluginChunkTicket(SinceDungeon.getPlugin());
                         lockedChunks.add(c);
 
                         spawnedMobs.put(bukkitEntity.getUniqueId(), finalLoc);
                         count++;
-                        mobName = am.getDisplayName();
-                        debug("Successfully spawned MythicMob with Bukkit UUID: " + bukkitEntity.getUniqueId());
-                    } else {
-                        debug("MythicMob spawn method returned null ActiveMob or Entity.");
+
+                        String activeName = MythicMobsHook.getActiveMobName(bukkitEntity.getUniqueId());
+                        if (activeName != null) mobName = activeName;
                     }
                 } catch (Exception e) {
-                    debug("EXCEPTION caught while spawning MythicMob: " + e.getMessage());
-                    e.printStackTrace();
                     game.sendMessage("error.mob_spawn_fail", "<mob>", internalName, "<error>", e.getMessage());
                 }
             }
         }
 
         if (count == 0) {
-            debug("Failed to spawn any MythicMobs. Auto-completing stage.");
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
         } else {
-            debug("Successfully spawned a total of " + count + " MythicMobs.");
             game.sendActionMessage(this, "init", "action.mythic_wave_start", "<amount>", String.valueOf(count), "<mob>", mobName);
         }
     }
@@ -180,12 +146,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-        io.lumine.mythic.api.mobs.MythicMob mob = io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getMythicMob(internalName).orElse(null);
         java.util.concurrent.atomic.AtomicReference<String> displayName = new java.util.concurrent.atomic.AtomicReference<>(internalName);
 
-        if (mob == null) {
-            debug("MythicMob definition '" + internalName + "' went missing mid-wave. Aborting.");
-            game.sendMessage("error.mythic_mob_not_found", "<mob>", internalName);
+        if (!MythicMobsHook.isValidMythicMob(internalName)) {
             this.completed = true;
             return;
         }
@@ -196,13 +159,11 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                Optional<io.lumine.mythic.core.mobs.ActiveMob> amOpt = io.lumine.mythic.bukkit.MythicBukkit.inst().getMobManager().getActiveMob(uuid);
-                amOpt.ifPresent(activeMob -> displayName.set(activeMob.getDisplayName()));
+                String name = MythicMobsHook.getActiveMobName(uuid);
+                if (name != null) displayName.set(name);
 
-                if (ent.isDead()) {
-                    debug("MythicMob " + uuid + " is dead during tick check. Removing from tracker.");
-                    return true;
-                }
+                if (ent.isDead()) return true;
+
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
                 entry.setValue(ent.getLocation());
@@ -210,11 +171,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    debug("MythicMob " + uuid + " is missing in a loaded chunk. Assuming despawned. Marking for respawn.");
                     mobsToRespawn.add(lastLoc);
                     return true;
                 } else {
-                    debug("Chunk unloaded for MythicMob " + uuid + ". Forcing chunk load.");
                     lastLoc.getChunk().load();
                     currentChunks.add(lastLoc.getChunk());
                     return false;
@@ -224,19 +183,17 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
         for (Location loc : mobsToRespawn) {
             try {
-                io.lumine.mythic.core.mobs.ActiveMob am = mob.spawn(io.lumine.mythic.bukkit.BukkitAdapter.adapt(loc), this.level);
-                if (am != null && am.getEntity() != null) {
-                    Entity bukkitEntity = am.getEntity().getBukkitEntity();
+                Entity bukkitEntity = MythicMobsHook.spawnMythicMob(loc, internalName, this.level);
+                if (bukkitEntity != null) {
                     if (bukkitEntity instanceof org.bukkit.entity.LivingEntity le) {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                     }
                     spawnedMobs.put(bukkitEntity.getUniqueId(), loc);
-                    displayName.set(am.getDisplayName());
-                    debug("Respawned missing MythicMob with new Bukkit UUID: " + bukkitEntity.getUniqueId());
+                    String name = MythicMobsHook.getActiveMobName(bukkitEntity.getUniqueId());
+                    if (name != null) displayName.set(name);
                 }
-            } catch (Exception e) {
-                debug("EXCEPTION caught while respawning MythicMob: " + e.getMessage());
+            } catch (Exception ignored) {
             }
         }
 
@@ -256,7 +213,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         });
 
         if (spawnedMobs.isEmpty()) {
-            debug("All MythicMobs eliminated. Completing wave.");
             unlockChunks();
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", displayName.get());
@@ -265,15 +221,23 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        if (event instanceof MythicMobDeathEvent e) {
-            if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
-                debug("MythicMobDeathEvent registered for tracked mob: " + e.getEntity().getUniqueId() + ". Remaining: " + spawnedMobs.size());
-                if (spawnedMobs.isEmpty()) {
-                    unlockChunks();
-                    this.completed = true;
-                    game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", e.getMob().getDisplayName());
-                } else {
-                    game.sendActionMessage(this, "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", e.getMob().getDisplayName());
+        if (event instanceof EntityDeathEvent e) {
+            if (MythicMobsHook.isMythicMob(e.getEntity())) {
+                if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
+                    if (spawnedMobs.isEmpty()) {
+                        unlockChunks();
+                        this.completed = true;
+
+                        String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
+                        if (mobName == null) mobName = internalName;
+
+                        game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
+                    } else {
+                        String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
+                        if (mobName == null) mobName = internalName;
+
+                        game.sendActionMessage(this, "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", mobName);
+                    }
                 }
             }
         }

@@ -291,6 +291,14 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         return null;
     }
 
+    /**
+     * Initializes the spawning sequence for the configured entity type.
+     * Scans through all provided locations, calculates safe spawn coordinates,
+     * and applies custom entity properties including equipment and attributes.
+     * Registers successfully spawned entities into the tracking map.
+     *
+     * @param game The active dungeon game instance.
+     */
     @Override
     public void start(DungeonGame game) {
         int count = 0;
@@ -300,9 +308,19 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
-        // --- SCALING LOGIC ---
         int finalAmount = scaleWithParty ? this.amount * game.getParticipants().size() : this.amount;
         if (finalAmount <= 0) finalAmount = 1;
+
+        String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.mob_spawn", "CAMPFIRE_COSY_SMOKE");
+        Particle pType;
+        try {
+            pType = Particle.valueOf(pName.toUpperCase());
+        } catch (Exception e) {
+            pType = Particle.CAMPFIRE_COSY_SMOKE;
+        }
+
+        String sName = SinceDungeon.getPlugin().getConfigFile().getString("sounds.mob_spawn", "entity.zombie.break_wooden_door");
+        org.bukkit.Sound sType = net.danh.sinceDungeon.utils.SoundUtils.getSound(sName);
 
         for (Vector vec : locations) {
             Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
@@ -324,8 +342,10 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                         c.addPluginChunkTicket(SinceDungeon.getPlugin());
                         lockedChunks.add(c);
 
-                        game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
-                        game.getWorld().playSound(finalLoc, Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.5f, 0.5f);
+                        game.getWorld().spawnParticle(pType, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
+                        if (sType != null) {
+                            game.getWorld().playSound(finalLoc, sType, 0.5f, 0.5f);
+                        }
 
                         spawnedMobs.put(ent.getUniqueId(), finalLoc);
                         count++;

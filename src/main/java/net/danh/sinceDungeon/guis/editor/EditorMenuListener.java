@@ -738,12 +738,24 @@ public class EditorMenuListener implements Listener {
                     ItemStack item = inv.getItem(i);
                     if (item != null && item.getType() != Material.AIR) {
                         String itemStr = null;
-                        if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+                        NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+
+                        // 1. Kiểm tra xem vật phẩm này có NBT Tag của Chìa Khóa không
+                        if (net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {
+                            String keyId = net.danh.sinceDungeon.utils.ItemBuilder.getTag(item, keyTag, PersistentDataType.STRING);
+                            itemStr = "KEY:" + keyId + ":" + item.getAmount();
+                        }
+                        // 2. Nếu không phải chìa khóa, kiểm tra xem có phải MMOItems không
+                        else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                             itemStr = MMOItemsHook.getMMOItemString(item);
                         }
+
+                        // 3. Nếu cả 2 đều không phải, lưu dưới dạng Vanilla Item cơ bản
                         if (itemStr == null) {
                             itemStr = item.getType().name() + ":" + item.getAmount();
                         }
+
+                        // Lưu chuỗi (string) cuối cùng vào config YAML
                         session.getConfig().set(path + "." + i, itemStr);
                     }
                 }

@@ -164,6 +164,32 @@ public class DungeonCommand {
                                 })
                         )
                 )
+                .then(Commands.literal("getkey")
+                        .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
+                        .then(Commands.argument("id", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    if (ctx.getSource().getExecutor() instanceof Player p) {
+                                        String keyId = StringArgumentType.getString(ctx, "id");
+                                        org.bukkit.NamespacedKey keyTag = new org.bukkit.NamespacedKey(plugin, "dungeon_key_id");
+                                        org.bukkit.configuration.ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
+
+                                        org.bukkit.inventory.ItemStack keyItem = net.danh.sinceDungeon.utils.ItemBuilder.fromConfig(plugin, "dungeon-items.key", "TRIPWIRE_HOOK")
+                                                .amount(1)
+                                                .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
+                                                .setTag(keyTag, org.bukkit.persistence.PersistentDataType.STRING, keyId)
+                                                .build();
+
+                                        p.getInventory().addItem(keyItem);
+
+                                        String successMsg = plugin.getMessagesFile().getString("admin.getkey_success", "&aReceived system key: &e<id>");
+                                        p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(successMsg.replace("<id>", keyId)));
+                                    } else {
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                    }
+                                    return 1;
+                                })
+                        )
+                )
                 .build(), "SinceDungeon Player"
         );
     }

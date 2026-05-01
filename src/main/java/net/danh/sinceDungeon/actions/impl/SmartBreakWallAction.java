@@ -89,6 +89,14 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         }
     }
 
+    /**
+     * Executes the asynchronous block removal process to simulate a wall crumbling.
+     * Iterates through the predefined coordinate boundaries and replaces solid blocks with air.
+     * Features a hard-limit volume check to prevent server crashes from excessive block updates.
+     * All visual particles and sound effects are fetched dynamically from the configuration.
+     *
+     * @param game The active dungeon game instance handling the task.
+     */
     private void removeWall(DungeonGame game) {
         int minX = Math.min(c1.getBlockX(), c2.getBlockX());
         int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
@@ -98,11 +106,22 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-        if (volume > 200000) {
+
+        if (volume > 50000) {
             String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
             SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
             return;
         }
+
+        String crumbleName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_crumble", "BLOCK_CRUMBLE");
+        Particle crumbleParticle;
+        try {
+            crumbleParticle = Particle.valueOf(crumbleName.toUpperCase());
+        } catch (Exception e) {
+            crumbleParticle = Particle.BLOCK_CRUMBLE;
+        }
+
+        final Particle finalCrumble = crumbleParticle;
 
         breakTask = new BukkitRunnable() {
             int currentX = minX;
@@ -117,10 +136,18 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 200) {
+                while (blocksProcessed < 500) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
-                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                        try {
+                            if (finalCrumble.getDataType() == org.bukkit.block.data.BlockData.class) {
+                                game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                            } else {
+                                game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05);
+                            }
+                        } catch (Exception ignored) {
+                        }
+
                         block.setType(Material.AIR, false);
                     }
                     blocksProcessed++;
@@ -138,11 +165,12 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                                 String soundExplode = SinceDungeon.getPlugin().getConfigFile().getString("sounds.wall_break", "entity.generic.explode");
                                 game.getWorld().playSound(center, net.danh.sinceDungeon.utils.SoundUtils.getSound(soundExplode), 1f, 1f);
 
-                                String particleName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
+                                String explosionName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
                                 try {
-                                    game.getWorld().spawnParticle(Particle.valueOf(particleName.toUpperCase()), center, 3);
+                                    game.getWorld().spawnParticle(Particle.valueOf(explosionName.toUpperCase()), center, 3);
                                 } catch (Exception ignored) {
                                 }
+
                                 cancel();
                                 return;
                             }

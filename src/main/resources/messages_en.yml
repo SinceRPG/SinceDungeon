@@ -53,6 +53,7 @@ top:
     - "&eLeft Click to view this category!"
 
 admin:
+  getkey_success: "&aReceived system key: &e<id>"
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
   invalid_player: "&cPlayer not found."
   in_editor: "&cYou are in editor mode! Please type &ecancel&c in chat to cancel before using commands."
@@ -455,6 +456,9 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_mob_level:
+        - "&7Enter the level for the MythicMob (Default: 1)."
+        - "&7Example: &a5"
       edit_max_players:
         - "&7Enter the maximum number of players allowed in this dungeon."
         - "&7Enter &c-1 &7or &c0 &7for unlimited/global party limit."

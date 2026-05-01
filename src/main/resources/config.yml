@@ -328,13 +328,17 @@ sounds:
   editor_save: "block.anvil.use"
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
+  wall_break: "entity.generic.explode"
+  mob_spawn: "entity.zombie.break_wooden_door"
 
 particles:
   zone_border: "FLAME"
   zone_complete: "TOTEM_OF_UNDYING"
   wall_break: "EXPLOSION"
+  wall_crumble: "BLOCK_CRUMBLE"
   reach_location_idle: "HAPPY_VILLAGER"
   reach_location_complete: "TOTEM_OF_UNDYING"
+  mob_spawn: "CAMPFIRE_COSY_SMOKE"
 
 titles:
   # The duration of Title animations displayed in milliseconds (1000ms = 1 second)

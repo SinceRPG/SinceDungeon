@@ -254,8 +254,13 @@ public class DefaultRegistry {
         zoneDefaults.put("start_radius", 10.0);
         zoneDefaults.put("end_radius", 3.0);
         zoneDefaults.put("required_time", 20);
-        zoneDefaults.put("mob_type", "NONE");
+        zoneDefaults.put("mob", "NONE");
         zoneDefaults.put("mob_interval", 60);
+        zoneDefaults.put("mob_level", 1);
+        zoneDefaults.put("custom_name", "");
+        zoneDefaults.put("is_baby", false);
+        zoneDefaults.put("attributes", new ArrayList<String>());
+        zoneDefaults.put("equipment", new ArrayList<String>());
         zoneDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.control_zone.time_limit", -1));
         zoneDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.control_zone.time_penalty", 1));
         zoneDefaults.put("start_message", Collections.singletonList("&eCapture and hold the zone!"));
@@ -265,14 +270,27 @@ public class DefaultRegistry {
                     double startRadius = getDouble(map.get("start_radius"), (double) zoneDefaults.get("start_radius"));
                     double endRadius = getDouble(map.get("end_radius"), (double) zoneDefaults.get("end_radius"));
                     int requiredTime = getInt(map.get("required_time"), (int) zoneDefaults.get("required_time"));
-                    String mobType = String.valueOf(map.getOrDefault("mob_type", "NONE"));
-                    int mobInterval = getInt(map.get("mob_interval"), (int) zoneDefaults.get("mob_interval"));
 
-                    return new ControlZoneAction(center, startRadius, endRadius, requiredTime, mobType, mobInterval);
+                    String mob = String.valueOf(map.getOrDefault("mob", map.getOrDefault("mob_type", "NONE")));
+                    int mobInterval = getInt(map.get("mob_interval"), (int) zoneDefaults.get("mob_interval"));
+                    int mobLevel = getInt(map.get("mob_level"), 1);
+
+                    String customName = String.valueOf(map.getOrDefault("custom_name", ""));
+                    boolean isBaby = map.containsKey("is_baby") && Boolean.parseBoolean(map.get("is_baby").toString());
+
+                    List<String> attributesList = new ArrayList<>();
+                    Object attrObj = map.get("attributes");
+                    if (attrObj instanceof List<?> l) l.forEach(o -> attributesList.add(o.toString()));
+
+                    List<String> equipmentList = new ArrayList<>();
+                    Object equipObj = map.get("equipment");
+                    if (equipObj instanceof List<?> l) l.forEach(o -> equipmentList.add(o.toString()));
+
+                    return new ControlZoneAction(center, startRadius, endRadius, requiredTime, mob, mobInterval, mobLevel, customName, isBaby, attributesList, equipmentList);
                 }, plugin.getMessagesFile().getString("editor.actions_name.control_zone", "Control The Zone"), Material.BEACON,
                 plugin.getMessagesFile().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
                 zoneDefaults, new HashMap<>());
-
+        
         // --- UNLOCK_DOOR ---
         Map<String, Object> doorDefaults = new HashMap<>();
         doorDefaults.put("trigger", "0,0,0");
