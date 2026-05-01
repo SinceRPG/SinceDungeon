@@ -500,11 +500,11 @@ editor:
         - "&7Enter the message shown when requirement is not met."
         - "&7Example: &cYou need $500 to enter!"
       edit_reward_value_item:
-        - "&7Enter item value format: &aMATERIAL:AMOUNT"
-        - "&7Example: &fDIAMOND:5 &7or &fEMERALD:10"
+        - "&7Enter item format: &aMATERIAL:AMOUNT &7or &aMATERIAL:MIN-MAX"
+        - "&7Example: &fDIAMOND:5 &7or &fEMERALD:1-3"
       edit_reward_value_mmoitem:
-        - "&7Enter MMOItems format: &aTYPE:ID:AMOUNT"
-        - "&7Example: &fSWORD:FIERY_SWORD:1"
+        - "&7Enter MMOItems format: &aTYPE:ID:AMOUNT &7or &aTYPE:ID:MIN-MAX"
+        - "&7Example: &fSWORD:FIERY_SWORD:1-5"
       edit_reward_value_command:
         - "&7Enter the command to run (Use &a%player% &7for player name)."
         - "&7Example: &feco give %player% 1000"

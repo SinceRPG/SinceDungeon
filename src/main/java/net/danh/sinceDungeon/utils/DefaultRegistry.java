@@ -30,7 +30,6 @@ public class DefaultRegistry {
             if (cmd.startsWith("/")) {
                 cmd = cmd.substring(1);
             }
-
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
             String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
             if (displayName != null && msg != null && !msg.isEmpty()) {
@@ -43,8 +42,18 @@ public class DefaultRegistry {
                 String parsedVal = PAPIHook.setPlaceholders(p, val);
                 String[] parts = parsedVal.split(":");
                 Material mat = Material.valueOf(parts[0].toUpperCase());
-                int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
+
+                // NEW: Parse random amount if a range is provided
+                int amount = parts.length > 1 ? parseRandomAmount(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
+
+                if (displayName != null && !displayName.isEmpty()) {
+                    org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+                    if (meta != null) {
+                        meta.displayName(ColorUtils.parse("<!i>" + displayName));
+                        item.setItemMeta(meta);
+                    }
+                }
 
                 HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
                 if (!left.isEmpty()) {
@@ -70,7 +79,10 @@ public class DefaultRegistry {
                 String[] parts = PAPIHook.setPlaceholders(p, val).split(":");
                 String mType = parts[0];
                 String mId = parts[1];
-                int amount = parts.length > 2 ? Integer.parseInt(parts[2]) : 1;
+
+                // NEW: Parse random amount if a range is provided
+                int amount = parts.length > 2 ? parseRandomAmount(parts[2]) : 1;
+
                 ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
                 if (item != null) {
                     if (displayName == null) displayName = mId;
@@ -87,6 +99,29 @@ public class DefaultRegistry {
             } catch (Exception ignored) {
             }
         });
+    }
+
+    /**
+     * Helper method to parse amounts that might be a range (e.g., "1-5").
+     */
+    private static int parseRandomAmount(String amtStr) {
+        try {
+            if (amtStr.contains("-")) {
+                String[] range = amtStr.split("-");
+                int min = Integer.parseInt(range[0]);
+                int max = Integer.parseInt(range[1]);
+                if (min > max) {
+                    int temp = min;
+                    min = max;
+                    max = temp;
+                }
+                return min + new java.util.Random().nextInt(max - min + 1);
+            } else {
+                return Integer.parseInt(amtStr);
+            }
+        } catch (Exception e) {
+            return 1; // Fallback to 1 if the format is entirely broken
+        }
     }
 
     private static void registerDefaultActions(SinceDungeon plugin, DungeonManager manager) {
@@ -290,7 +325,7 @@ public class DefaultRegistry {
                 }, plugin.getMessagesFile().getString("editor.actions_name.control_zone", "Control The Zone"), Material.BEACON,
                 plugin.getMessagesFile().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
                 zoneDefaults, new HashMap<>());
-        
+
         // --- UNLOCK_DOOR ---
         Map<String, Object> doorDefaults = new HashMap<>();
         doorDefaults.put("trigger", "0,0,0");

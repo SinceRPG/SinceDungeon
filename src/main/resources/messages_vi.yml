@@ -500,11 +500,11 @@ editor:
         - "&7Nhập thông báo khi người chơi không đạt điều kiện."
         - "&7Ví dụ: &cBạn cần có đủ 500$ mới được vào!"
       edit_reward_value_item:
-        - "&7Nhập vật phẩm theo định dạng: &aMATERIAL:AMOUNT"
-        - "&7Ví dụ: &fDIAMOND:5 &7hoặc &fEMERALD:10"
+        - "&7Nhập vật phẩm theo định dạng: &aMATERIAL:AMOUNT &7hoặc &aMATERIAL:MIN-MAX"
+        - "&7Ví dụ: &fDIAMOND:5 &7hoặc &fEMERALD:1-3"
       edit_reward_value_mmoitem:
-        - "&7Nhập vật phẩm MMOItems theo định dạng: &aTYPE:ID:AMOUNT"
-        - "&7Ví dụ: &fSWORD:FIERY_SWORD:1"
+        - "&7Nhập vật phẩm MMOItems theo định dạng: &aTYPE:ID:AMOUNT &7hoặc &aTYPE:ID:MIN-MAX"
+        - "&7Ví dụ: &fSWORD:FIERY_SWORD:1-5"
       edit_reward_value_command:
         - "&7Nhập lệnh Console (Dùng &a%player% &7để lấy tên người chơi)."
         - "&7Ví dụ: &feco give %player% 1000"
