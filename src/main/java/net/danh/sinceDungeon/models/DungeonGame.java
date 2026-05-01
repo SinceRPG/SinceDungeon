@@ -485,22 +485,23 @@ public class DungeonGame {
 
     private void finishDungeon() {
         this.isCleared = true;
-
-        broadcastMessage("game.finish");
-        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        int chestCount = 1;
-
-        for (Map.Entry<Integer, Integer> entry : template.rewardTiers().entrySet()) {
-            if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
-        }
-
-        int finalElapsed = (int) elapsedSeconds;
-        String formattedTime = formatTime(finalElapsed);
-
-        isRunning = false;
+        this.isRunning = false;
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
 
+        broadcastMessage("game.finish");
+        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+        int finalElapsed = (int) elapsedSeconds;
+        String formattedTime = formatTime(finalElapsed);
+
+        // Calculate chests based on time tiers
+        int chestCount = 1;
+        for (Map.Entry<Integer, Integer> entry : template.rewardTiers().entrySet()) {
+            if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
+        }
+        final int finalChestCount = chestCount;
+
+        // Save Leaderboard Stats
         if (plugin.getTopManager() != null && template != null) {
             String dungeonId = template.id();
             String awardedTo = plugin.getConfigFile().getString("dungeon.top-awarded-to", "ALL_MEMBERS");
@@ -512,8 +513,8 @@ public class DungeonGame {
             for (Player p : participants) {
                 if (!p.isOnline()) continue;
                 boolean isLeader = p.getUniqueId().equals(leaderId);
-
                 int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
+
                 topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
 
                 if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
@@ -523,72 +524,86 @@ public class DungeonGame {
             }
         }
 
-        DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, chestCount);
+        DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, finalChestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
-        int finalChestCount = finishEvent.getChestCount();
-        boolean hasRewards = template.rewardPool() != null && !template.rewardPool().isEmpty();
 
-        String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
-        net.danh.sinceDungeon.guis.reward.RewardGUI rewardHelper = new net.danh.sinceDungeon.guis.reward.RewardGUI(plugin);
+        final int eventChestCount = finishEvent.getChestCount();
+        final boolean hasRewards = template.rewardPool() != null && !template.rewardPool().isEmpty();
+
+        // 1. Instantly show Victory Titles while keeping players inside the map
+        int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
+        int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
+        int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
+
+        String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
+        String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
+        Title victoryTitle = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut)));
 
         for (Player p : participants) {
-            if (!p.isOnline() || p.isDead()) continue;
-
-            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-            UUID currentLeader = party != null ? party.getLeader() : initiatorId;
-
-            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                continue;
+            if (p.isOnline()) {
+                p.showTitle(victoryTitle);
+                p.sendActionBar(ColorUtils.parse(" "));
             }
-
-            if (finalChestCount > 0 && hasRewards) {
-                net.danh.sinceDungeon.guis.reward.RewardSession oldSession = net.danh.sinceDungeon.guis.reward.RewardSessionManager.getSession(p);
-                if (oldSession != null && oldSession.getChestCount() > 0) {
-                    rewardHelper.forceClaimAll(p, oldSession);
-                }
-                net.danh.sinceDungeon.guis.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.guis.reward.RewardSession(finalChestCount, template));
-            }
-
-            if (p.isInsideVehicle()) p.leaveVehicle();
-            p.setVelocity(new Vector(0, 0, 0));
-
-            PlayerState state = savedStates.get(p.getUniqueId());
-            Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
-
-            int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
-            int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
-            int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
-
-            String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
-            String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
-            p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut))));
-            p.sendActionBar(ColorUtils.parse(" "));
-
-            plugin.getDungeonManager().addTransitioning(p.getUniqueId());
-
-            p.teleportAsync(targetLoc).thenAccept(success -> {
-                if (success && p.isOnline()) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        if (p.isOnline() && !p.isDead()) {
-                            if (finalChestCount > 0 && hasRewards) {
-                                rewardHelper.openRewardGUI(p, finalChestCount, template);
-                            } else {
-                                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));
-                            }
-                        }
-                    }, 10L);
-                } else if (p.isOnline()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        p.teleport(targetLoc);
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                    });
-                }
-            });
         }
 
+        // 2. Wait for the Kick Delay to expire BEFORE teleporting and giving rewards
         int kickDelay = template.settings().kickDelayAfterFinish();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), kickDelay * 20L);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
+            net.danh.sinceDungeon.guis.reward.RewardGUI rewardHelper = new net.danh.sinceDungeon.guis.reward.RewardGUI(plugin);
+
+            for (Player p : participants) {
+                if (!p.isOnline() || p.isDead()) continue;
+
+                PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
+                UUID currentLeader = party != null ? party.getLeader() : initiatorId;
+
+                // Handle Reward Session Logic
+                if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
+                    // Non-leaders get nothing
+                } else if (eventChestCount > 0 && hasRewards) {
+                    net.danh.sinceDungeon.guis.reward.RewardSession oldSession = net.danh.sinceDungeon.guis.reward.RewardSessionManager.getSession(p);
+                    if (oldSession != null && oldSession.getChestCount() > 0) {
+                        rewardHelper.forceClaimAll(p, oldSession);
+                    }
+                    net.danh.sinceDungeon.guis.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.guis.reward.RewardSession(eventChestCount, template));
+                }
+
+                // Prepare Teleportation
+                if (p.isInsideVehicle()) p.leaveVehicle();
+                p.setVelocity(new Vector(0, 0, 0));
+
+                PlayerState state = savedStates.get(p.getUniqueId());
+                Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+                plugin.getDungeonManager().addTransitioning(p.getUniqueId());
+
+                p.teleportAsync(targetLoc).thenAccept(success -> {
+                    if (success && p.isOnline()) {
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                            if (p.isOnline() && !p.isDead()) {
+                                if (eventChestCount > 0 && hasRewards && (shareMode.equalsIgnoreCase("EQUAL") || p.getUniqueId().equals(currentLeader))) {
+                                    rewardHelper.openRewardGUI(p, eventChestCount, template);
+                                } else {
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));
+                                }
+                            }
+                        }, 15L);
+                    } else if (p.isOnline()) {
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            p.teleport(targetLoc);
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                        });
+                    }
+                });
+            }
+
+            // Clean up the world after all teleports have initiated
+            Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 40L);
+
+        }, kickDelay * 20L); // Convert seconds to ticks
     }
 
     /**

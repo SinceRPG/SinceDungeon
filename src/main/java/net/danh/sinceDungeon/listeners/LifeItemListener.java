@@ -29,10 +29,6 @@ public class LifeItemListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
-        /**
-         * Prevent the event from firing twice (once for MAIN_HAND, once for OFF_HAND).
-         * This strictly fixes the bug where players could consume 1 item but receive double lives.
-         */
         if (e.getHand() != EquipmentSlot.HAND) return;
         if (!e.getAction().isRightClick()) return;
 
@@ -40,12 +36,16 @@ public class LifeItemListener implements Listener {
         ItemStack item = e.getItem();
         if (item == null || !item.hasItemMeta()) return;
 
+        // Add cooldown to prevent macro/double-click ghost item glitches
+        if (p.hasCooldown(item.getType())) return;
+
         ItemMeta meta = item.getItemMeta();
         if (meta.getPersistentDataContainer().has(lifeKey, PersistentDataType.INTEGER)) {
             int amount = meta.getPersistentDataContainer().getOrDefault(lifeKey, PersistentDataType.INTEGER, 0);
             if (amount <= 0) return;
 
             e.setCancelled(true);
+            p.setCooldown(item.getType(), 10); // 0.5s cooldown
 
             LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(p.getUniqueId());
             if (lives == null) return;
