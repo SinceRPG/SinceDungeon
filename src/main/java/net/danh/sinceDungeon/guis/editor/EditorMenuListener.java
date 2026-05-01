@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.*;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,6 +22,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Captures all inventory click events associated with the Editor GUI.
+ * Validates admin permissions and routes data modifications securely.
+ */
 public class EditorMenuListener implements Listener {
     private final SinceDungeon plugin;
 
@@ -95,7 +100,7 @@ public class EditorMenuListener implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorGUI gui = new EditorGUI(plugin);
-        EditorManager manager = plugin.getEditorManager();
+        net.danh.sinceDungeon.guis.editor.EditorManager manager = plugin.getEditorManager();
         final EditorSession session = holder.session();
         String menuType = holder.menuType();
         int page = holder.page();
@@ -176,7 +181,7 @@ public class EditorMenuListener implements Listener {
                     gui.sendMessage(p, "public_toggled", "<status>", String.valueOf(!current));
                     gui.openDungeonMenu(p, session);
                 } else if (slot == 12) gui.openConditionList(p, session, session.getPage("CONDITIONS"));
-                else if (slot == 13) gui.openSettingsMenu(p, session);
+                else if (slot == 13) gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
                 else if (slot == 14) gui.openRewardMenu(p, session);
                 else if (slot == 16) gui.openStageList(p, session, session.getPage("STAGES"));
                 else if (slot == 22) session.save();
@@ -184,102 +189,117 @@ public class EditorMenuListener implements Listener {
             }
 
             case "SETTINGS" -> {
-                if (slot == 18) {
+                if (slot == 18 && cur.getType() == gui.getNavItem()) {
                     gui.openDungeonMenu(p, session);
                     return;
                 }
-
-                String path = "";
-                boolean isBool = true;
-
-                if (slot == 10) path = "settings.keep-inventory-on-death";
-                else if (slot == 11) path = "settings.prevent-item-dropping";
-                else if (slot == 12) path = "settings.block-ender-pearls";
-                else if (slot == 13) {
-                    path = "settings.kick-delay-after-finish";
-                    isBool = false;
-                } else if (slot == 14) path = "settings.force-daylight-and-clear-weather";
-                else if (slot == 15) path = "settings.save-and-restore-stats";
-                else if (slot == 16) {
-                    String current = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
-                    String next = current.equalsIgnoreCase("RESPAWN") ? "FAIL" : "RESPAWN";
-                    session.getConfig().set("settings.death-action", next);
-                    p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                    gui.openSettingsMenu(p, session);
+                if (slot == 21 && cur.getType() == gui.getNavItem()) {
+                    gui.openSettingsMenu(p, session, page - 1);
                     return;
-                } else if (slot == 17) {
-                    path = "settings.clear-mob-drops";
-                } else if (slot == 19) {
-                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_req_lives", val -> {
-                        try {
-                            int newVal = Math.max(0, Integer.parseInt(val));
-                            session.getConfig().set("settings.required-lives-to-join", newVal);
-                            gui.sendMessage(p, "update_val", "<key>", "Required Lives", "<val>", String.valueOf(newVal));
-                            gui.openSettingsMenu(p, session);
-                        } catch (Exception ex) {
-                            gui.sendMessage(p, "number_error");
-                            gui.openSettingsMenu(p, session);
-                        }
-                    });
-                    plugin.getEditorListener().startListening(p, session);
-                } else if (slot == 20) {
-                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_deduct_lives", val -> {
-                        try {
-                            int newVal = Math.max(0, Integer.parseInt(val));
-                            session.getConfig().set("settings.lives-deducted-per-death", newVal);
-                            gui.sendMessage(p, "update_val", "<key>", "Deduct Lives", "<val>", String.valueOf(newVal));
-                            gui.openSettingsMenu(p, session);
-                        } catch (Exception ex) {
-                            gui.sendMessage(p, "number_error");
-                            gui.openSettingsMenu(p, session);
-                        }
-                    });
-                    plugin.getEditorListener().startListening(p, session);
-                } else if (slot == 21) {
-                    path = "settings.randomize-stages";
-                } else if (slot == 23) {
-                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_max_players", val -> {
-                        try {
-                            int newVal = Integer.parseInt(val);
-                            session.getConfig().set("settings.max-players", newVal);
-                            gui.sendMessage(p, "update_val", "<key>", "Max Players", "<val>", String.valueOf(newVal));
-                            gui.openSettingsMenu(p, session);
-                        } catch (Exception ex) {
-                            gui.sendMessage(p, "number_error");
-                            gui.openSettingsMenu(p, session);
-                        }
-                    });
-                    plugin.getEditorListener().startListening(p, session);
+                }
+                if (slot == 23 && cur.getType() == gui.getNavItem()) {
+                    gui.openSettingsMenu(p, session, page + 1);
+                    return;
                 }
 
-                if (!path.isEmpty()) {
-                    if (isBool) {
-                        boolean current;
-                        if (path.equals("settings.save-and-restore-stats")) {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
-                        } else if (path.equals("settings.clear-mob-drops")) {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
-                        } else {
-                            current = session.getConfig().contains(path) ? session.getConfig().getBoolean(path) : plugin.getConfigFile().getBoolean("dungeon.gameplay." + path.replace("settings.", ""), true);
-                        }
+                NamespacedKey keyTag = new NamespacedKey(plugin, "setting_id");
+                if (cur.getItemMeta() != null && cur.getItemMeta().getPersistentDataContainer().has(keyTag, PersistentDataType.STRING)) {
+                    String settingIdStr = cur.getItemMeta().getPersistentDataContainer().get(keyTag, PersistentDataType.STRING);
+                    if (settingIdStr == null) return;
 
-                        session.getConfig().set(path, !current);
-                        p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                        gui.openSettingsMenu(p, session);
+                    EditorSession.SettingOption opt;
+                    try {
+                        opt = EditorSession.SettingOption.valueOf(settingIdStr);
+                    } catch (Exception ex) {
+                        return;
+                    }
+
+                    switch (opt.getDataType()) {
+                        case "BOOL" -> {
+                            boolean current = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getBoolean(opt.getLocalPath()) : plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue());
+                            session.getConfig().set(opt.getLocalPath(), !current);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            gui.openSettingsMenu(p, session, page);
+                        }
+                        case "DEATH_ENUM" -> {
+                            String current = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getString(opt.getLocalPath()) : plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue());
+                            String next = (current != null && current.equalsIgnoreCase("RESPAWN")) ? "FAIL" : "RESPAWN";
+                            session.getConfig().set(opt.getLocalPath(), next);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            gui.openSettingsMenu(p, session, page);
+                        }
+                        case "INT" -> {
+                            String prompt = "edit_" + opt.name().toLowerCase();
+                            if (opt == EditorSession.SettingOption.KICK_DELAY) prompt = "edit_kick_delay";
+                            else if (opt == EditorSession.SettingOption.REQ_LIVES) prompt = "edit_req_lives";
+                            else if (opt == EditorSession.SettingOption.DEDUCT_LIVES) prompt = "edit_deduct_lives";
+                            else if (opt == EditorSession.SettingOption.MAX_PLAYERS) prompt = "edit_max_players";
+                            else if (opt == EditorSession.SettingOption.COOLDOWN) prompt = "edit_cooldown";
+
+                            session.awaitInput(EditorSession.InputType.EDIT_NUMBER, prompt, val -> {
+                                try {
+                                    int newVal = Integer.parseInt(val);
+                                    if (opt != EditorSession.SettingOption.MAX_PLAYERS) {
+                                        newVal = Math.max(0, newVal);
+                                    }
+                                    session.getConfig().set(opt.getLocalPath(), newVal);
+                                    gui.sendMessage(p, "update_val", "<key>", gui.getMsg("items." + opt.getLangKey()), "<val>", String.valueOf(newVal));
+                                    gui.openSettingsMenu(p, session, page);
+                                } catch (Exception ex) {
+                                    gui.sendMessage(p, "number_error");
+                                    gui.openSettingsMenu(p, session, page);
+                                }
+                            });
+                            plugin.getEditorListener().startListening(p, session);
+                        }
+                        case "LIST" -> {
+                            gui.openStringListEditor(p, session, opt.getLocalPath(), "SETTINGS", 0);
+                        }
+                    }
+                }
+            }
+
+            case "EDIT_STRING_LIST" -> {
+                if (slot == 48 && cur.getType() == gui.getNavItem()) {
+                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page - 1);
+                    return;
+                }
+                if (slot == 50 && cur.getType() == gui.getNavItem()) {
+                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page + 1);
+                    return;
+                }
+                if (slot == 45) {
+                    if ("SETTINGS".equals(session.getCurrentListReturnMenu())) {
+                        gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
+                    } else if ("EDIT_ACTION".equals(session.getCurrentListReturnMenu())) {
+                        gui.openActionEditor(p, session);
                     } else {
-                        final String finalPath = path;
-                        session.awaitInput(EditorSession.InputType.EDIT_KICK_DELAY, "edit_kick_delay", val -> {
-                            try {
-                                int newDelay = Math.max(1, Integer.parseInt(val));
-                                session.getConfig().set(finalPath, newDelay);
-                                gui.sendMessage(p, "update_val", "<key>", "Kick Delay", "<val>", String.valueOf(newDelay));
-                                gui.openSettingsMenu(p, session);
-                            } catch (Exception ex) {
-                                gui.sendMessage(p, "number_error");
-                                gui.openSettingsMenu(p, session);
-                            }
-                        });
-                        plugin.getEditorListener().startListening(p, session);
+                        gui.openDungeonMenu(p, session);
+                    }
+                    return;
+                }
+                if (slot == 49) {
+                    String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
+                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
+                        list.add(val);
+                        session.getConfig().set(session.getCurrentListPath(), list);
+                        gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                    return;
+                }
+                if (slot < 45 && cur.getType() == Material.PAPER) {
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        int idx = slot + page * 45;
+                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
+                        if (idx < list.size()) {
+                            list.remove(idx);
+                            session.getConfig().set(session.getCurrentListPath(), list);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            gui.sendMessage(p, "line_removed");
+                            gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
+                        }
                     }
                 }
             }
@@ -637,8 +657,6 @@ public class EditorMenuListener implements Listener {
                     inputType = EditorSession.InputType.EDIT_STRING;
                 }
 
-                int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
-
                 if (e.getClick() == ClickType.SHIFT_RIGHT) {
                     if (isList) {
                         session.getConfig().set(fullPath, new ArrayList<>());
@@ -655,6 +673,7 @@ public class EditorMenuListener implements Listener {
                         String locStr = String.format(java.util.Locale.US, "%.1f,%.1f,%.1f", p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
+                            int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
                             if (list.size() >= maxLocs) {
                                 gui.sendMessage(p, "list_limit_reached", "<limit>", String.valueOf(maxLocs));
                                 return;
@@ -668,22 +687,14 @@ public class EditorMenuListener implements Listener {
                         gui.openActionEditor(p, session);
                         return;
                     }
-                } else if (isList) {
-                    if (e.getClick() == ClickType.RIGHT) {
-                        List<String> list = session.getConfig().getStringList(fullPath);
-                        if (!list.isEmpty()) {
-                            list.remove(list.size() - 1);
-                            session.getConfig().set(fullPath, list);
-                            gui.sendMessage(p, "line_removed");
-                        } else {
-                            gui.sendMessage(p, "list_empty");
-                        }
-                        gui.openActionEditor(p, session);
-                        return;
-                    }
                 }
 
                 if (e.getClick() == ClickType.LEFT) {
+                    if (isList && !isLocation && !isRandomMobs) {
+                        gui.openStringListEditor(p, session, fullPath, "EDIT_ACTION", 0);
+                        return;
+                    }
+
                     String promptKey = isRandomMobs ? "edit_random_mobs" : "edit_action_" + key.toLowerCase();
 
                     session.awaitInput(inputType, promptKey, val -> {
@@ -705,6 +716,7 @@ public class EditorMenuListener implements Listener {
                             if (val.equalsIgnoreCase(clearKw)) {
                                 list.clear();
                             } else {
+                                int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
                                 if (list.size() >= maxLocs) {
                                     gui.sendMessage(p, "list_limit_reached", "<limit>", String.valueOf(maxLocs));
                                     return;
@@ -733,29 +745,24 @@ public class EditorMenuListener implements Listener {
                 String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".items";
                 session.getConfig().set(path, null);
 
-                org.bukkit.inventory.Inventory inv = e.getView().getTopInventory();
+                Inventory inv = e.getView().getTopInventory();
                 for (int i = 0; i < inv.getSize(); i++) {
                     ItemStack item = inv.getItem(i);
                     if (item != null && item.getType() != Material.AIR) {
                         String itemStr = null;
                         NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
 
-                        // 1. Kiểm tra xem vật phẩm này có NBT Tag của Chìa Khóa không
                         if (net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {
                             String keyId = net.danh.sinceDungeon.utils.ItemBuilder.getTag(item, keyTag, PersistentDataType.STRING);
                             itemStr = "KEY:" + keyId + ":" + item.getAmount();
-                        }
-                        // 2. Nếu không phải chìa khóa, kiểm tra xem có phải MMOItems không
-                        else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+                        } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                             itemStr = MMOItemsHook.getMMOItemString(item);
                         }
 
-                        // 3. Nếu cả 2 đều không phải, lưu dưới dạng Vanilla Item cơ bản
                         if (itemStr == null) {
                             itemStr = item.getType().name() + ":" + item.getAmount();
                         }
 
-                        // Lưu chuỗi (string) cuối cùng vào config YAML
                         session.getConfig().set(path + "." + i, itemStr);
                     }
                 }

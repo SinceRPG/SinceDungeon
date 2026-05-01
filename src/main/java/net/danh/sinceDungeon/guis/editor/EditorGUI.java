@@ -7,7 +7,6 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -21,6 +20,9 @@ import org.jspecify.annotations.NonNull;
 import java.io.File;
 import java.util.*;
 
+/**
+ * Handles the construction and opening of all graphical editor interfaces.
+ */
 public class EditorGUI {
 
     private final SinceDungeon plugin;
@@ -86,22 +88,18 @@ public class EditorGUI {
         return PlainTextComponentSerializer.plainText().serialize(c);
     }
 
-    private String locToString(Location l) {
-        return String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
-    }
-
     public Material getNavItem() {
         String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
         Material mat = Material.matchMaterial(navItemStr);
         return mat != null ? mat : Material.ARROW;
     }
 
-    private void setPagination(Inventory inv, int page, int maxPage) {
+    private void setPagination(Inventory inv, int page, int maxPage, int prevSlot, int nextSlot) {
         if (page > 0) {
-            inv.setItem(48, makeItem(getNavItem(), getMsg("items.prev_page", "<yellow>⬅ Previous"), null));
+            inv.setItem(prevSlot, makeItem(getNavItem(), getMsg("items.prev_page", "<yellow>⬅ Previous"), null));
         }
         if (page < maxPage) {
-            inv.setItem(50, makeItem(getNavItem(), getMsg("items.next_page", "<yellow>Next ➡"), null));
+            inv.setItem(nextSlot, makeItem(getNavItem(), getMsg("items.next_page", "<yellow>Next ➡"), null));
         }
     }
 
@@ -127,7 +125,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD_BLOCK, getMsg("items.create_new"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 
@@ -170,46 +168,100 @@ public class EditorGUI {
         return lore;
     }
 
-    public void openSettingsMenu(Player p, EditorSession session) {
-        session.setLastMenuOpener(player -> openSettingsMenu(player, session));
-        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
+    /**
+     * Reconstructs the internal GUI mappings for global map settings using dynamic enums and pagination.
+     * Integrates custom NBT tracking to securely identify settings parameters.
+     */
+    public void openSettingsMenu(Player p, EditorSession session, int page) {
+        session.setPage("SETTINGS", page);
+        session.setLastMenuOpener(player -> openSettingsMenu(player, session, session.getPage("SETTINGS")));
 
-        boolean keepInv = session.getConfig().contains("settings.keep-inventory-on-death") ? session.getConfig().getBoolean("settings.keep-inventory-on-death") : plugin.getConfigFile().getBoolean("dungeon.gameplay.keep-inventory-on-death", true);
-        boolean preventDrop = session.getConfig().contains("settings.prevent-item-dropping") ? session.getConfig().getBoolean("settings.prevent-item-dropping") : plugin.getConfigFile().getBoolean("dungeon.gameplay.prevent-item-dropping", true);
-        boolean blockPearls = session.getConfig().contains("settings.block-ender-pearls") ? session.getConfig().getBoolean("settings.block-ender-pearls") : plugin.getConfigFile().getBoolean("dungeon.gameplay.block-ender-pearls", true);
-        int kickDelay = session.getConfig().contains("settings.kick-delay-after-finish") ? session.getConfig().getInt("settings.kick-delay-after-finish") : plugin.getConfigFile().getInt("dungeon.gameplay.kick-delay-after-finish", 10);
-        boolean forceWeather = session.getConfig().contains("settings.force-daylight-and-clear-weather") ? session.getConfig().getBoolean("settings.force-daylight-and-clear-weather") : plugin.getConfigFile().getBoolean("dungeon.gameplay.force-daylight-and-clear-weather", true);
-        boolean saveStats = session.getConfig().contains("settings.save-and-restore-stats") ? session.getConfig().getBoolean("settings.save-and-restore-stats") : plugin.getConfigFile().getBoolean("dungeon.save-and-restore-stats", false);
-        String deathAction = session.getConfig().contains("settings.death-action") ? session.getConfig().getString("settings.death-action") : plugin.getConfigFile().getString("dungeon.death-action", "RESPAWN");
-        boolean clearMobDrops = session.getConfig().contains("settings.clear-mob-drops") ? session.getConfig().getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
-        int reqLives = session.getConfig().contains("settings.required-lives-to-join") ? session.getConfig().getInt("settings.required-lives-to-join") : 1;
-        int deductLives = session.getConfig().contains("settings.lives-deducted-per-death") ? session.getConfig().getInt("settings.lives-deducted-per-death") : 1;
-        boolean randomizeStages = session.getConfig().contains("settings.randomize-stages") ? session.getConfig().getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
-        int maxPlayers = session.getConfig().contains("settings.max-players") ? session.getConfig().getInt("settings.max-players") : -1;
+        EditorSession.SettingOption[] options = EditorSession.SettingOption.values();
+        int total = options.length;
+        int maxPage = Math.max(0, (total - 1) / 18);
+        page = Math.clamp(page, 0, maxPage);
 
-        inv.setItem(21, makeItem(Material.ENDER_PEARL, getMsg("items.setting_randomize_stages"), getDynamicLore("setting_randomize_stages_lore", randomizeStages ? getWord("true_word") : getWord("false_word"))));
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", page), 27, ColorUtils.parse(getMsg("title.settings")));
 
-        inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getDynamicLore("setting_keep_inv_lore", keepInv ? getWord("true_word") : getWord("false_word"))));
-        inv.setItem(11, makeItem(Material.BARRIER, getMsg("items.setting_prevent_drop"), getDynamicLore("setting_prevent_drop_lore", preventDrop ? getWord("true_word") : getWord("false_word"))));
-        inv.setItem(12, makeItem(Material.ENDER_PEARL, getMsg("items.setting_block_pearls"), getDynamicLore("setting_block_pearls_lore", blockPearls ? getWord("true_word") : getWord("false_word"))));
-        inv.setItem(13, makeItem(Material.CLOCK, getMsg("items.setting_kick_delay"), getDynamicLore("setting_kick_delay_lore", String.valueOf(kickDelay))));
-        inv.setItem(14, makeItem(Material.SUNFLOWER, getMsg("items.setting_force_weather"), getDynamicLore("setting_force_weather_lore", forceWeather ? getWord("true_word") : getWord("false_word"))));
-        inv.setItem(15, makeItem(Material.GOLDEN_APPLE, getMsg("items.setting_save_stats"), getDynamicLore("setting_save_stats_lore", saveStats ? getWord("true_word") : getWord("false_word"))));
-        inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), getDynamicLore("setting_death_action_lore", deathAction.toUpperCase())));
-        inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getDynamicLore("setting_clear_drops_lore", clearMobDrops ? getWord("true_word") : getWord("false_word"))));
+        for (int i = 0; i < 18; i++) {
+            int idx = i + page * 18;
+            if (idx >= total) break;
 
-        inv.setItem(19, makeItem(Material.RED_BED, getMsg("items.setting_req_lives"), getDynamicLore("setting_req_lives_lore", String.valueOf(reqLives))));
-        inv.setItem(20, makeItem(Material.WITHER_ROSE, getMsg("items.setting_deduct_lives"), getDynamicLore("setting_deduct_lives_lore", String.valueOf(deductLives))));
+            EditorSession.SettingOption opt = options[idx];
+            String valStr;
 
-        String maxStr = maxPlayers > 0 ? String.valueOf(maxPlayers) : getWord("unlimited", "Unlimited");
-        inv.setItem(23, makeItem(Material.PLAYER_HEAD, getMsg("items.setting_max_players", "&eMax Players Allowed"), getDynamicLore("setting_max_players_lore", maxStr)));
+            switch (opt.getDataType()) {
+                case "BOOL" -> {
+                    boolean val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getBoolean(opt.getLocalPath()) : plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue());
+                    valStr = val ? getWord("true_word") : getWord("false_word");
+                }
+                case "INT" -> {
+                    int val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getInt(opt.getLocalPath()) : (Integer) opt.getDefaultValue();
+                    valStr = val > 0 ? String.valueOf(val) : (opt.name().equals("MAX_PLAYERS") ? getWord("unlimited", "Unlimited") : String.valueOf(val));
+                }
+                case "DEATH_ENUM" -> {
+                    valStr = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getString(opt.getLocalPath()) : plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue());
+                    if (valStr != null) valStr = valStr.toUpperCase();
+                }
+                case "LIST" -> {
+                    valStr = String.valueOf(session.getConfig().getStringList(opt.getLocalPath()).size());
+                }
+                default -> valStr = getWord("unknown");
+            }
+
+            ItemStack item = makeItem(opt.getIcon(), getMsg("items." + opt.getLangKey()), getDynamicLore(opt.getLangKey() + "_lore", valStr));
+            ItemMeta meta = item.getItemMeta();
+            NamespacedKey key = new NamespacedKey(plugin, "setting_id");
+            meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, opt.name());
+            item.setItemMeta(meta);
+
+            inv.setItem(i, item);
+        }
 
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
+        setPagination(inv, page, maxPage, 21, 23);
         p.openInventory(inv);
     }
 
-    private List<String> getLoreToggle(boolean state) {
-        return Arrays.asList("<gray>Current: " + (state ? getWord("true_word") : getWord("false_word")), "<yellow>Left Click to toggle");
+    /**
+     * Generates a dynamic paginated GUI for managing string lists (like Commands).
+     *
+     * @param path       The YAML config path to the List<String>.
+     * @param returnMenu The menu identifier to return to when clicking Back.
+     * @param page       The target page number.
+     */
+    public void openStringListEditor(Player p, EditorSession session, String path, String returnMenu, int page) {
+        session.setCurrentListPath(path);
+        session.setCurrentListReturnMenu(returnMenu);
+        session.setPage("STRING_LIST", page);
+        session.setLastMenuOpener(player -> openStringListEditor(player, session, path, returnMenu, session.getPage("STRING_LIST")));
+
+        List<String> list = session.getConfig().getStringList(path);
+        int total = list.size();
+        int maxPage = Math.max(0, (total - 1) / 45);
+        page = Math.clamp(page, 0, maxPage);
+
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_STRING_LIST", page), 54, ColorUtils.parse(getMsg("title.string_list")));
+
+        for (int i = 0; i < 45; i++) {
+            int idx = i + page * 45;
+            if (idx >= total) break;
+
+            String val = list.get(idx);
+            String name = getMsg("items.list_line_item").replace("<index>", String.valueOf(idx + 1));
+
+            List<String> lore = new ArrayList<>();
+            for (String s : plugin.getMessagesFile().getStringList("editor.items.list_line_lore")) {
+                lore.add(s.replace("<val>", val));
+            }
+
+            inv.setItem(i, makeItem(Material.PAPER, name, lore));
+        }
+
+        inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_line", "&aAdd New Line"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
+        setPagination(inv, page, maxPage, 48, 50);
+        p.openInventory(inv);
     }
 
     public void openConditionList(Player p, EditorSession session, int page) {
@@ -244,7 +296,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_condition"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 
@@ -286,7 +338,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_tier"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 
@@ -319,7 +371,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_pool_item"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 
@@ -389,7 +441,6 @@ public class EditorGUI {
             if (idx >= total) break;
             String key = keys.get(idx);
             String name = getMsg("items.stage_item").replace("<stage>", key);
-            inv.setItem(i, makeItem(Material.FILLED_MAP, name, plugin.getMessagesFile().getStringList("editor.items.stage_lore")));
 
             double chance = session.getConfig().getDouble("stages." + key + ".chance", 100.0);
             List<String> lore = new ArrayList<>();
@@ -402,7 +453,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
 
         p.openInventory(inv);
     }
@@ -442,7 +493,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_action"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 
@@ -531,14 +582,13 @@ public class EditorGUI {
             if (slot >= 45) break;
             String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
-            String hint = getMsg("items.action_val_hint_edit", "<yellow>Trái: Sửa | <red>Shift-Phải: Xóa");
+            String hint = getMsg("items.action_val_hint_edit", "<yellow>Left: Edit | <red>Shift-Right: Delete");
 
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
             boolean isList = sec.isList(key);
             boolean isItems = key.equalsIgnoreCase("items");
 
             boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
-            boolean isNotifications = key.equalsIgnoreCase("notifications");
 
             switch (key) {
                 case "type":
@@ -553,11 +603,11 @@ public class EditorGUI {
                     break;
                 case "start_message":
                     icon = Material.PAPER;
-                    hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Line | Right: Delete Last | <red>Shift-Right: Clear All");
+                    hint = "<yellow>Left Click to manage list";
                     break;
                 case "random_mobs":
                     icon = Material.TRIAL_SPAWNER;
-                    hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Entry | Right: Remove Last | <red>Shift-Right: Clear");
+                    hint = "<yellow>Left Click to manage list";
                     isList = true;
                     break;
                 case "notifications":
@@ -575,13 +625,13 @@ public class EditorGUI {
                         icon = Material.COMPASS;
                         hint = isList ? getMsg("items.action_val_hint_loc_list") : getMsg("items.action_val_hint_loc_single");
                     } else if (isList) {
-                        hint = getMsg("items.action_val_hint_list", "<yellow>Left: Add Line | Right: Delete Last | <red>Shift-Right: Clear All");
+                        hint = "<yellow>Left Click to manage list";
                     }
                     break;
             }
 
             if (isList) {
-                val = sec.getStringList(key).toString();
+                val = sec.getStringList(key).size() + " items";
             }
 
             inv.setItem(slot++, makeItem(icon, "<gold>" + key, Arrays.asList("<gray>" + getWord("value") + ": <white>" + val, hint)));
@@ -621,7 +671,7 @@ public class EditorGUI {
         }
 
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel"), null));
-        setPagination(inv, page, maxPage);
+        setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
 

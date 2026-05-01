@@ -176,7 +176,6 @@ public class DungeonManager {
         conditionProcessors.put(type.toUpperCase(), processor);
     }
 
-
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
@@ -381,6 +380,22 @@ public class DungeonManager {
                     String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>System is processing data, please try again in a moment!");
                     p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
                     return;
+                }
+
+                // NEW: Cooldown Verification Check
+                if (plugin.getCooldownManager().isOnCooldown(participant.getUniqueId(), id)) {
+                    String formattedTime = plugin.getCooldownManager().getRemainingTimeFormatted(participant.getUniqueId(), id);
+                    if (participant.equals(p)) {
+                        String msg = plugin.getMessagesFile().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<time>", formattedTime)));
+                    } else {
+                        String leaderMsg = plugin.getMessagesFile().getString("error.party_member_on_cooldown", "&cCannot start! Member <player> is on cooldown for: &e<time>");
+                        p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName()).replace("<time>", formattedTime)));
+
+                        String childMsg = plugin.getMessagesFile().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
+                        participant.sendMessage(ColorUtils.parseWithPrefix(childMsg.replace("<time>", formattedTime)));
+                    }
+                    return; // Abort entry for everyone
                 }
             }
 

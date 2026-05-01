@@ -3,6 +3,21 @@
 # Map Name: The Forgotten Crypt
 # =============================================================
 
+# =========================================================
+# HOW TO CONFIGURE MAP SETTINGS IN YOUR DUNGEON YAML FILES
+# =========================================================
+# In your dungeons/map_name.yml, you can now add these settings:
+# settings:
+#   cooldown-seconds: 1800 # 30 minutes cooldown
+#   commands:
+#     on-start:
+#       - "lp user <player> permission set dungeon.in_game true"
+#     on-finish:
+#       - "lp user <player> permission unset dungeon.in_game"
+#       - "eco give <player> 1000"
+#     on-stage-complete:
+#       - "broadcast <player> just completed stage <stage> of <dungeon>!"
+
 # The name of the world folder used as a template
 template-world: "ForgottenCrypt_Template"
 

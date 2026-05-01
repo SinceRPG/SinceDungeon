@@ -6,10 +6,17 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
+import net.danh.sinceDungeon.guis.reward.RewardGUI;
+import net.danh.sinceDungeon.guis.reward.RewardSession;
+import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
+import net.danh.sinceDungeon.hooks.PAPIHook;
+import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.PartyManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.managers.WorldManager;
+import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -19,6 +26,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -32,7 +40,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Represents an active instance of a Dungeon.
  * Manages player lifecycles, active stages, actions, timer ticking,
- * and memory cleanup upon termination.
+ * command triggers, and memory cleanup upon termination.
  */
 public class DungeonGame {
     private final SinceDungeon plugin;
@@ -143,6 +151,34 @@ public class DungeonGame {
     }
 
     /**
+     * Executes defined console commands corresponding to map lifecycle events.
+     * Resolves PAPI placeholders and native plugin placeholders dynamically.
+     *
+     * @param commands   List of raw command strings to execute.
+     * @param stageIndex Current stage integer index.
+     */
+    private void executeActionCommands(List<String> commands, int stageIndex) {
+        if (commands == null || commands.isEmpty()) return;
+
+        for (Player p : participants) {
+            if (!p.isOnline()) continue;
+            for (String cmd : commands) {
+                String parsed = cmd.replace("<player>", p.getName())
+                        .replace("<dungeon>", template.id())
+                        .replace("<stage>", String.valueOf(stageIndex + 1));
+
+                parsed = PAPIHook.setPlaceholders(p, parsed);
+
+                if (parsed.startsWith("/")) {
+                    parsed = parsed.substring(1);
+                }
+
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
+            }
+        }
+    }
+
+    /**
      * Initiates the asynchronous creation of the dungeon world instance.
      * Transitions into the lobby countdown phase once the world successfully loads.
      */
@@ -219,7 +255,7 @@ public class DungeonGame {
 
     /**
      * Teleports all active participants into the dungeon instance.
-     * Manages inventory states and starts the main ticking loop for actions.
+     * Manages inventory states, applies startup commands, and starts the main ticking loop for actions.
      */
     private void enterDungeon() {
         isPreparing = false;
@@ -269,6 +305,9 @@ public class DungeonGame {
             stop(false, DungeonEndEvent.EndReason.FAILED);
             return;
         }
+
+        // Trigger on-start commands globally defined in this map's template
+        executeActionCommands(template.settings().onStartCmds(), 0);
 
         int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
         int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
@@ -359,7 +398,7 @@ public class DungeonGame {
             if (!p.isOnline() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) continue;
 
             plugin.getLivesManager().removeLives(p.getUniqueId(), penalty);
-            net.danh.sinceDungeon.managers.LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
+            LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
             int current = livesData != null ? livesData.getCurrentLives() : 0;
 
             String lossMsg = plugin.getMessagesFile().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>")
@@ -486,6 +525,7 @@ public class DungeonGame {
 
     /**
      * Orchestrates the transition period between two consecutive stages.
+     * Fires configured stage-complete commands securely.
      */
     private void checkStageCompletion() {
         if (stageCompleting) return;
@@ -497,6 +537,8 @@ public class DungeonGame {
 
         broadcastMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
         participants.forEach(p -> playSound(p, "stage_complete", 1f, 1f));
+
+        executeActionCommands(template.settings().onStageCompleteCmds(), currentStageIndex);
 
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
@@ -599,7 +641,8 @@ public class DungeonGame {
 
     /**
      * Executes the conclusion routines of the dungeon.
-     * Submits scores to the database, initiates victory titles, and launches the kick countdown.
+     * Submits scores to the database, fires conclusion commands, registers player cooldowns,
+     * initiates victory titles, and launches the kick countdown.
      */
     private void finishDungeon() {
         this.isCleared = true;
@@ -637,8 +680,18 @@ public class DungeonGame {
                     topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
                     topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
                 }
+
+                // Add Cooldown if requested by config
+                int cooldownSeconds = template.settings().cooldownSeconds();
+                if (cooldownSeconds > 0) {
+                    long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
+                    plugin.getCooldownManager().setCooldown(p.getUniqueId(), dungeonId, expireEpoch);
+                }
             }
         }
+
+        // Trigger on-finish commands globally defined in this map's template
+        executeActionCommands(template.settings().onFinishCmds(), currentStageIndex);
 
         DungeonFinishEvent finishEvent = new DungeonFinishEvent(this, finalElapsed, finalChestCount);
         Bukkit.getPluginManager().callEvent(finishEvent);
@@ -665,7 +718,7 @@ public class DungeonGame {
 
         startKickCountdown(plugin, participants, kickDelay, () -> {
             String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
-            net.danh.sinceDungeon.guis.reward.RewardGUI rewardHelper = new net.danh.sinceDungeon.guis.reward.RewardGUI(plugin);
+            RewardGUI rewardHelper = new RewardGUI(plugin);
 
             for (Player p : participants) {
                 if (!p.isOnline() || p.isDead()) continue;
@@ -676,11 +729,11 @@ public class DungeonGame {
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
                     // Bypass rewards for non-leader members
                 } else if (eventChestCount > 0 && hasRewards) {
-                    net.danh.sinceDungeon.guis.reward.RewardSession oldSession = net.danh.sinceDungeon.guis.reward.RewardSessionManager.getSession(p);
+                    RewardSession oldSession = RewardSessionManager.getSession(p);
                     if (oldSession != null && oldSession.getChestCount() > 0) {
                         rewardHelper.forceClaimAll(p, oldSession);
                     }
-                    net.danh.sinceDungeon.guis.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.guis.reward.RewardSession(eventChestCount, template));
+                    RewardSessionManager.addSession(p, new RewardSession(eventChestCount, template));
                 }
 
                 if (p.isInsideVehicle()) p.leaveVehicle();
@@ -794,7 +847,7 @@ public class DungeonGame {
                         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
                             String returnServer = plugin.getConfigFile().getString("cross-server.return-server", "lobby");
                             restorePlayerState(p);
-                            net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(p, returnServer);
+                            BungeeUtils.sendPlayerToServer(p, returnServer);
                         } else {
                             p.teleportAsync(targetLoc).thenAccept(success -> {
                                 if (success) {
@@ -915,7 +968,7 @@ public class DungeonGame {
             NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
             for (ItemStack item : p.getInventory().getContents()) {
-                if (item != null && (net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, compassTag, org.bukkit.persistence.PersistentDataType.BYTE) || net.danh.sinceDungeon.utils.ItemBuilder.hasTag(item, keyTag, org.bukkit.persistence.PersistentDataType.STRING))) {
+                if (item != null && (ItemBuilder.hasTag(item, compassTag, PersistentDataType.BYTE) || ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING))) {
                     item.setAmount(0);
                 }
             }

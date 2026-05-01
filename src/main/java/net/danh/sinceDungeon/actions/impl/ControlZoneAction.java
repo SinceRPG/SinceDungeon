@@ -15,11 +15,7 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Handles the logic for the Control Zone objective.
@@ -38,12 +34,10 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     private final boolean isBaby;
     private final List<String> attributesList;
     private final List<String> equipmentList;
-
+    private final Set<UUID> spawnedMobs = new HashSet<>();
     private int currentTicks = 0;
     private int tickCounter = 0;
     private Location centerLoc;
-
-    private final Set<UUID> spawnedMobs = new HashSet<>();
 
     public ControlZoneAction(Vector center, double startRadius, double endRadius, int requiredSeconds,
                              String mob, int mobInterval, int mobLevel, String customName, boolean isBaby,

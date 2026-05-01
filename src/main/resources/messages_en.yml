@@ -105,6 +105,7 @@ admin:
   spectate_success: "&aNow spectating &e<player>'s &adungeon!"
   target_not_in_dungeon: "&cThat player is not inside any active dungeon."
   top_reset_success: "&aSuccessfully reset all leaderboards for map: &e<map>"
+  cooldown_reset_success: "&aSuccessfully reset dungeon cooldown for <player> in map <map>!"
 
 party:
   chat_format: "&b[Party] &a<sender>&8: &f<msg>"
@@ -244,6 +245,8 @@ error:
   dungeon_sealed_teleport: "&cArea sealed. Teleportation magic nullified!"
   not_in_dungeon: "&cYou are not currently in any Dungeon."
   exceed_max_players: "&cThis dungeon allows a maximum of <max> players! Your party is too large."
+  on_cooldown: "&cYou cannot enter this dungeon yet! Please wait: &e<time>"
+  party_member_on_cooldown: "&cCannot start! Member <player> is on cooldown for: &e<time>"
 
 reward:
   gui_title: "&6&lDungeon Rewards"
@@ -318,7 +321,30 @@ editor:
     edit_action: "&lEdit Action #<index>"
     settings: "&lAdvanced Settings"
     edit_action_items: "&lChest Editor: <index>"
+    string_list: "&lEditing List"
   items:
+    setting_cooldown: "&eCooldown Time"
+    setting_cooldown_lore:
+      - "&7Current: &f<val>s"
+      - "&eLeft Click to edit"
+    setting_cmd_start: "&eCommands On Start"
+    setting_cmd_start_lore:
+      - "&7Current: &f<val> commands"
+      - "&eLeft Click to manage list"
+    setting_cmd_finish: "&eCommands On Finish"
+    setting_cmd_finish_lore:
+      - "&7Current: &f<val> commands"
+      - "&eLeft Click to manage list"
+    setting_cmd_stage: "&eCommands On Stage Complete"
+    setting_cmd_stage_lore:
+      - "&7Current: &f<val> commands"
+      - "&eLeft Click to manage list"
+    list_line_item: "&eLine #<index>"
+    list_line_lore:
+      - "&f<val>"
+      - ""
+      - "&cShift-Right to delete"
+    add_line: "&aAdd New Line"
     setting_max_players: "&eMax Players Allowed"
     setting_max_players_lore:
       - "&7Current: &f<val>"
@@ -463,6 +489,12 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_cooldown:
+        - "&7Enter the cooldown time in seconds."
+        - "&7Example: &a1800 &7(for 30 minutes)"
+      edit_commands:
+        - "&7Enter the text or command (without slash /)."
+        - "&7Supported variable: &a%player%"
       edit_action_mob_level:
         - "&7Enter the level for the MythicMob (Default: 1)."
         - "&7Example: &a5"

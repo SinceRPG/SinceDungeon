@@ -48,6 +48,7 @@ public final class SinceDungeon extends JavaPlugin {
     private TopManager topManager;
     private RedisManager redisManager;
     private LivesManager livesManager;
+    private CooldownManager cooldownManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -56,9 +57,6 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
-        // The messagesFile is not loaded yet at onLoad, so we load a temporary config or keep basic startup info.
-        // However, to strictly remove hardcode, we can rely on Java's String formatting if config is unavailable,
-        // but since config isn't loaded until onEnable, we initialize ConfigUtils early here just for startup logs.
         configFile = new ConfigUtils(this, "config.yml");
         String lang = configFile.getString("settings.locale", "en");
         messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
@@ -89,6 +87,9 @@ public final class SinceDungeon extends JavaPlugin {
         databaseManager.connect();
         topManager = new TopManager(this, databaseManager);
         livesManager = new LivesManager(this);
+
+        cooldownManager = new CooldownManager(this);
+        cooldownManager.loadCooldowns();
 
         if (configFile.getBoolean("cross-server.enabled", false)) {
             getLogger().warning("======================================================");
@@ -282,5 +283,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public LivesManager getLivesManager() {
         return livesManager;
+    }
+
+    public CooldownManager getCooldownManager() {
+        return cooldownManager;
     }
 }

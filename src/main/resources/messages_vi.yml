@@ -105,6 +105,7 @@ admin:
   spectate_success: "&aĐang theo dõi Hầm ngục của &e<player>&a!"
   target_not_in_dungeon: "&cNgoài chơi đó hiện không ở trong Hầm ngục nào."
   top_reset_success: "&aĐã làm mới (xóa toàn bộ) Bảng Xếp Hạng của bản đồ: &e<map>"
+  cooldown_reset_success: "&aĐã xóa thời gian chờ Hầm ngục <map> cho người chơi <player>!"
 
 party:
   chat_format: "&b[Tổ đội] &a<sender>&8: &f<msg>"
@@ -244,6 +245,8 @@ error:
   dungeon_sealed_teleport: "&cKhu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"
   not_in_dungeon: "&cBạn hiện không ở trong Dungeon nào."
   exceed_max_players: "&cDungeon này chỉ cho phép tối đa <max> người! Tổ đội của bạn đang vượt quá giới hạn."
+  on_cooldown: "&cBạn chưa thể vào Hầm ngục này! Vui lòng chờ: &e<time>"
+  party_member_on_cooldown: "&cKhông thể bắt đầu! Thành viên <player> đang trong thời gian chờ: &e<time>"
 
 reward:
   gui_title: "&6&lPhần Thưởng Dungeon"
@@ -318,7 +321,30 @@ editor:
     edit_action: "&lCấu Hình Nhiệm Vụ #<index>"
     settings: "&lCài Đặt Chuyên Sâu"
     edit_action_items: "&lSắp xếp Rương: <index>"
+    string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    setting_cooldown: "&eThời Gian Chờ (Cooldown)"
+    setting_cooldown_lore:
+      - "&7Hiện tại: &f<val>s"
+      - "&eChuột Trái: Chỉnh sửa"
+    setting_cmd_start: "&eLệnh Chạy Khi Bắt Đầu"
+    setting_cmd_start_lore:
+      - "&7Hiện tại: &f<val> lệnh"
+      - "&eChuột Trái: Quản lý danh sách"
+    setting_cmd_finish: "&eLệnh Chạy Khi Hoàn Thành"
+    setting_cmd_finish_lore:
+      - "&7Hiện tại: &f<val> lệnh"
+      - "&eChuột Trái: Quản lý danh sách"
+    setting_cmd_stage: "&eLệnh Chạy Khi Qua Màn"
+    setting_cmd_stage_lore:
+      - "&7Hiện tại: &f<val> lệnh"
+      - "&eChuột Trái: Quản lý danh sách"
+    list_line_item: "&eDòng #<index>"
+    list_line_lore:
+      - "&f<val>"
+      - ""
+      - "&cShift-Phải: Xóa dòng này"
+    add_line: "&aThêm Dòng Mới"
     setting_max_players: "&eGiới Hạn Người Chơi"
     setting_max_players_lore:
       - "&7Hiện tại: &f<val>"
@@ -463,6 +489,12 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_cooldown:
+        - "&7Nhập thời gian chờ cho Hầm ngục tính bằng giây."
+        - "&7Ví dụ: &a1800 &7(Dành cho 30 phút)"
+      edit_commands:
+        - "&7Nhập nội dung hoặc lệnh Console (không cần /)."
+        - "&7Hỗ trợ biến: &a%player%"
       edit_action_mob_level:
         - "&7Nhập cấp độ (level) cho quái MythicMobs (Mặc định: 1)."
         - "&7Ví dụ: &a5"

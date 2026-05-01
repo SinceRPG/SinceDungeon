@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.managers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import net.danh.sinceDungeon.SinceDungeon;
+import org.bukkit.Bukkit;
 
 import java.io.File;
 import java.sql.Connection;
@@ -115,8 +116,15 @@ public class DatabaseManager {
                         last_regen BIGINT NOT NULL
                     )
                     """);
+            stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS player_cooldowns (
+                        uuid VARCHAR(36) NOT NULL,
+                        dungeon_id VARCHAR(64) NOT NULL,
+                        expire_time BIGINT NOT NULL,
+                        PRIMARY KEY (uuid, dungeon_id)
+                    )
+                    """);
 
-            // Auto-patch existing tables for older versions
             try {
                 stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_amount INT DEFAULT -1");
                 stmt.execute("ALTER TABLE player_lives ADD COLUMN regen_interval INT DEFAULT -1");
@@ -159,26 +167,23 @@ public class DatabaseManager {
      * @param map The map identifier (dungeon_id) to wipe.
      */
     public void resetLeaderboard(String map) {
-        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String sqlFastest = "DELETE FROM top_fastest WHERE dungeon_id = ?";
             String sqlKills = "DELETE FROM top_kills WHERE dungeon_id = ?";
             String sqlClears = "DELETE FROM top_clears WHERE dungeon_id = ?";
 
             try (Connection conn = this.getConnection()) {
 
-                // Delete from top_fastest
                 try (PreparedStatement ps = conn.prepareStatement(sqlFastest)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
 
-                // Delete from top_kills
                 try (PreparedStatement ps = conn.prepareStatement(sqlKills)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
 
-                // Delete from top_clears
                 try (PreparedStatement ps = conn.prepareStatement(sqlClears)) {
                     ps.setString(1, map);
                     ps.executeUpdate();

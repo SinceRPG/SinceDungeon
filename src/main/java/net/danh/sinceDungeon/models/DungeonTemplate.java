@@ -21,10 +21,11 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                            boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats,
                            String deathAction, boolean clearMobDrops,
                            int requiredLivesToJoin, int livesDeductedPerDeath,
-                           boolean randomizeStages, int maxPlayers) {
+                           boolean randomizeStages, int maxPlayers,
+                           int cooldownSeconds, List<String> onStartCmds,
+                           List<String> onFinishCmds, List<String> onStageCompleteCmds) {
         /**
-         * Added maxPlayers parameter to dictate how many players can join this specific map.
-         * A value of -1 or 0 means it falls back to the global party limit.
+         * Added commands triggering system and cooldown limits natively to the template object.
          */
     }
 }

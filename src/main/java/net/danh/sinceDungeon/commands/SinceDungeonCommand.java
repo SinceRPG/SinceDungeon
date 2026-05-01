@@ -24,9 +24,9 @@ public class SinceDungeonCommand {
     /**
      * Registers the Admin command.
      * The root command literal and aliases are dynamically loaded from the configuration.
+     * Includes Cooldown Reset logic.
      */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        // Load the command alias and aliases list from config
         String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.admin-aliases");
 
@@ -37,6 +37,37 @@ public class SinceDungeonCommand {
                             plugin.reloadFiles(ctx.getSource().getSender());
                             return 1;
                         })
+                )
+                .then(Commands.literal("cooldown")
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .then(Commands.argument("map", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String remaining = builder.getRemainingLowerCase();
+                                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                        if (mapName.toLowerCase().contains(remaining)) {
+                                                            builder.suggest(mapName);
+                                                        }
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                    if (target == null) {
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        return 0;
+                                                    }
+
+                                                    String map = StringArgumentType.getString(ctx, "map");
+                                                    plugin.getCooldownManager().resetCooldown(target.getUniqueId(), map);
+
+                                                    String successMsg = plugin.getMessagesFile().getString("admin.cooldown_reset_success", "&aSuccessfully reset dungeon cooldown for <player> in map <map>!");
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<map>", map)));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
                 )
                 .then(Commands.literal("top")
                         .then(Commands.literal("reset")
@@ -54,16 +85,13 @@ public class SinceDungeonCommand {
                                             org.bukkit.command.CommandSender sender = ctx.getSource().getSender();
                                             String map = StringArgumentType.getString(ctx, "map");
 
-                                            // Check if map exists in templates
                                             if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
                                                 sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
                                                 return 0;
                                             }
 
-                                            // Execute the backend wipe through TopManager
                                             plugin.getTopManager().resetLeaderboard(map);
 
-                                            // Send success message to the admin
                                             String msg = plugin.getMessagesFile().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
                                             sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
                                             return 1;
@@ -200,7 +228,6 @@ public class SinceDungeonCommand {
                 )
                 .build();
 
-        // Register with aliases
         event.registrar().register(adminNode, "SinceDungeon Admin", aliases);
     }
 }
