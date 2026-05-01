@@ -35,13 +35,14 @@ public class DungeonCommand {
                         })
                 )
                 .then(Commands.literal("top")
-                        .then(Commands.argument("map", StringArgumentType.word())
+                        .then(Commands.argument("map", StringArgumentType.string())
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                        if (mapName.toLowerCase().startsWith(remaining)) {
-                                            builder.suggest(mapName);
-                                        }
+                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic())
+                                            if (mapName.toLowerCase().contains(remaining)) {
+                                                builder.suggest(mapName);
+                                            }
                                     }
                                     return builder.buildFuture();
                                 })
@@ -61,12 +62,12 @@ public class DungeonCommand {
                         )
                 )
                 .then(Commands.literal("join")
-                        .then(Commands.argument("name", StringArgumentType.word())
+                        .then(Commands.argument("name", StringArgumentType.string())
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
                                         if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic())
-                                            if (mapName.toLowerCase().startsWith(remaining)) {
+                                            if (mapName.toLowerCase().contains(remaining)) {
                                                 builder.suggest(mapName);
                                             }
                                     }

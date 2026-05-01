@@ -27,6 +27,10 @@ public class DefaultRegistry {
 
         manager.registerRewardProcessor("COMMAND", (p, val, displayName) -> Bukkit.getScheduler().runTask(plugin, () -> {
             String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
+            if (cmd.startsWith("/")) {
+                cmd = cmd.substring(1);
+            }
+
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
             String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
             if (displayName != null && msg != null && !msg.isEmpty()) {

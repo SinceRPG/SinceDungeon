@@ -364,6 +364,13 @@ public class DungeonManager {
                     String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
                     p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
                 }
+
+                for (UUID uid : party.getMembers()) {
+                    Player leftBehind = Bukkit.getPlayer(uid);
+                    if (leftBehind != null && leftBehind.isOnline() && !participants.contains(leftBehind)) {
+                        leftBehind.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.member_failed_condition", "&cYou were left behind because you didn't meet the entry requirements or were too far away!")));
+                    }
+                }
             } else {
                 participants.add(p);
             }

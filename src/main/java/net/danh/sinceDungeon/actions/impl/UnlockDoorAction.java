@@ -216,9 +216,12 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
         int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
 
-        String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
-        if (soundUnlock != null) {
-            game.getWorld().playSound(triggerLoc, SoundUtils.getSound(soundUnlock), 1f, 0.5f);
+        long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
+
+        if (volume > 50000) {
+            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
+            SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
+            return;
         }
 
         breakTask = new BukkitRunnable() {
@@ -234,7 +237,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 }
 
                 int blocksProcessed = 0;
-                while (blocksProcessed < 50) {
+                while (blocksProcessed < 500) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
                         game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
@@ -250,6 +253,9 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                             currentY = minY;
                             currentZ++;
                             if (currentZ > maxZ) {
+                                Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
+                                game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
+                                game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
                                 cancel();
                                 return;
                             }
