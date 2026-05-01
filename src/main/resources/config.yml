@@ -307,6 +307,14 @@ dungeon:
     # Delay in seconds before kicking players out of the dungeon after they win.
     kick-delay-after-finish: 10
 
+    # =========================================================
+    # KICK COUNTDOWN DISPLAY
+    # Configure how the countdown is displayed to the players.
+    # Supported types: ACTIONBAR, TITLE, CHAT, NONE
+    # =========================================================
+    kick-countdown:
+      display-type: "ACTIONBAR"
+
     # Tự động ép thời gian thành Buổi Sáng (Trưa) và Tạnh Mưa khi tạo Dungeon?
     # Nếu tắt (false), Dungeon sẽ giữ nguyên thời gian và thời tiết từ Map mẫu của bạn.
     # Force daylight (6000 ticks) and clear weather when a dungeon is generated?

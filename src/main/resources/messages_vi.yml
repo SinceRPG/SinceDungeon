@@ -177,6 +177,12 @@ game:
   death_spectate: "&cBạn đã tử trận! Hiện đang theo dõi đồng đội."
   wipeout: "&cToàn bộ đội hình đã bị tiêu diệt. Nhiệm vụ Thất Bại!"
   time_out: "&cĐã hết thời gian! Đang khởi động lại giai đoạn..."
+  kick_countdown:
+    actionbar: "&eSẽ dịch chuyển về Sảnh sau &c<time>s&e..."
+    chat: "&eDungeon sẽ chính thức đóng lại sau &c<time> &egiây."
+    title:
+      main: "&c<time>"
+      sub: "&eGiây đếm ngược trước khi dịch chuyển"
 
 lobby:
   preparing: "&eĐang tải bản đồ Dungeon, vui lòng không di chuyển..."

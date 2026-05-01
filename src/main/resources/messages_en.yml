@@ -177,6 +177,12 @@ game:
   death_spectate: "&cYou died! You are now spectating."
   wipeout: "&cAll party members have fallen. Mission Failed!"
   time_out: "&cTime is up! Restarting the stage..."
+  kick_countdown:
+    actionbar: "&eTeleporting to Lobby in &c<time>s&e..."
+    chat: "&eThe dungeon will close in &c<time> &eseconds."
+    title:
+      main: "&c<time>"
+      sub: "&eSeconds until teleport"
 
 lobby:
   preparing: "&eInitializing dungeon world..."

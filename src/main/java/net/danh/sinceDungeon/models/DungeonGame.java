@@ -41,11 +41,13 @@ public class DungeonGame {
     private final Map<UUID, Integer> playerKills = new ConcurrentHashMap<>();
     private final String cachedObjectivePrefix;
     private final String cachedTimeLeftFormat;
+
     private UUID initiatorId;
     private Set<Player> participants;
     private DungeonTemplate template;
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
     private World dungeonWorld;
+
     private int currentStageIndex = 0;
     private int currentActionIndex = 0;
     private boolean isRunning = false;
@@ -53,11 +55,16 @@ public class DungeonGame {
     private boolean stageCompleting = false;
     private boolean isStopping = false;
     private boolean isCleared = false;
+
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
     private long startTime;
     private int serverTicksActive = 0;
 
+    /**
+     * Constructs a new DungeonGame instance.
+     * Prepares player states, generates a unique world name, and parses dungeon stages.
+     */
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiatorId = initiator.getUniqueId();
@@ -87,6 +94,10 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
+    /**
+     * Parses and initializes the stages and actions from the template data.
+     * Handles optional rogue-like randomization if configured in the template settings.
+     */
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -131,6 +142,10 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Initiates the asynchronous creation of the dungeon world instance.
+     * Transitions into the lobby countdown phase once the world successfully loads.
+     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
@@ -168,6 +183,9 @@ public class DungeonGame {
                 });
     }
 
+    /**
+     * Executes the lobby countdown timer before teleporting players into the active dungeon.
+     */
     private void startCountdown() {
         lobbyTask = new BukkitRunnable() {
             int count = plugin.getConfigFile().getInt("dungeon.lobby-countdown", 5);
@@ -199,6 +217,10 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
+    /**
+     * Teleports all active participants into the dungeon instance.
+     * Manages inventory states and starts the main ticking loop for actions.
+     */
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
@@ -273,6 +295,10 @@ public class DungeonGame {
         startStage(0);
     }
 
+    /**
+     * Executes the main dungeon loop.
+     * Evaluates active conditions, manages timeouts, and processes HUD updates.
+     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -320,11 +346,15 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Evaluates the timeout sequence for a specific action.
+     * Deducts lives, manages spectator transitions, and attempts to restart the stage if possible.
+     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
-
         boolean outOfLives = false;
+
         for (Player p : participants) {
             if (!p.isOnline() || p.isDead() || p.getGameMode() == GameMode.SPECTATOR) continue;
 
@@ -369,6 +399,10 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Instantiates the progression of a specific stage by index.
+     * Identifies the end of the dungeon if the stages are depleted.
+     */
     private void startStage(int index) {
         if (!isRunning) return;
 
@@ -387,6 +421,9 @@ public class DungeonGame {
         startCurrentAction();
     }
 
+    /**
+     * Commences the logic for the currently queued action inside the active stage.
+     */
     private void startCurrentAction() {
         if (!isRunning || stageCompleting) return;
         List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
@@ -416,6 +453,9 @@ public class DungeonGame {
         startCurrentAction();
     }
 
+    /**
+     * Funnels server events to the currently active action object for assessment.
+     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -444,6 +484,9 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Orchestrates the transition period between two consecutive stages.
+     */
     private void checkStageCompletion() {
         if (stageCompleting) return;
         stageCompleting = true;
@@ -467,6 +510,10 @@ public class DungeonGame {
         return String.format("%02d:%02d", m, s);
     }
 
+    /**
+     * Checks if all participants are disconnected, dead, or spectating.
+     * Forcibly stops the game instance as a failure if conditions are met.
+     */
     public void checkWipeout() {
         boolean allDeadOrSpectating = true;
 
@@ -483,6 +530,77 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Initiates the countdown sequence after a dungeon is successfully completed.
+     * Handles the visual notifications based on configuration and executes the
+     * provided completion logic when the timer reaches zero.
+     *
+     * @param plugin       The SinceDungeon plugin instance.
+     * @param players      The collection of players currently inside the dungeon instance.
+     * @param delaySeconds The total time in seconds before the execution happens.
+     * @param onComplete   The runnable to execute once the countdown finishes.
+     */
+    public void startKickCountdown(SinceDungeon plugin, Collection<Player> players, int delaySeconds, Runnable onComplete) {
+        String displayType = plugin.getConfigFile().getString("dungeon.gameplay.kick-countdown.display-type", "ACTIONBAR").toUpperCase();
+
+        new BukkitRunnable() {
+            int timeLeft = delaySeconds;
+
+            @Override
+            public void run() {
+                if (timeLeft <= 0) {
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
+                    this.cancel();
+                    return;
+                }
+
+                for (Player p : players) {
+                    if (p == null || !p.isOnline()) continue;
+
+                    switch (displayType) {
+                        case "ACTIONBAR":
+                            String actionMsg = plugin.getMessagesFile().getString("game.kick_countdown.actionbar", "&eTeleporting to Lobby in &c<time>s&e...");
+                            p.sendActionBar(ColorUtils.parse(actionMsg.replace("<time>", String.valueOf(timeLeft))));
+                            break;
+
+                        case "TITLE":
+                            String titleMain = plugin.getMessagesFile().getString("game.kick_countdown.title.main", "&c<time>");
+                            String titleSub = plugin.getMessagesFile().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
+
+                            Title.Times times = Title.Times.times(
+                                    Duration.ZERO,
+                                    Duration.ofSeconds(2),
+                                    Duration.ZERO
+                            );
+                            Title title = Title.title(
+                                    ColorUtils.parse(titleMain.replace("<time>", String.valueOf(timeLeft))),
+                                    ColorUtils.parse(titleSub.replace("<time>", String.valueOf(timeLeft))),
+                                    times
+                            );
+                            p.showTitle(title);
+                            break;
+
+                        case "CHAT":
+                            String chatMsg = plugin.getMessagesFile().getString("game.kick_countdown.chat", "&eThe dungeon will close in &c<time> &eseconds.");
+                            p.sendMessage(ColorUtils.parseWithPrefix(chatMsg.replace("<time>", String.valueOf(timeLeft))));
+                            break;
+
+                        case "NONE":
+                        default:
+                            break;
+                    }
+                }
+                timeLeft--;
+            }
+        }.runTaskTimer(plugin, 0L, 20L);
+    }
+
+    /**
+     * Executes the conclusion routines of the dungeon.
+     * Submits scores to the database, initiates victory titles, and launches the kick countdown.
+     */
     private void finishDungeon() {
         this.isCleared = true;
         this.isRunning = false;
@@ -494,14 +612,12 @@ public class DungeonGame {
         int finalElapsed = (int) elapsedSeconds;
         String formattedTime = formatTime(finalElapsed);
 
-        // Calculate chests based on time tiers
         int chestCount = 1;
         for (Map.Entry<Integer, Integer> entry : template.rewardTiers().entrySet()) {
             if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
         }
         final int finalChestCount = chestCount;
 
-        // Save Leaderboard Stats
         if (plugin.getTopManager() != null && template != null) {
             String dungeonId = template.id();
             String awardedTo = plugin.getConfigFile().getString("dungeon.top-awarded-to", "ALL_MEMBERS");
@@ -530,7 +646,6 @@ public class DungeonGame {
         final int eventChestCount = finishEvent.getChestCount();
         final boolean hasRewards = template.rewardPool() != null && !template.rewardPool().isEmpty();
 
-        // 1. Instantly show Victory Titles while keeping players inside the map
         int fadeIn = plugin.getConfigFile().getInt("titles.fade-in", 200);
         int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
         int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
@@ -546,10 +661,9 @@ public class DungeonGame {
             }
         }
 
-        // 2. Wait for the Kick Delay to expire BEFORE teleporting and giving rewards
         int kickDelay = template.settings().kickDelayAfterFinish();
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        startKickCountdown(plugin, participants, kickDelay, () -> {
             String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
             net.danh.sinceDungeon.guis.reward.RewardGUI rewardHelper = new net.danh.sinceDungeon.guis.reward.RewardGUI(plugin);
 
@@ -559,9 +673,8 @@ public class DungeonGame {
                 PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
                 UUID currentLeader = party != null ? party.getLeader() : initiatorId;
 
-                // Handle Reward Session Logic
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                    // Non-leaders get nothing
+                    // Bypass rewards for non-leader members
                 } else if (eventChestCount > 0 && hasRewards) {
                     net.danh.sinceDungeon.guis.reward.RewardSession oldSession = net.danh.sinceDungeon.guis.reward.RewardSessionManager.getSession(p);
                     if (oldSession != null && oldSession.getChestCount() > 0) {
@@ -570,7 +683,6 @@ public class DungeonGame {
                     net.danh.sinceDungeon.guis.reward.RewardSessionManager.addSession(p, new net.danh.sinceDungeon.guis.reward.RewardSession(eventChestCount, template));
                 }
 
-                // Prepare Teleportation
                 if (p.isInsideVehicle()) p.leaveVehicle();
                 p.setVelocity(new Vector(0, 0, 0));
 
@@ -600,10 +712,8 @@ public class DungeonGame {
                 });
             }
 
-            // Clean up the world after all teleports have initiated
             Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 40L);
-
-        }, kickDelay * 20L); // Convert seconds to ticks
+        });
     }
 
     /**
@@ -641,10 +751,18 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Interrupts and halts the dungeon sequence cleanly.
+     * Identical to explicitly defining the EndReason as a FORCE_STOPPED state.
+     */
     public void stop(boolean teleport) {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
     }
 
+    /**
+     * Executes the overarching unloader mechanism, detaching all players
+     * and signaling the WorldManager to safely purge the dungeon environment.
+     */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
@@ -713,6 +831,10 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Executes an emergency termination sequence.
+     * Deconstructs states faster to resolve potential server deadlocks or ghost worlds.
+     */
     public void forceShutdown() {
         if (isStopping) return;
         isStopping = true;
@@ -754,6 +876,9 @@ public class DungeonGame {
         aggressivelyCleanupMemory();
     }
 
+    /**
+     * Empties all memory arrays to enforce rigid Java garbage collection.
+     */
     private void aggressivelyCleanupMemory() {
         if (savedStates != null) savedStates.clear();
         if (stages != null) {
@@ -912,6 +1037,9 @@ public class DungeonGame {
         return cachedTimeLeftFormat;
     }
 
+    /**
+     * Encapsulates the cached metadata of a player prior to entering the dungeon.
+     */
     private static class PlayerState {
         final Location location;
         final GameMode gameMode;
