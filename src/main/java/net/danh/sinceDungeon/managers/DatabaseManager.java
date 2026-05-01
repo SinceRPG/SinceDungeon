@@ -150,4 +150,28 @@ public class DatabaseManager {
     public boolean isConnected() {
         return dataSource != null && !dataSource.isClosed();
     }
+
+    /**
+     * Executes the SQL DELETE command to wipe records for a specific map asynchronously.
+     *
+     * @param map The map identifier to wipe.
+     */
+    public void resetLeaderboard(String map) {
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            // Replace 'dungeon_leaderboard' and 'map_name' with your actual database schema names
+            String sql = "DELETE FROM dungeon_leaderboard WHERE map_name = ?";
+
+            try (java.sql.Connection conn = this.getConnection(); // Adjust this depending on your HikariCP/SQLite setup
+                 java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                ps.setString(1, map);
+                ps.executeUpdate();
+
+                plugin.getLogger().info("[Database] Successfully wiped leaderboard records for map: " + map);
+            } catch (java.sql.SQLException e) {
+                plugin.getLogger().severe("[Database] Failed to wipe leaderboard for map " + map + "!");
+                e.printStackTrace();
+            }
+        });
+    }
 }

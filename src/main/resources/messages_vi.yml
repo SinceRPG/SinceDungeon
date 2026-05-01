@@ -104,6 +104,7 @@ admin:
   ghost_rescued: "&eHệ thống đã giải cứu bạn khỏi một Dungeon bị lỗi hoặc đã đóng cửa."
   spectate_success: "&aĐang theo dõi Hầm ngục của &e<player>&a!"
   target_not_in_dungeon: "&cNgoài chơi đó hiện không ở trong Hầm ngục nào."
+  top_reset_success: "&aĐã làm mới (xóa toàn bộ) Bảng Xếp Hạng của bản đồ: &e<map>"
 
 party:
   chat_format: "&b[Tổ đội] &a<sender>&8: &f<msg>"

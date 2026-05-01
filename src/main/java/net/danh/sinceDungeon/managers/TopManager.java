@@ -27,6 +27,19 @@ public class TopManager {
     }
 
     /**
+     * Wipes the leaderboard for a given map and clears any active cache.
+     *
+     * @param map The map identifier to reset.
+     */
+    public void resetLeaderboard(String map) {
+        // Clear local cache if your TopManager utilizes one (e.g., Map<String, List<Record>> cache)
+        // this.leaderboardCache.remove(map);
+
+        // Hand over the execution to DatabaseManager
+        plugin.getDatabaseManager().resetLeaderboard(map);
+    }
+
+    /**
      * Saves a clear time record for a player. Only updates if the new time is FASTER.
      */
     public void saveClearTime(String dungeonId, UUID playerUuid, String playerName, int timeSeconds) {

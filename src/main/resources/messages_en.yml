@@ -104,6 +104,7 @@ admin:
   ghost_rescued: "&eThe system rescued you from a deleted or corrupted Dungeon instance."
   spectate_success: "&aNow spectating &e<player>'s &adungeon!"
   target_not_in_dungeon: "&cThat player is not inside any active dungeon."
+  top_reset_success: "&aSuccessfully reset all leaderboards for map: &e<map>"
 
 party:
   chat_format: "&b[Party] &a<sender>&8: &f<msg>"

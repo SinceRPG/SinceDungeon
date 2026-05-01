@@ -38,6 +38,39 @@ public class SinceDungeonCommand {
                             return 1;
                         })
                 )
+                .then(Commands.literal("top")
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("map", StringArgumentType.string())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                if (mapName.toLowerCase().contains(remaining)) {
+                                                    builder.suggest(mapName);
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            org.bukkit.command.CommandSender sender = ctx.getSource().getSender();
+                                            String map = StringArgumentType.getString(ctx, "map");
+
+                                            // Check if map exists in templates
+                                            if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
+                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                                return 0;
+                                            }
+
+                                            // Execute the backend wipe through TopManager
+                                            plugin.getTopManager().resetLeaderboard(map);
+
+                                            // Send success message to the admin
+                                            String msg = plugin.getMessagesFile().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
+                                            sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
+                                            return 1;
+                                        })
+                                )
+                        )
+                )
                 .then(Commands.literal("lives")
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .then(Commands.literal("add").then(Commands.argument("amount", IntegerArgumentType.integer())
