@@ -73,6 +73,27 @@ database:
     # Thời gian chờ tối đa để lấy một kết nối tính bằng mili-giây (5000 = 5 giây).
     timeout: 5000
 
+# =========================================================
+# [COMMANDS CONFIGURATION]
+# Defines the main commands used by the plugin.
+# Change these if you have conflicts with other plugins (e.g. MMOCore's /party).
+# =========================================================
+commands:
+  party: "party"
+  party-aliases:
+    - "p"
+    - "pt"
+  dungeon: "dungeon"
+  dungeon-aliases:
+    - "dg"
+    - "inst"
+  admin: "sincedungeon"
+  admin-aliases:
+    - "sd"
+    - "sdungeon"
+# =========================================================
+# [REWARD CONFIGURATION]
+# =========================================================
 reward:
   # Time in seconds before an unopened reward session expires and auto-claims (Default: 300 = 5 minutes)
   session-expire-seconds: 300

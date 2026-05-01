@@ -2,6 +2,8 @@ package net.danh.sinceDungeon.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import net.danh.sinceDungeon.SinceDungeon;
@@ -15,10 +17,20 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
+
 public class SinceDungeonCommand {
 
+    /**
+     * Registers the Admin command.
+     * The root command literal and aliases are dynamically loaded from the configuration.
+     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        event.registrar().register(Commands.literal("sincedungeon")
+        // Load the command alias and aliases list from config
+        String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
+        List<String> aliases = plugin.getConfigFile().getStringList("commands.admin-aliases");
+
+        LiteralCommandNode<CommandSourceStack> adminNode = Commands.literal(commandName)
                 .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                 .then(Commands.literal("reload")
                         .executes(ctx -> {
@@ -153,7 +165,9 @@ public class SinceDungeonCommand {
                                 )
                         )
                 )
-                .build(), "SinceDungeon Admin"
-        );
+                .build();
+
+        // Register with aliases
+        event.registrar().register(adminNode, "SinceDungeon Admin", aliases);
     }
 }

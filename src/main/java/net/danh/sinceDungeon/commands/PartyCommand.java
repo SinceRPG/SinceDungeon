@@ -12,16 +12,25 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class PartyCommand {
 
+    /**
+     * Registers the Party command using Paper's Brigadier API.
+     * The root command literal and aliases are dynamically loaded from the configuration.
+     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
         PartyManager pm = plugin.getPartyManager();
 
-        LiteralCommandNode<CommandSourceStack> partyNode = Commands.literal("party")
+        // Load the command alias and aliases list from config
+        String commandName = plugin.getConfigFile().getString("commands.party", "party");
+        List<String> aliases = plugin.getConfigFile().getStringList("commands.party-aliases");
+
+        LiteralCommandNode<CommandSourceStack> partyNode = Commands.literal(commandName)
                 .executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player)) {
@@ -446,6 +455,7 @@ public class PartyCommand {
                 }))
                 .build();
 
-        event.registrar().register(partyNode, "SinceDungeon Party System");
+        // Pass the aliases list to the registrar
+        event.registrar().register(partyNode, "SinceDungeon Party System", aliases);
     }
 }

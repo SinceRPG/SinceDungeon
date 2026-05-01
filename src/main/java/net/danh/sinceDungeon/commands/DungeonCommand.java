@@ -1,6 +1,8 @@
 package net.danh.sinceDungeon.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import net.danh.sinceDungeon.SinceDungeon;
@@ -12,12 +14,21 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.UUID;
 
 public class DungeonCommand {
 
+    /**
+     * Registers the Dungeon command for players.
+     * The root command literal and aliases are dynamically loaded from the configuration.
+     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        event.registrar().register(Commands.literal("dungeon")
+        // Load the command alias and aliases list from config
+        String commandName = plugin.getConfigFile().getString("commands.dungeon", "dungeon");
+        List<String> aliases = plugin.getConfigFile().getStringList("commands.dungeon-aliases");
+
+        LiteralCommandNode<CommandSourceStack> dungeonNode = Commands.literal(commandName)
                 .then(Commands.literal("lives")
                         .executes(ctx -> {
                             if (ctx.getSource().getExecutor() instanceof Player p) {
@@ -190,7 +201,9 @@ public class DungeonCommand {
                                 })
                         )
                 )
-                .build(), "SinceDungeon Player"
-        );
+                .build();
+
+        // Register with aliases
+        event.registrar().register(dungeonNode, "SinceDungeon Player", aliases);
     }
 }

@@ -2,7 +2,9 @@ package net.danh.sinceDungeon;
 
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.commands.DungeonCommand;
 import net.danh.sinceDungeon.commands.PartyCommand;
+import net.danh.sinceDungeon.commands.SinceDungeonCommand;
 import net.danh.sinceDungeon.guis.editor.EditorListener;
 import net.danh.sinceDungeon.guis.editor.EditorManager;
 import net.danh.sinceDungeon.guis.editor.EditorMenuListener;
@@ -121,7 +123,6 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         registerListeners(listeners.toArray(new Listener[0]));
-        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> PartyCommand.register(this, event));
         registerCommands();
         cleanUpStuckWorlds();
 
@@ -234,8 +235,8 @@ public final class SinceDungeon extends JavaPlugin {
     private void registerCommands() {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             PartyCommand.register(this, event);
-            net.danh.sinceDungeon.commands.SinceDungeonCommand.register(this, event);
-            net.danh.sinceDungeon.commands.DungeonCommand.register(this, event);
+            SinceDungeonCommand.register(this, event);
+            DungeonCommand.register(this, event);
         });
     }
 
