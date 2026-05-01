@@ -7,6 +7,10 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Exposes SinceDungeon data to PlaceholderAPI.
+ * Handles parsing for player lives, regeneration timers, and dungeon cooldowns.
+ */
 public class LivesExpansion extends PlaceholderExpansion {
 
     private final SinceDungeon plugin;
@@ -40,6 +44,17 @@ public class LivesExpansion extends PlaceholderExpansion {
     public String onRequest(OfflinePlayer player, @NotNull String params) {
         if (player == null) return "";
 
+        // --- Handle Cooldown Placeholders ---
+        if (params.toLowerCase().startsWith("cooldown_")) {
+            String map = params.substring(9);
+            if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), map)) {
+                return plugin.getCooldownManager().getRemainingTimeFormatted(player.getUniqueId(), map);
+            } else {
+                return plugin.getMessagesFile().getString("papi.cooldown_ready", "Ready");
+            }
+        }
+
+        // --- Handle Lives Placeholders ---
         LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(player.getUniqueId());
 
         if (lives == null) {

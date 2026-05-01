@@ -9,6 +9,20 @@ cross_server:
 papi:
   time_full: "Đã đầy"
   time_never: "Không hồi"
+  cooldown_ready: "Sẵn sàng"
+
+cooldown:
+  check_other: "&eThời gian chờ của <player> ở <map>: &c<time>"
+  check_other_ready: "&e<player> đã sẵn sàng để vào <map>."
+  no_active_cooldowns: "&cBạn hiện không có Hầm ngục nào đang trong thời gian chờ!"
+  item_reset_received: "&aBạn nhận được Vé Xóa Hồi Chiêu x<amount>!"
+  item_reset_used: "&aToàn bộ thời gian chờ Hầm ngục của bạn đã được xóa bỏ!"
+  item_reduce_received: "&aBạn nhận được Vé Tua Nhanh Thời Gian (-<time>s) x<amount>!"
+  item_reduce_used: "&aToàn bộ thời gian chờ Hầm ngục của bạn đã được giảm <time> giây!"
+  admin_gave_reset: "&aĐã tặng <amount> Vé Xóa Hồi Chiêu cho <player>."
+  admin_gave_reduce: "&aĐã tặng <amount> Vé Tua Nhanh Thời Gian (-<time>s) cho <player>."
+  admin_reduced: "&aĐã giảm <time> giây hồi chiêu cho toàn bộ Hầm ngục của <player>."
+  admin_reset_all: "&aĐã làm mới TOÀN BỘ thời gian chờ Hầm ngục của <player>."
 
 lives:
   party_member_not_enough: "&cThành viên <player> không đủ mạng sống. Hủy tiến trình vào Hầm ngục."
@@ -494,7 +508,8 @@ editor:
         - "&7Ví dụ: &a1800 &7(Dành cho 30 phút)"
       edit_commands:
         - "&7Nhập nội dung hoặc lệnh Console (không cần /)."
-        - "&7Hỗ trợ biến: &a%player%"
+        - "&7Các biến hỗ trợ: &a%player%, %dungeon%, %stage%"
+        - "&7Mẹo: Gõ &cclear &7để xóa sạch danh sách lệnh."
       edit_action_mob_level:
         - "&7Nhập cấp độ (level) cho quái MythicMobs (Mặc định: 1)."
         - "&7Ví dụ: &a5"

@@ -78,7 +78,7 @@ public class CooldownManager {
     }
 
     /**
-     * Removes an active cooldown for a player.
+     * Removes an active cooldown for a specific player and map.
      *
      * @param uuid      The player's UUID.
      * @param dungeonId The dungeon template ID.
@@ -100,6 +100,92 @@ public class CooldownManager {
                 plugin.getLogger().log(Level.WARNING, "[CooldownManager] Failed to reset cooldown.", e);
             }
         });
+    }
+
+    /**
+     * Resets all dungeon cooldowns for a specific player.
+     *
+     * @param uuid The player's UUID.
+     */
+    public void resetAllCooldowns(UUID uuid) {
+        for (Map<UUID, Long> mapCooldowns : cooldownCache.values()) {
+            mapCooldowns.remove(uuid);
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "DELETE FROM player_cooldowns WHERE uuid = ?";
+            try (Connection conn = plugin.getDatabaseManager().getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, uuid.toString());
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "[CooldownManager] Failed to reset all cooldowns.", e);
+            }
+        });
+    }
+
+    /**
+     * Reduces all active dungeon cooldowns for a player by a specific amount of time.
+     *
+     * @param uuid    The player's UUID.
+     * @param seconds The amount of time in seconds to reduce.
+     */
+    public void reduceAllCooldowns(UUID uuid, int seconds) {
+        long reductionMillis = seconds * 1000L;
+        long now = System.currentTimeMillis();
+
+        for (Map.Entry<String, Map<UUID, Long>> entry : cooldownCache.entrySet()) {
+            Map<UUID, Long> mapCooldowns = entry.getValue();
+            if (mapCooldowns.containsKey(uuid)) {
+                long newTime = mapCooldowns.get(uuid) - reductionMillis;
+                if (newTime <= now) {
+                    mapCooldowns.remove(uuid);
+                } else {
+                    mapCooldowns.put(uuid, newTime);
+                }
+            }
+        }
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String updateSql = "UPDATE player_cooldowns SET expire_time = expire_time - ? WHERE uuid = ?";
+            String deleteSql = "DELETE FROM player_cooldowns WHERE expire_time <= ?";
+
+            try (Connection conn = plugin.getDatabaseManager().getConnection()) {
+                try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
+                    psUpdate.setLong(1, reductionMillis);
+                    psUpdate.setString(2, uuid.toString());
+                    psUpdate.executeUpdate();
+                }
+
+                try (PreparedStatement psDelete = conn.prepareStatement(deleteSql)) {
+                    psDelete.setLong(1, now);
+                    psDelete.executeUpdate();
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "[CooldownManager] Failed to reduce cooldowns.", e);
+            }
+        });
+    }
+
+    /**
+     * Checks if a player has ANY active dungeon cooldowns.
+     * Useful for preventing the consumption of items if they aren't needed.
+     *
+     * @param uuid The player's UUID.
+     * @return True if the player has at least one active cooldown.
+     */
+    public boolean hasAnyCooldown(UUID uuid) {
+        long now = System.currentTimeMillis();
+        for (Map<UUID, Long> mapCooldowns : cooldownCache.values()) {
+            if (mapCooldowns.containsKey(uuid)) {
+                if (mapCooldowns.get(uuid) > now) {
+                    return true;
+                } else {
+                    mapCooldowns.remove(uuid); // Cleanup expired cache passively
+                }
+            }
+        }
+        return false;
     }
 
     /**

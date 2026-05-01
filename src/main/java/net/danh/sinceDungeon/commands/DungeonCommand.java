@@ -11,20 +11,32 @@ import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Handles the registration and execution of the main /dungeon player commands.
+ */
 public class DungeonCommand {
 
     /**
      * Registers the Dungeon command for players.
      * The root command literal and aliases are dynamically loaded from the configuration.
+     * All arguments are fully integrated with Tab Completion suggestions.
+     *
+     * @param plugin The main plugin instance.
+     * @param event  The lifecycle registrar event.
      */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        // Load the command alias and aliases list from config
         String commandName = plugin.getConfigFile().getString("commands.dungeon", "dungeon");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.dungeon-aliases");
 
@@ -50,10 +62,11 @@ public class DungeonCommand {
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic())
+                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic()) {
                                             if (mapName.toLowerCase().contains(remaining)) {
                                                 builder.suggest(mapName);
                                             }
+                                        }
                                     }
                                     return builder.buildFuture();
                                 })
@@ -77,10 +90,11 @@ public class DungeonCommand {
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
                                     for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic())
+                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic()) {
                                             if (mapName.toLowerCase().contains(remaining)) {
                                                 builder.suggest(mapName);
                                             }
+                                        }
                                     }
                                     return builder.buildFuture();
                                 })
@@ -94,6 +108,14 @@ public class DungeonCommand {
                                 })
                                 .then(Commands.argument("target", StringArgumentType.word())
                                         .requires(s -> s.getSender().hasPermission("SinceDungeon.admin") || !(s.getSender() instanceof Player))
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             String targetName = StringArgumentType.getString(ctx, "target");
                                             Player target = Bukkit.getPlayerExact(targetName);
@@ -114,9 +136,9 @@ public class DungeonCommand {
                                 DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
                                 if (game != null) {
                                     game.handlePlayerDisconnect(p);
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left_dungeon_due_to_party", "<yellow>Bạn đã thoát khỏi Dungeon.")));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left_dungeon_due_to_party")));
                                 } else {
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.not_in_dungeon", "<red>Bạn hiện không ở trong Dungeon nào.")));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.not_in_dungeon")));
                                 }
                             } else {
                                 ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_admin")));
@@ -156,14 +178,18 @@ public class DungeonCommand {
                                         if (target != null) {
                                             DungeonGame targetGame = plugin.getDungeonManager().getGame(target.getUniqueId());
                                             if (targetGame != null && targetGame.getWorld() != null) {
-                                                p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                                                p.setGameMode(GameMode.SPECTATOR);
                                                 p.teleportAsync(target.getLocation());
 
-                                                String successMsg = plugin.getMessagesFile().getString("admin.spectate_success", "&aSpectating!");
-                                                p.sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName())));
+                                                String successMsg = plugin.getMessagesFile().getString("admin.spectate_success");
+                                                if (successMsg != null) {
+                                                    p.sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName())));
+                                                }
                                             } else {
-                                                String notFoundMsg = plugin.getMessagesFile().getString("admin.target_not_in_dungeon", "&cNot in dungeon!");
-                                                p.sendMessage(ColorUtils.parseWithPrefix(notFoundMsg));
+                                                String notFoundMsg = plugin.getMessagesFile().getString("admin.target_not_in_dungeon");
+                                                if (notFoundMsg != null) {
+                                                    p.sendMessage(ColorUtils.parseWithPrefix(notFoundMsg));
+                                                }
                                             }
                                         } else {
                                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
@@ -178,22 +204,31 @@ public class DungeonCommand {
                 .then(Commands.literal("getkey")
                         .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
                         .then(Commands.argument("id", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    String remaining = builder.getRemainingLowerCase();
+                                    if ("door_1".startsWith(remaining)) builder.suggest("door_1");
+                                    if ("door_2".startsWith(remaining)) builder.suggest("door_2");
+                                    if ("boss_key".startsWith(remaining)) builder.suggest("boss_key");
+                                    return builder.buildFuture();
+                                })
                                 .executes(ctx -> {
                                     if (ctx.getSource().getExecutor() instanceof Player p) {
                                         String keyId = StringArgumentType.getString(ctx, "id");
-                                        org.bukkit.NamespacedKey keyTag = new org.bukkit.NamespacedKey(plugin, "dungeon_key_id");
-                                        org.bukkit.configuration.ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
+                                        NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+                                        ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
 
-                                        org.bukkit.inventory.ItemStack keyItem = net.danh.sinceDungeon.utils.ItemBuilder.fromConfig(plugin, "dungeon-items.key", "TRIPWIRE_HOOK")
+                                        ItemStack keyItem = ItemBuilder.fromConfig(plugin, "dungeon-items.key", "TRIPWIRE_HOOK")
                                                 .amount(1)
                                                 .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
-                                                .setTag(keyTag, org.bukkit.persistence.PersistentDataType.STRING, keyId)
+                                                .setTag(keyTag, PersistentDataType.STRING, keyId)
                                                 .build();
 
                                         p.getInventory().addItem(keyItem);
 
-                                        String successMsg = plugin.getMessagesFile().getString("admin.getkey_success", "&aReceived system key: &e<id>");
-                                        p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(successMsg.replace("<id>", keyId)));
+                                        String successMsg = plugin.getMessagesFile().getString("admin.getkey_success");
+                                        if (successMsg != null) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<id>", keyId)));
+                                        }
                                     } else {
                                         ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
                                     }
@@ -203,7 +238,6 @@ public class DungeonCommand {
                 )
                 .build();
 
-        // Register with aliases
         event.registrar().register(dungeonNode, "SinceDungeon Player", aliases);
     }
 }

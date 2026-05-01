@@ -157,7 +157,8 @@ public class DungeonGame {
 
     /**
      * Executes defined console commands corresponding to map lifecycle events.
-     * Resolves PAPI placeholders and native plugin placeholders dynamically.
+     * Resolves multiple variations of placeholders (e.g., %player%, <player>)
+     * to ensure absolute foolproof configuration, then integrates with PlaceholderAPI.
      *
      * @param commands   List of raw command strings to execute.
      * @param stageIndex Current stage integer index.
@@ -168,16 +169,24 @@ public class DungeonGame {
         for (Player p : participants) {
             if (!p.isOnline()) continue;
             for (String cmd : commands) {
+                // Replace all common variants of internal variables to prevent config mistakes
                 String parsed = cmd.replace("<player>", p.getName())
+                        .replace("%player%", p.getName())
+                        .replace("{player}", p.getName())
                         .replace("<dungeon>", template.id())
-                        .replace("<stage>", String.valueOf(stageIndex + 1));
+                        .replace("%dungeon%", template.id())
+                        .replace("<stage>", String.valueOf(stageIndex + 1))
+                        .replace("%stage%", String.valueOf(stageIndex + 1));
 
+                // Process through PlaceholderAPI for external variables (e.g., %vault_eco_balance%)
                 parsed = PAPIHook.setPlaceholders(p, parsed);
 
+                // Strip leading slash if the admin accidentally included it
                 if (parsed.startsWith("/")) {
                     parsed = parsed.substring(1);
                 }
 
+                // Safely dispatch the formatted command as the Console
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
             }
         }

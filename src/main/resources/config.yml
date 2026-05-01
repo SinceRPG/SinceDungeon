@@ -116,6 +116,46 @@ leaderboard:
     category_clears: NETHER_STAR
 
 # =========================================================
+# [COOLDOWN SYSTEM CONFIGURATION]
+# =========================================================
+cooldown:
+  # ==================================
+  # COOLDOWN RESET ITEM
+  # Resets ALL dungeon cooldowns for the player.
+  # ==================================
+  reset-item:
+    material: "PAPER"
+    name: "&e&l✦ Cooldown Reset Ticket ✦"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7A magical ticket that completely"
+      - "&7refreshes your dungeon energy."
+      - ""
+      - "&e&lRIGHT-CLICK &7to reset all cooldowns!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rarity: "RARE"
+    glowing: true
+
+  # ==================================
+  # COOLDOWN REDUCTION ITEM
+  # Reduces ALL dungeon cooldowns by a specific amount of time.
+  # ==================================
+  reduce-item:
+    material: "CLOCK"
+    name: "&a&l✦ Time Skip Ticket ✦ &8| &e-<time>s"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7Manipulate the flow of time to"
+      - "&7shorten your waiting periods."
+      - ""
+      - "&fReduces: &a<time> &fSeconds"
+      - ""
+      - "&e&lRIGHT-CLICK &7to fast-forward time!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rarity: "UNCOMMON"
+    glowing: true
+
+# =========================================================
 # [LIVES SYSTEM CONFIGURATION]
 # =========================================================
 lives:

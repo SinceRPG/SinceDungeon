@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -19,12 +20,18 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
+/**
+ * Handles the registration and execution of administrative /sincedungeon commands.
+ */
 public class SinceDungeonCommand {
 
     /**
      * Registers the Admin command.
      * The root command literal and aliases are dynamically loaded from the configuration.
-     * Includes Cooldown Reset logic.
+     * Integrates full Tab Completion suggestions for players, maps, and integer amounts.
+     *
+     * @param plugin The main plugin instance.
+     * @param event  The lifecycle registrar event.
      */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
         String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
@@ -37,37 +44,6 @@ public class SinceDungeonCommand {
                             plugin.reloadFiles(ctx.getSource().getSender());
                             return 1;
                         })
-                )
-                .then(Commands.literal("cooldown")
-                        .then(Commands.literal("reset")
-                                .then(Commands.argument("target", StringArgumentType.word())
-                                        .then(Commands.argument("map", StringArgumentType.string())
-                                                .suggests((ctx, builder) -> {
-                                                    String remaining = builder.getRemainingLowerCase();
-                                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                                        if (mapName.toLowerCase().contains(remaining)) {
-                                                            builder.suggest(mapName);
-                                                        }
-                                                    }
-                                                    return builder.buildFuture();
-                                                })
-                                                .executes(ctx -> {
-                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                                    if (target == null) {
-                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
-                                                        return 0;
-                                                    }
-
-                                                    String map = StringArgumentType.getString(ctx, "map");
-                                                    plugin.getCooldownManager().resetCooldown(target.getUniqueId(), map);
-
-                                                    String successMsg = plugin.getMessagesFile().getString("admin.cooldown_reset_success", "&aSuccessfully reset dungeon cooldown for <player> in map <map>!");
-                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<map>", map)));
-                                                    return 1;
-                                                })
-                                        )
-                                )
-                        )
                 )
                 .then(Commands.literal("top")
                         .then(Commands.literal("reset")
@@ -82,7 +58,7 @@ public class SinceDungeonCommand {
                                             return builder.buildFuture();
                                         })
                                         .executes(ctx -> {
-                                            org.bukkit.command.CommandSender sender = ctx.getSource().getSender();
+                                            CommandSender sender = ctx.getSource().getSender();
                                             String map = StringArgumentType.getString(ctx, "map");
 
                                             if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
@@ -101,7 +77,21 @@ public class SinceDungeonCommand {
                 )
                 .then(Commands.literal("lives")
                         .then(Commands.argument("target", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    String remaining = builder.getRemainingLowerCase();
+                                    Bukkit.getOnlinePlayers().stream()
+                                            .map(Player::getName)
+                                            .filter(name -> name.toLowerCase().startsWith(remaining))
+                                            .forEach(builder::suggest);
+                                    return builder.buildFuture();
+                                })
                                 .then(Commands.literal("add").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("3");
+                                            builder.suggest("5");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -114,6 +104,12 @@ public class SinceDungeonCommand {
                                         })
                                 ))
                                 .then(Commands.literal("set").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("3");
+                                            builder.suggest("5");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -126,6 +122,12 @@ public class SinceDungeonCommand {
                                         })
                                 ))
                                 .then(Commands.literal("addmax").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("3");
+                                            builder.suggest("5");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -138,6 +140,11 @@ public class SinceDungeonCommand {
                                         })
                                 ))
                                 .then(Commands.literal("setregenamount").then(Commands.argument("amount", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("2");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -150,6 +157,12 @@ public class SinceDungeonCommand {
                                         })
                                 ))
                                 .then(Commands.literal("setregeninterval").then(Commands.argument("seconds", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1800");
+                                            builder.suggest("3600");
+                                            builder.suggest("7200");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -197,7 +210,20 @@ public class SinceDungeonCommand {
                 )
                 .then(Commands.literal("givelifeitem")
                         .then(Commands.argument("target", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    String remaining = builder.getRemainingLowerCase();
+                                    Bukkit.getOnlinePlayers().stream()
+                                            .map(Player::getName)
+                                            .filter(name -> name.toLowerCase().startsWith(remaining))
+                                            .forEach(builder::suggest);
+                                    return builder.buildFuture();
+                                })
                                 .then(Commands.argument("amount", IntegerArgumentType.integer())
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("64");
+                                            return builder.buildFuture();
+                                        })
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target != null) {
@@ -221,6 +247,270 @@ public class SinceDungeonCommand {
                                             } else {
                                                 ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
                                             }
+                                            return 1;
+                                        })
+                                )
+                        )
+                )
+                .then(Commands.literal("cooldown")
+                        .then(Commands.literal("check")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("map", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String remaining = builder.getRemainingLowerCase();
+                                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                        if (mapName.toLowerCase().contains(remaining)) {
+                                                            builder.suggest(mapName);
+                                                        }
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                    if (target == null) {
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        return 0;
+                                                    }
+                                                    String map = StringArgumentType.getString(ctx, "map");
+
+                                                    if (plugin.getCooldownManager().isOnCooldown(target.getUniqueId(), map)) {
+                                                        String time = plugin.getCooldownManager().getRemainingTimeFormatted(target.getUniqueId(), map);
+                                                        String msg = plugin.getMessagesFile().getString("cooldown.check_other", "&e<player>'s cooldown for <map>: &c<time>");
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName()).replace("<map>", map).replace("<time>", time)));
+                                                    } else {
+                                                        String msg = plugin.getMessagesFile().getString("cooldown.check_other_ready", "&e<player> is ready to enter <map>.");
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName()).replace("<map>", map)));
+                                                    }
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("resetall")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                            if (target == null) {
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                return 0;
+                                            }
+
+                                            plugin.getCooldownManager().resetAllCooldowns(target.getUniqueId());
+
+                                            String successMsg = plugin.getMessagesFile().getString("cooldown.admin_reset_all", "&aReset all cooldowns for <player>.");
+                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName())));
+                                            return 1;
+                                        })
+                                )
+                        )
+                        .then(Commands.literal("reduce")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("seconds", IntegerArgumentType.integer())
+                                                .suggests((ctx, builder) -> {
+                                                    builder.suggest("60");
+                                                    builder.suggest("300");
+                                                    builder.suggest("1800");
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                    if (target == null) {
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        return 0;
+                                                    }
+
+                                                    int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+                                                    plugin.getCooldownManager().reduceAllCooldowns(target.getUniqueId(), seconds);
+
+                                                    String successMsg = plugin.getMessagesFile().getString("cooldown.admin_reduced", "&aReduced <player>'s cooldowns by <time>s.");
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<time>", String.valueOf(seconds))));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("map", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String remaining = builder.getRemainingLowerCase();
+                                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                        if (mapName.toLowerCase().contains(remaining)) {
+                                                            builder.suggest(mapName);
+                                                        }
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                    if (target == null) {
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        return 0;
+                                                    }
+
+                                                    String map = StringArgumentType.getString(ctx, "map");
+                                                    plugin.getCooldownManager().resetCooldown(target.getUniqueId(), map);
+
+                                                    String successMsg = plugin.getMessagesFile().getString("admin.cooldown_reset_success", "&aSuccessfully reset dungeon cooldown for <player> in map <map>!");
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<map>", map)));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
+                )
+                .then(Commands.literal("givecooldownitem")
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer())
+                                                .suggests((ctx, builder) -> {
+                                                    builder.suggest("1");
+                                                    builder.suggest("64");
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                    if (target == null) {
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                                        return 0;
+                                                    }
+
+                                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                    NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
+                                                    ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
+
+                                                    ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+                                                            .amount(amount)
+                                                            .applyConfig(cfg, "&e&lCooldown Reset Ticket")
+                                                            .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
+                                                            .build();
+
+                                                    target.getInventory().addItem(item);
+
+                                                    target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.item_reset_received").replace("<amount>", String.valueOf(amount))));
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.admin_gave_reset").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("reduce")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("amount", IntegerArgumentType.integer())
+                                                .suggests((ctx, builder) -> {
+                                                    builder.suggest("1");
+                                                    builder.suggest("64");
+                                                    return builder.buildFuture();
+                                                })
+                                                .then(Commands.argument("seconds", IntegerArgumentType.integer())
+                                                        .suggests((ctx, builder) -> {
+                                                            builder.suggest("300");
+                                                            builder.suggest("1800");
+                                                            return builder.buildFuture();
+                                                        })
+                                                        .executes(ctx -> {
+                                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                                            if (target == null) {
+                                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                                                return 0;
+                                                            }
+
+                                                            int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                                            int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+
+                                                            NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
+                                                            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
+
+                                                            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+                                                                    .amount(amount)
+                                                                    .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
+                                                                    .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
+                                                                    .build();
+
+                                                            target.getInventory().addItem(item);
+
+                                                            target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.item_reduce_received").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds))));
+                                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.admin_gave_reduce").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds)).replace("<player>", target.getName())));
+                                                            return 1;
+                                                        })
+                                                )
+                                        )
+                                )
+                        )
+                )
+                .then(Commands.literal("top")
+                        .then(Commands.literal("reset")
+                                .then(Commands.argument("map", StringArgumentType.string())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                if (mapName.toLowerCase().contains(remaining)) {
+                                                    builder.suggest(mapName);
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            CommandSender sender = ctx.getSource().getSender();
+                                            String map = StringArgumentType.getString(ctx, "map");
+
+                                            if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
+                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                                return 0;
+                                            }
+
+                                            plugin.getTopManager().resetLeaderboard(map);
+
+                                            String msg = plugin.getMessagesFile().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
+                                            sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
                                             return 1;
                                         })
                                 )

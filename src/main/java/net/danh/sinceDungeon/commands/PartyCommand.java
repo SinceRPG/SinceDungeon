@@ -17,16 +17,22 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Handles the registration and execution of the /party command ecosystem.
+ */
 public class PartyCommand {
 
     /**
      * Registers the Party command using Paper's Brigadier API.
      * The root command literal and aliases are dynamically loaded from the configuration.
+     * Full tab completion logic is applied to dynamic variables like <target> and <leader>.
+     *
+     * @param plugin The main plugin instance.
+     * @param event  The lifecycle registrar event.
      */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
         PartyManager pm = plugin.getPartyManager();
 
-        // Load the command alias and aliases list from config
         String commandName = plugin.getConfigFile().getString("commands.party", "party");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.party-aliases");
 
@@ -455,7 +461,6 @@ public class PartyCommand {
                 }))
                 .build();
 
-        // Pass the aliases list to the registrar
         event.registrar().register(partyNode, "SinceDungeon Party System", aliases);
     }
 }

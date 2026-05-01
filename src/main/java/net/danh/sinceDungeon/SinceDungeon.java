@@ -13,6 +13,7 @@ import net.danh.sinceDungeon.guis.reward.RewardSession;
 import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.guis.top.TopMenuListener;
 import net.danh.sinceDungeon.hooks.LivesExpansion;
+import net.danh.sinceDungeon.listeners.CooldownItemListener;
 import net.danh.sinceDungeon.listeners.DungeonListener;
 import net.danh.sinceDungeon.listeners.LifeItemListener;
 import net.danh.sinceDungeon.listeners.MythicListener;
@@ -118,6 +119,7 @@ public final class SinceDungeon extends JavaPlugin {
         listeners.add(new EditorMenuListener(this));
         listeners.add(new LifeItemListener(this));
         listeners.add(new TopMenuListener(this));
+        listeners.add(new CooldownItemListener(this));
 
         if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
             listeners.add(new MythicListener(this));

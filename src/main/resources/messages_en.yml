@@ -9,6 +9,20 @@ cross_server:
 papi:
   time_full: "Full"
   time_never: "Never"
+  cooldown_ready: "Ready"
+
+cooldown:
+  check_other: "&e<player>'s cooldown for <map>: &c<time>"
+  check_other_ready: "&e<player> is ready to enter <map>."
+  no_active_cooldowns: "&cYou don't have any active dungeon cooldowns!"
+  item_reset_received: "&aYou received a Cooldown Reset Ticket x<amount>!"
+  item_reset_used: "&aAll your dungeon cooldowns have been fully reset!"
+  item_reduce_received: "&aYou received a Time Skip Ticket (-<time>s) x<amount>!"
+  item_reduce_used: "&aAll your dungeon cooldowns have been reduced by <time>s!"
+  admin_gave_reset: "&aGave <amount> Cooldown Reset Ticket(s) to <player>."
+  admin_gave_reduce: "&aGave <amount> Time Skip Ticket(s) (-<time>s) to <player>."
+  admin_reduced: "&aSuccessfully reduced all cooldowns for <player> by <time> seconds."
+  admin_reset_all: "&aSuccessfully reset ALL dungeon cooldowns for <player>."
 
 lives:
   party_member_not_enough: "&cMember <player> does not have enough lives. Aborting Dungeon entry."
@@ -494,7 +508,8 @@ editor:
         - "&7Example: &a1800 &7(for 30 minutes)"
       edit_commands:
         - "&7Enter the text or command (without slash /)."
-        - "&7Supported variable: &a%player%"
+        - "&7Supported variables: &a%player%, %dungeon%, %stage%"
+        - "&7Tip: Type &cclear &7to empty the list."
       edit_action_mob_level:
         - "&7Enter the level for the MythicMob (Default: 1)."
         - "&7Example: &a5"
