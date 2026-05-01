@@ -140,15 +140,32 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
+    /**
+     * Enhanced safe spawn logic: Scans both upwards and downwards to ensure
+     * mobs don't suffocate in ceilings or spawn on unreachable roofs.
+     */
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
-        for (int i = 0; i < 10; i++) {
+
+        // Check downwards first to snap to the floor
+        for (int i = 0; i < 5; i++) {
+            if (check.getBlock().getType().isSolid()) {
+                check.add(0, 1, 0);
+                break;
+            }
+            check.subtract(0, 1, 0);
+        }
+
+        // Check upwards for head clearance
+        for (int i = 0; i < 5; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
-            if (!block.getType().isSolid() && !head.getType().isSolid()) return check;
+            if (!block.getType().isSolid() && !head.getType().isSolid()) {
+                return check;
+            }
             check.add(0, 1, 0);
         }
-        return original;
+        return original; // Fallback
     }
 
     private void applyCustomProperties(LivingEntity living) {

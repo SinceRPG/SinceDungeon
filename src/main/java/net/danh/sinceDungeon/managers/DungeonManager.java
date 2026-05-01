@@ -94,7 +94,6 @@ public class DungeonManager {
         }
     }
 
-    // Logic: Khi người chơi join Server Node, tự động cho họ vào Dungeon nếu họ nằm trong pending
     public void checkPendingCrossServerJoin(Player p) {
         if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
             String templateId = pendingCrossServerGames.remove(p.getUniqueId());
@@ -231,7 +230,6 @@ public class DungeonManager {
             if (action != null) {
                 action.setActionType(type);
 
-                // MỚI: Parse time limits
                 if (data.containsKey("time_limit")) {
                     action.setTimeLimitSeconds(getInt(data.get("time_limit"), -1));
                 }
@@ -281,9 +279,6 @@ public class DungeonManager {
         }
     }
 
-    /**
-     * Reloads all dungeon templates asynchronously without kicking players currently inside.
-     */
     public CompletableFuture<Void> reload() {
         stopAllGames();
         return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
@@ -377,13 +372,13 @@ public class DungeonManager {
 
             for (Player participant : participants) {
                 if (activeGames.containsKey(participant.getUniqueId())) {
-                    String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Thành viên <player> đang ở trong một Dungeon khác! Không thể bắt đầu.");
+                    String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Member <player> is currently in another Dungeon! Cannot start.");
                     p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
                     return;
                 }
 
                 if (transitioningPlayers.contains(participant.getUniqueId())) {
-                    String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>Hệ thống đang xử lý dữ liệu, vui lòng thử lại sau giây lát!");
+                    String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>System is processing data, please try again in a moment!");
                     p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
                     return;
                 }
@@ -392,6 +387,14 @@ public class DungeonManager {
             DungeonTemplate tmpl = templates.get(id);
             if (tmpl == null) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", id)));
+                return;
+            }
+
+            // --- MAX PLAYERS VERIFICATION ---
+            int maxPlayers = tmpl.settings().maxPlayers();
+            if (maxPlayers > 0 && participants.size() > maxPlayers) {
+                String msg = plugin.getMessagesFile().getString("error.exceed_max_players", "&cThis dungeon allows a maximum of <max> players! Your party is too large.");
+                p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<max>", String.valueOf(maxPlayers))));
                 return;
             }
 
@@ -446,18 +449,9 @@ public class DungeonManager {
         if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
     }
 
-    /**
-     * Cancels a pending cross-server request if the player disconnects
-     * while waiting for the Redis node to respond.
-     * This prevents ghost requests from soaking up RAM indefinitely.
-     *
-     * @param uuid The UUID of the player who disconnected.
-     */
     public void cancelPendingRequest(UUID uuid) {
         if (pendingRequests.containsKey(uuid)) {
             pendingRequests.remove(uuid);
-
-            // Log the cancellation to the console cleanly using the messages file
             String logMsg = plugin.getMessagesFile().getString("admin.log.cross_server_request_cancelled_quit", "[CrossServer] Cancelled pending request for <player>.");
             if (logMsg != null && !logMsg.isEmpty()) {
                 plugin.getLogger().info(logMsg.replace("<player>", uuid.toString()));

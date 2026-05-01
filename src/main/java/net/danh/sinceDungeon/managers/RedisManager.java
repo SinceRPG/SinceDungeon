@@ -131,9 +131,7 @@ public class RedisManager {
             Bukkit.getScheduler().runTask(plugin, () -> {
                 plugin.getDungeonManager().handleCrossServerReady(leaderUuid, targetServer);
             });
-        }
-        // --- XỬ LÝ ĐỒNG BỘ PARTY ---
-        else if (action.equals("PARTY_DISBAND")) {
+        } else if (action.equals("PARTY_DISBAND")) {
             UUID leaderUuid = UUID.fromString(parts[1]);
             Bukkit.getScheduler().runTask(plugin, () -> {
                 PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);

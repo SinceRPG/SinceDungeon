@@ -145,7 +145,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
             String cleanData = data.replace(" ", "");
             String[] parts = cleanData.split(":");
 
-            // Generate Custom Dungeon Key using Builder
             if (parts[0].equalsIgnoreCase("KEY") && parts.length >= 2) {
                 String keyId = parts[1];
                 int amount = parts.length >= 3 ? Integer.parseInt(parts[2]) : 1;

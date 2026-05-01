@@ -13,7 +13,6 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
     public record Condition(String id, String name, String requirement, String failMessage) {
     }
 
-    // MỚI: Thêm dữ liệu tỷ lệ xuất hiện của Stage
     public record StageData(double chance, List<Map<String, Object>> actions) {
     }
 
@@ -22,6 +21,10 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                            boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats,
                            String deathAction, boolean clearMobDrops,
                            int requiredLivesToJoin, int livesDeductedPerDeath,
-                           boolean randomizeStages) { // MỚI: Cài đặt xáo trộn Stage
+                           boolean randomizeStages, int maxPlayers) {
+        /**
+         * Added maxPlayers parameter to dictate how many players can join this specific map.
+         * A value of -1 or 0 means it falls back to the global party limit.
+         */
     }
 }

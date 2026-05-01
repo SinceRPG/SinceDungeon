@@ -460,7 +460,6 @@ public class DungeonListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
 
-        // [NEW FIX] Instantly cancel any pending cross-server requests to prevent memory leaks and ghost states
         plugin.getDungeonManager().cancelPendingRequest(p.getUniqueId());
 
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
@@ -469,7 +468,6 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        // Restore cursor item if the player disconnects while interacting with the Reward GUI
         if (p.getOpenInventory().getTopInventory().getHolder() instanceof RewardHolder) {
             if (p.getItemOnCursor().getType() != Material.AIR) {
                 p.getInventory().addItem(p.getItemOnCursor());

@@ -42,6 +42,11 @@ public class EditorGUI {
         return getMsg("words." + key);
     }
 
+    public String getWord(String key, String def) {
+        String res = getMsg("words." + key);
+        return (res == null || res.isEmpty()) ? def : res;
+    }
+
     public void sendMessage(Player p, String key, String... placeholders) {
         String msg = getMsg("chat." + key);
         if (msg == null || msg.isEmpty()) {
@@ -157,7 +162,6 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
-    // Add this helper method to EditorGUI
     private List<String> getDynamicLore(String path, String replacement) {
         List<String> lore = new ArrayList<>();
         for (String s : plugin.getMessagesFile().getStringList("editor.items." + path)) {
@@ -166,7 +170,6 @@ public class EditorGUI {
         return lore;
     }
 
-    // Inside openSettingsMenu(Player p, EditorSession session)
     public void openSettingsMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openSettingsMenu(player, session));
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", 0), 27, ColorUtils.parse(getMsg("title.settings")));
@@ -182,6 +185,8 @@ public class EditorGUI {
         int reqLives = session.getConfig().contains("settings.required-lives-to-join") ? session.getConfig().getInt("settings.required-lives-to-join") : 1;
         int deductLives = session.getConfig().contains("settings.lives-deducted-per-death") ? session.getConfig().getInt("settings.lives-deducted-per-death") : 1;
         boolean randomizeStages = session.getConfig().contains("settings.randomize-stages") ? session.getConfig().getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
+        int maxPlayers = session.getConfig().contains("settings.max-players") ? session.getConfig().getInt("settings.max-players") : -1;
+
         inv.setItem(21, makeItem(Material.ENDER_PEARL, getMsg("items.setting_randomize_stages"), getDynamicLore("setting_randomize_stages_lore", randomizeStages ? getWord("true_word") : getWord("false_word"))));
 
         inv.setItem(10, makeItem(Material.TOTEM_OF_UNDYING, getMsg("items.setting_keep_inv"), getDynamicLore("setting_keep_inv_lore", keepInv ? getWord("true_word") : getWord("false_word"))));
@@ -193,9 +198,11 @@ public class EditorGUI {
         inv.setItem(16, makeItem(Material.SKELETON_SKULL, getMsg("items.setting_death_action"), getDynamicLore("setting_death_action_lore", deathAction.toUpperCase())));
         inv.setItem(17, makeItem(Material.ROTTEN_FLESH, getMsg("items.setting_clear_drops"), getDynamicLore("setting_clear_drops_lore", clearMobDrops ? getWord("true_word") : getWord("false_word"))));
 
-        // Lives Settings
         inv.setItem(19, makeItem(Material.RED_BED, getMsg("items.setting_req_lives"), getDynamicLore("setting_req_lives_lore", String.valueOf(reqLives))));
         inv.setItem(20, makeItem(Material.WITHER_ROSE, getMsg("items.setting_deduct_lives"), getDynamicLore("setting_deduct_lives_lore", String.valueOf(deductLives))));
+
+        String maxStr = maxPlayers > 0 ? String.valueOf(maxPlayers) : getWord("unlimited", "Unlimited");
+        inv.setItem(23, makeItem(Material.PLAYER_HEAD, getMsg("items.setting_max_players", "&eMax Players Allowed"), getDynamicLore("setting_max_players_lore", maxStr)));
 
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back"), null));
         p.openInventory(inv);
@@ -525,10 +532,7 @@ public class EditorGUI {
             String val = String.valueOf(sec.get(key));
             Material icon = Material.BOOK;
             String hint = getMsg("items.action_val_hint_edit", "<yellow>Trái: Sửa | <red>Shift-Phải: Xóa");
-            /**
-             * Checks if the configuration key represents a location coordinate.
-             * Added "center" to support the ControlZoneAction properties.
-             */
+
             boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
             boolean isList = sec.isList(key);
             boolean isItems = key.equalsIgnoreCase("items");

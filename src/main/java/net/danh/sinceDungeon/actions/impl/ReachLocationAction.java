@@ -35,32 +35,41 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
-
         ticks++;
+
         if (centerLoc != null && ticks % 5 == 0) {
             double r = Math.sqrt(radiusSq) > 0 ? Math.sqrt(radiusSq) : 1.5;
             double yOffset = Math.sin(ticks * 0.1) * 0.3;
+            String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_idle", "HAPPY_VILLAGER");
+            Particle pType = Particle.HAPPY_VILLAGER;
+            try {
+                pType = Particle.valueOf(pName.toUpperCase());
+            } catch (Exception ignored) {
+            }
 
             for (int i = 0; i < 360; i += 30) {
                 double angle = i * Math.PI / 180;
                 double x = r * Math.cos(angle);
                 double z = r * Math.sin(angle);
-                centerLoc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, centerLoc.clone().add(x, yOffset, z), 1, 0, 0, 0, 0);
+                centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, yOffset, z), 1, 0, 0, 0, 0);
             }
         }
 
         for (Player p : game.getParticipants()) {
             Location loc = p.getLocation();
             if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
-                double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) +
-                        Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
-
+                double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) + Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
                 double yDiff = loc.getY() - target.getY();
 
                 if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.reach_complete");
-                    game.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+
+                    String pComplete = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_complete", "TOTEM_OF_UNDYING");
+                    try {
+                        game.getWorld().spawnParticle(Particle.valueOf(pComplete.toUpperCase()), centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+                    } catch (Exception ignored) {
+                    }
                     break;
                 }
             }

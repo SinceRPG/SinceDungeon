@@ -29,7 +29,6 @@ public class RewardSessionManager {
             long now = System.currentTimeMillis();
             RewardGUI gui = new RewardGUI(plugin);
 
-            // Retrieve expiration time from config, default to 300 seconds (5 minutes)
             int expireSeconds = plugin.getConfigFile().getInt("reward.session-expire-seconds", 300);
             long expireMillis = expireSeconds * 1000L;
 
@@ -45,7 +44,7 @@ public class RewardSessionManager {
                     sessions.remove(entry.getKey());
                 }
             }
-        }, 1200L, 1200L); // Task runs every 60 seconds to check for expired sessions
+        }, 1200L, 1200L);
     }
 
     public static void addSession(Player p, RewardSession session) {

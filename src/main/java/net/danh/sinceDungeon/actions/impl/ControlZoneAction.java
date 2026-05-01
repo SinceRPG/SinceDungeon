@@ -27,7 +27,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         this.center = center;
         this.startRadius = startRadius;
         this.endRadius = endRadius;
-        this.requiredTicks = requiredSeconds * 20; // Chuyển giây thành tick (20 ticks = 1s)
+        this.requiredTicks = requiredSeconds * 20;
         this.mobType = mobType;
         this.mobInterval = mobInterval;
     }
@@ -51,27 +51,39 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         if (completed || centerLoc == null) return;
         tickCounter++;
 
-        // Tính toán bán kính hiện tại dựa trên tiến độ (Vòng bo thu hẹp hoặc mở rộng)
         double progress = (double) currentTicks / requiredTicks;
         double currentRadius = startRadius - ((startRadius - endRadius) * progress);
         if (currentRadius <= 0) currentRadius = 1.0;
 
-        // Vẽ vòng bo (Particle Ring) mỗi 5 tick
+        /**
+         * NO HARDCODE: Fetch particle type from config.
+         */
         if (tickCounter % 5 == 0) {
+            String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_border", "FLAME");
+            Particle pType = Particle.FLAME;
+            try {
+                pType = Particle.valueOf(pName.toUpperCase());
+            } catch (Exception ignored) {
+            }
+
             for (int i = 0; i < 360; i += 15) {
                 double angle = i * Math.PI / 180;
                 double x = currentRadius * Math.cos(angle);
                 double z = currentRadius * Math.sin(angle);
-                centerLoc.getWorld().spawnParticle(Particle.FLAME, centerLoc.clone().add(x, 0.2, z), 1, 0, 0, 0, 0);
+                centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, 0.2, z), 1, 0, 0, 0, 0);
             }
         }
 
-        // Đếm số người chơi đang đứng trong vòng bo
         int insideCount = 0;
-        int requiredPlayers = Math.max(1, (int) Math.ceil(game.getParticipants().size() * 0.75)); // Yêu cầu 75% thành viên
+        int activePlayers = 0;
 
+        /**
+         * LOGIC FIX: Dynamically calculate active players so dead/spectating players
+         * do not permanently lock the zone capture requirements.
+         */
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
+                activePlayers++;
                 if (p.getLocation().getWorld().equals(game.getWorld())) {
                     if (p.getLocation().distanceSquared(centerLoc) <= currentRadius * currentRadius) {
                         insideCount++;
@@ -80,11 +92,11 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             }
         }
 
-        // Nếu đủ số người yêu cầu, tăng tiến độ
+        int requiredPlayers = Math.max(1, (int) Math.ceil(activePlayers * 0.75));
+
         if (insideCount >= requiredPlayers) {
             currentTicks++;
 
-            // Sinh quái vật cản đường (nếu có cấu hình)
             if (!mobType.equalsIgnoreCase("NONE") && tickCounter % mobInterval == 0) {
                 spawnInterferenceMob(game, currentRadius);
             }
@@ -92,10 +104,14 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             if (currentTicks >= requiredTicks) {
                 this.completed = true;
                 game.sendActionMessage(this, "complete", "action.zone_complete");
-                centerLoc.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
+
+                String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_complete", "TOTEM_OF_UNDYING");
+                try {
+                    centerLoc.getWorld().spawnParticle(Particle.valueOf(pName.toUpperCase()), centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
+                } catch (Exception ignored) {
+                }
             }
         } else {
-            // Cảnh báo nếu không đủ người trong vòng
             if (tickCounter % 40 == 0) {
                 game.sendActionMessage(this, "warning", "action.zone_warning", "<required>", String.valueOf(requiredPlayers));
             }
@@ -106,7 +122,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         try {
             EntityType type = EntityType.valueOf(mobType.toUpperCase());
             double angle = Math.random() * Math.PI * 2;
-            // Cho quái sinh ra ở mép vòng bo
             double spawnRadius = currentRadius + 1.0;
             double x = spawnRadius * Math.cos(angle);
             double z = spawnRadius * Math.sin(angle);
@@ -115,7 +130,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             game.getWorld().spawnEntity(spawnLoc, type);
             game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
         } catch (Exception ignored) {
-            // Invalid mob type, safely ignore
         }
     }
 }

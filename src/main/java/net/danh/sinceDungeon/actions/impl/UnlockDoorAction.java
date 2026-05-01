@@ -63,7 +63,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         if (game.getWorld() == null) return;
         this.triggerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
 
-        // Phát la bàn truy vết cho mọi người
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
         ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("dungeon-items.compass");
 
@@ -105,7 +104,6 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
             game.getWorld().spawnParticle(lockedParticle, triggerLoc, 5, 0.2, 0.2, 0.2, 0.1);
         }
 
-        // Liên tục ép hướng la bàn về ổ khóa
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && p.getWorld().equals(game.getWorld())) {
                 p.setCompassTarget(triggerLoc);

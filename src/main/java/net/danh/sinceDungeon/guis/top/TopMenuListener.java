@@ -39,7 +39,6 @@ public class TopMenuListener implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof TopHolder holder)) return;
 
-        // Cancel all clicks to prevent item stealing
         e.setCancelled(true);
 
         if (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR) return;
@@ -49,7 +48,6 @@ public class TopMenuListener implements Listener {
         int slot = e.getRawSlot();
         int guiSize = e.getView().getTopInventory().getSize();
 
-        // Handle Pagination
         if (slot == guiSize - 9) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             gui.openTopGUI(p, holder.dungeonId(), holder.category(), holder.page() - 1);
@@ -61,7 +59,6 @@ public class TopMenuListener implements Listener {
             return;
         }
 
-        // Handle Category Switching
         if (slot == guiSize - 7) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             gui.openTopGUI(p, holder.dungeonId(), TopManager.TopCategory.FASTEST_TIME, 0);

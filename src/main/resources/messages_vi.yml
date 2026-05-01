@@ -235,6 +235,7 @@ error:
   dungeon_sealed_entry: "&cKhu vực này đã bị phong ấn. Bạn không thể xâm nhập trái phép!"
   dungeon_sealed_teleport: "&cKhu vực này đã bị phong ấn. Bạn không thể dịch chuyển vào trong!"
   not_in_dungeon: "&cBạn hiện không ở trong Dungeon nào."
+  exceed_max_players: "&cDungeon này chỉ cho phép tối đa <max> người! Tổ đội của bạn đang vượt quá giới hạn."
 
 reward:
   gui_title: "&6&lPhần Thưởng Dungeon"
@@ -276,6 +277,7 @@ editor:
     cancel: "cancel"
     here: "here"
     clear: "clear"
+    unlimited: "Không giới hạn"
   actions_name:
     spawn_wave: "Triệu hồi Quái Vanilla"
     reach_location: "Đến Trạm Kiểm Tra"
@@ -309,6 +311,10 @@ editor:
     settings: "&lCài Đặt Chuyên Sâu"
     edit_action_items: "&lSắp xếp Rương: <index>"
   items:
+    setting_max_players: "&eGiới Hạn Người Chơi"
+    setting_max_players_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Chỉnh sửa"
     setting_randomize_stages: "&eTrộn Ngẫu Nhiên Các Giai Đoạn (Rogue-like)"
     setting_randomize_stages_lore:
       - "&7Hiện tại: <val>"
@@ -449,6 +455,10 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_max_players:
+        - "&7Nhập giới hạn người chơi tối đa cho Dungeon này."
+        - "&7Nhập &c-1 &7hoặc &c0 &7nếu không muốn giới hạn (Mặc định theo số lượng Party)."
+        - "&7Ví dụ: &a6"
       edit_action_key_id:
         - "&7Nhập ID duy nhất cho chìa khóa/cửa này."
         - "&7Ví dụ: &adoor_1"

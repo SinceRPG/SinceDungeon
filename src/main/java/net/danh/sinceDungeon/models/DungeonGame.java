@@ -79,9 +79,6 @@ public class DungeonGame {
 
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         this.worldName = prefix + initiator.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
-
-        // [OPTIMIZATION] Cache the Action Bar texts once upon game creation.
-        // This avoids querying the YAML configuration 5 times per second per party.
         this.cachedObjectivePrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
         this.cachedTimeLeftFormat = plugin.getMessagesFile().getString("game.hud.time_left", " <red>(<time>s)");
 

@@ -329,6 +329,13 @@ sounds:
   reward_reveal: "entity.player.levelup"
   reward_claim: "entity.item.pickup"
 
+particles:
+  zone_border: "FLAME"
+  zone_complete: "TOTEM_OF_UNDYING"
+  wall_break: "EXPLOSION"
+  reach_location_idle: "HAPPY_VILLAGER"
+  reach_location_complete: "TOTEM_OF_UNDYING"
+
 dungeon-items:
   key:
     material: "TRIPWIRE_HOOK"

@@ -237,6 +237,19 @@ public class EditorMenuListener implements Listener {
                     plugin.getEditorListener().startListening(p, session);
                 } else if (slot == 21) {
                     path = "settings.randomize-stages";
+                } else if (slot == 23) {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_max_players", val -> {
+                        try {
+                            int newVal = Integer.parseInt(val);
+                            session.getConfig().set("settings.max-players", newVal);
+                            gui.sendMessage(p, "update_val", "<key>", "Max Players", "<val>", String.valueOf(newVal));
+                            gui.openSettingsMenu(p, session);
+                        } catch (Exception ex) {
+                            gui.sendMessage(p, "number_error");
+                            gui.openSettingsMenu(p, session);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
                 }
 
                 if (!path.isEmpty()) {
@@ -607,7 +620,7 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
-                boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos");
+                boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
                 boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;

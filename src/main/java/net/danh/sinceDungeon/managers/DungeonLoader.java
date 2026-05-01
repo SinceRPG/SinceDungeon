@@ -47,7 +47,10 @@ public class DungeonLoader {
         int deductLives = config.getInt("settings.lives-deducted-per-death", 1);
         boolean randomizeStages = config.contains("settings.randomize-stages") ? config.getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages);
+        // Load the new max-players limit from configuration
+        int maxPlayers = config.getInt("settings.max-players", -1);
+
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers);
 
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
@@ -94,7 +97,7 @@ public class DungeonLoader {
             for (String stageKey : stageSec.getKeys(false)) {
                 try {
                     int stageNum = Integer.parseInt(stageKey);
-                    double chance = stageSec.getDouble(stageKey + ".chance", 100.0); // MỚI: Tải Tỷ lệ
+                    double chance = stageSec.getDouble(stageKey + ".chance", 100.0);
 
                     ConfigurationSection actionSec = stageSec.getConfigurationSection(stageKey + ".actions");
                     List<Map<String, Object>> actionList = new ArrayList<>();

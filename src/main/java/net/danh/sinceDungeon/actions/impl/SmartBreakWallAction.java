@@ -4,7 +4,10 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
-import org.bukkit.*;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -131,8 +134,15 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                             currentZ++;
                             if (currentZ > maxZ) {
                                 Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
-                                game.getWorld().playSound(center, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1f);
-                                game.getWorld().spawnParticle(Particle.EXPLOSION, center, 3);
+
+                                String soundExplode = SinceDungeon.getPlugin().getConfigFile().getString("sounds.wall_break", "entity.generic.explode");
+                                game.getWorld().playSound(center, net.danh.sinceDungeon.utils.SoundUtils.getSound(soundExplode), 1f, 1f);
+
+                                String particleName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
+                                try {
+                                    game.getWorld().spawnParticle(Particle.valueOf(particleName.toUpperCase()), center, 3);
+                                } catch (Exception ignored) {
+                                }
                                 cancel();
                                 return;
                             }

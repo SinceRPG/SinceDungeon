@@ -75,11 +75,9 @@ public class TopGUI {
         int limit = plugin.getConfigFile().getInt("leaderboard.fetch-limit", 50);
         int guiSize = plugin.getConfigFile().getInt("leaderboard.gui-size", 54);
 
-        // Fetch data asynchronously to prevent freezing the server
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             List<TopManager.TopEntry> records = plugin.getTopManager().getTop(dungeonId, category, limit);
 
-            // Sync back to main thread to create and open the inventory
             Bukkit.getScheduler().runTask(plugin, () -> {
                 String titleRaw = plugin.getMessagesFile().getString("top.gui_title", "&6&lLeaderboard: &e<map>");
                 Inventory inv = Bukkit.createInventory(new TopHolder(dungeonId, category, page), guiSize, ColorUtils.parse(titleRaw.replace("<map>", dungeonId)));
@@ -87,7 +85,6 @@ public class TopGUI {
                 int maxPage = Math.max(0, (records.size() - 1) / 36);
                 int currentPage = Math.clamp(page, 0, maxPage);
 
-                // Render the records
                 for (int i = 0; i < 36; i++) {
                     int index = i + (currentPage * 36);
                     if (index >= records.size()) break;
@@ -135,7 +132,6 @@ public class TopGUI {
                     inv.setItem(i, makeItem(mat, nameRaw, loreRaw));
                 }
 
-                // Render Navigation & Category Switch Buttons
                 Material timeMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_time", "CLOCK"));
                 Material killsMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_kills", "DIAMOND_SWORD"));
                 Material clearsMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_clears", "NETHER_STAR"));
@@ -146,7 +142,6 @@ public class TopGUI {
                 inv.setItem(guiSize - 5, makeItem(killsMat, plugin.getMessagesFile().getString("top.category_kills"), switchLore));
                 inv.setItem(guiSize - 3, makeItem(clearsMat, plugin.getMessagesFile().getString("top.category_clears"), switchLore));
 
-                // Pagination Buttons
                 String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
                 Material navMat = Material.matchMaterial(navItemStr);
                 if (navMat == null) navMat = Material.ARROW;

@@ -32,7 +32,7 @@ public class LivesExpansion extends PlaceholderExpansion {
 
     @Override
     public boolean persist() {
-        return true; // Keeps the expansion registered even if PAPI reloads
+        return true;
     }
 
     @Nullable
@@ -42,7 +42,6 @@ public class LivesExpansion extends PlaceholderExpansion {
 
         LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(player.getUniqueId());
 
-        // If data is not cached (e.g., player is offline and data was unloaded), return defaults to avoid main-thread database lag.
         if (lives == null) {
             if (params.equalsIgnoreCase("lives") || params.equalsIgnoreCase("max_lives")) return "0";
             return "";
