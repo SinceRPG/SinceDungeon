@@ -15,9 +15,17 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.UUID;
 
+/**
+ * Handles the logic for the Control Zone objective.
+ * Players must stay within a shrinking circular radius for a specific duration.
+ * Spawns interference mobs dynamically and cleans them up upon completion.
+ */
 public class ControlZoneAction extends DungeonAction implements Tickable {
     private final Vector center;
     private final double startRadius;
@@ -34,6 +42,8 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     private int currentTicks = 0;
     private int tickCounter = 0;
     private Location centerLoc;
+
+    private final Set<UUID> spawnedMobs = new HashSet<>();
 
     public ControlZoneAction(Vector center, double startRadius, double endRadius, int requiredSeconds,
                              String mob, int mobInterval, int mobLevel, String customName, boolean isBaby,
@@ -122,6 +132,8 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                     centerLoc.getWorld().spawnParticle(Particle.valueOf(pName.toUpperCase(Locale.ROOT)), centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
                 } catch (Exception ignored) {
                 }
+
+                clearLeftoverMobs();
             }
         } else {
             if (tickCounter % 40 == 0) {
@@ -134,6 +146,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
      * Calculates the exact perimeter of the current control zone circle and generates
      * an interference monster on the edge to disrupt the players.
      * Supports both Vanilla entities and MythicMobs integration.
+     * Keeps track of the generated entities to clear them upon action completion.
      *
      * @param game          The active dungeon game instance.
      * @param currentRadius The current dynamically shrinking radius of the control zone.
@@ -172,6 +185,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                         game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
+                        spawnedMobs.add(le.getUniqueId());
                     }
                 }
             } else {
@@ -180,12 +194,32 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                 if (ent instanceof LivingEntity living) {
                     applyCustomProperties(living);
                     game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
+                    spawnedMobs.add(living.getUniqueId());
                 }
             }
         } catch (Exception ignored) {
         }
     }
 
+    /**
+     * Loops through all tracked entities spawned by this specific zone
+     * and securely removes them from the world memory.
+     */
+    private void clearLeftoverMobs() {
+        for (UUID uuid : spawnedMobs) {
+            Entity entity = Bukkit.getEntity(uuid);
+            if (entity != null && !entity.isDead()) {
+                entity.remove();
+            }
+        }
+        spawnedMobs.clear();
+    }
+
+    /**
+     * Injects configured attributes and properties into the newly spawned Vanilla entity.
+     *
+     * @param living The entity instance that will receive the custom properties.
+     */
     private void applyCustomProperties(LivingEntity living) {
         living.setRemoveWhenFarAway(false);
         living.setPersistent(true);
