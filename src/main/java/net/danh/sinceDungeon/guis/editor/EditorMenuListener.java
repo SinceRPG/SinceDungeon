@@ -479,6 +479,9 @@ public class EditorMenuListener implements Listener {
                     String nextType = switch (currentType) {
                         case "ITEM" -> "COMMAND";
                         case "COMMAND" -> "MMOITEM";
+                        case "MMOITEM" -> "LIFE_ITEM";
+                        case "LIFE_ITEM" -> "COOLDOWN_RESET";
+                        case "COOLDOWN_RESET" -> "COOLDOWN_REDUCE";
                         default -> "ITEM";
                     };
                     session.getConfig().set(path + ".type", nextType);
@@ -488,7 +491,36 @@ public class EditorMenuListener implements Listener {
                     if (e.getClick() == ClickType.RIGHT) {
                         ItemStack hand = p.getInventory().getItemInMainHand();
                         if (hand.getType() != Material.AIR) {
-                            String val = hand.getType().name() + ":" + hand.getAmount();
+                            String val;
+                            NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+                            NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
+                            NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
+                            NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+
+                            if (ItemBuilder.hasTag(hand, lifeKey, PersistentDataType.INTEGER)) {
+                                val = String.valueOf(hand.getAmount());
+                                session.getConfig().set(path + ".type", "LIFE_ITEM");
+                            } else if (ItemBuilder.hasTag(hand, resetKey, PersistentDataType.BYTE)) {
+                                val = String.valueOf(hand.getAmount());
+                                session.getConfig().set(path + ".type", "COOLDOWN_RESET");
+                            } else if (ItemBuilder.hasTag(hand, reduceKey, PersistentDataType.INTEGER)) {
+                                int secs = ItemBuilder.getTag(hand, reduceKey, PersistentDataType.INTEGER);
+                                val = secs + ":" + hand.getAmount();
+                                session.getConfig().set(path + ".type", "COOLDOWN_REDUCE");
+                            } else if (ItemBuilder.hasTag(hand, keyTag, PersistentDataType.STRING)) {
+                                String keyId = ItemBuilder.getTag(hand, keyTag, PersistentDataType.STRING);
+                                val = keyId + ":" + hand.getAmount();
+                                session.getConfig().set(path + ".type", "ITEM"); // Optional fallback type for keys
+                            } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems") && MMOItemsHook.getMMOItemString(hand) != null) {
+                                String mmoStr = MMOItemsHook.getMMOItemString(hand); // MMOITEMS:TYPE:ID:AMOUNT
+                                String[] mmoParts = mmoStr.split(":");
+                                val = mmoParts[1] + ":" + mmoParts[2] + ":" + mmoParts[3];
+                                session.getConfig().set(path + ".type", "MMOITEM");
+                            } else {
+                                val = hand.getType().name() + ":" + hand.getAmount();
+                                session.getConfig().set(path + ".type", "ITEM");
+                            }
+
                             session.getConfig().set(path + ".value", val);
                             gui.sendMessage(p, "item_set_hand", "<item>", val);
                             gui.openRewardEditor(p, session);
@@ -755,15 +787,27 @@ public class EditorMenuListener implements Listener {
                 session.getConfig().set(path, null);
 
                 Inventory inv = e.getView().getTopInventory();
+
+                NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+                NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+                NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
+                NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
+
                 for (int i = 0; i < inv.getSize(); i++) {
                     ItemStack item = inv.getItem(i);
                     if (item != null && item.getType() != Material.AIR) {
                         String itemStr = null;
-                        NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
 
                         if (ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {
                             String keyId = ItemBuilder.getTag(item, keyTag, PersistentDataType.STRING);
                             itemStr = "KEY:" + keyId + ":" + item.getAmount();
+                        } else if (ItemBuilder.hasTag(item, lifeKey, PersistentDataType.INTEGER)) {
+                            itemStr = "LIFE_ITEM:" + item.getAmount();
+                        } else if (ItemBuilder.hasTag(item, resetKey, PersistentDataType.BYTE)) {
+                            itemStr = "COOLDOWN_RESET:" + item.getAmount();
+                        } else if (ItemBuilder.hasTag(item, reduceKey, PersistentDataType.INTEGER)) {
+                            int secs = ItemBuilder.getTag(item, reduceKey, PersistentDataType.INTEGER);
+                            itemStr = "COOLDOWN_REDUCE:" + secs + ":" + item.getAmount();
                         } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
                             itemStr = MMOItemsHook.getMMOItemString(item);
                         }

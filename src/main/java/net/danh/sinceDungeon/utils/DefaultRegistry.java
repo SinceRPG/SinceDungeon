@@ -8,10 +8,13 @@ import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.managers.DungeonManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -31,6 +34,29 @@ public class DefaultRegistry {
     public static void registerAll(SinceDungeon plugin, DungeonManager manager) {
         registerDefaultProcessors(plugin, manager);
         registerDefaultActions(plugin, manager);
+    }
+
+    /**
+     * Helper to safely drop custom items if the player's inventory is full.
+     */
+    private static void giveCustomItemReward(SinceDungeon plugin, Player p, ItemStack item, String fallbackName) {
+        HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
+        if (!left.isEmpty()) {
+            for (ItemStack drop : left.values()) {
+                p.getWorld().dropItem(p.getLocation(), drop);
+            }
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full")));
+        }
+
+        String displayName = fallbackName;
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            displayName = ColorUtils.toPlainText(item.getItemMeta().displayName());
+        }
+
+        String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
+        if (msg != null) {
+            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? item.getType().name() : displayName)));
+        }
     }
 
     /**
@@ -68,16 +94,7 @@ public class DefaultRegistry {
                     }
                 }
 
-                HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
-                if (!left.isEmpty()) {
-                    for (ItemStack drop : left.values()) {
-                        p.getWorld().dropItem(p.getLocation(), drop);
-                    }
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full")));
-                }
-                String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
-                if (msg != null)
-                    p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null || displayName.isEmpty() ? mat.name() + " x" + amount : displayName)));
+                giveCustomItemReward(plugin, p, item, mat.name() + " x" + amount);
             } catch (Exception e) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.error").replace("<item>", val)));
             }
@@ -97,19 +114,50 @@ public class DefaultRegistry {
 
                 ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
                 if (item != null) {
-                    if (displayName == null) displayName = mId;
-                    HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
-                    if (!left.isEmpty()) {
-                        for (ItemStack drop : left.values()) p.getWorld().dropItem(p.getLocation(), drop);
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full")));
-                    }
-                    String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
-                    if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
+                    giveCustomItemReward(plugin, p, item, displayName == null ? mId : displayName);
                 } else {
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_found").replace("<type>", mType).replace("<id>", mId)));
                 }
             } catch (Exception ignored) {
             }
+        });
+
+        manager.registerRewardProcessor("LIFE_ITEM", (p, val, displayName) -> {
+            int amount = parseRandomAmount(val);
+            NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "lives.life-item", "NETHER_STAR")
+                    .amount(amount)
+                    .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
+                    .setTag(lifeKey, PersistentDataType.INTEGER, amount)
+                    .build();
+            giveCustomItemReward(plugin, p, item, displayName);
+        });
+
+        manager.registerRewardProcessor("COOLDOWN_RESET", (p, val, displayName) -> {
+            int amount = parseRandomAmount(val);
+            NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+                    .amount(amount)
+                    .applyConfig(cfg, "&e&lCooldown Reset Ticket")
+                    .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
+                    .build();
+            giveCustomItemReward(plugin, p, item, displayName);
+        });
+
+        manager.registerRewardProcessor("COOLDOWN_REDUCE", (p, val, displayName) -> {
+            String[] parts = val.split(":");
+            int seconds = parts.length > 0 ? getInt(parts[0], 300) : 300;
+            int amount = parts.length > 1 ? parseRandomAmount(parts[1]) : 1;
+            NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+                    .amount(amount)
+                    .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
+                    .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
+                    .build();
+            giveCustomItemReward(plugin, p, item, displayName);
         });
     }
 

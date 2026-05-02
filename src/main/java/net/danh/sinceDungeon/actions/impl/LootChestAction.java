@@ -28,7 +28,7 @@ import java.util.Map;
 
 /**
  * Handles spawning a lootable chest that players must empty to proceed.
- * Supports Vanilla items, MMOItems, and dynamically generated Custom Dungeon Keys.
+ * Supports Vanilla items, MMOItems, Dungeon Keys, Life Items, and Cooldown Tickets.
  */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
@@ -41,7 +41,9 @@ public class LootChestAction extends DungeonAction implements Tickable {
         this.chestLocation = location;
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
             String data = entry.getValue();
-            if (data.toUpperCase().startsWith("MMOITEMS") || data.toUpperCase().startsWith("KEY:")) {
+            if (data.toUpperCase().startsWith("MMOITEMS") || data.toUpperCase().startsWith("KEY:") ||
+                    data.toUpperCase().startsWith("LIFE_ITEM:") || data.toUpperCase().startsWith("COOLDOWN_RESET:") ||
+                    data.toUpperCase().startsWith("COOLDOWN_REDUCE:")) {
                 dynamicItemsConfig.put(entry.getKey(), data);
             } else {
                 ItemStack is = parseVanilla(data);
@@ -136,7 +138,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
     }
 
     /**
-     * Parses dynamic item configurations, specifically MMOItems and Internal Dungeon Keys.
+     * Parses dynamic item configurations, specifically MMOItems, Keys, and Cooldown/Life Tickets.
      */
     private ItemStack parseDynamic(String data) {
         try {
@@ -154,6 +156,40 @@ public class LootChestAction extends DungeonAction implements Tickable {
                         .amount(amount)
                         .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
                         .setTag(keyTag, PersistentDataType.STRING, keyId)
+                        .build();
+            }
+
+            if (parts[0].equalsIgnoreCase("LIFE_ITEM")) {
+                int amount = parts.length >= 2 ? Integer.parseInt(parts[1]) : 1;
+                NamespacedKey lifeKey = new NamespacedKey(SinceDungeon.getPlugin(), "life_amount");
+                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "lives.life-item", "NETHER_STAR")
+                        .amount(amount)
+                        .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
+                        .setTag(lifeKey, PersistentDataType.INTEGER, amount)
+                        .build();
+            }
+
+            if (parts[0].equalsIgnoreCase("COOLDOWN_RESET")) {
+                int amount = parts.length >= 2 ? Integer.parseInt(parts[1]) : 1;
+                NamespacedKey resetKey = new NamespacedKey(SinceDungeon.getPlugin(), "cooldown_reset");
+                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
+                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "cooldown.reset-item", "PAPER")
+                        .amount(amount)
+                        .applyConfig(cfg, "&e&lCooldown Reset Ticket")
+                        .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
+                        .build();
+            }
+
+            if (parts[0].equalsIgnoreCase("COOLDOWN_REDUCE")) {
+                int seconds = parts.length >= 2 ? Integer.parseInt(parts[1]) : 300;
+                int amount = parts.length >= 3 ? Integer.parseInt(parts[2]) : 1;
+                NamespacedKey reduceKey = new NamespacedKey(SinceDungeon.getPlugin(), "cooldown_reduce");
+                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
+                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "cooldown.reduce-item", "CLOCK")
+                        .amount(amount)
+                        .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
+                        .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
                         .build();
             }
 
