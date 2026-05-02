@@ -8,12 +8,7 @@ import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
-import org.bukkit.Registry;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
@@ -48,16 +43,14 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final List<String> baseEquipment;
     private final Map<Integer, PhaseData> phases;
 
-    // Enrage Settings
     private final int enrageTime;
     private final String enrageMessage;
     private final List<String> enrageAttributes;
-
-    // Drops
     private final List<String> customDrops;
-    private final Set<Integer> executedPhases = new HashSet<>();
+
     private UUID bossId = null;
     private BossBar bossBar = null;
+    private final Set<Integer> executedPhases = new HashSet<>();
     private long spawnTimeMillis = 0;
     private boolean isEnraged = false;
 
@@ -109,9 +102,9 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
 
         this.bossId = boss.getUniqueId();
+        this.spawnedEntities.add(this.bossId);
         this.spawnTimeMillis = System.currentTimeMillis();
 
-        // Scale Health
         double totalHealth = baseHealth + (scaleHealthPerPlayer * Math.max(0, game.getParticipants().size() - 1));
         AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
         if (healthAttr != null) {
@@ -122,7 +115,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         applyAttributes(boss, baseAttributes);
         applyEquipment(boss, baseEquipment);
 
-        // Setup BossBar
         BarColor color = BarColor.RED;
         try {
             color = BarColor.valueOf(barColor.toUpperCase());
@@ -150,30 +142,22 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         if (completed || bossId == null || bossBar == null) return;
 
         Entity entity = Bukkit.getEntity(bossId);
-
-        // Fix: Safe cast to avoid pattern matching scope errors
         if (!(entity instanceof LivingEntity) || entity.isDead()) {
             handleCustomDrops(entity != null ? entity.getLocation() : null);
             completeBoss(game);
             return;
         }
-
         LivingEntity boss = (LivingEntity) entity;
 
-        // Check Enrage Timer
         if (enrageTime > 0 && !isEnraged) {
             long elapsedSeconds = (System.currentTimeMillis() - spawnTimeMillis) / 1000;
             if (elapsedSeconds >= enrageTime) {
                 isEnraged = true;
-
-                // Broadcast Enrage Message
                 if (enrageMessage != null && !enrageMessage.isEmpty()) {
                     for (Player p : game.getParticipants()) {
                         if (p.isOnline()) p.sendMessage(ColorUtils.parse(enrageMessage));
                     }
                 }
-
-                // Apply Enrage Stats
                 applyAttributes(boss, enrageAttributes);
             }
         }
@@ -182,12 +166,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         double maxHealth = healthAttr != null ? healthAttr.getValue() : 100.0;
         double progress = Math.max(0.0, Math.min(1.0, boss.getHealth() / maxHealth));
         bossBar.setProgress(progress);
-
-        for (Player p : game.getParticipants()) {
-            if (p.isOnline() && !bossBar.getPlayers().contains(p)) {
-                bossBar.addPlayer(p);
-            }
-        }
     }
 
     @Override
@@ -199,8 +177,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                 LivingEntity boss = (LivingEntity) e.getEntity();
                 AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
                 double maxHealth = healthAttr != null ? healthAttr.getValue() : 100.0;
-
-                // Calculate health percentage AFTER this damage event
                 double healthPct = ((boss.getHealth() - e.getFinalDamage()) / maxHealth) * 100.0;
 
                 for (Map.Entry<Integer, PhaseData> phase : phases.entrySet()) {
@@ -214,6 +190,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         } else if (event instanceof EntityDeathEvent e) {
             if (e.getEntity().getUniqueId().equals(bossId)) {
                 handleCustomDrops(e.getEntity().getLocation());
+                cleanup(game); // Clean up all reinforcements on boss death
                 completeBoss(game);
             }
         }
@@ -228,7 +205,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
         applyAttributes(boss, data.attributes);
 
-        // Spawn Reinforcements
         if (data.reinforcementMob != null) {
             for (int i = 0; i < data.reinforcementAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 4.0;
@@ -237,6 +213,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
                 Entity rEnt = game.getWorld().spawnEntity(rLoc, data.reinforcementMob);
                 if (rEnt instanceof LivingEntity rLive) {
+                    this.spawnedEntities.add(rLive.getUniqueId()); // Track reinforcement for cleanup
                     rLive.setRemoveWhenFarAway(false);
                     if (data.reinforcementName != null && !data.reinforcementName.isEmpty()) {
                         rLive.customName(ColorUtils.parse(data.reinforcementName));
@@ -259,18 +236,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         game.sendActionMessage(this, "complete", "action.boss_defeated");
     }
 
-    @Override
-    public void cleanup(DungeonGame game) {
-        if (bossBar != null) {
-            bossBar.removeAll();
-            bossBar = null;
-        }
-        if (bossId != null) {
-            Entity ent = Bukkit.getEntity(bossId);
-            if (ent != null && !ent.isDead()) ent.remove();
-        }
-    }
-
     private void handleCustomDrops(Location loc) {
         if (loc == null || customDrops == null || customDrops.isEmpty()) return;
         for (String dropStr : customDrops) {
@@ -289,7 +254,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private void applyAttributes(LivingEntity living, List<String> attributesList) {
         if (attributesList == null || attributesList.isEmpty()) return;
         for (String attrStr : attributesList) {
@@ -389,7 +353,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     public static class PhaseData {
         public String message = "";
         public List<String> attributes = new ArrayList<>();
-
         public EntityType reinforcementMob = null;
         public int reinforcementAmount = 0;
         public String reinforcementName = "";

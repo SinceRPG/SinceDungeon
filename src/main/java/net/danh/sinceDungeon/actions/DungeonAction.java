@@ -3,18 +3,19 @@ package net.danh.sinceDungeon.actions;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Base abstract class for all dungeon actions/objectives.
  */
 public abstract class DungeonAction {
     public boolean completed = false;
+    protected final Set<UUID> spawnedEntities = new HashSet<>();
     private List<String> startMessages = new ArrayList<>();
     private Map<String, Boolean> notifications = new java.util.HashMap<>();
     private String actionType = "UNKNOWN";
@@ -39,7 +40,24 @@ public abstract class DungeonAction {
     public void onEvent(DungeonGame game, Event event) {
     }
 
+    /**
+     * Cleans up entities spawned during this action.
+     * Logic is controlled by the 'settings.clear-remaining-mobs' config option.
+     *
+     * @param game The current active dungeon game instance.
+     */
     public void cleanup(DungeonGame game) {
+        boolean autoClear = SinceDungeon.getPlugin().getConfigFile().getBoolean("settings.clear-remaining-mobs-on-action-complete", true);
+
+        if (autoClear && !spawnedEntities.isEmpty()) {
+            spawnedEntities.forEach(uuid -> {
+                Entity entity = Bukkit.getEntity(uuid);
+                if (entity != null && !entity.isDead()) {
+                    entity.remove();
+                }
+            });
+            spawnedEntities.clear();
+        }
     }
 
     /**
