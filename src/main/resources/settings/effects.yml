@@ -1,0 +1,32 @@
+# =========================================================
+# [EFFECTS & FEEDBACK CONFIGURATION]
+# =========================================================
+sounds:
+  door_locked: "block.chest.locked"
+  door_unlock: "block.iron_door.open"
+  compass_receive: "entity.item.pickup"
+  lobby_countdown: "block.note_block.pling"
+  game_start: "entity.ender_dragon.growl"
+  stage_start: "block.note_block.chime"
+  stage_complete: "entity.player.levelup"
+  editor_click: "ui.button.click"
+  editor_save: "block.anvil.use"
+  reward_reveal: "entity.player.levelup"
+  reward_claim: "entity.item.pickup"
+  wall_break: "entity.generic.explode"
+  mob_spawn: "entity.zombie.break_wooden_door"
+
+particles:
+  zone_border: "FLAME"
+  zone_complete: "TOTEM_OF_UNDYING"
+  wall_break: "EXPLOSION"
+  wall_crumble: "BLOCK_CRUMBLE"
+  reach_location_idle: "HAPPY_VILLAGER"
+  reach_location_complete: "TOTEM_OF_UNDYING"
+  mob_spawn: "CAMPFIRE_COSY_SMOKE"
+
+titles:
+  # The duration of Title animations displayed in milliseconds (1000ms = 1 second)
+  fade-in: 200
+  stay: 3000
+  fade-out: 500

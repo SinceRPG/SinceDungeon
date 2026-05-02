@@ -62,7 +62,7 @@ public class CooldownItemListener implements Listener {
             String msg = plugin.getLanguageManager().getString("cooldown.item_reset_used");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-            playConsumeEffects(p, "cooldown.reset-item");
+            playConsumeEffects(p, "items.cooldown_reset");
             return;
         }
 
@@ -85,7 +85,7 @@ public class CooldownItemListener implements Listener {
             String msg = plugin.getLanguageManager().getString("cooldown.item_reduce_used").replace("<time>", String.valueOf(secondsToReduce));
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-            playConsumeEffects(p, "cooldown.reduce-item");
+            playConsumeEffects(p, "items.cooldown_reduce");
         }
     }
 
@@ -97,12 +97,14 @@ public class CooldownItemListener implements Listener {
      * @param path The config path mapping to the item settings.
      */
     private void playConsumeEffects(Player p, String path) {
-        ConfigurationSection sec = plugin.getConfigFile().getConfig().getConfigurationSection(path);
+        ConfigurationSection sec = plugin.getConfigFile().getSection(path);
         if (sec == null) return;
 
         ConfigurationSection soundSec = sec.getConfigurationSection("consume-sound");
-        if (soundSec == null)
-            soundSec = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item.consume-sound"); // Fallback
+        ConfigurationSection fallbackSec = plugin.getConfigFile().getSection("items.life_crystal");
+        if (soundSec == null && fallbackSec != null) {
+            soundSec = fallbackSec.getConfigurationSection("consume-sound");
+        }
 
         if (soundSec != null && soundSec.getBoolean("enabled", true)) {
             String soundName = soundSec.getString("sound", "ENTITY_PLAYER_LEVELUP");
@@ -116,8 +118,9 @@ public class CooldownItemListener implements Listener {
         }
 
         ConfigurationSection particleSec = sec.getConfigurationSection("consume-particle");
-        if (particleSec == null)
-            particleSec = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item.consume-particle"); // Fallback
+        if (particleSec == null && fallbackSec != null) {
+            particleSec = fallbackSec.getConfigurationSection("consume-particle");
+        }
 
         if (particleSec != null && particleSec.getBoolean("enabled", true)) {
             String particleName = particleSec.getString("particle", "TOTEM_OF_UNDYING");

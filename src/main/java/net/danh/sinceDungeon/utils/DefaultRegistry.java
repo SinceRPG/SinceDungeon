@@ -25,23 +25,13 @@ import java.util.*;
  */
 public class DefaultRegistry {
 
-    /**
-     * Bootstraps the entire default registry suite.
-     *
-     * @param plugin  The plugin instance.
-     * @param manager The DungeonManager to register components into.
-     */
     public static void registerAll(SinceDungeon plugin, DungeonManager manager) {
         registerDefaultItemProviders(plugin, manager);
         registerDefaultProcessors(plugin, manager);
         registerDefaultActions(plugin, manager);
     }
 
-    /**
-     * Registers the built-in Item Providers (Keys, Lives, Cooldowns, MMOItems) into the registry.
-     */
     private static void registerDefaultItemProviders(SinceDungeon plugin, DungeonManager manager) {
-        // 1. Dungeon Keys (KEY:id:amount)
         manager.registerItemProvider("KEY", data -> {
             String[] parts = data.split(":");
             if (parts.length < 2) return null;
@@ -49,58 +39,54 @@ public class DefaultRegistry {
             int amount = parts.length >= 3 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
 
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
-            return ItemBuilder.fromConfig(plugin, "dungeon-items.key", "TRIPWIRE_HOOK")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.key");
+            return ItemBuilder.fromConfig(plugin, "items.key", "TRIPWIRE_HOOK")
                     .amount(amount)
                     .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
                     .setTag(keyTag, PersistentDataType.STRING, keyId)
                     .build();
         });
 
-        // 2. Life Items (LIFE_ITEM:amount)
         manager.registerItemProvider("LIFE_ITEM", data -> {
             String[] parts = data.split(":");
             int amount = parts.length >= 2 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
 
             NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
-            return ItemBuilder.fromConfig(plugin, "lives.life-item", "NETHER_STAR")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
+            return ItemBuilder.fromConfig(plugin, "items.life_crystal", "NETHER_STAR")
                     .amount(amount)
                     .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
                     .setTag(lifeKey, PersistentDataType.INTEGER, amount)
                     .build();
         });
 
-        // 3. Cooldown Reset (COOLDOWN_RESET:amount)
         manager.registerItemProvider("COOLDOWN_RESET", data -> {
             String[] parts = data.split(":");
             int amount = parts.length >= 2 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
 
             NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
-            return ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reset");
+            return ItemBuilder.fromConfig(plugin, "items.cooldown_reset", "PAPER")
                     .amount(amount)
                     .applyConfig(cfg, "&e&lCooldown Reset Ticket")
                     .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
                     .build();
         });
 
-        // 4. Cooldown Reduce (COOLDOWN_REDUCE:seconds:amount)
         manager.registerItemProvider("COOLDOWN_REDUCE", data -> {
             String[] parts = data.split(":");
             int seconds = parts.length >= 2 ? getInt(parts[1], 300) : 300;
             int amount = parts.length >= 3 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
 
             NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
-            return ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reduce");
+            return ItemBuilder.fromConfig(plugin, "items.cooldown_reduce", "CLOCK")
                     .amount(amount)
                     .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
                     .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
                     .build();
         });
 
-        // 5. MMOItems (MMOITEMS:TYPE:ID:AMOUNT)
         manager.registerItemProvider("MMOITEMS", data -> {
             if (!Bukkit.getPluginManager().isPluginEnabled("MMOItems")) return null;
             String[] parts = data.split(":");
@@ -112,9 +98,6 @@ public class DefaultRegistry {
         });
     }
 
-    /**
-     * Helper to safely drop custom items if the player's inventory is full.
-     */
     private static void giveCustomItemReward(SinceDungeon plugin, Player p, ItemStack item, String fallbackName) {
         HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
         if (!left.isEmpty()) {
@@ -135,9 +118,6 @@ public class DefaultRegistry {
         }
     }
 
-    /**
-     * Registers default processors such as condition checks and reward deliveries.
-     */
     private static void registerDefaultProcessors(SinceDungeon plugin, DungeonManager manager) {
         manager.registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
@@ -201,8 +181,8 @@ public class DefaultRegistry {
         manager.registerRewardProcessor("LIFE_ITEM", (p, val, displayName) -> {
             int amount = ItemBuilder.parseRandomAmount(val);
             NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "lives.life-item", "NETHER_STAR")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "items.life_crystal", "NETHER_STAR")
                     .amount(amount)
                     .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
                     .setTag(lifeKey, PersistentDataType.INTEGER, amount)
@@ -213,8 +193,8 @@ public class DefaultRegistry {
         manager.registerRewardProcessor("COOLDOWN_RESET", (p, val, displayName) -> {
             int amount = ItemBuilder.parseRandomAmount(val);
             NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reset");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reset", "PAPER")
                     .amount(amount)
                     .applyConfig(cfg, "&e&lCooldown Reset Ticket")
                     .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
@@ -227,8 +207,8 @@ public class DefaultRegistry {
             int seconds = parts.length > 0 ? getInt(parts[0], 300) : 300;
             int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
             NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
-            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reduce");
+            ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reduce", "CLOCK")
                     .amount(amount)
                     .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
                     .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
@@ -237,9 +217,6 @@ public class DefaultRegistry {
         });
     }
 
-    /**
-     * Registers all standard dungeon actions and binds them to the configuration layout.
-     */
     private static void registerDefaultActions(SinceDungeon plugin, DungeonManager manager) {
         Map<String, Object> spawnDefaults = new LinkedHashMap<>();
         spawnDefaults.put("mob", plugin.getConfigFile().getString("action-defaults.spawn_wave.mob", "ZOMBIE"));

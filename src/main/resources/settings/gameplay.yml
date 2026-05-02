@@ -1,0 +1,94 @@
+# =========================================================
+# [PARTY SYSTEM CONFIGURATION]
+# =========================================================
+party:
+  # Maximum members allowed in a single party
+  max-members: 4
+
+  # Allow party members to damage each other inside dungeons?
+  allow-friendly-fire: false
+
+  # Maximum block distance for party members to be pulled into a dungeon together (0 = map-wide)
+  max-join-distance: 50.0
+
+  # Reward sharing mode: EQUAL (all get the same), LEADER_ONLY (only leader gets chests)
+  reward-share-mode: "EQUAL"
+
+  # The display name of the system when sending automated party broadcasts
+  system-name: "System"
+
+  # Time in seconds before a party invite expires
+  invite-timeout: 60
+
+# =========================================================
+# [CORE DUNGEON RULES]
+# =========================================================
+dungeon:
+  # Countdown time (in seconds) before the dungeon starts
+  lobby-countdown: 10
+
+  # Folder containing template maps (located in the server's root plugin directory)
+  template-folder: "dungeons"
+
+  # World name prefix when generating a dungeon instance
+  world-prefix: "SinceDungeon_"
+
+  # Action when a player dies in a Dungeon (if out of lives):
+  # RESPAWN: Respawn at start of dungeon.
+  # FAIL: The entire team fails immediately.
+  death-action: "RESPAWN"
+
+  # Who receives a top (leaderboard) entry for Fastest Time and Most Clears?
+  # ALL_MEMBERS: All party members who completed the dungeon get credit.
+  # LEADER_ONLY: Only the party leader gets credit.
+  top-awarded-to: "ALL_MEMBERS"
+
+  # Clear default mob drops and EXP (like rotten flesh, bones) inside the dungeon?
+  clear-mob-drops: true
+
+  # Save and restore player stats (health, food, effects) before entering and after leaving?
+  save-and-restore-stats: false
+
+  # Actions when a player LOSES ALL LIVES in a Dungeon:
+  # SPECTATE: Become a spectator and watch teammates.
+  # KICK: Immediately kicked out.
+  # FAIL: The entire team fails immediately.
+  out-of-lives-action: "SPECTATE"
+
+  gameplay:
+    # Keep inventory and EXP when a player dies inside the dungeon?
+    keep-inventory-on-death: true
+    # Prevent players from dropping items inside the dungeon?
+    prevent-item-dropping: true
+    # Block Ender Pearls and Chorus Fruit teleportation inside the dungeon?
+    block-ender-pearls: true
+    # Delay in seconds before kicking players out of the dungeon after they win.
+    kick-delay-after-finish: 10
+    kick-countdown:
+      # Supported types: ACTIONBAR, TITLE, CHAT, NONE
+      display-type: "ACTIONBAR"
+    # Force daylight (6000 ticks) and clear weather when a dungeon is generated?
+    force-daylight-and-clear-weather: true
+    # Block commands inside dungeons to prevent cheating?
+    block-commands: true
+    # Shuffle the middle stages (Rogue-like mode).
+    randomize-stages: false
+    # List of allowed commands inside dungeons.
+    allowed-commands:
+      - "/party"
+      - "/p"
+      - "/dungeon"
+      - "/sincedungeon"
+
+# =========================================================
+# [LIVES SYSTEM CONFIGURATION]
+# =========================================================
+lives:
+  # Default maximum lives for a new player.
+  default-max-lives: 3
+  # Default starting lives for a new player.
+  default-start-lives: 3
+  # Regeneration interval in seconds (e.g., 3600 = 1 hour per life).
+  regen-interval-seconds: 3600
+  # How many lives to restore per interval.
+  regen-amount: 1

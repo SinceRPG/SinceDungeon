@@ -25,14 +25,6 @@ import java.util.List;
  */
 public class SinceDungeonCommand {
 
-    /**
-     * Registers the Admin command.
-     * The root command literal and aliases are dynamically loaded from the configuration.
-     * Integrates full Tab Completion suggestions for players, maps, and integer amounts.
-     *
-     * @param plugin The main plugin instance.
-     * @param event  The lifecycle registrar event.
-     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
         String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.admin-aliases");
@@ -230,9 +222,9 @@ public class SinceDungeonCommand {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
 
                                                 NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
-                                                ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+                                                ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
 
-                                                ItemStack item = ItemBuilder.fromConfig(plugin, "lives.life-item", "TOTEM_OF_UNDYING")
+                                                ItemStack item = ItemBuilder.fromConfig(plugin, "items.life_crystal", "TOTEM_OF_UNDYING")
                                                         .amount(amount)
                                                         .applyConfig(cfg, "&a&lExtra Life (+<amount>)", "<amount>", String.valueOf(amount))
                                                         .setTag(lifeKey, PersistentDataType.INTEGER, amount)
@@ -417,9 +409,9 @@ public class SinceDungeonCommand {
 
                                                     int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                     NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
-                                                    ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
+                                                    ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reset");
 
-                                                    ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+                                                    ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reset", "PAPER")
                                                             .amount(amount)
                                                             .applyConfig(cfg, "&e&lCooldown Reset Ticket")
                                                             .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
@@ -467,9 +459,9 @@ public class SinceDungeonCommand {
                                                             int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
 
                                                             NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
-                                                            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
+                                                            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reduce");
 
-                                                            ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+                                                            ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reduce", "CLOCK")
                                                                     .amount(amount)
                                                                     .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
                                                                     .setTag(reduceKey, PersistentDataType.INTEGER, seconds)

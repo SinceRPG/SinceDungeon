@@ -1,0 +1,127 @@
+# =========================================================
+# [ACTION DEFAULTS & NOTIFICATIONS]
+# =========================================================
+
+action-defaults:
+  spawn_wave:
+    mob: "ZOMBIE"
+    amount: 1
+    scale_with_party: false
+    time_limit: -1
+    time_penalty: 1
+    custom_name: ""
+    is_baby: false
+    attributes: [ ]
+    equipment: [ ]
+    locations:
+      - "0,0,0"
+    start_message:
+      - "&cMonsters are approaching!"
+  reach_location:
+    radius: 3.0
+    time_limit: -1
+    time_penalty: 1
+    start_message:
+      - "&eMove to the next checkpoint!"
+  mythic_wave:
+    mob: "SkeletonKing"
+    amount: 1
+    scale_with_party: false
+    level: 1
+    time_limit: -1
+    time_penalty: 1
+    locations:
+      - "0,0,0"
+    start_message:
+      - "&4A massive aura appears. The Boss has arrived!"
+  loot_chest:
+    time_limit: -1
+    time_penalty: 1
+    items: { }
+    start_message:
+      - "&6A supply chest has appeared, loot it!"
+  break_wall:
+    time_limit: -1
+    time_penalty: 1
+    start_message:
+      - "&bDestroy the seal to open the path!"
+  random_wave:
+    amount: 5
+    scale_with_party: false
+    time_limit: -1
+    time_penalty: 1
+    random_mobs:
+      - "VANILLA:ZOMBIE:50"
+      - "VANILLA:SKELETON:30"
+      - "MYTHIC:SkeletonKing:20:1"
+    start_message:
+      - "&cA horde of mixed enemies appears!"
+  control_zone:
+    center: "0,0,0"
+    start_radius: 10.0
+    end_radius: 3.0
+    required_time: 20
+    time_limit: -1
+    time_penalty: 1
+    mob_type: "NONE"
+    mob_interval: 60
+    start_message:
+      - "&eCapture and hold the zone!"
+  unlock_door:
+    trigger: "0,0,0"
+    corner1: "0,0,0"
+    corner2: "0,0,0"
+    time_limit: -1
+    time_penalty: 1
+    key_id: "door_1"
+    particle: "ENCHANT"
+    start_message:
+      - "&eYou found a Key! Follow your compass to unlock the path forward."
+  boss_battle:
+    time_limit: -1
+    time_penalty: 1
+    start_message:
+      - "&cThe Boss has appeared!"
+
+action-notifications:
+  spawn_wave:
+    custom_start: true
+    init: true
+    progress: true
+    complete: true
+  mythic_wave:
+    custom_start: true
+    init: true
+    progress: true
+    complete: true
+  loot_chest:
+    custom_start: true
+    init: true
+    progress: true
+    warning: true
+    complete: true
+  reach_location:
+    custom_start: true
+    init: true
+    complete: true
+  break_wall:
+    custom_start: true
+    complete: true
+  random_wave:
+    custom_start: true
+    init: true
+    progress: true
+    complete: true
+  control_zone:
+    custom_start: true
+    init: true
+    warning: true
+    complete: true
+  unlock_door:
+    custom_start: true
+    init: true
+    complete: true
+  boss_battle:
+    custom_start: true
+    init: true
+    complete: true

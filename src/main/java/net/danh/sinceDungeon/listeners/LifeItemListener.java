@@ -79,7 +79,7 @@ public class LifeItemListener implements Listener {
     }
 
     private void playConsumeEffects(Player p) {
-        ConfigurationSection sec = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+        ConfigurationSection sec = plugin.getConfigFile().getSection("items.life_crystal");
         if (sec == null) return;
 
         ConfigurationSection soundSec = sec.getConfigurationSection("consume-sound");

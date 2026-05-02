@@ -1,0 +1,105 @@
+# =========================================================
+# [CUSTOM ITEMS CONFIGURATION]
+# =========================================================
+items:
+
+  # ==================================
+  # DUNGEON KEY & COMPASS
+  # ==================================
+  key:
+    material: "TRIPWIRE_HOOK"
+    name: "&6&lDungeon Key &7(#<id>)"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+      - "&7A mysterious key used to"
+      - "&7unlock a sealed door."
+      - ""
+      - "&eFind the matching door!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+    glowing: true
+
+  compass:
+    material: "COMPASS"
+    name: "&b&lTracking Compass"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+      - "&7Follow the compass needle"
+      - "&7to find your objective."
+      - "&8&m━━━━━━━━━━━━━━━━━━━━"
+    glowing: true
+
+  # ==================================
+  # COOLDOWN RESET TICKET
+  # ==================================
+  cooldown_reset:
+    material: "PAPER"
+    name: "&e&l✦ Cooldown Reset Ticket ✦"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7A magical ticket that completely"
+      - "&7refreshes your dungeon energy."
+      - ""
+      - "&e&lRIGHT-CLICK &7to reset all cooldowns!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rarity: "RARE"
+    glowing: true
+
+  # ==================================
+  # COOLDOWN REDUCTION TICKET
+  # ==================================
+  cooldown_reduce:
+    material: "CLOCK"
+    name: "&a&l✦ Time Skip Ticket ✦ &8| &e-<time>s"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7Manipulate the flow of time to"
+      - "&7shorten your waiting periods."
+      - ""
+      - "&fReduces: &a<time> &fSeconds"
+      - ""
+      - "&e&lRIGHT-CLICK &7to fast-forward time!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rarity: "UNCOMMON"
+    glowing: true
+
+  # ==================================
+  # LIFE CRYSTAL
+  # ==================================
+  life_crystal:
+    material: "NETHER_STAR"
+    name: "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives"
+    lore:
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      - "&7A mythical crystal pulsating with"
+      - "&7ancient life force. Consume it to"
+      - "&7restore your soul from the abyss."
+      - ""
+      - "&fRestores: &a<amount> &fLives"
+      - ""
+      - "&e&lRIGHT-CLICK &7to consume!"
+      - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    rarity: "EPIC"
+    glowing: true
+    unbreakable: true
+    max-stack-size: 99
+    flags:
+      - "HIDE_ENCHANTS"
+      - "HIDE_ATTRIBUTES"
+      - "HIDE_UNBREAKABLE"
+    custom-model-data:
+      value: 1001
+
+    consume-sound:
+      enabled: true
+      sound: "entity.player.levelup"
+      volume: 1.0
+      pitch: 0.5
+
+    consume-particle:
+      enabled: true
+      particle: "TOTEM_OF_UNDYING"
+      amount: 40
+      offset-x: 0.5
+      offset-y: 1.0
+      offset-z: 0.5
+      speed: 0.15

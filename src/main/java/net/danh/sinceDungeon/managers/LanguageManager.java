@@ -9,6 +9,7 @@ import java.util.*;
 /**
  * Manages dynamically modularized language files.
  * Routes message queries to the correct category file based on the root path node.
+ * Ensures all language files are properly structured inside the languages/<locale>/ folder.
  */
 public class LanguageManager {
     private final SinceDungeon plugin;
@@ -20,8 +21,8 @@ public class LanguageManager {
     public LanguageManager(SinceDungeon plugin, String locale) {
         this.plugin = plugin;
         this.locale = locale;
-        // English defaults strictly to the root folder, others into languages/<locale>/
-        this.basePath = locale.equalsIgnoreCase("en") ? "" : "languages/" + locale + "/";
+        // Properly structures all locale files inside the languages/<locale>/ directory
+        this.basePath = "languages/" + locale + "/";
         initMapping();
         loadConfigs();
     }

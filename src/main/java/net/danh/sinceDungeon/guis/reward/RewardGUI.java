@@ -32,7 +32,7 @@ public class RewardGUI implements Listener {
     }
 
     private FileConfiguration getConfig() {
-        return plugin.getLanguageManager().getConfig();
+        return plugin.getLanguageManager().getConfigByRoot("reward");
     }
 
     private String getMsg(String key) {

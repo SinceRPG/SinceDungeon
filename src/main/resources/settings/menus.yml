@@ -1,0 +1,43 @@
+# =========================================================
+# [GUI & MENU SETTINGS]
+# =========================================================
+editor:
+  # Item used for navigation in the Editor GUI
+  nav-item: ARROW
+  limits:
+    max-locations: 50
+    max-mob-amount: 200
+    max-radius: 100.0
+
+reward:
+  # Time in seconds before an unopened reward session expires and auto-claims (Default: 300 = 5 minutes)
+  session-expire-seconds: 300
+  settings:
+    gui_size: 27
+    button_slot: 13
+  icons:
+    button:
+      material: CHEST
+      name: "&6&lOpen Chest"
+      lore:
+        - "&7Click to open a random chest!"
+        - "&7Remaining: &e<count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "&d&lMystery Chest"
+      lore:
+        - "&7What's inside?"
+
+leaderboard:
+  # Maximum number of records retrieved from the database (Limited to prevent lag)
+  fetch-limit: 50
+  gui-size: 54
+  items:
+    rank_1: GOLD_BLOCK
+    rank_2: IRON_BLOCK
+    rank_3: COPPER_BLOCK
+    rank_other: COAL_BLOCK
+    category_time: CLOCK
+    category_kills: DIAMOND_SWORD
+    category_clears: NETHER_STAR
+    category_party_time: GOLDEN_APPLE

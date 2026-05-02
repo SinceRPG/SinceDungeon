@@ -65,9 +65,9 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         this.triggerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
 
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
-        ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("dungeon-items.compass");
+        ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getSection("items.compass");
 
-        ItemStack compass = ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "dungeon-items.compass", "COMPASS")
+        ItemStack compass = ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "items.compass", "COMPASS")
                 .applyConfig(cfg, "&b&lTracking Compass")
                 .setTag(compassTag, PersistentDataType.BYTE, (byte) 1)
                 .build();
@@ -97,6 +97,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
+        super.cleanup(game);
         if (breakTask != null && !breakTask.isCancelled()) {
             breakTask.cancel();
         }
