@@ -48,6 +48,7 @@ lives:
   time_out_penalty: "&cBạn không hoàn thành nhiệm vụ kịp lúc và bị trừ <amount> mạng! Hiện tại: <current>"
 
 top:
+  party_run_name: "Tổ Đội Nhóm"
   category_time: "&b&lKỷ Lục Tốc Độ (Solo)"
   category_party_time: "&d&lKỷ Lục Tốc Độ (Tổ Đội)"
   party_time_lore:

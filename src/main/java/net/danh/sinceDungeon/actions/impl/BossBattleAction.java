@@ -47,10 +47,9 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final String enrageMessage;
     private final List<String> enrageAttributes;
     private final List<String> customDrops;
-
+    private final Set<Integer> executedPhases = new HashSet<>();
     private UUID bossId = null;
     private BossBar bossBar = null;
-    private final Set<Integer> executedPhases = new HashSet<>();
     private long spawnTimeMillis = 0;
     private boolean isEnraged = false;
 

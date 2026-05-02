@@ -48,6 +48,7 @@ lives:
   time_out_penalty: "&cYou failed to complete the task in time and lost <amount> lives! Current: <current>"
 
 top:
+  party_run_name: "Party Run"
   category_time: "&b&lSolo Fastest Clears"
   category_party_time: "&d&lParty Fastest Clears"
   party_time_lore:

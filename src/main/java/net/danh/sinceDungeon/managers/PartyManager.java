@@ -72,8 +72,8 @@ public class PartyManager {
             DungeonGame game = plugin.getDungeonManager().getGame(uuid);
             if (game != null) {
                 game.handlePlayerDisconnect(p);
-                String msg = plugin.getMessagesFile().getString("party.left_dungeon_due_to_party", "<red>Bạn đã bị đưa ra khỏi Hầm ngục do rời khỏi Tổ đội!");
-                p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+                String msg = plugin.getMessagesFile().getString("party.left_dungeon_due_to_party", "&cYou have been removed from the Dungeon because you left the Party!");
+                p.sendMessage(ColorUtils.parseWithPrefix(msg));
             }
         }
     }
@@ -226,15 +226,15 @@ public class PartyManager {
 
         if (plugin.getDungeonManager().getGame(leader) != null) {
             targetInvites.remove(leader);
-            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "<red>Không thể tham gia vì Trưởng nhóm hiện đang chinh chiến trong Dungeon!");
-            target.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "&cCannot join! The Party Leader is currently fighting inside a Dungeon!");
+            target.sendMessage(ColorUtils.parseWithPrefix(msg));
             return false;
         }
 
         if (plugin.getDungeonManager().getGame(target.getUniqueId()) != null) {
             targetInvites.remove(leader);
-            String msg = plugin.getMessagesFile().getString("party.cannot_accept_in_dungeon", "<red>Bạn không thể gia nhập Tổ đội khác khi đang ở trong Hầm ngục!");
-            target.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+            String msg = plugin.getMessagesFile().getString("party.cannot_accept_in_dungeon", "&cYou cannot accept a party invite while inside a Dungeon!");
+            target.sendMessage(ColorUtils.parseWithPrefix(msg));
             return false;
         }
 

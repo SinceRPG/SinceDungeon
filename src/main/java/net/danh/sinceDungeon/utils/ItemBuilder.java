@@ -24,6 +24,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 /**
@@ -46,6 +47,32 @@ public class ItemBuilder {
         this.plugin = plugin;
         this.item = itemStack.clone();
         this.meta = this.item.getItemMeta();
+    }
+
+    /**
+     * Helper method to parse amounts that might be an algorithmic range (e.g., "1-5").
+     *
+     * @param amtStr The amount string to parse.
+     * @return The parsed or randomized integer amount.
+     */
+    public static int parseRandomAmount(String amtStr) {
+        try {
+            if (amtStr.contains("-")) {
+                String[] range = amtStr.split("-");
+                int min = Integer.parseInt(range[0].trim());
+                int max = Integer.parseInt(range[1].trim());
+                if (min > max) {
+                    int temp = min;
+                    min = max;
+                    max = temp;
+                }
+                return min + new Random().nextInt(max - min + 1);
+            } else {
+                return Integer.parseInt(amtStr.trim());
+            }
+        } catch (Exception e) {
+            return 1;
+        }
     }
 
     /**
@@ -91,7 +118,7 @@ public class ItemBuilder {
         if (data == null || data.isEmpty()) return null;
         try {
             String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":", 2); // Split only at the first colon
+            String[] parts = cleanData.split(":", 2);
 
             String prefix = parts[0].toUpperCase();
 
@@ -100,19 +127,15 @@ public class ItemBuilder {
                     SinceDungeon.getPlugin().getDungeonManager().getItemProvider(prefix);
 
             if (provider != null) {
-                // Pass the ENTIRE string so the provider can parse it its own way
                 return provider.parseItem(cleanData);
             }
 
-            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT)
+            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT or MATERIAL:MIN-MAX)
             Material mat = Material.matchMaterial(prefix);
             if (mat != null) {
                 int amount = 1;
                 if (parts.length > 1) {
-                    try {
-                        amount = Integer.parseInt(parts[1]);
-                    } catch (NumberFormatException ignored) {
-                    }
+                    amount = parseRandomAmount(parts[1]);
                 }
                 return new ItemStack(mat, amount);
             }

@@ -46,7 +46,7 @@ public class DefaultRegistry {
             String[] parts = data.split(":");
             if (parts.length < 2) return null;
             String keyId = parts[1];
-            int amount = parts.length >= 3 ? getInt(parts[2], 1) : 1;
+            int amount = parts.length >= 3 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
 
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
@@ -60,7 +60,7 @@ public class DefaultRegistry {
         // 2. Life Items (LIFE_ITEM:amount)
         manager.registerItemProvider("LIFE_ITEM", data -> {
             String[] parts = data.split(":");
-            int amount = parts.length >= 2 ? getInt(parts[1], 1) : 1;
+            int amount = parts.length >= 2 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
 
             NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
@@ -74,7 +74,7 @@ public class DefaultRegistry {
         // 3. Cooldown Reset (COOLDOWN_RESET:amount)
         manager.registerItemProvider("COOLDOWN_RESET", data -> {
             String[] parts = data.split(":");
-            int amount = parts.length >= 2 ? getInt(parts[1], 1) : 1;
+            int amount = parts.length >= 2 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
 
             NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
@@ -89,7 +89,7 @@ public class DefaultRegistry {
         manager.registerItemProvider("COOLDOWN_REDUCE", data -> {
             String[] parts = data.split(":");
             int seconds = parts.length >= 2 ? getInt(parts[1], 300) : 300;
-            int amount = parts.length >= 3 ? getInt(parts[2], 1) : 1;
+            int amount = parts.length >= 3 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
 
             NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
@@ -107,7 +107,7 @@ public class DefaultRegistry {
             if (parts.length < 3) return null;
             String type = parts[1];
             String id = parts[2];
-            int amount = parts.length > 3 ? getInt(parts[3], 1) : 1;
+            int amount = parts.length > 3 ? ItemBuilder.parseRandomAmount(parts[3]) : 1;
             return MMOItemsHook.getMMOItem(type, id, amount);
         });
     }
@@ -159,7 +159,7 @@ public class DefaultRegistry {
                 String[] parts = parsedVal.split(":");
                 Material mat = Material.valueOf(parts[0].toUpperCase());
 
-                int amount = parts.length > 1 ? parseRandomAmount(parts[1]) : 1;
+                int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
 
                 if (displayName != null && !displayName.isEmpty()) {
@@ -186,7 +186,7 @@ public class DefaultRegistry {
                 String mType = parts[0];
                 String mId = parts[1];
 
-                int amount = parts.length > 2 ? parseRandomAmount(parts[2]) : 1;
+                int amount = parts.length > 2 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
 
                 ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
                 if (item != null) {
@@ -199,7 +199,7 @@ public class DefaultRegistry {
         });
 
         manager.registerRewardProcessor("LIFE_ITEM", (p, val, displayName) -> {
-            int amount = parseRandomAmount(val);
+            int amount = ItemBuilder.parseRandomAmount(val);
             NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
             ItemStack item = ItemBuilder.fromConfig(plugin, "lives.life-item", "NETHER_STAR")
@@ -211,7 +211,7 @@ public class DefaultRegistry {
         });
 
         manager.registerRewardProcessor("COOLDOWN_RESET", (p, val, displayName) -> {
-            int amount = parseRandomAmount(val);
+            int amount = ItemBuilder.parseRandomAmount(val);
             NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
             ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
@@ -225,7 +225,7 @@ public class DefaultRegistry {
         manager.registerRewardProcessor("COOLDOWN_REDUCE", (p, val, displayName) -> {
             String[] parts = val.split(":");
             int seconds = parts.length > 0 ? getInt(parts[0], 300) : 300;
-            int amount = parts.length > 1 ? parseRandomAmount(parts[1]) : 1;
+            int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
             NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
             ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
             ItemStack item = ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
@@ -235,29 +235,6 @@ public class DefaultRegistry {
                     .build();
             giveCustomItemReward(plugin, p, item, displayName);
         });
-    }
-
-    /**
-     * Helper method to parse amounts that might be an algorithmic range (e.g., "1-5").
-     */
-    private static int parseRandomAmount(String amtStr) {
-        try {
-            if (amtStr.contains("-")) {
-                String[] range = amtStr.split("-");
-                int min = Integer.parseInt(range[0]);
-                int max = Integer.parseInt(range[1]);
-                if (min > max) {
-                    int temp = min;
-                    min = max;
-                    max = temp;
-                }
-                return min + new Random().nextInt(max - min + 1);
-            } else {
-                return Integer.parseInt(amtStr);
-            }
-        } catch (Exception e) {
-            return 1;
-        }
     }
 
     /**

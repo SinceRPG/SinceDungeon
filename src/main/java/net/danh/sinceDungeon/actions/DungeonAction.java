@@ -14,10 +14,10 @@ import java.util.*;
  * Base abstract class for all dungeon actions/objectives.
  */
 public abstract class DungeonAction {
-    public boolean completed = false;
     protected final Set<UUID> spawnedEntities = new HashSet<>();
+    public boolean completed = false;
     private List<String> startMessages = new ArrayList<>();
-    private Map<String, Boolean> notifications = new java.util.HashMap<>();
+    private Map<String, Boolean> notifications = new HashMap<>();
     private String actionType = "UNKNOWN";
 
     private int timeLimitSeconds = -1;
@@ -103,7 +103,7 @@ public abstract class DungeonAction {
     }
 
     public void setNotifications(Map<String, Boolean> notifications) {
-        this.notifications = notifications != null ? notifications : new java.util.HashMap<>();
+        this.notifications = notifications != null ? notifications : new HashMap<>();
     }
 
     public int getTimeLimitSeconds() {

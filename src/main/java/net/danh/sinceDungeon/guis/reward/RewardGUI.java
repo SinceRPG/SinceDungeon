@@ -179,7 +179,7 @@ public class RewardGUI implements Listener {
                                 try {
                                     giveReward(p, reward);
                                 } catch (Exception e) {
-                                    plugin.getLogger().warning("Lỗi trao thưởng khi Auto-Claim: " + reward.type() + ":" + reward.value());
+                                    plugin.getLogger().warning("Error rewarding auto-claim: " + reward.type() + ":" + reward.value());
                                 }
                             }
                         }
@@ -197,7 +197,7 @@ public class RewardGUI implements Listener {
                         try {
                             giveReward(p, reward);
                         } catch (Exception e) {
-                            plugin.getLogger().warning("Lỗi trao thưởng khi Auto-Claim: " + reward.type() + ":" + reward.value());
+                            plugin.getLogger().warning("Error rewarding auto-claim: " + reward.type() + ":" + reward.value());
                         }
                     }
                 }
@@ -315,7 +315,7 @@ public class RewardGUI implements Listener {
                                 try {
                                     giveReward(p, reward);
                                 } catch (Exception ex) {
-                                    plugin.getLogger().warning("Lỗi trao thưởng trong GUI: " + reward.type() + ":" + reward.value());
+                                    plugin.getLogger().warning("Error rewarding from GUI: " + reward.type() + ":" + reward.value());
                                 }
                             }
                         }

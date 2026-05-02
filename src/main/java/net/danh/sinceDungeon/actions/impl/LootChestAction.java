@@ -3,14 +3,15 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -19,32 +20,24 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Handles spawning a lootable chest that players must empty to proceed.
- * Supports Vanilla items, MMOItems, Dungeon Keys, Life Items, and Cooldown Tickets.
+ * Parses items dynamically so random drops (MIN-MAX amounts) are generated freshly per instance.
  */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
-    private final Map<Integer, ItemStack> cachedVanillaItems = new HashMap<>();
+    private final Map<Integer, String> itemsConfig;
     private boolean isOpened = false;
     private Block chestBlock = null;
 
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
         this.chestLocation = location;
-        for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
-            String data = entry.getValue();
-            ItemStack is = ItemBuilder.parseDynamicItem(data);
-            if (is != null) {
-                cachedVanillaItems.put(entry.getKey(), is);
-            }
-        }
+        this.itemsConfig = itemsConfig;
     }
 
     @Override
@@ -72,9 +65,12 @@ public class LootChestAction extends DungeonAction implements Tickable {
             Inventory inv = chest.getBlockInventory();
             inv.clear();
 
-            for (Map.Entry<Integer, ItemStack> entry : cachedVanillaItems.entrySet()) {
+            for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
                 if (isValidSlot(entry.getKey(), inv)) {
-                    inv.setItem(entry.getKey(), entry.getValue().clone());
+                    ItemStack is = ItemBuilder.parseDynamicItem(entry.getValue());
+                    if (is != null) {
+                        inv.setItem(entry.getKey(), is);
+                    }
                 }
             }
             game.sendActionMessage(this, "init", "action.chest_appear");
@@ -104,95 +100,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     private boolean isValidSlot(int slot, Inventory inv) {
         return slot >= 0 && slot < inv.getSize();
-    }
-
-    private ItemStack parseVanilla(String data) {
-        try {
-            String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":");
-            if (parts.length < 1) return null;
-            Material mat = Material.matchMaterial(parts[0]);
-            if (mat != null) {
-                int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-                return new ItemStack(mat, amount);
-            }
-        } catch (Exception e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vanilla_parse_fail", "Cannot parse Vanilla item: <data>");
-            SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
-        }
-        return null;
-    }
-
-    /**
-     * Parses dynamic item configurations, specifically MMOItems, Keys, and Cooldown/Life Tickets.
-     */
-    private ItemStack parseDynamic(String data) {
-        try {
-            String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":");
-
-            if (parts[0].equalsIgnoreCase("KEY") && parts.length >= 2) {
-                String keyId = parts[1];
-                int amount = parts.length >= 3 ? Integer.parseInt(parts[2]) : 1;
-
-                NamespacedKey keyTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_key_id");
-                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
-
-                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "dungeon-items.key", "TRIPWIRE_HOOK")
-                        .amount(amount)
-                        .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
-                        .setTag(keyTag, PersistentDataType.STRING, keyId)
-                        .build();
-            }
-
-            if (parts[0].equalsIgnoreCase("LIFE_ITEM")) {
-                int amount = parts.length >= 2 ? Integer.parseInt(parts[1]) : 1;
-                NamespacedKey lifeKey = new NamespacedKey(SinceDungeon.getPlugin(), "life_amount");
-                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("lives.life-item");
-                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "lives.life-item", "NETHER_STAR")
-                        .amount(amount)
-                        .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
-                        .setTag(lifeKey, PersistentDataType.INTEGER, amount)
-                        .build();
-            }
-
-            if (parts[0].equalsIgnoreCase("COOLDOWN_RESET")) {
-                int amount = parts.length >= 2 ? Integer.parseInt(parts[1]) : 1;
-                NamespacedKey resetKey = new NamespacedKey(SinceDungeon.getPlugin(), "cooldown_reset");
-                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
-                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "cooldown.reset-item", "PAPER")
-                        .amount(amount)
-                        .applyConfig(cfg, "&e&lCooldown Reset Ticket")
-                        .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
-                        .build();
-            }
-
-            if (parts[0].equalsIgnoreCase("COOLDOWN_REDUCE")) {
-                int seconds = parts.length >= 2 ? Integer.parseInt(parts[1]) : 300;
-                int amount = parts.length >= 3 ? Integer.parseInt(parts[2]) : 1;
-                NamespacedKey reduceKey = new NamespacedKey(SinceDungeon.getPlugin(), "cooldown_reduce");
-                ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
-                return ItemBuilder.fromConfig(SinceDungeon.getPlugin(), "cooldown.reduce-item", "CLOCK")
-                        .amount(amount)
-                        .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
-                        .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
-                        .build();
-            }
-
-            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
-                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
-                } else {
-                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_missing", "MMOItems is missing for item: <data>");
-                    SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
-                }
-            }
-        } catch (Throwable e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.mmoitems_parse_fail", "Cannot parse dynamic item: <data>");
-            SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", data));
-        }
-        return null;
     }
 
     @Override

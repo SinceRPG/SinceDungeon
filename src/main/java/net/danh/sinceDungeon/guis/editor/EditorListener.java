@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -107,7 +108,7 @@ public class EditorListener implements Listener {
         if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
             if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
                 e.setCancelled(true);
-                org.bukkit.Location l = e.getClickedBlock().getLocation();
+                Location l = e.getClickedBlock().getLocation();
                 String msg = String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
 
                 activeInputs.remove(p.getUniqueId());
@@ -151,7 +152,7 @@ public class EditorListener implements Listener {
 
         if (msg.equalsIgnoreCase(hereKw)) {
             if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
-                org.bukkit.Location l = p.getLocation();
+                Location l = p.getLocation();
                 msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
 
                 String m = plugin.getMessagesFile().getString("editor.chat.input_here");

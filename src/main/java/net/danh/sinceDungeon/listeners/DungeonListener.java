@@ -11,10 +11,7 @@ import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
@@ -232,10 +229,6 @@ public class DungeonListener implements Listener {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
-                /**
-                 * FIXED: Decorations are now universally protected from ALL damage sources
-                 * (Creepers, TNT, Mob Projectiles) to prevent map destruction.
-                 */
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) return;
                 }
@@ -324,7 +317,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld().equals(p.getWorld())) {
-            if (e.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
+            if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
                 Material mat = e.getItem().getType();
                 if (mat.name().contains("BOAT") || mat.name().contains("MINECART")) {
                     e.setCancelled(true);
@@ -479,7 +472,7 @@ public class DungeonListener implements Listener {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
 
-                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
                     return;
                 }
 
@@ -556,10 +549,6 @@ public class DungeonListener implements Listener {
             final boolean finalOutOfLives = outOfLives;
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                /**
-                 * Verifies if the game instance is still active and the player is still participating
-                 * BEFORE forcing respawns or spectator modes. Prevents ghost states outside the dungeon.
-                 */
                 if (!p.isOnline()) return;
                 DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
                 if (checkGame == null || !checkGame.isRunning()) return;
@@ -575,7 +564,7 @@ public class DungeonListener implements Listener {
                     String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
                     if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
-                        p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                        p.setGameMode(GameMode.SPECTATOR);
                         game.checkWipeout();
                     } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
@@ -588,7 +577,7 @@ public class DungeonListener implements Listener {
                     game.stop(true, DungeonEndEvent.EndReason.FAILED);
                 } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.death_spectate")));
-                    p.setGameMode(org.bukkit.GameMode.SPECTATOR);
+                    p.setGameMode(GameMode.SPECTATOR);
                     game.checkWipeout();
                 } else {
                     p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
@@ -613,8 +602,7 @@ public class DungeonListener implements Listener {
             }
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
-                // FIX: Check if they are an admin in Spectator mode instead of relying on TeleportCause
-                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
                     return;
                 }
 
@@ -639,7 +627,7 @@ public class DungeonListener implements Listener {
                     cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
                     cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
 
-                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
                     return;
                 }
 

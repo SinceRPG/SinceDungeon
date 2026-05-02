@@ -15,7 +15,8 @@ import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Handles the logic for the Control Zone objective.
@@ -35,7 +36,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     private final boolean isBaby;
     private final List<String> attributesList;
     private final List<String> equipmentList;
-    private final Set<UUID> spawnedMobs = new HashSet<>();
     private long accumulatedMillis = 0;
     private long lastTickTime = 0;
     private int tickCounter = 0;
@@ -134,8 +134,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                     centerLoc.getWorld().spawnParticle(Particle.valueOf(pName.toUpperCase(Locale.ROOT)), centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
                 } catch (Exception ignored) {
                 }
-
-                clearLeftoverMobs();
             }
         } else {
             if (tickCounter % 40 == 0) {
@@ -183,7 +181,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                         game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
-                        spawnedMobs.add(le.getUniqueId());
+                        spawnedEntities.add(le.getUniqueId());
                     }
                 }
             } else {
@@ -192,25 +190,11 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                 if (ent instanceof LivingEntity living) {
                     applyCustomProperties(living);
                     game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
-                    spawnedMobs.add(living.getUniqueId());
+                    spawnedEntities.add(living.getUniqueId());
                 }
             }
         } catch (Exception ignored) {
         }
-    }
-
-    /**
-     * Loops through all tracked entities spawned by this specific zone
-     * and securely removes them from the world memory.
-     */
-    private void clearLeftoverMobs() {
-        for (UUID uuid : spawnedMobs) {
-            Entity entity = Bukkit.getEntity(uuid);
-            if (entity != null && !entity.isDead()) {
-                entity.remove();
-            }
-        }
-        spawnedMobs.clear();
     }
 
     /**

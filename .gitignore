@@ -4,3 +4,6 @@
 /build/classes/java/main/
 /.idea/
 /.vscode/
+config.json
+consolidator.py
+project_context.txt

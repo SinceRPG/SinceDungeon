@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -111,7 +112,7 @@ public class LivesManager {
                 data.setLastRegen(now - (diff % regenIntervalMillis));
                 data.setModified(true);
 
-                org.bukkit.entity.Player p = Bukkit.getPlayer(data.getUuid());
+                Player p = Bukkit.getPlayer(data.getUuid());
                 if (p != null && p.isOnline()) {
                     String msg = plugin.getMessagesFile().getString("lives.regenerated")
                             .replace("<amount>", String.valueOf(recovered))

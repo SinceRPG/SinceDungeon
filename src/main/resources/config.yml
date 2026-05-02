@@ -264,6 +264,9 @@ settings:
   # Chế độ gỡ lỗi: Bật để xem log chi tiết khi xảy ra sự cố
   debug: false
 
+  # Whether to delete all living mobs spawned by an action once that action is completed
+  clear-remaining-mobs-on-action-complete: true
+
 party:
   # Maximum members allowed in a single party
   # Số lượng thành viên tối đa trong một nhóm

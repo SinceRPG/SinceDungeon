@@ -30,10 +30,10 @@ public class MMOItemsHook {
     }
 
     /**
-     * Tự động trích xuất chuỗi thông tin của một MMOItem để lưu vào Config.
+     * Automatically extracts the string info of an MMOItem to save into the Config.
      *
-     * @param item Vật phẩm cần kiểm tra.
-     * @return Chuỗi định dạng MMOITEMS:TYPE:ID:AMOUNT, hoặc null nếu không phải MMOItem.
+     * @param item The item to check.
+     * @return Formatted string MMOITEMS:TYPE:ID:AMOUNT, or null if not an MMOItem.
      */
     public static String getMMOItemString(ItemStack item) {
         try {

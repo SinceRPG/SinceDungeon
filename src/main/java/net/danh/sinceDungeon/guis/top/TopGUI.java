@@ -90,7 +90,7 @@ public class TopGUI {
 
                     String nameRaw = plugin.getMessagesFile().getString("top.item_format", "&e#<rank> &f<player>")
                             .replace("<rank>", String.valueOf(rank))
-                            .replace("<player>", category == TopManager.TopCategory.PARTY_FASTEST_TIME ? "Party Run" : entry.playerName());
+                            .replace("<player>", category == TopManager.TopCategory.PARTY_FASTEST_TIME ? plugin.getMessagesFile().getString("top.party_run_name", "Party Run") : entry.playerName());
 
                     List<String> loreRaw = new ArrayList<>();
                     String dateStr = dateFormat.format(new Date(entry.recordedAt()));

@@ -411,9 +411,11 @@ public class DungeonGame {
                     }
                 }
             } else {
+                action.cleanup(this);
                 advanceNextAction();
             }
         } else {
+            action.cleanup(this);
             advanceNextAction();
         }
     }
@@ -520,6 +522,7 @@ public class DungeonGame {
         }
 
         if (action.isCompleted()) {
+            action.cleanup(this);
             advanceNextAction();
         }
     }
@@ -550,6 +553,7 @@ public class DungeonGame {
             }
 
             if (action.isCompleted()) {
+                action.cleanup(this);
                 advanceNextAction();
             }
         }
@@ -712,7 +716,7 @@ public class DungeonGame {
             PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
             UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
 
-            // NEW: Record Party Clear if more than one participant
+            // Record Party Clear if more than one participant
             if (participants.size() > 1) {
                 String membersNames = participants.stream()
                         .filter(Player::isOnline)
