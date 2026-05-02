@@ -384,7 +384,6 @@ public class DungeonManager {
                     return;
                 }
 
-                // NEW: Cooldown Verification Check
                 if (plugin.getCooldownManager().isOnCooldown(participant.getUniqueId(), id)) {
                     String formattedTime = plugin.getCooldownManager().getRemainingTimeFormatted(participant.getUniqueId(), id);
                     if (participant.equals(p)) {
@@ -397,7 +396,7 @@ public class DungeonManager {
                         String childMsg = plugin.getLanguageManager().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
                         participant.sendMessage(ColorUtils.parseWithPrefix(childMsg.replace("<time>", formattedTime)));
                     }
-                    return; // Abort entry for everyone
+                    return;
                 }
             }
 
@@ -405,6 +404,25 @@ public class DungeonManager {
             if (tmpl == null) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
                 return;
+            }
+
+            // --- ENTRY CONDITIONS VERIFICATION ---
+            ConditionProcessor conditionProcessor = conditionProcessors.get("PAPI");
+            if (conditionProcessor != null && tmpl.conditions() != null && !tmpl.conditions().isEmpty()) {
+                for (Player participant : participants) {
+                    for (DungeonTemplate.Condition cond : tmpl.conditions()) {
+                        if (!conditionProcessor.check(participant, cond.requirement())) {
+                            if (cond.failMessage() != null && !cond.failMessage().isEmpty()) {
+                                participant.sendMessage(ColorUtils.parseWithPrefix(cond.failMessage()));
+                            }
+                            if (!participant.equals(p)) {
+                                String leaderMsg = plugin.getLanguageManager().getString("party.member_failed_condition", "&cMember <player> does not meet the condition. Aborting Dungeon entry.");
+                                p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
+                            }
+                            return; // Abort join for the entire party
+                        }
+                    }
+                }
             }
 
             // --- MAX PLAYERS VERIFICATION ---
