@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.api;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.ActionParser;
 import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
+import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.managers.PartyManager;
@@ -239,6 +240,20 @@ public class SinceDungeonAPI {
      */
     public PartyManager getPartyManager() {
         return plugin.getPartyManager();
+    }
+
+    /**
+     * Registers a custom item provider for Loot Chests, Custom Drops, and Action configurations.
+     * Allows third-party plugins to define their own item string formats (e.g. "MY_PLUGIN:ITEM_ID:AMOUNT").
+     *
+     * @param prefix   The unique prefix identifying the item type (e.g., "MMOITEMS").
+     * @param provider The interface handling the parsing logic.
+     */
+    public void registerItemProvider(String prefix, CustomItemProvider provider) {
+        plugin.getDungeonManager().registerItemProvider(prefix, provider);
+
+        String logMsg = plugin.getMessagesFile().getString("admin.log.api_item_provider_registered", "[API] Registered Custom Item Provider: <type>");
+        plugin.getLogger().info(logMsg.replace("<type>", prefix.toUpperCase()));
     }
 
     /**

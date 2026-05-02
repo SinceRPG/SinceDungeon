@@ -100,6 +100,7 @@ admin:
     api_action_registered: "[API] Đã đăng ký Hành động (Action) tùy chỉnh: <type>"
     api_reward_registered: "[API] Đã đăng ký Trình xử lý Phần thưởng (Reward Processor): <type>"
     api_condition_registered: "[API] Đã đăng ký Trình xử lý Điều kiện (Condition Processor): <type>"
+    api_item_provider_registered: "[API] Đã đăng ký Trình xử lý Vật phẩm (Item Provider) tùy chỉnh: <type>"
     db_mysql_init: "[Database] Đang khởi tạo pool kết nối MySQL thông qua HikariCP..."
     db_sqlite_init: "[Database] Đang khởi tạo cơ sở dữ liệu SQLite..."
     db_connected: "[Database] Kết nối cơ sở dữ liệu thành công!"
@@ -128,6 +129,7 @@ admin:
   cooldown_reset_success: "&aĐã xóa thời gian chờ Hầm ngục <map> cho người chơi <player>!"
 
 party:
+  leader_default_name: "Trưởng nhóm"
   chat_format: "&b[Tổ đội] &a<sender>&8: &f<msg>"
   created: "&aĐã tạo Tổ đội thành công. Sử dụng /party invite <người_chơi> để thêm thành viên."
   disbanded: "&eTổ đội đã bị giải tán."
@@ -158,7 +160,6 @@ party:
   offline_left_behind: "&eCảnh báo: Có <count> thành viên đang Ngoại tuyến nên bị bỏ lại."
   already_invited: "&cBạn đã gửi lời mời cho người này rồi, vui lòng chờ họ phản hồi."
   auto_created: "&aHệ thống đã tự động thành lập Tổ đội cho bạn."
-  empty_message: "&cVui lòng nhập nội dung tin nhắn."
   invite_self: "&cBạn không thể tự mời chính mình vào Tổ đội!"
   dead_left_behind: "&eCảnh báo: Có <count> thành viên đang Chết (Chưa hồi sinh) nên bị bỏ lại."
   promote_self: "&cBạn hiện đã là Trưởng Tổ đội!"
@@ -178,7 +179,6 @@ game:
   stage_start: "&eGiai đoạn <stage> chính thức bắt đầu!"
   stage_complete: "&aĐã hoàn thành Giai đoạn <stage>!"
   finish: "&6&lDUNGEON ĐÃ ĐƯỢC CHINH PHỤC!"
-  completion_time: "&7Thời gian hoàn thành: &a<time>s"
   no_reward: "&cRất tiếc, bạn không đạt đủ điều kiện để nhận phần thưởng lần này."
   death: "&c<player> đã tử trận!"
   hud:
@@ -250,11 +250,8 @@ action:
 error:
   wrong_key: "&cBạn không có chìa khóa chính xác cho cánh cửa này!"
   key_not_found: "&cBạn cần có Chìa khóa để mở cánh cửa này!"
-  already_in: "&cBạn hoặc thành viên trong Tổ đội đang ở trong một Dungeon khác!"
   file_not_found: "&cKhông tìm thấy dữ liệu Dungeon: <file>"
   dungeon_maintenance: "&cDungeon này hiện đang được bảo trì."
-  condition_fail: "&cBạn không đủ điều kiện tham gia: <condition>"
-  template_missing: "&cBản đồ mẫu <world> không tồn tại trên hệ thống!"
   create_failed: "&cKhởi tạo Dungeon thất bại. Vui lòng báo cáo cho Quản trị viên."
   mythic_mob_not_found: "&cLỗi cấu hình: Không tìm thấy loại quái MythicMob <mob>."
   mob_spawn_fail: "&cGặp lỗi khi triệu hồi quái <mob>: <error>"
@@ -333,6 +330,9 @@ editor:
     unlock_door: "Yêu cầu tìm chìa khóa để mở khóa cửa sắt."
     boss_battle: "Sinh ra một con trùm Vanilla với Thanh sức khỏe, tỷ lệ và các giai đoạn."
   title:
+    phases: "&lCác Giai Đoạn Boss"
+    edit_phase: "&lGiai đoạn: <hp>%"
+    edit_reinforcements: "&lViện binh: <hp>%"
     main: "&lDungeon Editor"
     dungeon: "&lChỉnh sửa: <name>"
     conditions: "&lĐiều Kiện Tham Gia"
@@ -348,6 +348,22 @@ editor:
     edit_action_items: "&lSắp xếp Rương: <index>"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    action_val_hint_open_gui: "&eChuột Trái: Mở giao diện"
+    phase_item: "&eGiai đoạn ở mức <hp>% HP"
+    phase_lore:
+      - "&7Nhấn để thiết lập chi tiết"
+      - ""
+      - "&cShift-Phải để xóa bỏ"
+    add_phase: "&aThêm Giai Đoạn Mới"
+    phase_message: "&eCâu thoại của Boss"
+    phase_attributes: "&eChỉ số cộng thêm"
+    phase_skills: "&eKỹ năng tung ra"
+    phase_reinforcements: "&eLính cứu viện"
+    reinf_mob: "&eLoại quái vật"
+    reinf_amount: "&eSố lượng lính"
+    reinf_name: "&eTên hiển thị"
+    reinf_attributes: "&eChỉ số sức mạnh"
+    reinf_equipment: "&eTrang bị mang theo"
     action_val_hint_phases: "&7Cài đặt Giai đoạn nâng cao phải được chỉnh sửa thủ công trong tệp YAML."
     dungeon_file_name: "&e<name>"
     dungeon_file_lore:
@@ -514,6 +530,7 @@ editor:
     action_item: "&eNhiệm vụ #<index>"
     action_lore:
       - "&7Dạng: &f<type>"
+      - "&7Dạng: &f<type>"
       - ""
       - "&eChuột Trái: Sửa chi tiết"
       - "&cShift-Phải: Xóa nhiệm vụ này"
@@ -535,6 +552,51 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_reward_value_life_item:
+        - "&7Nhập số lượng vật phẩm Hồi sinh muốn tặng."
+        - "&7Định dạng: &a<Số_lượng>"
+        - "&7Ví dụ: &f1"
+        - "&7Mẹo: Chuột phải vào nút bằng vật phẩm đang cầm để tự động điền!"
+      edit_reward_value_cooldown_reset:
+        - "&7Nhập số lượng vé Xóa hồi chiêu muốn tặng."
+        - "&7Định dạng: &a<Số_lượng>"
+        - "&7Ví dụ: &f1"
+        - "&7Mẹo: Chuột phải vào nút bằng vật phẩm đang cầm để tự động điền!"
+      edit_reward_value_cooldown_reduce:
+        - "&7Nhập số giây muốn giảm và số lượng vé tặng."
+        - "&7Định dạng: &a<Số_giây>:<Số_lượng>"
+        - "&7Ví dụ: &f60:1 &7(Vé giảm 60s, số lượng 1)"
+        - "&7Mẹo: Chuột phải vào nút bằng vật phẩm đang cầm để tự động điền!"
+      edit_custom_drops:
+        - "&7Nhập dữ liệu vật phẩm và tỉ lệ rớt."
+        - "&7Định dạng: &a<DữLiệuVậtPhẩm>;<TỉLệ>"
+        - "&7--- VÍ DỤ ---"
+        - "&7Vanilla: &fDIAMOND:1;50.0"
+        - "&7MMOItems: &fMMOITEMS:SWORD:FIERY:1;25.5"
+        - "&7Chìa Khóa: &fKEY:door_1:1;10.0"
+        - "&7Hồi sinh: &fLIFE_ITEM:1;5.0"
+        - "&7Xóa hồi chiêu: &fCOOLDOWN_RESET:1;1.0"
+        - "&7Giảm hồi chiêu: &fCOOLDOWN_REDUCE:60:1;10.0"
+        - "&7Mẹo: Gõ &cclear &7để xóa sạch danh sách."
+      edit_phase_threshold:
+        - "&7Nhập phần trăm máu (1-100) để kích hoạt giai đoạn này."
+        - "&7Ví dụ: &a50 &7(Kích hoạt khi Boss còn 50% máu)"
+      edit_skill_list:
+        - "&7Nhập kỹ năng Boss sẽ tung ra khi bước vào giai đoạn này."
+        - "&7Định dạng: &aPOTION_CLOUD:<LOẠI>:<giây>:<cấp_độ>"
+        - "&7Định dạng: &aLIGHTNING"
+        - "&7Ví dụ: &fPOTION_CLOUD:POISON:5:1"
+        - "&7Mẹo: Gõ &cclear &7để xóa sạch danh sách kỹ năng."
+      edit_reinforcement_mob:
+        - "&7Nhập loại quái Vanilla (EntityType) cho Lính cứu viện."
+        - "&7Ví dụ: &aSKELETON"
+      edit_reinforcement_amount:
+        - "&7Nhập số lượng Lính cứu viện sẽ sinh ra."
+        - "&7Ví dụ: &a4"
+      edit_reinforcement_name:
+        - "&7Nhập tên hiển thị của lính cứu viện (Hỗ trợ mã màu)."
+        - "&7Ví dụ: &cLính Ngự Lâm"
+        - "&7Mẹo: Gõ &cclear &7để xóa tên và quay về mặc định."
       edit_action_enrage_time:
         - "&7Nhập thời gian (bằng giây) trước khi Boss nổi điên (Enrage)."
         - "&7Nhập &c-1 &7để tắt cơ chế này."
@@ -713,14 +775,9 @@ editor:
       - "&7Định dạng: notifications:"
       - "&7  init: false"
       - "&7  complete: true"
-      - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"
-    input_start:
-      - "&aHệ thống đang chờ bạn điền thông tin."
-      - "&7Gõ &ccancel&7 để hủy toàn bộ."
-      - "&7Gõ &ehere&7 để lấy nhanh tọa độ."
+      - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"\
     input_cancel: "&cĐã hủy bỏ thao tác."
     input_here: "&aĐã ghi nhận tọa độ: <loc>"
-    session_expired: "&cĐã hết thời gian cho phiên chỉnh sửa."
     save_error: "&cLỗi nghiêm trọng khi lưu file: <error>"
     saved: "&aLưu cấu trúc Dungeon thành công!"
     created: "&aKhởi tạo file cấu hình mới: <file>"
@@ -736,7 +793,6 @@ editor:
     type_changed: "&aChuyển đổi phân loại sang <type>"
     item_set_hand: "&aĐã sao chép dữ liệu từ vật phẩm trên tay: <item>"
     hand_empty: "&cBạn phải cầm một khối/vật phẩm trên tay chính!"
-    loc_cleared: "&eĐã xóa toàn bộ điểm tọa độ."
     update_loc: "&aCập nhật tọa độ thành công: <loc>"
     invalid_filename: "&cTên file không được chứa các ký tự đặc biệt hoặc dấu cách!"
     input_error: "&cLỗi trong quá trình nhập: <error>"

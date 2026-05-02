@@ -3,14 +3,12 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
-import org.bukkit.Registry;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
@@ -20,6 +18,7 @@ import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -28,7 +27,7 @@ import java.util.*;
 
 /**
  * Spawns a customizable Boss Entity.
- * Features: Health Scaling, BossBar, Multi-Phases, and Enrage Timer.
+ * Features: Health Scaling, BossBar, Multi-Phases, Enrage Timer, Custom Equipment, and Custom Drops.
  */
 public class BossBattleAction extends DungeonAction implements Tickable {
 
@@ -40,6 +39,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final String barColor;
     private final String barStyle;
     private final List<String> baseAttributes;
+    private final List<String> baseEquipment;
     private final Map<Integer, PhaseData> phases;
 
     // Enrage Settings
@@ -47,14 +47,19 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final String enrageMessage;
     private final List<String> enrageAttributes;
 
+    // Drops
+    private final List<String> customDrops;
+    private final Set<Integer> executedPhases = new HashSet<>();
     private UUID bossId = null;
     private BossBar bossBar = null;
-    private final Set<Integer> executedPhases = new HashSet<>();
-
     private long spawnTimeMillis = 0;
     private boolean isEnraged = false;
 
-    public BossBattleAction(Vector spawnLoc, EntityType mobType, String customName, double baseHealth, double scaleHealthPerPlayer, String barColor, String barStyle, List<String> baseAttributes, Map<Integer, PhaseData> phases, int enrageTime, String enrageMessage, List<String> enrageAttributes) {
+    public BossBattleAction(Vector spawnLoc, EntityType mobType, String customName, double baseHealth,
+                            double scaleHealthPerPlayer, String barColor, String barStyle,
+                            List<String> baseAttributes, List<String> baseEquipment,
+                            Map<Integer, PhaseData> phases, int enrageTime, String enrageMessage,
+                            List<String> enrageAttributes, List<String> customDrops) {
         this.spawnLoc = spawnLoc;
         this.mobType = mobType;
         this.customName = customName;
@@ -63,10 +68,12 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         this.barColor = barColor;
         this.barStyle = barStyle;
         this.baseAttributes = baseAttributes;
+        this.baseEquipment = baseEquipment;
         this.phases = phases;
         this.enrageTime = enrageTime;
         this.enrageMessage = enrageMessage;
         this.enrageAttributes = enrageAttributes;
+        this.customDrops = customDrops;
     }
 
     @Override
@@ -105,13 +112,20 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
 
         applyAttributes(boss, baseAttributes);
+        applyEquipment(boss, baseEquipment);
 
         // Setup BossBar
         BarColor color = BarColor.RED;
-        try { color = BarColor.valueOf(barColor.toUpperCase()); } catch (Exception ignored) {}
+        try {
+            color = BarColor.valueOf(barColor.toUpperCase());
+        } catch (Exception ignored) {
+        }
 
         BarStyle style = BarStyle.SOLID;
-        try { style = BarStyle.valueOf(barStyle.toUpperCase()); } catch (Exception ignored) {}
+        try {
+            style = BarStyle.valueOf(barStyle.toUpperCase());
+        } catch (Exception ignored) {
+        }
 
         String title = customName != null && !customName.isEmpty() ? ColorUtils.toPlainText(ColorUtils.parse(customName)) : mobType.name();
         bossBar = Bukkit.createBossBar(title, color, style);
@@ -128,7 +142,9 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         if (completed || bossId == null || bossBar == null) return;
 
         Entity entity = Bukkit.getEntity(bossId);
-        if (!(entity instanceof LivingEntity boss) || boss.isDead()) {
+        LivingEntity boss = (LivingEntity) entity;
+        if (entity != null) {
+            handleCustomDrops(!boss.isDead() ? boss.getLocation() : null);
             completeBoss(game);
             return;
         }
@@ -186,6 +202,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
             }
         } else if (event instanceof EntityDeathEvent e) {
             if (e.getEntity().getUniqueId().equals(bossId)) {
+                handleCustomDrops(e.getEntity().getLocation());
                 completeBoss(game);
             }
         }
@@ -217,7 +234,8 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                             cloud.setRadius(5.0f);
                             cloud.setDuration(duration);
                             if (type != null) cloud.addCustomEffect(new PotionEffect(type, duration, amp), true);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                     break;
                 case "LIGHTNING":
@@ -245,7 +263,8 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                         rLive.setCustomNameVisible(true);
                     }
                     applyAttributes(rLive, data.reinforcementAttributes);
-                    game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, rLoc.add(0,1,0), 10, 0.2, 0.2, 0.2, 0.05);
+                    applyEquipment(rLive, data.reinforcementEquipment); // Apply equipment to reinforcements
+                    game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, rLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
             }
         }
@@ -272,6 +291,24 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
+    private void handleCustomDrops(Location loc) {
+        if (loc == null || customDrops == null || customDrops.isEmpty()) return;
+        for (String dropStr : customDrops) {
+            try {
+                String[] split = dropStr.split(";");
+                if (split.length < 2) continue;
+                String itemData = split[0].trim();
+                double chance = Double.parseDouble(split[1].trim());
+
+                if (Math.random() * 100.0 <= chance) {
+                    ItemStack item = ItemBuilder.parseDynamicItem(itemData);
+                    if (item != null) loc.getWorld().dropItemNaturally(loc, item);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     @SuppressWarnings("deprecation")
     private void applyAttributes(LivingEntity living, List<String> attributesList) {
         if (attributesList == null || attributesList.isEmpty()) return;
@@ -283,18 +320,27 @@ public class BossBattleAction extends DungeonAction implements Tickable {
             double value;
             try {
                 value = Double.parseDouble(parts[1].trim());
-            } catch (NumberFormatException e) { continue; }
+            } catch (NumberFormatException e) {
+                continue;
+            }
 
             Attribute attribute = null;
             if (ServerVersion.isAtLeast(1, 21, 3)) {
                 try {
                     NamespacedKey key = NamespacedKey.minecraft(attrName);
                     attribute = Registry.ATTRIBUTE.get(key);
-                } catch (Throwable ignored) {}
+                } catch (Throwable ignored) {
+                }
             } else {
-                try { attribute = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException ignored) {}
+                try {
+                    attribute = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException ignored) {
+                }
                 if (attribute == null) {
-                    try { attribute = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException ignored) {}
+                    try {
+                        attribute = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
+                    } catch (IllegalArgumentException ignored) {
+                    }
                 }
             }
 
@@ -308,6 +354,64 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
+    /**
+     * Injects configured equipment into the LivingEntity.
+     */
+    private void applyEquipment(LivingEntity living, List<String> equipmentList) {
+        if (equipmentList == null || equipmentList.isEmpty() || living.getEquipment() == null) return;
+
+        living.getEquipment().setHelmetDropChance(0f);
+        living.getEquipment().setChestplateDropChance(0f);
+        living.getEquipment().setLeggingsDropChance(0f);
+        living.getEquipment().setBootsDropChance(0f);
+        living.getEquipment().setItemInMainHandDropChance(0f);
+        living.getEquipment().setItemInOffHandDropChance(0f);
+
+        for (String equipStr : equipmentList) {
+            String[] parts = equipStr.split(":", 2);
+            if (parts.length < 2) continue;
+
+            String slot = parts[0].toLowerCase(Locale.ROOT).trim();
+            String itemData = parts[1].trim();
+            ItemStack item = parseItem(itemData);
+
+            if (item != null) {
+                switch (slot) {
+                    case "helmet", "head" -> living.getEquipment().setHelmet(item);
+                    case "chestplate", "chest" -> living.getEquipment().setChestplate(item);
+                    case "leggings", "legs" -> living.getEquipment().setLeggings(item);
+                    case "boots", "feet" -> living.getEquipment().setBoots(item);
+                    case "mainhand", "hand" -> living.getEquipment().setItemInMainHand(item);
+                    case "offhand", "shield" -> living.getEquipment().setItemInOffHand(item);
+                }
+            }
+        }
+    }
+
+    /**
+     * Parses the item data string to support both Vanilla and MMOItems.
+     */
+    private ItemStack parseItem(String data) {
+        try {
+            String cleanData = data.replace(" ", "");
+            String[] parts = cleanData.split(":");
+            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
+                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
+                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
+                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
+                }
+            } else {
+                Material mat = Material.matchMaterial(parts[0]);
+                if (mat != null) {
+                    int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
+                    return new ItemStack(mat, amount);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
     public static class PhaseData {
         public String message = "";
         public List<String> attributes = new ArrayList<>();
@@ -317,5 +421,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         public int reinforcementAmount = 0;
         public String reinforcementName = "";
         public List<String> reinforcementAttributes = new ArrayList<>();
+        public List<String> reinforcementEquipment = new ArrayList<>();
     }
 }

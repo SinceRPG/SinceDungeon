@@ -12,6 +12,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -25,12 +26,14 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
     private final Map<UUID, String> mobDisplayNames = new HashMap<>();
+    private final List<String> customDrops;
 
-    public RandomWaveAction(int amount, List<Vector> locations, List<MobOption> mobPool, boolean scaleWithParty) {
+    public RandomWaveAction(int amount, List<Vector> locations, List<MobOption> mobPool, boolean scaleWithParty, List<String> customDrops) {
         this.amount = amount;
         this.locations = locations;
         this.mobPool = mobPool;
         this.scaleWithParty = scaleWithParty;
+        this.customDrops = customDrops;
     }
 
     public static List<MobOption> parseMobPool(List<String> raw) {
@@ -45,8 +48,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 int level = parts.length >= 4 ? Integer.parseInt(parts[3]) : 1;
                 if (weight > 0) pool.add(new MobOption(isMythic, id, level, weight));
             } catch (Exception ignored) {
-                SinceDungeon.getPlugin().getLogger().warning("[RandomWave] Failed to parse mob pool entry: " + entry
-                        + " — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]");
+                SinceDungeon.getPlugin().getLogger().warning("[RandomWave] Failed to parse mob pool entry: " + entry + " — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]");
             }
         }
         return pool;
@@ -161,8 +163,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString(
-                "objective.random_wave", "<red>Eliminate all enemies <gray>(Remaining: <remain>)");
+        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.random_wave", "<red>Eliminate all enemies <gray>(Remaining: <remain>)");
         return base.replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 
@@ -184,9 +185,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;
-                Location spawnLoc = findSafeSpawn(
-                        new Location(game.getWorld(), vec.getX() + 0.5 + offsetX, vec.getY(), vec.getZ() + 0.5 + offsetZ)
-                );
+                Location spawnLoc = findSafeSpawn(new Location(game.getWorld(), vec.getX() + 0.5 + offsetX, vec.getY(), vec.getZ() + 0.5 + offsetZ));
 
                 UUID uid = spawnMob(game, spawnLoc, opt);
                 if (uid != null) {
@@ -274,14 +273,14 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         if (event instanceof EntityDeathEvent e) {
             UUID uid = e.getEntity().getUniqueId();
             if (spawnedMobs.remove(uid) != null) {
+                handleCustomDrops(e.getEntity().getLocation());
                 mobDisplayNames.remove(uid);
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.random_wave_complete");
                 } else {
-                    game.sendActionMessage(this, "progress", "action.random_wave_remain",
-                            "<amount>", String.valueOf(spawnedMobs.size()));
+                    game.sendActionMessage(this, "progress", "action.random_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()));
                 }
             }
         }
@@ -307,6 +306,24 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
         }
         lockedChunks.clear();
+    }
+
+    private void handleCustomDrops(Location loc) {
+        if (customDrops == null || customDrops.isEmpty()) return;
+        for (String dropStr : customDrops) {
+            try {
+                String[] split = dropStr.split(";");
+                if (split.length < 2) continue;
+                String itemData = split[0].trim();
+                double chance = Double.parseDouble(split[1].trim());
+
+                if (Math.random() * 100.0 <= chance) {
+                    ItemStack item = net.danh.sinceDungeon.utils.ItemBuilder.parseDynamicItem(itemData);
+                    if (item != null) loc.getWorld().dropItemNaturally(loc, item);
+                }
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     public record MobOption(boolean isMythic, String id, int level, double weight) {

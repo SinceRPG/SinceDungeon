@@ -32,12 +32,13 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final List<String> attributesList;
     private final List<String> equipmentList;
     private final boolean scaleWithParty;
+    private final List<String> customDrops;
 
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
     private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations,
-                           String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList, boolean scaleWithParty) {
+                           String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList, boolean scaleWithParty, List<String> customDrops) {
         this.type = type;
         this.amount = amount;
         this.locations = locations;
@@ -46,6 +47,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         this.attributesList = attributesList;
         this.equipmentList = equipmentList;
         this.scaleWithParty = scaleWithParty;
+        this.customDrops = customDrops;
     }
 
     private void debug(String message) {
@@ -370,6 +372,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof EntityDeathEvent e) {
             if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
+                handleCustomDrops(e.getEntity().getLocation());
                 if (spawnedMobs.isEmpty()) {
                     unlockChunks();
                     this.completed = true;
@@ -389,5 +392,23 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
         }
         lockedChunks.clear();
+    }
+
+    private void handleCustomDrops(Location loc) {
+        if (customDrops == null || customDrops.isEmpty()) return;
+        for (String dropStr : customDrops) {
+            try {
+                String[] split = dropStr.split(";");
+                if (split.length < 2) continue;
+                String itemData = split[0].trim();
+                double chance = Double.parseDouble(split[1].trim());
+
+                if (Math.random() * 100.0 <= chance) {
+                    ItemStack item = net.danh.sinceDungeon.utils.ItemBuilder.parseDynamicItem(itemData);
+                    if (item != null) loc.getWorld().dropItemNaturally(loc, item);
+                }
+            } catch (Exception ignored) {
+            }
+        }
     }
 }

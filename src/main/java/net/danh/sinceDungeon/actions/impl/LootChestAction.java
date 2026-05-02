@@ -32,7 +32,6 @@ import java.util.Map;
  */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
-    private final Map<Integer, String> dynamicItemsConfig = new HashMap<>();
     private final Map<Integer, ItemStack> cachedVanillaItems = new HashMap<>();
     private boolean isOpened = false;
     private Block chestBlock = null;
@@ -41,15 +40,9 @@ public class LootChestAction extends DungeonAction implements Tickable {
         this.chestLocation = location;
         for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
             String data = entry.getValue();
-            if (data.toUpperCase().startsWith("MMOITEMS") || data.toUpperCase().startsWith("KEY:") ||
-                    data.toUpperCase().startsWith("LIFE_ITEM:") || data.toUpperCase().startsWith("COOLDOWN_RESET:") ||
-                    data.toUpperCase().startsWith("COOLDOWN_REDUCE:")) {
-                dynamicItemsConfig.put(entry.getKey(), data);
-            } else {
-                ItemStack is = parseVanilla(data);
-                if (is != null) {
-                    cachedVanillaItems.put(entry.getKey(), is);
-                }
+            ItemStack is = ItemBuilder.parseDynamicItem(data);
+            if (is != null) {
+                cachedVanillaItems.put(entry.getKey(), is);
             }
         }
     }
@@ -82,13 +75,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
             for (Map.Entry<Integer, ItemStack> entry : cachedVanillaItems.entrySet()) {
                 if (isValidSlot(entry.getKey(), inv)) {
                     inv.setItem(entry.getKey(), entry.getValue().clone());
-                }
-            }
-
-            for (Map.Entry<Integer, String> entry : dynamicItemsConfig.entrySet()) {
-                ItemStack item = parseDynamic(entry.getValue());
-                if (item != null && isValidSlot(entry.getKey(), inv)) {
-                    inv.setItem(entry.getKey(), item);
                 }
             }
             game.sendActionMessage(this, "init", "action.chest_appear");

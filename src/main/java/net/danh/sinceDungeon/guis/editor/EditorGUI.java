@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.guis.editor;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -29,34 +30,21 @@ public class EditorGUI {
         this.plugin = plugin;
     }
 
-    /**
-     * Retrieves a message from the configuration with a robust fallback.
-     */
     public String getMsg(String path, String def) {
         String res = plugin.getMessagesFile().getString("editor." + path);
         return (res == null || res.isEmpty()) ? def : res;
     }
 
-    /**
-     * Retrieves a single localized word from the configuration.
-     */
     public String getWord(String key, String def) {
         String res = plugin.getMessagesFile().getString("editor.words." + key);
         return (res == null || res.isEmpty()) ? def : res;
     }
 
-    /**
-     * Retrieves a lore list from the configuration, substituting a default array if missing.
-     * Prevents items from appearing blank if the language file fails to update.
-     */
     private List<String> getLoreList(String path, List<String> defaultLore) {
         List<String> list = plugin.getMessagesFile().getStringList("editor.items." + path);
         return (list == null || list.isEmpty()) ? defaultLore : list;
     }
 
-    /**
-     * Sends a formatted message to the player, replacing any provided placeholders.
-     */
     public void sendMessage(Player p, String key, String... placeholders) {
         String msg = plugin.getMessagesFile().getString("editor.chat." + key);
         if (msg == null || msg.isEmpty()) {
@@ -77,9 +65,6 @@ public class EditorGUI {
         p.sendMessage(ColorUtils.parseWithPrefix(msg));
     }
 
-    /**
-     * Helper to construct ItemStacks with Adventure components.
-     */
     private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
@@ -112,9 +97,6 @@ public class EditorGUI {
         }
     }
 
-    /**
-     * Opens the root selection menu containing all Dungeon YAML files.
-     */
     public void openMainMenu(Player p, int page) {
         File folder = new File(plugin.getDataFolder(), "dungeons");
         List<File> files = new ArrayList<>();
@@ -125,7 +107,7 @@ public class EditorGUI {
 
         int total = files.size();
         int maxPage = Math.max(0, (total - 1) / 45);
-        page = Math.max(0, Math.min(maxPage, page)); // Java 17 safe clamp
+        page = Math.max(0, Math.min(maxPage, page));
 
         Inventory inv = Bukkit.createInventory(new EditorHolder(null, "MAIN", page), 54, ColorUtils.parse(getMsg("title.main", "&lDungeon Editor")));
 
@@ -138,13 +120,11 @@ public class EditorGUI {
             String nameFmt = getMsg("items.dungeon_file_name", "&e<name>");
             String displayName = nameFmt.replace("<name>", dungeonId);
 
-            // Added Shift-Right hint to lore
             List<String> lore = getLoreList("dungeon_file_lore", Arrays.asList("&eLeft Click: Edit", "&cShift-Right: Delete Dungeon"));
 
             ItemStack item = makeItem(Material.PAPER, displayName, lore);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                // Use NBT to store the internal ID safely
                 NamespacedKey key = new NamespacedKey(plugin, "dungeon_id");
                 meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, dungeonId);
                 item.setItemMeta(meta);
@@ -158,9 +138,6 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
-    /**
-     * Opens the specific settings interface for a selected Dungeon.
-     */
     public void openDungeonMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openDungeonMenu(player, session));
         String title = getMsg("title.dungeon", "&lEditing: <name>").replace("<name>", session.getFile().getName());
@@ -189,7 +166,6 @@ public class EditorGUI {
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save", "&a&lSave Changes"), null));
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
 
-        // NEW: Delete Dungeon Button
         List<String> deleteLore = getLoreList("delete_dungeon_lore", Arrays.asList("&7Permanently delete this", "&7dungeon and its leaderboard.", "", "&cShift-Right Click to confirm"));
         inv.setItem(26, makeItem(Material.BARRIER, getMsg("items.delete_dungeon", "&c&lDelete Dungeon"), deleteLore));
 
@@ -508,6 +484,7 @@ public class EditorGUI {
 
         List<String> defaultLore = Arrays.asList(
                 "&7Type: &f<type>",
+                "&7Info: &f<desc>",
                 "",
                 "&eLeft Click: Edit action",
                 "&cShift-Right: Delete action"
@@ -523,11 +500,12 @@ public class EditorGUI {
 
             String displayTypeName = (meta != null && meta.displayName() != null) ? meta.displayName() : type;
             Material icon = (meta != null && meta.icon() != null) ? meta.icon() : Material.PAPER;
+            String desc = (meta != null && meta.description() != null) ? meta.description() : getWord("unknown", "Unknown");
 
             String name = getMsg("items.action_item", "&eAction #<index>").replace("<index>", key);
             List<String> lore = new ArrayList<>();
             for (String s : getLoreList("action_lore", defaultLore)) {
-                lore.add(s.replace("<type>", displayTypeName));
+                lore.add(s.replace("<type>", displayTypeName).replace("<desc>", desc));
             }
 
             inv.setItem(i, makeItem(icon, name, lore));
@@ -553,13 +531,10 @@ public class EditorGUI {
                     int slot = Integer.parseInt(slotKey);
                     if (slot >= 0 && slot < 54) {
                         String itemStr = sec.getString(slotKey);
-                        ItemStack is = new ItemStack(Material.STONE);
-                        if (itemStr != null && itemStr.contains(":")) {
-                            String[] parts = itemStr.split(":");
-                            Material mat = Material.matchMaterial(parts[0]);
-                            if (mat != null) is = new ItemStack(mat, Integer.parseInt(parts[1]));
+                        ItemStack is = ItemBuilder.parseDynamicItem(itemStr);
+                        if (is != null) {
+                            inv.setItem(slot, is);
                         }
-                        inv.setItem(slot, is);
                     }
                 } catch (Exception ignored) {
                 }
@@ -607,6 +582,7 @@ public class EditorGUI {
         String hintItems = getMsg("items.action_val_hint_items", "&eLeft Click: Open GUI | Read YAML config to add Keys");
         String hintNotif = getMsg("items.action_val_hint_notif", "&7Per-action notification overrides");
         String hintTypeBlocked = getMsg("items.action_type_cant_edit", "&cCannot change action type after creation");
+        String hintPhaseGui = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
 
         int slot = 0;
         for (String key : sec.getKeys(false)) {
@@ -619,7 +595,7 @@ public class EditorGUI {
             boolean isList = sec.isList(key);
             boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
-            switch (key) {
+            switch (key.toLowerCase()) {
                 case "type":
                     icon = Material.BARRIER;
                     hint = hintTypeBlocked;
@@ -636,6 +612,11 @@ public class EditorGUI {
                     icon = Material.PAPER;
                     hint = hintList;
                     break;
+                case "enrage_message":
+                    icon = Material.PAPER;
+                    hint = hintEdit;
+                    isList = false;
+                    break;
                 case "random_mobs":
                     icon = Material.TRIAL_SPAWNER;
                     hint = hintList;
@@ -650,6 +631,42 @@ public class EditorGUI {
                     hint = hintItems;
                     val = getMsg("items.action_val_click_arrange", "&a[Click to arrange items]");
                     isList = false;
+                    break;
+                case "phases":
+                    icon = Material.COMMAND_BLOCK;
+                    hint = hintPhaseGui;
+                    val = sec.getConfigurationSection(key) != null ? sec.getConfigurationSection(key).getKeys(false).size() + " phases" : "0 phases";
+                    isList = false;
+                    break;
+                case "equipment":
+                    icon = Material.IRON_CHESTPLATE;
+                    hint = hintList;
+                    isList = true;
+                    break;
+                case "custom_drops":
+                    icon = Material.DIAMOND;
+                    hint = hintList;
+                    isList = true;
+                    break;
+                case "attributes":
+                case "enrage_attributes":
+                    icon = Material.POTION;
+                    hint = hintList;
+                    isList = true;
+                    break;
+                case "base_health":
+                case "scale_health_per_player":
+                    icon = Material.RED_DYE;
+                    hint = hintEdit;
+                    break;
+                case "bar_color":
+                case "bar_style":
+                    icon = Material.PAINTING;
+                    hint = hintEdit;
+                    break;
+                case "enrage_time":
+                    icon = Material.CLOCK;
+                    hint = hintEdit;
                     break;
                 default:
                     if (isLocation) {
@@ -714,6 +731,91 @@ public class EditorGUI {
 
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel", "&cCancel"), null));
         setPagination(inv, page, maxPage, 48, 50);
+        p.openInventory(inv);
+    }
+
+    public void openPhaseList(Player p, EditorSession session, int page) {
+        session.setPage("PHASE_LIST", page);
+        session.setLastMenuOpener(player -> openPhaseList(player, session, session.getPage("PHASE_LIST")));
+
+        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases";
+        ConfigurationSection sec = session.getConfig().getConfigurationSection(path);
+        List<String> keys = sec != null ? new ArrayList<>(sec.getKeys(false)) : new ArrayList<>();
+        keys.sort((a, b) -> {
+            try {
+                return Integer.compare(Integer.parseInt(b), Integer.parseInt(a));
+            } catch (Exception e) {
+                return 0;
+            }
+        });
+
+        int total = keys.size();
+        int maxPage = Math.max(0, (total - 1) / 45);
+        page = Math.max(0, Math.min(maxPage, page));
+
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "PHASE_LIST", page), 54, ColorUtils.parse(getMsg("title.phases", "&lBoss Phases")));
+
+        for (int i = 0; i < 45; i++) {
+            int idx = i + page * 45;
+            if (idx >= total) break;
+            String key = keys.get(idx);
+
+            String name = getMsg("items.phase_item", "&ePhase at <hp>% HP").replace("<hp>", key);
+            List<String> lore = getLoreList("phase_lore", Arrays.asList("&7Click to configure phase", "", "&cShift-Right to delete"));
+            inv.setItem(i, makeItem(Material.COMMAND_BLOCK, name, lore));
+        }
+
+        inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_phase", "&aAdd Phase"), null));
+        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        setPagination(inv, page, maxPage, 48, 50);
+        p.openInventory(inv);
+    }
+
+    public void openPhaseEditor(Player p, EditorSession session) {
+        session.setLastMenuOpener(player -> openPhaseEditor(player, session));
+        String title = getMsg("title.edit_phase", "&lPhase: <hp>%").replace("<hp>", session.getCurrentPhaseThreshold());
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_PHASE", 0), 27, ColorUtils.parse(title));
+
+        String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
+        String msg = session.getConfig().getString(basePath + ".message", "");
+        int attrCount = session.getConfig().getStringList(basePath + ".attributes").size();
+        int skillCount = session.getConfig().getStringList(basePath + ".skills").size();
+
+        String hintEdit = getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
+        String hintList = getMsg("items.action_val_hint_list", "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All");
+        String hintGui = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
+
+        inv.setItem(10, makeItem(Material.PAPER, getMsg("items.phase_message", "&ePhase Message"), Arrays.asList("&7Current: &f" + msg, hintEdit)));
+        inv.setItem(12, makeItem(Material.POTION, getMsg("items.phase_attributes", "&ePhase Attributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
+        inv.setItem(14, makeItem(Material.BLAZE_POWDER, getMsg("items.phase_skills", "&ePhase Skills"), Arrays.asList("&7Current: &f" + skillCount + " skills", hintList)));
+        inv.setItem(16, makeItem(Material.ZOMBIE_HEAD, getMsg("items.phase_reinforcements", "&eReinforcements"), Arrays.asList("&7Configure backup mobs", hintGui)));
+
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        p.openInventory(inv);
+    }
+
+    public void openReinforcementEditor(Player p, EditorSession session) {
+        session.setLastMenuOpener(player -> openReinforcementEditor(player, session));
+        String title = getMsg("title.edit_reinforcements", "&lReinforcements: <hp>%").replace("<hp>", session.getCurrentPhaseThreshold());
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_REINFORCEMENTS", 0), 27, ColorUtils.parse(title));
+
+        String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold() + ".reinforcements";
+        String mob = session.getConfig().getString(basePath + ".mob", "NONE");
+        int amount = session.getConfig().getInt(basePath + ".amount", 1);
+        String name = session.getConfig().getString(basePath + ".custom_name", "");
+        int attrCount = session.getConfig().getStringList(basePath + ".attributes").size();
+        int equipCount = session.getConfig().getStringList(basePath + ".equipment").size();
+
+        String hintEdit = getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
+        String hintList = getMsg("items.action_val_hint_list", "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All");
+
+        inv.setItem(10, makeItem(Material.CREEPER_HEAD, getMsg("items.reinf_mob", "&eMob Type"), Arrays.asList("&7Current: &f" + mob, hintEdit)));
+        inv.setItem(12, makeItem(Material.GOLD_NUGGET, getMsg("items.reinf_amount", "&eAmount"), Arrays.asList("&7Current: &f" + amount, hintEdit)));
+        inv.setItem(13, makeItem(Material.NAME_TAG, getMsg("items.reinf_name", "&eCustom Name"), Arrays.asList("&7Current: &f" + name, hintEdit)));
+        inv.setItem(14, makeItem(Material.POTION, getMsg("items.reinf_attributes", "&eAttributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
+        inv.setItem(16, makeItem(Material.IRON_CHESTPLATE, getMsg("items.reinf_equipment", "&eEquipment"), Arrays.asList("&7Current: &f" + equipCount + " items", hintList)));
+
+        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         p.openInventory(inv);
     }
 

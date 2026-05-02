@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.actions.ActionParser;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.api.events.DungeonStartEvent;
 import net.danh.sinceDungeon.api.interfaces.ConditionProcessor;
+import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
@@ -38,6 +39,7 @@ public class DungeonManager {
     private final Set<UUID> transitioningPlayers = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> pendingCrossServerGames = new ConcurrentHashMap<>();
     private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
+    private final Map<String, CustomItemProvider> customItemProviders = new ConcurrentHashMap<>();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -487,6 +489,23 @@ public class DungeonManager {
             game.forceShutdown();
         }
         activeGames.clear();
+    }
+
+    /**
+     * Registers a custom item provider for a specific prefix.
+     *
+     * @param prefix   The prefix used in config (e.g. "MY_PLUGIN").
+     * @param provider The provider logic.
+     */
+    public void registerItemProvider(String prefix, CustomItemProvider provider) {
+        customItemProviders.put(prefix.toUpperCase(), provider);
+    }
+
+    /**
+     * Retrieves the custom item provider for a specific prefix.
+     */
+    public CustomItemProvider getItemProvider(String prefix) {
+        return customItemProviders.get(prefix.toUpperCase());
     }
 
     public DungeonGame getGame(UUID uuid) {

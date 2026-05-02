@@ -32,8 +32,84 @@ public class DefaultRegistry {
      * @param manager The DungeonManager to register components into.
      */
     public static void registerAll(SinceDungeon plugin, DungeonManager manager) {
+        registerDefaultItemProviders(plugin, manager);
         registerDefaultProcessors(plugin, manager);
         registerDefaultActions(plugin, manager);
+    }
+
+    /**
+     * Registers the built-in Item Providers (Keys, Lives, Cooldowns, MMOItems) into the registry.
+     */
+    private static void registerDefaultItemProviders(SinceDungeon plugin, DungeonManager manager) {
+        // 1. Dungeon Keys (KEY:id:amount)
+        manager.registerItemProvider("KEY", data -> {
+            String[] parts = data.split(":");
+            if (parts.length < 2) return null;
+            String keyId = parts[1];
+            int amount = parts.length >= 3 ? getInt(parts[2], 1) : 1;
+
+            NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("dungeon-items.key");
+            return ItemBuilder.fromConfig(plugin, "dungeon-items.key", "TRIPWIRE_HOOK")
+                    .amount(amount)
+                    .applyConfig(cfg, "&6&lDungeon Key", "<id>", keyId)
+                    .setTag(keyTag, PersistentDataType.STRING, keyId)
+                    .build();
+        });
+
+        // 2. Life Items (LIFE_ITEM:amount)
+        manager.registerItemProvider("LIFE_ITEM", data -> {
+            String[] parts = data.split(":");
+            int amount = parts.length >= 2 ? getInt(parts[1], 1) : 1;
+
+            NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
+            return ItemBuilder.fromConfig(plugin, "lives.life-item", "NETHER_STAR")
+                    .amount(amount)
+                    .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
+                    .setTag(lifeKey, PersistentDataType.INTEGER, amount)
+                    .build();
+        });
+
+        // 3. Cooldown Reset (COOLDOWN_RESET:amount)
+        manager.registerItemProvider("COOLDOWN_RESET", data -> {
+            String[] parts = data.split(":");
+            int amount = parts.length >= 2 ? getInt(parts[1], 1) : 1;
+
+            NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reset-item");
+            return ItemBuilder.fromConfig(plugin, "cooldown.reset-item", "PAPER")
+                    .amount(amount)
+                    .applyConfig(cfg, "&e&lCooldown Reset Ticket")
+                    .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
+                    .build();
+        });
+
+        // 4. Cooldown Reduce (COOLDOWN_REDUCE:seconds:amount)
+        manager.registerItemProvider("COOLDOWN_REDUCE", data -> {
+            String[] parts = data.split(":");
+            int seconds = parts.length >= 2 ? getInt(parts[1], 300) : 300;
+            int amount = parts.length >= 3 ? getInt(parts[2], 1) : 1;
+
+            NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
+            ConfigurationSection cfg = plugin.getConfigFile().getConfig().getConfigurationSection("cooldown.reduce-item");
+            return ItemBuilder.fromConfig(plugin, "cooldown.reduce-item", "CLOCK")
+                    .amount(amount)
+                    .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
+                    .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
+                    .build();
+        });
+
+        // 5. MMOItems (MMOITEMS:TYPE:ID:AMOUNT)
+        manager.registerItemProvider("MMOITEMS", data -> {
+            if (!Bukkit.getPluginManager().isPluginEnabled("MMOItems")) return null;
+            String[] parts = data.split(":");
+            if (parts.length < 3) return null;
+            String type = parts[1];
+            String id = parts[2];
+            int amount = parts.length > 3 ? getInt(parts[3], 1) : 1;
+            return MMOItemsHook.getMMOItem(type, id, amount);
+        });
     }
 
     /**
@@ -45,7 +121,7 @@ public class DefaultRegistry {
             for (ItemStack drop : left.values()) {
                 p.getWorld().dropItem(p.getLocation(), drop);
             }
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full")));
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full", "&cInventory full! Item dropped on the ground.")));
         }
 
         String displayName = fallbackName;
@@ -53,7 +129,7 @@ public class DefaultRegistry {
             displayName = ColorUtils.toPlainText(item.getItemMeta().displayName());
         }
 
-        String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
+        String msg = plugin.getMessagesFile().getString("reward.messages.received_item", "&7Received: &a<item>");
         if (msg != null) {
             p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? item.getType().name() : displayName)));
         }
@@ -71,7 +147,7 @@ public class DefaultRegistry {
                 cmd = cmd.substring(1);
             }
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-            String msg = plugin.getMessagesFile().getString("reward.messages.received_custom");
+            String msg = plugin.getMessagesFile().getString("reward.messages.received_custom", "&7Reward: &a<item>");
             if (displayName != null && msg != null && !msg.isEmpty()) {
                 p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
             }
@@ -96,13 +172,13 @@ public class DefaultRegistry {
 
                 giveCustomItemReward(plugin, p, item, mat.name() + " x" + amount);
             } catch (Exception e) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.error").replace("<item>", val)));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.error", "&cSystem Error: Item <item> is misconfigured.").replace("<item>", val)));
             }
         });
 
         manager.registerRewardProcessor("MMOITEM", (p, val, displayName) -> {
             if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_installed")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_installed", "&cSystem Error: MMOItems is not installed.")));
                 return;
             }
             try {
@@ -116,7 +192,7 @@ public class DefaultRegistry {
                 if (item != null) {
                     giveCustomItemReward(plugin, p, item, displayName == null ? mId : displayName);
                 } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_found").replace("<type>", mType).replace("<id>", mId)));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_found", "&cSystem Error: MMOItem not found.").replace("<type>", mType).replace("<id>", mId)));
                 }
             } catch (Exception ignored) {
             }
@@ -159,68 +235,6 @@ public class DefaultRegistry {
                     .build();
             giveCustomItemReward(plugin, p, item, displayName);
         });
-
-        Map<String, Object> bossDefaults = new HashMap<>();
-        bossDefaults.put("location", "0,0,0");
-        bossDefaults.put("mob", "ZOMBIE");
-        bossDefaults.put("custom_name", "&4&lThe Boss");
-        bossDefaults.put("base_health", 500.0);
-        bossDefaults.put("scale_health_per_player", 150.0);
-        bossDefaults.put("bar_color", "RED");
-        bossDefaults.put("bar_style", "SOLID");
-        bossDefaults.put("attributes", new ArrayList<>(Collections.singletonList("movement_speed:0.3")));
-        bossDefaults.put("enrage_time", -1);
-        bossDefaults.put("enrage_message", "&c&lThe Boss has become ENRAGED!");
-        bossDefaults.put("enrage_attributes", new ArrayList<>(Arrays.asList("attack_damage:20.0", "movement_speed:0.5")));
-        bossDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_limit", -1));
-        bossDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_penalty", 1));
-        bossDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.boss_battle.start_message"));
-
-        manager.registerAction("BOSS_BATTLE", map -> {
-                    Vector loc = parseLocList(map.get("location")).get(0);
-                    EntityType mob;
-                    try { mob = EntityType.valueOf(String.valueOf(map.getOrDefault("mob", "ZOMBIE")).toUpperCase()); } catch (Exception e) { mob = EntityType.ZOMBIE; }
-                    String name = String.valueOf(map.getOrDefault("custom_name", "&4&lThe Boss"));
-                    double baseHealth = getDouble(map.get("base_health"), 500.0);
-                    double scale = getDouble(map.get("scale_health_per_player"), 150.0);
-                    String color = String.valueOf(map.getOrDefault("bar_color", "RED"));
-                    String style = String.valueOf(map.getOrDefault("bar_style", "SOLID"));
-
-                    List<String> attrs = new ArrayList<>();
-                    if (map.get("attributes") instanceof List<?> l) l.forEach(o -> attrs.add(o.toString()));
-
-                    int enrageTime = getInt(map.get("enrage_time"), -1);
-                    String enrageMessage = String.valueOf(map.getOrDefault("enrage_message", "&c&lThe Boss has become ENRAGED!"));
-                    List<String> enrageAttrs = new ArrayList<>();
-                    if (map.get("enrage_attributes") instanceof List<?> l) l.forEach(o -> enrageAttrs.add(o.toString()));
-
-                    Map<Integer, BossBattleAction.PhaseData> phases = new HashMap<>();
-                    Object phasesObj = map.get("phases");
-                    if (phasesObj instanceof ConfigurationSection sec) {
-                        for (String key : sec.getKeys(false)) {
-                            try {
-                                int threshold = Integer.parseInt(key);
-                                BossBattleAction.PhaseData pd = new BossBattleAction.PhaseData();
-                                pd.message = sec.getString(key + ".message", "");
-                                pd.attributes = sec.getStringList(key + ".attributes");
-                                pd.skills = sec.getStringList(key + ".skills");
-
-                                String rMobStr = sec.getString(key + ".reinforcements.mob");
-                                if (rMobStr != null) {
-                                    try { pd.reinforcementMob = EntityType.valueOf(rMobStr.toUpperCase()); } catch (Exception ignored) {}
-                                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
-                                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
-                                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
-                                }
-                                phases.put(threshold, pd);
-                            } catch (NumberFormatException ignored) {}
-                        }
-                    }
-
-                    return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, phases, enrageTime, enrageMessage, enrageAttrs);
-                }, plugin.getMessagesFile().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
-                plugin.getMessagesFile().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
-                bossDefaults, new HashMap<>());
     }
 
     /**
@@ -261,6 +275,7 @@ public class DefaultRegistry {
         spawnDefaults.put("attributes", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.attributes"));
         spawnDefaults.put("equipment", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.equipment"));
         spawnDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
+        spawnDefaults.put("custom_drops", new ArrayList<String>());
         spawnDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.spawn_wave.start_message"));
 
         manager.registerAction("SPAWN_WAVE", map -> {
@@ -287,7 +302,10 @@ public class DefaultRegistry {
                     Object equipObj = map.get("equipment");
                     if (equipObj instanceof List<?> l) l.forEach(o -> equipmentList.add(o.toString()));
 
-                    return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList, scaleWithParty);
+                    List<String> customDrops = new ArrayList<>();
+                    if (map.get("custom_drops") instanceof List<?> l) l.forEach(o -> customDrops.add(o.toString()));
+
+                    return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList, scaleWithParty, customDrops);
                 }, plugin.getMessagesFile().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
                 plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
@@ -385,6 +403,7 @@ public class DefaultRegistry {
         randomDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.random_wave.time_penalty", 1));
         randomDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         randomDefaults.put("random_mobs", plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs").isEmpty() ? defaultRandomMobs : plugin.getConfigFile().getStringList("action-defaults.random_wave.random_mobs"));
+        randomDefaults.put("custom_drops", new ArrayList<String>());
         randomDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.random_wave.start_message"));
 
         manager.registerAction("RANDOM_WAVE", map -> {
@@ -397,7 +416,10 @@ public class DefaultRegistry {
                     if (rawList instanceof List<?> l) l.forEach(o -> rawStrings.add(o.toString()));
                     else if (rawList instanceof String s) rawStrings.add(s);
 
-                    return new RandomWaveAction(amount, v, RandomWaveAction.parseMobPool(rawStrings), scaleWithParty);
+                    List<String> customDrops = new ArrayList<>();
+                    if (map.get("custom_drops") instanceof List<?> l) l.forEach(o -> customDrops.add(o.toString()));
+
+                    return new RandomWaveAction(amount, v, RandomWaveAction.parseMobPool(rawStrings), scaleWithParty, customDrops);
                 }, plugin.getMessagesFile().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
                 plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
                 randomDefaults, new HashMap<>());
@@ -465,6 +487,86 @@ public class DefaultRegistry {
                 }, plugin.getMessagesFile().getString("editor.actions_name.unlock_door", "Find Key & Unlock Door"), Material.IRON_DOOR,
                 plugin.getMessagesFile().getString("editor.actions.unlock_door", "Requires player to find a key item to open the door."),
                 doorDefaults, new HashMap<>());
+
+        Map<String, Object> bossDefaults = new HashMap<>();
+        bossDefaults.put("location", "0,0,0");
+        bossDefaults.put("mob", "ZOMBIE");
+        bossDefaults.put("custom_name", "&4&lThe Boss");
+        bossDefaults.put("base_health", 500.0);
+        bossDefaults.put("scale_health_per_player", 150.0);
+        bossDefaults.put("bar_color", "RED");
+        bossDefaults.put("bar_style", "SOLID");
+        bossDefaults.put("attributes", new ArrayList<>(Collections.singletonList("movement_speed:0.3")));
+        bossDefaults.put("equipment", new ArrayList<String>());
+        bossDefaults.put("enrage_time", -1);
+        bossDefaults.put("enrage_message", "&c&lThe Boss has become ENRAGED!");
+        bossDefaults.put("enrage_attributes", new ArrayList<>(Arrays.asList("attack_damage:20.0", "movement_speed:0.5")));
+        bossDefaults.put("custom_drops", new ArrayList<String>());
+        bossDefaults.put("phases", new HashMap<String, Object>());
+        bossDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_limit", -1));
+        bossDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_penalty", 1));
+        bossDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.boss_battle.start_message"));
+
+        manager.registerAction("BOSS_BATTLE", map -> {
+                    Vector loc = parseLocList(map.get("location")).get(0);
+                    EntityType mob;
+                    try {
+                        mob = EntityType.valueOf(String.valueOf(map.getOrDefault("mob", "ZOMBIE")).toUpperCase());
+                    } catch (Exception e) {
+                        mob = EntityType.ZOMBIE;
+                    }
+                    String name = String.valueOf(map.getOrDefault("custom_name", "&4&lThe Boss"));
+                    double baseHealth = getDouble(map.get("base_health"), 500.0);
+                    double scale = getDouble(map.get("scale_health_per_player"), 150.0);
+                    String color = String.valueOf(map.getOrDefault("bar_color", "RED"));
+                    String style = String.valueOf(map.getOrDefault("bar_style", "SOLID"));
+
+                    List<String> attrs = new ArrayList<>();
+                    if (map.get("attributes") instanceof List<?> l) l.forEach(o -> attrs.add(o.toString()));
+
+                    List<String> equipment = new ArrayList<>();
+                    if (map.get("equipment") instanceof List<?> l) l.forEach(o -> equipment.add(o.toString()));
+
+                    int enrageTime = getInt(map.get("enrage_time"), -1);
+                    String enrageMessage = String.valueOf(map.getOrDefault("enrage_message", "&c&lThe Boss has become ENRAGED!"));
+                    List<String> enrageAttrs = new ArrayList<>();
+                    if (map.get("enrage_attributes") instanceof List<?> l) l.forEach(o -> enrageAttrs.add(o.toString()));
+
+                    List<String> customDrops = new ArrayList<>();
+                    if (map.get("custom_drops") instanceof List<?> l) l.forEach(o -> customDrops.add(o.toString()));
+
+                    Map<Integer, BossBattleAction.PhaseData> phases = new HashMap<>();
+                    Object phasesObj = map.get("phases");
+                    if (phasesObj instanceof ConfigurationSection sec) {
+                        for (String key : sec.getKeys(false)) {
+                            try {
+                                int threshold = Integer.parseInt(key);
+                                BossBattleAction.PhaseData pd = new BossBattleAction.PhaseData();
+                                pd.message = sec.getString(key + ".message", "");
+                                pd.attributes = sec.getStringList(key + ".attributes");
+                                pd.skills = sec.getStringList(key + ".skills");
+
+                                String rMobStr = sec.getString(key + ".reinforcements.mob");
+                                if (rMobStr != null) {
+                                    try {
+                                        pd.reinforcementMob = EntityType.valueOf(rMobStr.toUpperCase());
+                                    } catch (Exception ignored) {
+                                    }
+                                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
+                                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
+                                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
+                                    pd.reinforcementEquipment = sec.getStringList(key + ".reinforcements.equipment");
+                                }
+                                phases.put(threshold, pd);
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+                    }
+
+                    return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, equipment, phases, enrageTime, enrageMessage, enrageAttrs, customDrops);
+                }, plugin.getMessagesFile().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
+                plugin.getMessagesFile().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
+                bossDefaults, new HashMap<>());
     }
 
     private static int getInt(Object obj, int def) {

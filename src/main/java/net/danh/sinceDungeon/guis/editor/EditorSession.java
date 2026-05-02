@@ -33,6 +33,7 @@ public class EditorSession {
     private String currentActionKey = null;
     private String currentRewardKey = null;
     private String currentConditionKey = null;
+    private String currentPhaseThreshold = null; // NEW: Tracks boss phase
 
     private String currentListPath = null;
     private String currentListReturnMenu = null;
@@ -53,10 +54,6 @@ public class EditorSession {
         }
     }
 
-    /**
-     * Asynchronously saves the current YAML configuration to the disk.
-     * Triggers a live hot-reload into the DungeonManager memory map upon success.
-     */
     public void save() {
         if (file == null) return;
         String yamlData = config.saveToString();
@@ -157,6 +154,14 @@ public class EditorSession {
         this.currentConditionKey = key;
     }
 
+    public String getCurrentPhaseThreshold() {
+        return currentPhaseThreshold;
+    }
+
+    public void setCurrentPhaseThreshold(String currentPhaseThreshold) {
+        this.currentPhaseThreshold = currentPhaseThreshold;
+    }
+
     public String getCurrentListPath() {
         return currentListPath;
     }
@@ -203,10 +208,6 @@ public class EditorSession {
         NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK, EDIT_KICK_DELAY
     }
 
-    /**
-     * Enumerates all configurable map-specific settings.
-     * Contains definitions required to dynamically construct the Settings Editor GUI.
-     */
     public enum SettingOption {
         KEEP_INV("settings.keep-inventory-on-death", "dungeon.gameplay.keep-inventory-on-death", Material.TOTEM_OF_UNDYING, "setting_keep_inv", "BOOL", true),
         PREVENT_DROP("settings.prevent-item-dropping", "dungeon.gameplay.prevent-item-dropping", Material.BARRIER, "setting_prevent_drop", "BOOL", true),

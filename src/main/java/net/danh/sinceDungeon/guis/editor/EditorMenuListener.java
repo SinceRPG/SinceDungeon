@@ -334,6 +334,10 @@ public class EditorMenuListener implements Listener {
                         gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
                     } else if ("EDIT_ACTION".equals(session.getCurrentListReturnMenu())) {
                         gui.openActionEditor(p, session);
+                    } else if ("EDIT_PHASE".equals(session.getCurrentListReturnMenu())) {
+                        gui.openPhaseEditor(p, session);
+                    } else if ("EDIT_REINFORCEMENTS".equals(session.getCurrentListReturnMenu())) {
+                        gui.openReinforcementEditor(p, session);
                     } else {
                         gui.openDungeonMenu(p, session);
                     }
@@ -341,6 +345,9 @@ public class EditorMenuListener implements Listener {
                 }
                 if (slot == 49) {
                     String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
+                    if (session.getCurrentListPath().contains("skills")) prompt = "edit_skill_list";
+                    if (session.getCurrentListPath().contains("custom_drops")) prompt = "edit_custom_drops";
+
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
                         List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
                         list.add(val);
@@ -735,6 +742,11 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
+                if (key.equalsIgnoreCase("phases")) {
+                    gui.openPhaseList(p, session, 0);
+                    return;
+                }
+
                 boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
                 boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
@@ -746,7 +758,7 @@ public class EditorMenuListener implements Listener {
                     inputType = isList ? EditorSession.InputType.EDIT_LOCATION_LIST : EditorSession.InputType.EDIT_LOCATION;
                 } else if (isList) {
                     inputType = EditorSession.InputType.EDIT_LIST;
-                } else if (key.equals("amount") || key.equals("radius") || key.equals("chance") || key.equals("level")) {
+                } else if (key.equals("amount") || key.equals("radius") || key.equals("chance") || key.equals("level") || key.equals("enrage_time") || key.equals("base_health") || key.equals("scale_health_per_player")) {
                     inputType = EditorSession.InputType.EDIT_NUMBER;
                 } else {
                     inputType = EditorSession.InputType.EDIT_STRING;
@@ -827,6 +839,112 @@ public class EditorMenuListener implements Listener {
                         gui.openActionEditor(p, session);
                     });
                     plugin.getEditorListener().startListening(p, session);
+                }
+            }
+
+            case "PHASE_LIST" -> {
+                if (slot == 48 && cur.getType() == gui.getNavItem()) {
+                    gui.openPhaseList(p, session, page - 1);
+                    return;
+                }
+                if (slot == 50 && cur.getType() == gui.getNavItem()) {
+                    gui.openPhaseList(p, session, page + 1);
+                    return;
+                }
+                if (slot == 45) {
+                    gui.openActionEditor(p, session);
+                    return;
+                }
+                if (slot == 49) {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_phase_threshold", val -> {
+                        try {
+                            int threshold = Math.max(1, Math.min(100, Integer.parseInt(val)));
+                            String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + threshold;
+                            if (!session.getConfig().contains(path)) {
+                                session.getConfig().set(path + ".message", "");
+                                session.getConfig().set(path + ".attributes", new ArrayList<>());
+                                session.getConfig().set(path + ".skills", new ArrayList<>());
+                            }
+                            gui.openPhaseList(p, session, page);
+                        } catch (Exception ex) {
+                            gui.sendMessage(p, "number_error");
+                            gui.openPhaseList(p, session, page);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot < 45 && cur.getType() == Material.COMMAND_BLOCK) {
+                    String threshold = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName()).replaceAll("[^0-9]", "");
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        session.getConfig().set("stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + threshold, null);
+                        gui.openPhaseList(p, session, page);
+                    } else if (e.getClick() == ClickType.LEFT) {
+                        session.setCurrentPhaseThreshold(threshold);
+                        gui.openPhaseEditor(p, session);
+                    }
+                }
+            }
+
+            case "EDIT_PHASE" -> {
+                if (slot == 18) {
+                    gui.openPhaseList(p, session, session.getPage("PHASE_LIST"));
+                    return;
+                }
+                String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
+
+                if (slot == 10 && e.getClick() == ClickType.LEFT) {
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_phase_message", val -> {
+                        String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
+                        if (val.equalsIgnoreCase(clearKw)) val = "";
+                        session.getConfig().set(basePath + ".message", val);
+                        gui.openPhaseEditor(p, session);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 12 && e.getClick() == ClickType.LEFT) {
+                    gui.openStringListEditor(p, session, basePath + ".attributes", "EDIT_PHASE", 0);
+                } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
+                    gui.openStringListEditor(p, session, basePath + ".skills", "EDIT_PHASE", 0);
+                } else if (slot == 16 && e.getClick() == ClickType.LEFT) {
+                    gui.openReinforcementEditor(p, session);
+                }
+            }
+
+            case "EDIT_REINFORCEMENTS" -> {
+                if (slot == 18) {
+                    gui.openPhaseEditor(p, session);
+                    return;
+                }
+                String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold() + ".reinforcements";
+
+                if (slot == 10 && e.getClick() == ClickType.LEFT) {
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reinforcement_mob", val -> {
+                        session.getConfig().set(basePath + ".mob", val.toUpperCase());
+                        gui.openReinforcementEditor(p, session);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 12 && e.getClick() == ClickType.LEFT) {
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reinforcement_amount", val -> {
+                        try {
+                            int amt = Math.max(1, Integer.parseInt(val));
+                            session.getConfig().set(basePath + ".amount", amt);
+                            gui.openReinforcementEditor(p, session);
+                        } catch (Exception ex) {
+                            gui.sendMessage(p, "number_error");
+                            gui.openReinforcementEditor(p, session);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 13 && e.getClick() == ClickType.LEFT) {
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reinforcement_name", val -> {
+                        String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
+                        if (val.equalsIgnoreCase(clearKw)) val = "";
+                        session.getConfig().set(basePath + ".custom_name", val);
+                        gui.openReinforcementEditor(p, session);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
+                    gui.openStringListEditor(p, session, basePath + ".attributes", "EDIT_REINFORCEMENTS", 0);
+                } else if (slot == 16 && e.getClick() == ClickType.LEFT) {
+                    gui.openStringListEditor(p, session, basePath + ".equipment", "EDIT_REINFORCEMENTS", 0);
                 }
             }
         }

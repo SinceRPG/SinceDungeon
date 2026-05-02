@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.utils;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Color;
@@ -79,12 +80,58 @@ public class ItemBuilder {
     }
 
     /**
+     * Parses dynamic item configurations utilizing the internal CustomItemProvider registry.
+     * Falls back to standard Vanilla parsing if no custom provider matches the prefix.
+     * Accessible globally for Actions, Custom Drops, and Loot Chests.
+     *
+     * @param data The configuration string (e.g., "PREFIX:DATA:AMOUNT")
+     * @return The constructed ItemStack or null if parsing fails.
+     */
+    public static ItemStack parseDynamicItem(String data) {
+        if (data == null || data.isEmpty()) return null;
+        try {
+            String cleanData = data.replace(" ", "");
+            String[] parts = cleanData.split(":", 2); // Split only at the first colon
+
+            String prefix = parts[0].toUpperCase();
+
+            // 1. Check if a custom provider is registered for this prefix
+            CustomItemProvider provider =
+                    SinceDungeon.getPlugin().getDungeonManager().getItemProvider(prefix);
+
+            if (provider != null) {
+                // Pass the ENTIRE string so the provider can parse it its own way
+                return provider.parseItem(cleanData);
+            }
+
+            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT)
+            Material mat = Material.matchMaterial(prefix);
+            if (mat != null) {
+                int amount = 1;
+                if (parts.length > 1) {
+                    try {
+                        amount = Integer.parseInt(parts[1]);
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+                return new ItemStack(mat, amount);
+            }
+
+        } catch (Throwable e) {
+            SinceDungeon.getPlugin().getLogger().warning("Error parsing dynamic item data: " + data);
+        }
+        return null;
+    }
+
+    /**
      * Sets the stack amount.
      */
     public ItemBuilder amount(int amount) {
         this.item.setAmount(amount);
         return this;
     }
+
+    // --- Static Utilities for Reading Tags ---
 
     /**
      * Applies a persistent NBT tag to the item.
@@ -95,8 +142,6 @@ public class ItemBuilder {
         }
         return this;
     }
-
-    // --- Static Utilities for Reading Tags ---
 
     /**
      * Parses and applies a wide range of metadata from a ConfigurationSection.
