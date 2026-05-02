@@ -39,36 +39,22 @@ public class EditorMenuListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Reusable logic to completely obliterate a dungeon.
-     * 1. Force stops all active instances of the dungeon safely.
-     * 2. Deletes the physical YAML file.
-     * 3. Unregisters from memory.
-     * 4. Wipes all leaderboard records from DB.
-     */
     private void deleteDungeonSafely(Player p, String dungeonId, EditorGUI gui) {
-        // 1. Force stop all running games using this template
         for (DungeonGame activeGame : plugin.getDungeonManager().getActiveGames().values()) {
             if (activeGame.getTemplate() != null && activeGame.getTemplate().id().equals(dungeonId)) {
                 activeGame.stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
             }
         }
 
-        // 2. Delete the physical file
         File file = new File(plugin.getDataFolder(), "dungeons/" + dungeonId + ".yml");
-        if (file.exists()) {
-            file.delete();
-        }
+        if (file.exists()) file.delete();
 
-        // 3. Unregister from the manager
         plugin.getDungeonManager().unregisterTemplate(dungeonId);
 
-        // 4. Wipe Leaderboard Data Async
         if (plugin.getTopManager() != null) {
             plugin.getTopManager().resetLeaderboard(dungeonId);
         }
 
-        // 5. Provide visual & audio feedback
         p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1f, 1f);
         gui.sendMessage(p, "dungeon_deleted", "<dungeon>", dungeonId);
     }
@@ -76,9 +62,7 @@ public class EditorMenuListener implements Listener {
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder) {
-            if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) {
-                return;
-            }
+            if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) return;
 
             if (!e.getWhoClicked().hasPermission("SinceDungeon.admin")) {
                 e.setCancelled(true);
@@ -236,7 +220,7 @@ public class EditorMenuListener implements Listener {
                 else if (slot == 16) gui.openStageList(p, session, session.getPage("STAGES"));
                 else if (slot == 22) session.save();
                 else if (slot == 18) gui.openMainMenu(p, 0);
-                else if (slot == 26 && cur.getType() == Material.BARRIER) { // Delete Button
+                else if (slot == 26 && cur.getType() == Material.BARRIER) {
                     if (e.getClick() == ClickType.SHIFT_RIGHT) {
                         String dungeonId = session.getFile().getName().replace(".yml", "");
                         deleteDungeonSafely(p, dungeonId, gui);
@@ -315,58 +299,6 @@ public class EditorMenuListener implements Listener {
                         }
                         case "LIST" -> {
                             gui.openStringListEditor(p, session, opt.getLocalPath(), "SETTINGS", 0);
-                        }
-                    }
-                }
-            }
-
-            case "EDIT_STRING_LIST" -> {
-                if (slot == 48 && cur.getType() == gui.getNavItem()) {
-                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page - 1);
-                    return;
-                }
-                if (slot == 50 && cur.getType() == gui.getNavItem()) {
-                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page + 1);
-                    return;
-                }
-                if (slot == 45) {
-                    if ("SETTINGS".equals(session.getCurrentListReturnMenu())) {
-                        gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
-                    } else if ("EDIT_ACTION".equals(session.getCurrentListReturnMenu())) {
-                        gui.openActionEditor(p, session);
-                    } else if ("EDIT_PHASE".equals(session.getCurrentListReturnMenu())) {
-                        gui.openPhaseEditor(p, session);
-                    } else if ("EDIT_REINFORCEMENTS".equals(session.getCurrentListReturnMenu())) {
-                        gui.openReinforcementEditor(p, session);
-                    } else {
-                        gui.openDungeonMenu(p, session);
-                    }
-                    return;
-                }
-                if (slot == 49) {
-                    String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
-                    if (session.getCurrentListPath().contains("skills")) prompt = "edit_skill_list";
-                    if (session.getCurrentListPath().contains("custom_drops")) prompt = "edit_custom_drops";
-
-                    session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
-                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
-                        list.add(val);
-                        session.getConfig().set(session.getCurrentListPath(), list);
-                        gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
-                    });
-                    plugin.getEditorListener().startListening(p, session);
-                    return;
-                }
-                if (slot < 45 && cur.getType() == Material.PAPER) {
-                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
-                        int idx = slot + page * 45;
-                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
-                        if (idx < list.size()) {
-                            list.remove(idx);
-                            session.getConfig().set(session.getCurrentListPath(), list);
-                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                            gui.sendMessage(p, "line_removed");
-                            gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
                         }
                     }
                 }
@@ -571,9 +503,9 @@ public class EditorMenuListener implements Listener {
                             } else if (ItemBuilder.hasTag(hand, keyTag, PersistentDataType.STRING)) {
                                 String keyId = ItemBuilder.getTag(hand, keyTag, PersistentDataType.STRING);
                                 val = keyId + ":" + hand.getAmount();
-                                session.getConfig().set(path + ".type", "ITEM"); // Optional fallback type for keys
+                                session.getConfig().set(path + ".type", "ITEM");
                             } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems") && MMOItemsHook.getMMOItemString(hand) != null) {
-                                String mmoStr = MMOItemsHook.getMMOItemString(hand); // MMOITEMS:TYPE:ID:AMOUNT
+                                String mmoStr = MMOItemsHook.getMMOItemString(hand);
                                 String[] mmoParts = mmoStr.split(":");
                                 val = mmoParts[1] + ":" + mmoParts[2] + ":" + mmoParts[3];
                                 session.getConfig().set(path + ".type", "MMOITEM");
@@ -597,7 +529,7 @@ public class EditorMenuListener implements Listener {
                 } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                         try {
-                            double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val))); // Java 17 safe clamp
+                            double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
                             session.getConfig().set(path + ".chance", chance);
                             gui.openRewardEditor(p, session);
                         } catch (Exception ex) {
@@ -668,7 +600,7 @@ public class EditorMenuListener implements Listener {
                             } else if (e.getClick() == ClickType.RIGHT) {
                                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_stage_chance", val -> {
                                     try {
-                                        double c = Math.max(0.0, Math.min(100.0, Double.parseDouble(val))); // Java 17 safe clamp
+                                        double c = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
                                         session.getConfig().set("stages." + stage + ".chance", c);
                                         gui.openStageList(p, session, page);
                                     } catch (Exception ex) {
@@ -945,6 +877,58 @@ public class EditorMenuListener implements Listener {
                     gui.openStringListEditor(p, session, basePath + ".attributes", "EDIT_REINFORCEMENTS", 0);
                 } else if (slot == 16 && e.getClick() == ClickType.LEFT) {
                     gui.openStringListEditor(p, session, basePath + ".equipment", "EDIT_REINFORCEMENTS", 0);
+                }
+            }
+
+            case "EDIT_STRING_LIST" -> {
+                if (slot == 48 && cur.getType() == gui.getNavItem()) {
+                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page - 1);
+                    return;
+                }
+                if (slot == 50 && cur.getType() == gui.getNavItem()) {
+                    gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page + 1);
+                    return;
+                }
+                if (slot == 45) {
+                    if ("SETTINGS".equals(session.getCurrentListReturnMenu())) {
+                        gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
+                    } else if ("EDIT_ACTION".equals(session.getCurrentListReturnMenu())) {
+                        gui.openActionEditor(p, session);
+                    } else if ("EDIT_PHASE".equals(session.getCurrentListReturnMenu())) {
+                        gui.openPhaseEditor(p, session);
+                    } else if ("EDIT_REINFORCEMENTS".equals(session.getCurrentListReturnMenu())) {
+                        gui.openReinforcementEditor(p, session);
+                    } else {
+                        gui.openDungeonMenu(p, session);
+                    }
+                    return;
+                }
+                if (slot == 49) {
+                    String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
+                    if (session.getCurrentListPath().contains("skills")) prompt = "edit_skill_list";
+                    if (session.getCurrentListPath().contains("custom_drops")) prompt = "edit_custom_drops";
+
+                    session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
+                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
+                        list.add(val);
+                        session.getConfig().set(session.getCurrentListPath(), list);
+                        gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                    return;
+                }
+                if (slot < 45 && cur.getType() == Material.PAPER) {
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        int idx = slot + page * 45;
+                        List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
+                        if (idx < list.size()) {
+                            list.remove(idx);
+                            session.getConfig().set(session.getCurrentListPath(), list);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            gui.sendMessage(p, "line_removed");
+                            gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
+                        }
+                    }
                 }
             }
         }
