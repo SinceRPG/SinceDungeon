@@ -8,19 +8,25 @@ import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -87,11 +93,13 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         loc.getChunk().load(true);
 
         Entity entity = game.getWorld().spawnEntity(loc, mobType);
-        if (!(entity instanceof LivingEntity boss)) {
+        if (!(entity instanceof LivingEntity)) {
             entity.remove();
             this.completed = true;
             return;
         }
+
+        LivingEntity boss = (LivingEntity) entity;
 
         boss.setRemoveWhenFarAway(false);
         boss.setPersistent(true);
@@ -142,12 +150,15 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         if (completed || bossId == null || bossBar == null) return;
 
         Entity entity = Bukkit.getEntity(bossId);
-        LivingEntity boss = (LivingEntity) entity;
-        if (entity != null) {
-            handleCustomDrops(!boss.isDead() ? boss.getLocation() : null);
+
+        // Fix: Safe cast to avoid pattern matching scope errors
+        if (!(entity instanceof LivingEntity) || entity.isDead()) {
+            handleCustomDrops(entity != null ? entity.getLocation() : null);
             completeBoss(game);
             return;
         }
+
+        LivingEntity boss = (LivingEntity) entity;
 
         // Check Enrage Timer
         if (enrageTime > 0 && !isEnraged) {
@@ -217,37 +228,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
         applyAttributes(boss, data.attributes);
 
-        // Execute Skills
-        for (String skill : data.skills) {
-            String[] parts = skill.split(":");
-            String skillType = parts[0].toUpperCase();
-
-            switch (skillType) {
-                case "POTION_CLOUD":
-                    if (parts.length >= 4) {
-                        try {
-                            PotionEffectType type = PotionEffectType.getByName(parts[1].toUpperCase());
-                            int duration = Integer.parseInt(parts[2]) * 20;
-                            int amp = Integer.parseInt(parts[3]);
-
-                            AreaEffectCloud cloud = (AreaEffectCloud) game.getWorld().spawnEntity(boss.getLocation(), EntityType.AREA_EFFECT_CLOUD);
-                            cloud.setRadius(5.0f);
-                            cloud.setDuration(duration);
-                            if (type != null) cloud.addCustomEffect(new PotionEffect(type, duration, amp), true);
-                        } catch (Exception ignored) {
-                        }
-                    }
-                    break;
-                case "LIGHTNING":
-                    for (Player p : game.getParticipants()) {
-                        if (p.isOnline() && !p.isDead()) {
-                            game.getWorld().strikeLightning(p.getLocation());
-                        }
-                    }
-                    break;
-            }
-        }
-
         // Spawn Reinforcements
         if (data.reinforcementMob != null) {
             for (int i = 0; i < data.reinforcementAmount; i++) {
@@ -263,7 +243,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                         rLive.setCustomNameVisible(true);
                     }
                     applyAttributes(rLive, data.reinforcementAttributes);
-                    applyEquipment(rLive, data.reinforcementEquipment); // Apply equipment to reinforcements
+                    applyEquipment(rLive, data.reinforcementEquipment);
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, rLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
             }
@@ -354,9 +334,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Injects configured equipment into the LivingEntity.
-     */
     private void applyEquipment(LivingEntity living, List<String> equipmentList) {
         if (equipmentList == null || equipmentList.isEmpty() || living.getEquipment() == null) return;
 
@@ -388,9 +365,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Parses the item data string to support both Vanilla and MMOItems.
-     */
     private ItemStack parseItem(String data) {
         try {
             String cleanData = data.replace(" ", "");
@@ -415,7 +389,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     public static class PhaseData {
         public String message = "";
         public List<String> attributes = new ArrayList<>();
-        public List<String> skills = new ArrayList<>();
 
         public EntityType reinforcementMob = null;
         public int reinforcementAmount = 0;

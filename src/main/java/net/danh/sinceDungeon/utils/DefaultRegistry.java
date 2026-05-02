@@ -544,7 +544,6 @@ public class DefaultRegistry {
                                 BossBattleAction.PhaseData pd = new BossBattleAction.PhaseData();
                                 pd.message = sec.getString(key + ".message", "");
                                 pd.attributes = sec.getStringList(key + ".attributes");
-                                pd.skills = sec.getStringList(key + ".skills");
 
                                 String rMobStr = sec.getString(key + ".reinforcements.mob");
                                 if (rMobStr != null) {

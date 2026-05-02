@@ -357,7 +357,6 @@ editor:
     add_phase: "&aThêm Giai Đoạn Mới"
     phase_message: "&eCâu thoại của Boss"
     phase_attributes: "&eChỉ số cộng thêm"
-    phase_skills: "&eKỹ năng tung ra"
     phase_reinforcements: "&eLính cứu viện"
     reinf_mob: "&eLoại quái vật"
     reinf_amount: "&eSố lượng lính"

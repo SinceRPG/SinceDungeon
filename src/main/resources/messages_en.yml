@@ -356,7 +356,6 @@ editor:
     add_phase: "&aAdd Phase"
     phase_message: "&ePhase Message"
     phase_attributes: "&ePhase Attributes"
-    phase_skills: "&ePhase Skills"
     phase_reinforcements: "&eReinforcements"
     reinf_mob: "&eMob Type"
     reinf_amount: "&eAmount"

@@ -500,6 +500,7 @@ public class EditorGUI {
 
             String displayTypeName = (meta != null && meta.displayName() != null) ? meta.displayName() : type;
             Material icon = (meta != null && meta.icon() != null) ? meta.icon() : Material.PAPER;
+
             String desc = (meta != null && meta.description() != null) ? meta.description() : getWord("unknown", "Unknown");
 
             String name = getMsg("items.action_item", "&eAction #<index>").replace("<index>", key);
@@ -779,16 +780,14 @@ public class EditorGUI {
         String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
         String msg = session.getConfig().getString(basePath + ".message", "");
         int attrCount = session.getConfig().getStringList(basePath + ".attributes").size();
-        int skillCount = session.getConfig().getStringList(basePath + ".skills").size();
 
         String hintEdit = getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
         String hintList = getMsg("items.action_val_hint_list", "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All");
         String hintGui = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
 
-        inv.setItem(10, makeItem(Material.PAPER, getMsg("items.phase_message", "&ePhase Message"), Arrays.asList("&7Current: &f" + msg, hintEdit)));
-        inv.setItem(12, makeItem(Material.POTION, getMsg("items.phase_attributes", "&ePhase Attributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
-        inv.setItem(14, makeItem(Material.BLAZE_POWDER, getMsg("items.phase_skills", "&ePhase Skills"), Arrays.asList("&7Current: &f" + skillCount + " skills", hintList)));
-        inv.setItem(16, makeItem(Material.ZOMBIE_HEAD, getMsg("items.phase_reinforcements", "&eReinforcements"), Arrays.asList("&7Configure backup mobs", hintGui)));
+        inv.setItem(11, makeItem(Material.PAPER, getMsg("items.phase_message", "&ePhase Message"), Arrays.asList("&7Current: &f" + msg, hintEdit)));
+        inv.setItem(13, makeItem(Material.POTION, getMsg("items.phase_attributes", "&ePhase Attributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
+        inv.setItem(15, makeItem(Material.ZOMBIE_HEAD, getMsg("items.phase_reinforcements", "&eReinforcements"), Arrays.asList("&7Configure backup mobs", hintGui)));
 
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         p.openInventory(inv);

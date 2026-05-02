@@ -823,7 +823,7 @@ public class EditorMenuListener implements Listener {
                 }
                 String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
 
-                if (slot == 10 && e.getClick() == ClickType.LEFT) {
+                if (slot == 11 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_phase_message", val -> {
                         String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
                         if (val.equalsIgnoreCase(clearKw)) val = "";
@@ -831,11 +831,9 @@ public class EditorMenuListener implements Listener {
                         gui.openPhaseEditor(p, session);
                     });
                     plugin.getEditorListener().startListening(p, session);
-                } else if (slot == 12 && e.getClick() == ClickType.LEFT) {
+                } else if (slot == 13 && e.getClick() == ClickType.LEFT) {
                     gui.openStringListEditor(p, session, basePath + ".attributes", "EDIT_PHASE", 0);
-                } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
-                    gui.openStringListEditor(p, session, basePath + ".skills", "EDIT_PHASE", 0);
-                } else if (slot == 16 && e.getClick() == ClickType.LEFT) {
+                } else if (slot == 15 && e.getClick() == ClickType.LEFT) {
                     gui.openReinforcementEditor(p, session);
                 }
             }
@@ -905,7 +903,6 @@ public class EditorMenuListener implements Listener {
                 }
                 if (slot == 49) {
                     String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
-                    if (session.getCurrentListPath().contains("skills")) prompt = "edit_skill_list";
                     if (session.getCurrentListPath().contains("custom_drops")) prompt = "edit_custom_drops";
 
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
