@@ -218,6 +218,7 @@ objective:
   random_wave: "&eEliminate all enemies &7(Left: <remain>)"
   control_zone: "&bControl the Zone: <percent>%"
   unlock_door: "&6Follow the compass and unlock the door"
+  boss_battle: "&cDefeat the Boss!"
 
 action:
   compass_received: "&bYou received a Tracking Compass!"
@@ -243,6 +244,8 @@ action:
   zone_complete: "&aZone captured successfully!"
   door_start: "&eYou hold the key... Follow the compass to find the lock!"
   door_unlocked: "&a<player> has unlocked the door!"
+  boss_spawn: "&cBoss <boss> has appeared!"
+  boss_defeated: "&aThe Boss has been defeated!"
 
 error:
   wrong_key: "&cYou don't have the correct key for this door!"
@@ -318,6 +321,7 @@ editor:
     random_wave: "Random Mob Wave"
     control_zone: "Control The Zone"
     unlock_door: "Find Key & Unlock Door"
+    boss_battle: "Vanilla Boss Battle"
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"
@@ -327,6 +331,7 @@ editor:
     random_wave: "Spawn a random mix of Vanilla and Mythic mobs from a pool"
     control_zone: "Hold the area for X seconds. Circle can shrink over time."
     unlock_door: "Requires player to find a key item to open the door."
+    boss_battle: "Spawn a Vanilla boss with a Healthbar, scaling, and phases."
   title:
     main: "&lDungeon Editor"
     dungeon: "&lEditing: <name>"
@@ -343,6 +348,17 @@ editor:
     edit_action_items: "&lChest Editor: <index>"
     string_list: "&lEditing List"
   items:
+    action_val_hint_phases: "&7Advanced Phase settings must be edited in the YAML file manually."
+    dungeon_file_name: "&e<name>"
+    dungeon_file_lore:
+      - "&eLeft Click: Edit"
+      - "&cShift-Right: Delete Dungeon"
+    delete_dungeon: "&c&lDelete Dungeon"
+    delete_dungeon_lore:
+      - "&7Permanently delete this"
+      - "&7dungeon and its leaderboard."
+      - ""
+      - "&cShift-Right Click to confirm"
     setting_cmd_first_finish: "&eCommands On First Finish"
     setting_cmd_first_finish_lore:
       - "&7Current: &f<val> commands"
@@ -519,6 +535,19 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_enrage_time:
+        - "&7Enter the time (in seconds) before the boss enrages."
+        - "&7Enter &c-1 &7to disable the enrage timer."
+        - "&7Example: &a120 &7(Enrages after 2 minutes)"
+      edit_action_enrage_message:
+        - "&7Enter the message broadcasted when the boss enrages."
+        - "&7Example: &c&lThe Boss has become ENRAGED!"
+        - "&7Tip: Type &cclear &7to disable the message."
+      edit_action_enrage_attributes:
+        - "&7Set the bonus attributes applied when enraged."
+        - "&7Format: &a<attribute>:<value>"
+        - "&7Example: &fattack_damage:50"
+        - "&7Tip: Type &cclear &7to empty the list."
       edit_cooldown:
         - "&7Enter the cooldown time in seconds."
         - "&7Example: &a1800 &7(for 30 minutes)"
@@ -679,6 +708,7 @@ editor:
         - "&7MMOItems Example: &aMMOITEMS:KEY:DUNGEON_KEY:1"
 
   chat:
+    dungeon_deleted: "&aSuccessfully deleted dungeon: &e<dungeon>"
     notifications_hint:
       - "&7[Notifications] Edit this field manually in the dungeon YAML file."
       - "&7Format: notifications:"

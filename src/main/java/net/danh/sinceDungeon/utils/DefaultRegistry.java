@@ -159,6 +159,68 @@ public class DefaultRegistry {
                     .build();
             giveCustomItemReward(plugin, p, item, displayName);
         });
+
+        Map<String, Object> bossDefaults = new HashMap<>();
+        bossDefaults.put("location", "0,0,0");
+        bossDefaults.put("mob", "ZOMBIE");
+        bossDefaults.put("custom_name", "&4&lThe Boss");
+        bossDefaults.put("base_health", 500.0);
+        bossDefaults.put("scale_health_per_player", 150.0);
+        bossDefaults.put("bar_color", "RED");
+        bossDefaults.put("bar_style", "SOLID");
+        bossDefaults.put("attributes", new ArrayList<>(Collections.singletonList("movement_speed:0.3")));
+        bossDefaults.put("enrage_time", -1);
+        bossDefaults.put("enrage_message", "&c&lThe Boss has become ENRAGED!");
+        bossDefaults.put("enrage_attributes", new ArrayList<>(Arrays.asList("attack_damage:20.0", "movement_speed:0.5")));
+        bossDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_limit", -1));
+        bossDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_penalty", 1));
+        bossDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.boss_battle.start_message"));
+
+        manager.registerAction("BOSS_BATTLE", map -> {
+                    Vector loc = parseLocList(map.get("location")).get(0);
+                    EntityType mob;
+                    try { mob = EntityType.valueOf(String.valueOf(map.getOrDefault("mob", "ZOMBIE")).toUpperCase()); } catch (Exception e) { mob = EntityType.ZOMBIE; }
+                    String name = String.valueOf(map.getOrDefault("custom_name", "&4&lThe Boss"));
+                    double baseHealth = getDouble(map.get("base_health"), 500.0);
+                    double scale = getDouble(map.get("scale_health_per_player"), 150.0);
+                    String color = String.valueOf(map.getOrDefault("bar_color", "RED"));
+                    String style = String.valueOf(map.getOrDefault("bar_style", "SOLID"));
+
+                    List<String> attrs = new ArrayList<>();
+                    if (map.get("attributes") instanceof List<?> l) l.forEach(o -> attrs.add(o.toString()));
+
+                    int enrageTime = getInt(map.get("enrage_time"), -1);
+                    String enrageMessage = String.valueOf(map.getOrDefault("enrage_message", "&c&lThe Boss has become ENRAGED!"));
+                    List<String> enrageAttrs = new ArrayList<>();
+                    if (map.get("enrage_attributes") instanceof List<?> l) l.forEach(o -> enrageAttrs.add(o.toString()));
+
+                    Map<Integer, BossBattleAction.PhaseData> phases = new HashMap<>();
+                    Object phasesObj = map.get("phases");
+                    if (phasesObj instanceof ConfigurationSection sec) {
+                        for (String key : sec.getKeys(false)) {
+                            try {
+                                int threshold = Integer.parseInt(key);
+                                BossBattleAction.PhaseData pd = new BossBattleAction.PhaseData();
+                                pd.message = sec.getString(key + ".message", "");
+                                pd.attributes = sec.getStringList(key + ".attributes");
+                                pd.skills = sec.getStringList(key + ".skills");
+
+                                String rMobStr = sec.getString(key + ".reinforcements.mob");
+                                if (rMobStr != null) {
+                                    try { pd.reinforcementMob = EntityType.valueOf(rMobStr.toUpperCase()); } catch (Exception ignored) {}
+                                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
+                                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
+                                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
+                                }
+                                phases.put(threshold, pd);
+                            } catch (NumberFormatException ignored) {}
+                        }
+                    }
+
+                    return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, phases, enrageTime, enrageMessage, enrageAttrs);
+                }, plugin.getMessagesFile().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
+                plugin.getMessagesFile().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
+                bossDefaults, new HashMap<>());
     }
 
     /**

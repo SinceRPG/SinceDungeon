@@ -12,7 +12,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 /**
  * Handles the construction and rendering of the Leaderboard GUI.
@@ -28,9 +32,6 @@ public class TopGUI {
         this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     }
 
-    /**
-     * Helper to create items with custom names and lore.
-     */
     private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
@@ -48,25 +49,19 @@ public class TopGUI {
         return item;
     }
 
-    /**
-     * Formats seconds into MM:SS format.
-     */
     private String formatTime(long seconds) {
         long m = seconds / 60;
         long s = seconds % 60;
         return String.format("%02d:%02d", m, s);
     }
 
-    /**
-     * Opens the Leaderboard GUI for the specified dungeon map.
-     */
     public void openTopGUI(Player p, String dungeonId, TopManager.TopCategory category, int page) {
         String loadingMsg = plugin.getMessagesFile().getString("top.loading", "&eLoading leaderboard data...");
         p.sendMessage(ColorUtils.parseWithPrefix(loadingMsg));
 
-        int limit = plugin.getConfigFile().getInt("leaderboard.fetch-limit", 50);
-        int guiSize = plugin.getConfigFile().getInt("leaderboard.gui-size", 54);
-        if (guiSize < 18) guiSize = 54; // Ensure enough room for nav buttons
+        final int limit = plugin.getConfigFile().getInt("leaderboard.fetch-limit", 50);
+        int rawGuiSize = plugin.getConfigFile().getInt("leaderboard.gui-size", 54);
+        final int guiSize = Math.max(18, rawGuiSize);
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             List<TopManager.TopEntry> records = plugin.getTopManager().getTop(dungeonId, category, limit);
@@ -76,7 +71,7 @@ public class TopGUI {
                 Inventory inv = Bukkit.createInventory(new TopHolder(dungeonId, category, page), guiSize, ColorUtils.parse(titleRaw.replace("<map>", dungeonId)));
 
                 int maxPage = Math.max(0, (records.size() - 1) / 36);
-                int currentPage = Math.max(0, Math.min(maxPage, page)); // Java 17 safe clamp
+                final int currentPage = Math.max(0, Math.min(maxPage, page));
 
                 for (int i = 0; i < 36; i++) {
                     int index = i + (currentPage * 36);
@@ -85,7 +80,7 @@ public class TopGUI {
                     TopManager.TopEntry entry = records.get(index);
                     int rank = index + 1;
 
-                    Material mat = Material.COAL_BLOCK;
+                    Material mat;
                     if (rank == 1)
                         mat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.rank_1", "GOLD_BLOCK"));
                     else if (rank == 2)
@@ -107,32 +102,28 @@ public class TopGUI {
                     switch (category) {
                         case FASTEST_TIME -> {
                             List<String> timeLore = plugin.getMessagesFile().getStringList("top.time_lore");
-                            if (timeLore == null || timeLore.isEmpty())
-                                timeLore = Arrays.asList("&7Time: &a<value>", "&7Date: &f<date>");
+                            if (timeLore == null || timeLore.isEmpty()) timeLore = Arrays.asList("&7Time: &a<value>", "&7Date: &f<date>");
                             for (String s : timeLore) {
                                 loreRaw.add(s.replace("<value>", formatTime(entry.value())).replace("<date>", dateStr));
                             }
                         }
                         case PARTY_FASTEST_TIME -> {
                             List<String> partyLore = plugin.getMessagesFile().getStringList("top.party_time_lore");
-                            if (partyLore == null || partyLore.isEmpty())
-                                partyLore = Arrays.asList("&7Time: &a<value>", "&7Date: &f<date>", "&7Members: &f<members>");
+                            if (partyLore == null || partyLore.isEmpty()) partyLore = Arrays.asList("&7Time: &a<value>", "&7Date: &f<date>", "&7Members: &f<members>");
                             for (String s : partyLore) {
                                 loreRaw.add(s.replace("<value>", formatTime(entry.value())).replace("<date>", dateStr).replace("<members>", entry.playerName()));
                             }
                         }
                         case MOST_KILLS -> {
                             List<String> killLore = plugin.getMessagesFile().getStringList("top.kills_lore");
-                            if (killLore == null || killLore.isEmpty())
-                                killLore = Arrays.asList("&7Total Kills: &c<value>", "&7Date: &f<date>");
+                            if (killLore == null || killLore.isEmpty()) killLore = Arrays.asList("&7Total Kills: &c<value>", "&7Date: &f<date>");
                             for (String s : killLore) {
                                 loreRaw.add(s.replace("<value>", String.valueOf(entry.value())).replace("<date>", dateStr));
                             }
                         }
                         case MOST_CLEARS -> {
                             List<String> clearLore = plugin.getMessagesFile().getStringList("top.clears_lore");
-                            if (clearLore == null || clearLore.isEmpty())
-                                clearLore = Arrays.asList("&7Total Clears: &a<value>", "&7Date: &f<date>");
+                            if (clearLore == null || clearLore.isEmpty()) clearLore = Arrays.asList("&7Total Clears: &a<value>", "&7Date: &f<date>");
                             for (String s : clearLore) {
                                 loreRaw.add(s.replace("<value>", String.valueOf(entry.value())).replace("<date>", dateStr));
                             }
@@ -153,8 +144,7 @@ public class TopGUI {
                 if (clearsMat == null) clearsMat = Material.NETHER_STAR;
 
                 List<String> switchLore = plugin.getMessagesFile().getStringList("top.click_to_switch");
-                if (switchLore == null || switchLore.isEmpty())
-                    switchLore = Collections.singletonList("&eLeft Click to view this category!");
+                if (switchLore == null || switchLore.isEmpty()) switchLore = Collections.singletonList("&eLeft Click to view this category!");
 
                 inv.setItem(guiSize - 8, makeItem(timeMat, plugin.getMessagesFile().getString("top.category_time", "&b&lSolo Fastest Clears"), switchLore));
                 inv.setItem(guiSize - 6, makeItem(partyTimeMat, plugin.getMessagesFile().getString("top.category_party_time", "&d&lParty Fastest Clears"), switchLore));

@@ -1,8 +1,10 @@
 package net.danh.sinceDungeon.guis.editor;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.managers.DungeonManager;
+import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -20,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +37,40 @@ public class EditorMenuListener implements Listener {
 
     public EditorMenuListener(SinceDungeon plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Reusable logic to completely obliterate a dungeon.
+     * 1. Force stops all active instances of the dungeon safely.
+     * 2. Deletes the physical YAML file.
+     * 3. Unregisters from memory.
+     * 4. Wipes all leaderboard records from DB.
+     */
+    private void deleteDungeonSafely(Player p, String dungeonId, EditorGUI gui) {
+        // 1. Force stop all running games using this template
+        for (DungeonGame activeGame : plugin.getDungeonManager().getActiveGames().values()) {
+            if (activeGame.getTemplate() != null && activeGame.getTemplate().id().equals(dungeonId)) {
+                activeGame.stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
+            }
+        }
+
+        // 2. Delete the physical file
+        File file = new File(plugin.getDataFolder(), "dungeons/" + dungeonId + ".yml");
+        if (file.exists()) {
+            file.delete();
+        }
+
+        // 3. Unregister from the manager
+        plugin.getDungeonManager().unregisterTemplate(dungeonId);
+
+        // 4. Wipe Leaderboard Data Async
+        if (plugin.getTopManager() != null) {
+            plugin.getTopManager().resetLeaderboard(dungeonId);
+        }
+
+        // 5. Provide visual & audio feedback
+        p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_DESTROY, 1f, 1f);
+        gui.sendMessage(p, "dungeon_deleted", "<dungeon>", dungeonId);
     }
 
     @EventHandler
@@ -120,8 +157,18 @@ public class EditorMenuListener implements Listener {
             }
 
             if (slot < 45 && cur.getType() == Material.PAPER) {
-                String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
-                manager.startEditing(p, name);
+                NamespacedKey key = new NamespacedKey(plugin, "dungeon_id");
+                ItemMeta meta = cur.getItemMeta();
+                if (meta != null && meta.getPersistentDataContainer().has(key, PersistentDataType.STRING)) {
+                    String dungeonId = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        deleteDungeonSafely(p, dungeonId, gui);
+                        gui.openMainMenu(p, page);
+                    } else if (e.getClick() == ClickType.LEFT) {
+                        manager.startEditing(p, dungeonId);
+                    }
+                }
             } else if (slot == 49) {
                 EditorSession tempSession = new EditorSession(plugin, p, null);
                 tempSession.setLastMenuOpener(player -> gui.openMainMenu(player, page));
@@ -189,6 +236,13 @@ public class EditorMenuListener implements Listener {
                 else if (slot == 16) gui.openStageList(p, session, session.getPage("STAGES"));
                 else if (slot == 22) session.save();
                 else if (slot == 18) gui.openMainMenu(p, 0);
+                else if (slot == 26 && cur.getType() == Material.BARRIER) { // Delete Button
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        String dungeonId = session.getFile().getName().replace(".yml", "");
+                        deleteDungeonSafely(p, dungeonId, gui);
+                        gui.openMainMenu(p, 0);
+                    }
+                }
             }
 
             case "SETTINGS" -> {

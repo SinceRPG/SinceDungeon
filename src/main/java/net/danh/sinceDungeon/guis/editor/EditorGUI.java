@@ -64,6 +64,7 @@ public class EditorGUI {
             else if (key.equals("line_removed")) msg = "&eLast line removed from the list.";
             else if (key.equals("list_empty")) msg = "&cThe list is currently empty.";
             else if (key.equals("number_error")) msg = "&cValue must be a valid number!";
+            else if (key.equals("dungeon_deleted")) msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
             else return;
         }
 
@@ -133,11 +134,23 @@ public class EditorGUI {
             if (idx >= total) break;
             File f = files.get(idx);
 
+            String dungeonId = f.getName().replace(".yml", "");
             String nameFmt = getMsg("items.dungeon_file_name", "&e<name>");
-            String displayName = nameFmt.replace("<name>", f.getName().replace(".yml", ""));
-            List<String> lore = Collections.singletonList(getMsg("items.click_edit", "&eLeft Click: Edit"));
+            String displayName = nameFmt.replace("<name>", dungeonId);
 
-            inv.setItem(i, makeItem(Material.PAPER, displayName, lore));
+            // Added Shift-Right hint to lore
+            List<String> lore = getLoreList("dungeon_file_lore", Arrays.asList("&eLeft Click: Edit", "&cShift-Right: Delete Dungeon"));
+
+            ItemStack item = makeItem(Material.PAPER, displayName, lore);
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                // Use NBT to store the internal ID safely
+                NamespacedKey key = new NamespacedKey(plugin, "dungeon_id");
+                meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, dungeonId);
+                item.setItemMeta(meta);
+            }
+
+            inv.setItem(i, item);
         }
 
         inv.setItem(49, makeItem(Material.EMERALD_BLOCK, getMsg("items.create_new", "&a&lCreate New Dungeon"), null));
@@ -176,12 +189,13 @@ public class EditorGUI {
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save", "&a&lSave Changes"), null));
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
 
+        // NEW: Delete Dungeon Button
+        List<String> deleteLore = getLoreList("delete_dungeon_lore", Arrays.asList("&7Permanently delete this", "&7dungeon and its leaderboard.", "", "&cShift-Right Click to confirm"));
+        inv.setItem(26, makeItem(Material.BARRIER, getMsg("items.delete_dungeon", "&c&lDelete Dungeon"), deleteLore));
+
         p.openInventory(inv);
     }
 
-    /**
-     * Reconstructs the internal GUI mappings for global map settings using dynamic enums and pagination.
-     */
     public void openSettingsMenu(Player p, EditorSession session, int page) {
         session.setPage("SETTINGS", page);
         session.setLastMenuOpener(player -> openSettingsMenu(player, session, session.getPage("SETTINGS")));
@@ -189,7 +203,7 @@ public class EditorGUI {
         EditorSession.SettingOption[] options = EditorSession.SettingOption.values();
         int total = options.length;
         int maxPage = Math.max(0, (total - 1) / 18);
-        page = Math.max(0, Math.min(maxPage, page)); // Java 17 safe clamp
+        page = Math.max(0, Math.min(maxPage, page));
 
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "SETTINGS", page), 27, ColorUtils.parse(getMsg("title.settings", "&lAdvanced Settings")));
 
@@ -238,9 +252,6 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
-    /**
-     * Generates a dynamic paginated GUI for managing string lists (like Commands).
-     */
     public void openStringListEditor(Player p, EditorSession session, String path, String returnMenu, int page) {
         session.setCurrentListPath(path);
         session.setCurrentListReturnMenu(returnMenu);
@@ -542,8 +553,7 @@ public class EditorGUI {
                     int slot = Integer.parseInt(slotKey);
                     if (slot >= 0 && slot < 54) {
                         String itemStr = sec.getString(slotKey);
-                        // Parsing utility method simulated here
-                        ItemStack is = new ItemStack(Material.STONE); // Fallback mockup
+                        ItemStack is = new ItemStack(Material.STONE);
                         if (itemStr != null && itemStr.contains(":")) {
                             String[] parts = itemStr.split(":");
                             Material mat = Material.matchMaterial(parts[0]);

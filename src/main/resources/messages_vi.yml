@@ -218,6 +218,7 @@ objective:
   random_wave: "&eTiêu diệt tất cả kẻ địch &7(Còn: <remain>)"
   control_zone: "&bChiếm đóng Khu vực: <percent>%"
   unlock_door: "&6Hãy dùng la bàn để tìm đường đến mở cửa."
+  boss_battle: "&cĐánh bại boss!"
 
 action:
   compass_received: "&bBạn đã nhận được La bàn theo dõi!"
@@ -243,6 +244,8 @@ action:
   zone_complete: "&aBảo vệ cứ điểm thành công!"
   door_start: "&eBạn đang giữ chìa khóa... Hãy dùng la bàn để tìm ổ khóa!"
   door_unlocked: "&a<player> đã mở khóa cửa thành công!"
+  boss_spawn: "&cBoss <boss> đã xuất hiện!"
+  boss_defeated: "&aBoss đã bị đánh bại!"
 
 error:
   wrong_key: "&cBạn không có chìa khóa chính xác cho cánh cửa này!"
@@ -318,6 +321,7 @@ editor:
     random_wave: "Đợt Quái Ngẫu Nhiên"
     control_zone: "Bảo Vệ Cứ Điểm"
     unlock_door: "Tìm Chìa Khóa & Mở Cửa"
+    boss_battle: "Trận chiến trùm Vanilla"
   actions:
     spawn_wave: "Tạo đợt quái vật Vanilla cơ bản"
     reach_location: "Yêu cầu người chơi di chuyển tới tọa độ chỉ định"
@@ -327,6 +331,7 @@ editor:
     random_wave: "Tạo đợt quái ngẫu nhiên từ danh sách (Vanilla + MythicMobs)"
     control_zone: "Giữ vị trí trong X giây. Vòng bo có thể thu hẹp dần."
     unlock_door: "Yêu cầu tìm chìa khóa để mở khóa cửa sắt."
+    boss_battle: "Sinh ra một con trùm Vanilla với Thanh sức khỏe, tỷ lệ và các giai đoạn."
   title:
     main: "&lDungeon Editor"
     dungeon: "&lChỉnh sửa: <name>"
@@ -343,6 +348,17 @@ editor:
     edit_action_items: "&lSắp xếp Rương: <index>"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    action_val_hint_phases: "&7Cài đặt Giai đoạn nâng cao phải được chỉnh sửa thủ công trong tệp YAML."
+    dungeon_file_name: "&e<name>"
+    dungeon_file_lore:
+      - "&eChuột Trái: Chỉnh Sửa"
+      - "&cShift-Phải: Xóa Dungeon Này"
+    delete_dungeon: "&c&lXóa Vĩnh Viễn Dungeon"
+    delete_dungeon_lore:
+      - "&7Xóa bỏ hoàn toàn hầm ngục này"
+      - "&7cùng mọi dữ liệu trên Bảng Xếp Hạng."
+      - ""
+      - "&cShift-Chuột Phải để Xác nhận xóa"
     setting_cmd_first_finish: "&eLệnh Chạy Lần Đầu Vượt Ải"
     setting_cmd_first_finish_lore:
       - "&7Hiện tại: &f<val> lệnh"
@@ -519,6 +535,19 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_enrage_time:
+        - "&7Nhập thời gian (bằng giây) trước khi Boss nổi điên (Enrage)."
+        - "&7Nhập &c-1 &7để tắt cơ chế này."
+        - "&7Ví dụ: &a120 &7(Sẽ nổi điên sau 2 phút)"
+      edit_action_enrage_message:
+        - "&7Nhập thông báo gửi cho toàn đội khi Boss nổi điên."
+        - "&7Ví dụ: &c&lBoss đã rơi vào trạng thái cuồng nộ!"
+        - "&7Mẹo: Gõ &cclear &7để tắt thông báo này."
+      edit_action_enrage_attributes:
+        - "&7Cấu hình chỉ số sức mạnh cộng thêm khi Boss nổi điên."
+        - "&7Định dạng: &a<chỉ_số>:<giá_trị>"
+        - "&7Ví dụ: &fattack_damage:50"
+        - "&7Mẹo: Gõ &cclear &7để xóa toàn bộ chỉ số."
       edit_cooldown:
         - "&7Nhập thời gian chờ cho Hầm ngục tính bằng giây."
         - "&7Ví dụ: &a1800 &7(Dành cho 30 phút)"
@@ -678,6 +707,7 @@ editor:
         - "&7Ví dụ Vanilla: &aTRIPWIRE_HOOK:1"
         - "&7Ví dụ MMOItems: &aMMOITEMS:KEY:DUNGEON_KEY:1"
   chat:
+    dungeon_deleted: "&aĐã xóa thành công Dungeon: &e<dungeon>"
     notifications_hint:
       - "&7[Thông báo] Vui lòng chỉnh sửa mục này thủ công trong file YAML."
       - "&7Định dạng: notifications:"

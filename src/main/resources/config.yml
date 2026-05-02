@@ -532,6 +532,11 @@ action-defaults:
     particle: "ENCHANT"
     start_message:
       - "&eYou found a Key! Follow your compass to unlock the path forward."
+  boss_battle:
+    time_limit: -1
+    time_penalty: 1
+    start_message:
+      - "&cThe Boss has appeared!"
 
 # =========================================================
 # [TÙY CHỈNH THÔNG BÁO]
