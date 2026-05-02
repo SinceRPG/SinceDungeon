@@ -5,6 +5,8 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -111,7 +113,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
 
             String sName = SinceDungeon.getPlugin().getConfigFile().getString("sounds.mob_spawn", "entity.zombie.break_wooden_door");
-            Sound sType = net.danh.sinceDungeon.utils.SoundUtils.getSound(sName);
+            Sound sType = SoundUtils.getSound(sName);
 
             if (opt.isMythic()) {
                 if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
@@ -191,6 +193,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 if (uid != null) {
                     spawnedMobs.put(uid, spawnLoc);
                     mobDisplayNames.put(uid, opt.id());
+                    this.spawnedEntities.add(uid);
 
                     Chunk c = spawnLoc.getChunk();
                     c.addPluginChunkTicket(SinceDungeon.getPlugin());
@@ -244,6 +247,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             if (newUid != null) {
                 spawnedMobs.put(newUid, entry.getValue());
                 mobDisplayNames.put(newUid, opt.id());
+                this.spawnedEntities.add(newUid);
             }
         }
 
@@ -262,7 +266,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         });
 
         if (spawnedMobs.isEmpty()) {
-            unlockChunks();
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.random_wave_complete");
         }
@@ -276,7 +279,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 handleCustomDrops(e.getEntity().getLocation());
                 mobDisplayNames.remove(uid);
                 if (spawnedMobs.isEmpty()) {
-                    unlockChunks();
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.random_wave_complete");
                 } else {
@@ -288,14 +290,10 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        for (UUID uuid : spawnedMobs.keySet()) {
-            Entity ent = Bukkit.getEntity(uuid);
-            if (ent != null && !ent.isDead()) {
-                ent.remove();
-            }
-        }
-        spawnedMobs.clear();
+        super.cleanup(game);
         unlockChunks();
+        spawnedMobs.clear();
+        mobDisplayNames.clear();
     }
 
     private void unlockChunks() {
@@ -318,7 +316,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 double chance = Double.parseDouble(split[1].trim());
 
                 if (Math.random() * 100.0 <= chance) {
-                    ItemStack item = net.danh.sinceDungeon.utils.ItemBuilder.parseDynamicItem(itemData);
+                    ItemStack item = ItemBuilder.parseDynamicItem(itemData);
                     if (item != null) loc.getWorld().dropItemNaturally(loc, item);
                 }
             } catch (Exception ignored) {

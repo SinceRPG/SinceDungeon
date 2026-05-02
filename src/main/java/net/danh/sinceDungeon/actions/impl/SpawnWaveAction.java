@@ -3,19 +3,16 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
@@ -64,18 +61,9 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
-        /**
-         * Cleans up the action by removing all spawned mobs and unlocking chunks.
-         */
-        debug("Cleaning up SpawnWaveAction, removing entities and unlocking chunks.");
-        for (UUID uuid : spawnedMobs.keySet()) {
-            Entity ent = Bukkit.getEntity(uuid);
-            if (ent != null && !ent.isDead()) {
-                ent.remove();
-            }
-        }
-        spawnedMobs.clear();
+        super.cleanup(game);
         unlockChunks();
+        spawnedMobs.clear();
     }
 
     @Override
@@ -113,6 +101,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 if (ent instanceof LivingEntity living) {
                     applyCustomProperties(living);
                     spawnedMobs.put(ent.getUniqueId(), loc);
+                    this.spawnedEntities.add(ent.getUniqueId());
                 } else if (ent != null) {
                     ent.remove();
                 }
@@ -137,7 +126,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         });
 
         if (spawnedMobs.isEmpty()) {
-            unlockChunks();
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.kill_complete", "<mob>", type.name());
         }
@@ -182,7 +170,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
         if (isBaby && living instanceof Ageable ageable) {
             ageable.setBaby();
-        } else if (isBaby && living instanceof org.bukkit.entity.Zombie zombie) {
+        } else if (isBaby && living instanceof Zombie zombie) {
             zombie.setBaby();
         }
 
@@ -240,7 +228,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
                 String slot = parts[0].toLowerCase().trim();
                 String itemData = parts[1].trim();
-                ItemStack item = parseItem(itemData);
+                ItemStack item = ItemBuilder.parseDynamicItem(itemData);
 
                 if (item != null) {
                     switch (slot) {
@@ -271,27 +259,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
         }
         return attr;
-    }
-
-    private ItemStack parseItem(String data) {
-        try {
-            String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":");
-            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
-                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
-                }
-            } else {
-                Material mat = Material.matchMaterial(parts[0]);
-                if (mat != null) {
-                    int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-                    return new ItemStack(mat, amount);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
     }
 
     /**
@@ -351,6 +318,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                         }
 
                         spawnedMobs.put(ent.getUniqueId(), finalLoc);
+                        this.spawnedEntities.add(ent.getUniqueId());
                         count++;
                     } else if (ent != null) {
                         ent.remove();
@@ -374,7 +342,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
                 handleCustomDrops(e.getEntity().getLocation());
                 if (spawnedMobs.isEmpty()) {
-                    unlockChunks();
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.kill_complete", "<mob>", type.name());
                 } else {
@@ -404,7 +371,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 double chance = Double.parseDouble(split[1].trim());
 
                 if (Math.random() * 100.0 <= chance) {
-                    ItemStack item = net.danh.sinceDungeon.utils.ItemBuilder.parseDynamicItem(itemData);
+                    ItemStack item = ItemBuilder.parseDynamicItem(itemData);
                     if (item != null) loc.getWorld().dropItemNaturally(loc, item);
                 }
             } catch (Exception ignored) {

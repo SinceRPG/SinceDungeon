@@ -42,7 +42,7 @@ public abstract class DungeonAction {
 
     /**
      * Cleans up entities spawned during this action.
-     * Logic is controlled by the 'settings.clear-remaining-mobs' config option.
+     * Logic is controlled by the 'settings.clear-remaining-mobs-on-action-complete' config option.
      *
      * @param game The current active dungeon game instance.
      */
@@ -56,8 +56,8 @@ public abstract class DungeonAction {
                     entity.remove();
                 }
             });
-            spawnedEntities.clear();
         }
+        spawnedEntities.clear();
     }
 
     /**
@@ -90,7 +90,7 @@ public abstract class DungeonAction {
     }
 
     /**
-     * Set internal action type (like SPAWN_WAVE, LOOT_CHEST) for logging and toggles
+     * Set internal action type (like SPAWN_WAVE, LOOT_CHEST) for logging and toggles.
      *
      * @param actionType The exact type ID of this action.
      */

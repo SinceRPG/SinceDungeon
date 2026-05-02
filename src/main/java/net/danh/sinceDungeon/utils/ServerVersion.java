@@ -104,7 +104,7 @@ public class ServerVersion {
 
 
     /**
-     * Kiểm tra xem server có >= phiên bản yêu cầu không.
+     * Checks if the server version is at least the required version.
      */
     public static boolean isAtLeast(int reqMajor, int reqMinor, int reqPatch) {
         if (major != reqMajor) return major > reqMajor;
@@ -113,7 +113,7 @@ public class ServerVersion {
     }
 
     /**
-     * Kiểm tra xem server có <= phiên bản yêu cầu không.
+     * Checks if the server version is at most the required version.
      */
     public static boolean isAtMost(int reqMajor, int reqMinor, int reqPatch) {
         if (major != reqMajor) return major < reqMajor;
@@ -122,7 +122,7 @@ public class ServerVersion {
     }
 
     /**
-     * Kiểm tra xem server có MỚI HƠN hẳn (>) phiên bản yêu cầu không.
+     * Checks if the server version is strictly newer than the required version.
      */
     public static boolean isNewerThan(int reqMajor, int reqMinor, int reqPatch) {
         if (major != reqMajor) return major > reqMajor;
@@ -131,7 +131,7 @@ public class ServerVersion {
     }
 
     /**
-     * Kiểm tra xem server có CŨ HƠN hẳn (<) phiên bản yêu cầu không.
+     * Checks if the server version is strictly older than the required version.
      */
     public static boolean isOlderThan(int reqMajor, int reqMinor, int reqPatch) {
         if (major != reqMajor) return major < reqMajor;
@@ -140,7 +140,7 @@ public class ServerVersion {
     }
 
     /**
-     * Kiểm tra xem server có TRÙNG KHỚP (=) phiên bản yêu cầu không.
+     * Checks if the server version matches the required version exactly.
      */
     public static boolean isExactly(int reqMajor, int reqMinor, int reqPatch) {
         return major == reqMajor && minor == reqMinor && patch == reqPatch;

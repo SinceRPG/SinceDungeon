@@ -3,10 +3,10 @@ package net.danh.sinceDungeon.actions.impl;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -21,7 +21,7 @@ import java.util.Locale;
 /**
  * Handles the logic for the Control Zone objective.
  * Players must stay within a shrinking circular radius for a specific duration.
- * Spawns interference mobs dynamically and cleans them up upon completion.
+ * Spawns interference mobs dynamically. Entity cleanup is handled by the parent class.
  * Uses real-time millisecond tracking to ensure absolute accuracy against TPS drops.
  */
 public class ControlZoneAction extends DungeonAction implements Tickable {
@@ -145,7 +145,6 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     /**
      * Calculates the exact perimeter of the current control zone circle and generates
      * an interference monster on the edge to disrupt the players.
-     * Keeps track of the generated entities to clear them upon action completion.
      */
     private void spawnInterferenceMob(DungeonGame game, double currentRadius) {
         try {
@@ -181,7 +180,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                         le.setRemoveWhenFarAway(false);
                         le.setPersistent(true);
                         game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
-                        spawnedEntities.add(le.getUniqueId());
+                        this.spawnedEntities.add(le.getUniqueId());
                     }
                 }
             } else {
@@ -190,7 +189,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                 if (ent instanceof LivingEntity living) {
                     applyCustomProperties(living);
                     game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
-                    spawnedEntities.add(living.getUniqueId());
+                    this.spawnedEntities.add(living.getUniqueId());
                 }
             }
         } catch (Exception ignored) {
@@ -266,7 +265,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
 
                 String slot = parts[0].toLowerCase(Locale.ROOT).trim();
                 String itemData = parts[1].trim();
-                ItemStack item = parseItem(itemData);
+                ItemStack item = ItemBuilder.parseDynamicItem(itemData);
 
                 if (item != null) {
                     switch (slot) {
@@ -296,26 +295,5 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             }
         }
         return attr;
-    }
-
-    private ItemStack parseItem(String data) {
-        try {
-            String cleanData = data.replace(" ", "");
-            String[] parts = cleanData.split(":");
-            if (parts.length >= 3 && parts[0].equalsIgnoreCase("MMOITEMS")) {
-                if (Bukkit.getPluginManager().isPluginEnabled("MMOItems")) {
-                    int amount = parts.length > 3 ? Integer.parseInt(parts[3]) : 1;
-                    return MMOItemsHook.getMMOItem(parts[1], parts[2], amount);
-                }
-            } else {
-                Material mat = Material.matchMaterial(parts[0]);
-                if (mat != null) {
-                    int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-                    return new ItemStack(mat, amount);
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
     }
 }

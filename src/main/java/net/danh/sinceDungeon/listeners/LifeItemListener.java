@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.listeners;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -18,6 +19,10 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Locale;
 
+/**
+ * Listens for interactions with Life Items.
+ * Consumes the item and grants the player additional dungeon lives.
+ */
 public class LifeItemListener implements Listener {
     private final SinceDungeon plugin;
     private final NamespacedKey lifeKey;
@@ -27,6 +32,12 @@ public class LifeItemListener implements Listener {
         this.lifeKey = new NamespacedKey(plugin, "life_amount");
     }
 
+    /**
+     * Handles the interaction event when a player consumes a Life Item.
+     * Applies cooldowns to prevent macro abuse and safely updates the player's life count.
+     *
+     * @param e The player interact event.
+     */
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
         if (e.getHand() != EquipmentSlot.HAND) return;
@@ -36,7 +47,6 @@ public class LifeItemListener implements Listener {
         ItemStack item = e.getItem();
         if (item == null || !item.hasItemMeta()) return;
 
-        // Add cooldown to prevent macro/double-click ghost item glitches
         if (p.hasCooldown(item.getType())) return;
 
         ItemMeta meta = item.getItemMeta();
@@ -45,7 +55,7 @@ public class LifeItemListener implements Listener {
             if (amount <= 0) return;
 
             e.setCancelled(true);
-            p.setCooldown(item.getType(), 10); // 0.5s cooldown
+            p.setCooldown(item.getType(), 10);
 
             LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(p.getUniqueId());
             if (lives == null) return;
@@ -55,7 +65,6 @@ public class LifeItemListener implements Listener {
                 return;
             }
 
-            // Consume item safely
             item.setAmount(item.getAmount() - 1);
             plugin.getLivesManager().addLives(p.getUniqueId(), amount);
 
@@ -65,7 +74,6 @@ public class LifeItemListener implements Listener {
                     .replace("<max>", String.valueOf(lives.getMaxLives()));
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-            // Trigger Visual and Audio Effects
             playConsumeEffects(p);
         }
     }
@@ -74,20 +82,18 @@ public class LifeItemListener implements Listener {
         ConfigurationSection sec = plugin.getConfigFile().getConfig().getConfigurationSection("lives.life-item");
         if (sec == null) return;
 
-        // Handle Sound
         ConfigurationSection soundSec = sec.getConfigurationSection("consume-sound");
         if (soundSec != null && soundSec.getBoolean("enabled", true)) {
             String soundName = soundSec.getString("sound", "ENTITY_PLAYER_LEVELUP");
             float volume = (float) soundSec.getDouble("volume", 1.0);
             float pitch = (float) soundSec.getDouble("pitch", 0.5);
 
-            Sound sound = net.danh.sinceDungeon.utils.SoundUtils.getSound(soundName);
+            Sound sound = SoundUtils.getSound(soundName);
             if (sound != null) {
                 p.playSound(p.getLocation(), sound, volume, pitch);
             }
         }
 
-        // Handle Particle
         ConfigurationSection particleSec = sec.getConfigurationSection("consume-particle");
         if (particleSec != null && particleSec.getBoolean("enabled", true)) {
             String particleName = particleSec.getString("particle", "TOTEM_OF_UNDYING");
