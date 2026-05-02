@@ -37,6 +37,7 @@ action-defaults:
   loot_chest:
     time_limit: -1
     time_penalty: 1
+    per_player: false
     items: { }
     start_message:
       - "&6A supply chest has appeared, loot it!"

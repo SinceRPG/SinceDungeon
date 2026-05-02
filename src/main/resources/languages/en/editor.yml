@@ -249,25 +249,6 @@ editor:
     prev_page: "&e⬅ Previous Page"
     next_page: "&eNext Page ➡"
   input:
-    edit_phase_threshold:
-      - "&7Enter the health percentage threshold (1-100) to trigger this phase."
-      - "&7Example: &a50 &7(Triggers at 50% HP)"
-    edit_skill_list:
-      - "&7Enter a skill to add to this phase."
-      - "&7Format: &aPOTION_CLOUD:<TYPE>:<seconds>:<amplifier>"
-      - "&7Format: &aLIGHTNING"
-      - "&7Example: &fPOTION_CLOUD:POISON:5:1"
-      - "&7Tip: Type &cclear &7to empty the list."
-    edit_reinforcement_mob:
-      - "&7Enter the Vanilla EntityType for reinforcements."
-      - "&7Example: &aSKELETON"
-    edit_reinforcement_amount:
-      - "&7Enter the amount of reinforcements to spawn."
-      - "&7Example: &a4"
-    edit_reinforcement_name:
-      - "&7Enter a custom name for the reinforcements (Color codes supported)."
-      - "&7Example: &cRoyal Guard"
-      - "&7Tip: Type &cclear &7to remove the name."
     title_main: "&6&lINPUT MODE"
     title_sub: "&fCheck the chat for instructions!"
     header: "&e=== INPUT MODE ==="
@@ -275,6 +256,9 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_per_player:
+        - "&7Should each player get their own instanced loot?"
+        - "&7Enter &atrue &7or &cfalse&7."
       edit_reward_value_life_item:
         - "&7Enter the amount of Life items to give."
         - "&7Format: &a<Amount>"
@@ -301,6 +285,19 @@ editor:
         - "&7CD Reset: &fCOOLDOWN_RESET:1;1.0"
         - "&7CD Reduce: &fCOOLDOWN_REDUCE:60:1;10.0"
         - "&7Tip: Type &cclear &7to empty the list."
+      edit_phase_threshold:
+        - "&7Enter the health percentage threshold (1-100) to trigger this phase."
+        - "&7Example: &a50 &7(Triggers at 50% HP)"
+      edit_reinforcement_mob:
+        - "&7Enter the Vanilla EntityType for reinforcements."
+        - "&7Example: &aSKELETON"
+      edit_reinforcement_amount:
+        - "&7Enter the amount of reinforcements to spawn."
+        - "&7Example: &a4"
+      edit_reinforcement_name:
+        - "&7Enter a custom name for the reinforcements (Color codes supported)."
+        - "&7Example: &cRoyal Guard"
+        - "&7Tip: Type &cclear &7to remove the name."
       edit_action_enrage_time:
         - "&7Enter the time (in seconds) before the boss enrages."
         - "&7Enter &c-1 &7to disable the enrage timer."

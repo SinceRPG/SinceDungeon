@@ -256,6 +256,9 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_per_player:
+        - "&7Mỗi người chơi có được một kho đồ riêng không?"
+        - "&7Vui lòng nhập &atrue &7hoặc &cfalse&7."
       edit_reward_value_life_item:
         - "&7Nhập số lượng vật phẩm Hồi sinh muốn tặng."
         - "&7Định dạng: &a<Số_lượng>"
@@ -285,12 +288,6 @@ editor:
       edit_phase_threshold:
         - "&7Nhập phần trăm máu (1-100) để kích hoạt giai đoạn này."
         - "&7Ví dụ: &a50 &7(Kích hoạt khi Boss còn 50% máu)"
-      edit_skill_list:
-        - "&7Nhập kỹ năng Boss sẽ tung ra khi bước vào giai đoạn này."
-        - "&7Định dạng: &aPOTION_CLOUD:<LOẠI>:<giây>:<cấp_độ>"
-        - "&7Định dạng: &aLIGHTNING"
-        - "&7Ví dụ: &fPOTION_CLOUD:POISON:5:1"
-        - "&7Mẹo: Gõ &cclear &7để xóa sạch danh sách kỹ năng."
       edit_reinforcement_mob:
         - "&7Nhập loại quái Vanilla (EntityType) cho Lính cứu viện."
         - "&7Ví dụ: &aSKELETON"

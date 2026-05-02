@@ -23,21 +23,32 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Handles spawning a lootable chest that players must empty to proceed.
- * Parses items dynamically so random drops (MIN-MAX amounts) are generated freshly per instance.
+ * Supports both Shared (Physical) and Instanced (Per-Player Virtual) loot modes.
  */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
     private final Map<Integer, String> itemsConfig;
+    private final boolean perPlayer;
+
     private boolean isOpened = false;
     private Block chestBlock = null;
 
-    public LootChestAction(Vector location, Map<Integer, String> itemsConfig) {
+    // Data for Per-Player Instanced Loot
+    private final Map<UUID, Inventory> personalInventories = new HashMap<>();
+    private final Set<UUID> finishedPlayers = new HashSet<>();
+
+    public LootChestAction(Vector location, Map<Integer, String> itemsConfig, boolean perPlayer) {
         this.chestLocation = location;
         this.itemsConfig = itemsConfig;
+        this.perPlayer = perPlayer;
     }
 
     @Override
@@ -50,6 +61,8 @@ public class LootChestAction extends DungeonAction implements Tickable {
         if (chestBlock != null && !completed) {
             chestBlock.setType(Material.AIR);
         }
+        personalInventories.clear();
+        finishedPlayers.clear();
     }
 
     @Override
@@ -61,38 +74,53 @@ public class LootChestAction extends DungeonAction implements Tickable {
         b.getState().update(true, false);
         this.chestBlock = b;
 
-        if (b.getState() instanceof Chest chest) {
-            Inventory inv = chest.getBlockInventory();
-            inv.clear();
+        if (!perPlayer) {
+            if (b.getState() instanceof Chest chest) {
+                Inventory inv = chest.getBlockInventory();
+                inv.clear();
 
-            for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
-                if (isValidSlot(entry.getKey(), inv)) {
-                    ItemStack is = ItemBuilder.parseDynamicItem(entry.getValue());
-                    if (is != null) {
-                        inv.setItem(entry.getKey(), is);
+                for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
+                    if (isValidSlot(entry.getKey(), inv)) {
+                        ItemStack is = ItemBuilder.parseDynamicItem(entry.getValue());
+                        if (is != null) {
+                            inv.setItem(entry.getKey(), is);
+                        }
                     }
                 }
             }
-            game.sendActionMessage(this, "init", "action.chest_appear");
         }
+        game.sendActionMessage(this, "init", "action.chest_appear");
     }
 
     @Override
     public void onTick(DungeonGame game) {
         if (completed || !isOpened || chestBlock == null) return;
 
-        if (chestBlock.getState() instanceof Chest chest) {
-            if (isInventoryEmpty(chest.getBlockInventory())) {
-                boolean cursorHasItem = false;
-                for (HumanEntity viewer : chest.getBlockInventory().getViewers()) {
-                    if (viewer.getItemOnCursor() != null && viewer.getItemOnCursor().getType() != Material.AIR) {
-                        cursorHasItem = true;
-                        break;
-                    }
+        if (perPlayer) {
+            Set<UUID> activePlayers = new HashSet<>();
+            for (Player p : game.getParticipants()) {
+                if (p.isOnline() && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR && p.getWorld().equals(game.getWorld())) {
+                    activePlayers.add(p.getUniqueId());
                 }
+            }
 
-                if (!cursorHasItem) {
-                    completeChestLogic(game, chest);
+            if (!activePlayers.isEmpty() && finishedPlayers.containsAll(activePlayers)) {
+                completeChestLogic(game, null);
+            }
+        } else {
+            if (chestBlock.getState() instanceof Chest chest) {
+                if (isInventoryEmpty(chest.getBlockInventory())) {
+                    boolean cursorHasItem = false;
+                    for (HumanEntity viewer : chest.getBlockInventory().getViewers()) {
+                        if (viewer.getItemOnCursor() != null && viewer.getItemOnCursor().getType() != Material.AIR) {
+                            cursorHasItem = true;
+                            break;
+                        }
+                    }
+
+                    if (!cursorHasItem) {
+                        completeChestLogic(game, chest);
+                    }
                 }
             }
         }
@@ -102,34 +130,85 @@ public class LootChestAction extends DungeonAction implements Tickable {
         return slot >= 0 && slot < inv.getSize();
     }
 
+    private Inventory generatePersonalLoot() {
+        String title = SinceDungeon.getPlugin().getLanguageManager().getString("objective.loot_chest_title", "Treasure Chest");
+        Inventory inv = Bukkit.createInventory(new VirtualLootHolder(), 27, ColorUtils.parse(title));
+
+        for (Map.Entry<Integer, String> entry : itemsConfig.entrySet()) {
+            if (isValidSlot(entry.getKey(), inv)) {
+                ItemStack is = ItemBuilder.parseDynamicItem(entry.getValue());
+                if (is != null) {
+                    inv.setItem(entry.getKey(), is);
+                }
+            }
+        }
+        return inv;
+    }
+
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
             if (e.getAction() != Action.RIGHT_CLICK_BLOCK) return;
             if (!e.hasBlock()) return;
 
-            if (e.getPlayer().getGameMode() == GameMode.SPECTATOR) return;
+            Player p = e.getPlayer();
+            if (p.getGameMode() == GameMode.SPECTATOR) return;
 
             Block b = e.getClickedBlock();
-            if (isTargetChest(b) && !isOpened) {
-                isOpened = true;
-                game.sendActionMessage(this, "progress", "action.chest_found");
+            if (isTargetChest(b)) {
+                if (perPlayer) {
+                    e.setCancelled(true);
+
+                    if (finishedPlayers.contains(p.getUniqueId())) {
+                        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.chest_already_looted", "&cYou have already collected your share of the loot!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                        return;
+                    }
+
+                    Inventory inv = personalInventories.computeIfAbsent(p.getUniqueId(), k -> generatePersonalLoot());
+                    p.openInventory(inv);
+
+                    if (!isOpened) {
+                        isOpened = true;
+                        game.sendActionMessage(this, "progress", "action.chest_found");
+                    }
+                } else {
+                    if (!isOpened) {
+                        isOpened = true;
+                        game.sendActionMessage(this, "progress", "action.chest_found");
+                    }
+                }
             }
         } else if (event instanceof InventoryCloseEvent e) {
             Inventory inv = e.getInventory();
-            if (inv.getHolder() instanceof Chest chest) {
-                if (isTargetChest(chest.getBlock())) {
-                    if (isInventoryEmpty(inv) && !completed) {
-                        completeChestLogic(game, chest);
+            if (perPlayer) {
+                if (inv.getHolder() instanceof VirtualLootHolder) {
+                    if (isInventoryEmpty(inv)) {
+                        finishedPlayers.add(e.getPlayer().getUniqueId());
+                        game.sendActionMessage(this, "progress", "action.chest_personal_looted", "<player>", e.getPlayer().getName());
                     } else if (!completed) {
                         game.sendActionMessage(this, "warning", "action.chest_not_empty");
+                    }
+                }
+            } else {
+                if (inv.getHolder() instanceof Chest chest) {
+                    if (isTargetChest(chest.getBlock())) {
+                        if (isInventoryEmpty(inv) && !completed) {
+                            completeChestLogic(game, chest);
+                        } else if (!completed) {
+                            game.sendActionMessage(this, "warning", "action.chest_not_empty");
+                        }
                     }
                 }
             }
         } else if (event instanceof InventoryClickEvent e) {
             Inventory inv = e.getInventory();
-            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
 
+            boolean isTarget = false;
+            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) isTarget = true;
+            else if (inv.getHolder() instanceof VirtualLootHolder) isTarget = true;
+
+            if (isTarget) {
                 if (e.getWhoClicked() instanceof Player p && p.getGameMode() == GameMode.SPECTATOR) {
                     e.setCancelled(true);
                     return;
@@ -161,7 +240,11 @@ public class LootChestAction extends DungeonAction implements Tickable {
             }
         } else if (event instanceof InventoryDragEvent e) {
             Inventory inv = e.getInventory();
-            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) {
+            boolean isTarget = false;
+            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) isTarget = true;
+            else if (inv.getHolder() instanceof VirtualLootHolder) isTarget = true;
+
+            if (isTarget) {
                 for (int slot : e.getRawSlots()) {
                     if (slot < inv.getSize()) {
                         e.setCancelled(true);
@@ -176,13 +259,22 @@ public class LootChestAction extends DungeonAction implements Tickable {
         this.completed = true;
         game.sendActionMessage(this, "complete", "action.loot_complete");
 
-        for (HumanEntity viewer : new ArrayList<>(chest.getBlockInventory().getViewers())) {
-            viewer.closeInventory();
+        if (chest != null) {
+            for (HumanEntity viewer : new ArrayList<>(chest.getBlockInventory().getViewers())) {
+                viewer.closeInventory();
+            }
+        } else {
+            for (Player p : game.getParticipants()) {
+                if (p.isOnline() && p.getOpenInventory().getTopInventory().getHolder() instanceof VirtualLootHolder) {
+                    p.closeInventory();
+                }
+            }
         }
 
         Bukkit.getScheduler().runTaskLater(SinceDungeon.getPlugin(), () -> {
-            chest.getBlock().setType(Material.AIR);
-            game.getWorld().playSound(chest.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+            if (chestBlock != null) chestBlock.setType(Material.AIR);
+            Location soundLoc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
+            game.getWorld().playSound(soundLoc, org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         }, 1L);
     }
 

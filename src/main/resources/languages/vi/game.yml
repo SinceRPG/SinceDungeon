@@ -34,6 +34,7 @@ lobby:
   countdown: "&eDungeon sẽ bắt đầu trong <time> giây..."
 
 objective:
+  loot_chest_title: "Rương Kho Báu"
   loot_chest: "&6Mở rương tiếp tế để đi tiếp"
   mythic_wave: "&4Đánh bại Boss &c<mob> &7(Còn: <remain>)"
   reach_location: "&aDi chuyển đến tọa độ mục tiêu"
@@ -45,6 +46,8 @@ objective:
   boss_battle: "&cĐánh bại boss!"
 
 action:
+  chest_already_looted: "&cBạn đã nhận phần thưởng của rương này rồi!"
+  chest_personal_looted: "&a<player> đã lấy xong phần thưởng của mình!"
   compass_received: "&bBạn đã nhận được La bàn theo dõi!"
   compass_removed: "&7La bàn theo dõi đã biến mất."
   chest_appear: "&eMột rương kho báu vừa xuất hiện!"

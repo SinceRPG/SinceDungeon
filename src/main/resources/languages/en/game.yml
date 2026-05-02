@@ -33,6 +33,7 @@ lobby:
   countdown: "&eDungeon starts in <time> seconds..."
 
 objective:
+  loot_chest_title: "Treasure Chest"
   loot_chest: "&6Loot the supply chest to proceed"
   mythic_wave: "&4Defeat Boss &c<mob> &7(Left: <remain>)"
   reach_location: "&aReach the designated coordinates"
@@ -44,6 +45,8 @@ objective:
   boss_battle: "&cDefeat the Boss!"
 
 action:
+  chest_already_looted: "&cYou have already collected your share of the loot!"
+  chest_personal_looted: "&a<player> has collected their loot!"
   compass_received: "&bYou received a Tracking Compass!"
   compass_removed: "&7The Tracking Compass faded away."
   chest_appear: "&eA treasure chest has appeared!"
