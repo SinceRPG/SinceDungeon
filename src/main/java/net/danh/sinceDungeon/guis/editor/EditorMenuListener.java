@@ -250,7 +250,7 @@ public class EditorMenuListener implements Listener {
                                         newVal = Math.max(0, newVal);
                                     }
                                     session.getConfig().set(opt.getLocalPath(), newVal);
-                                    gui.sendMessage(p, "update_val", "<key>", gui.getMsg("items." + opt.getLangKey()), "<val>", String.valueOf(newVal));
+                                    gui.sendMessage(p, "update_val", "<key>", gui.getMsg("items." + opt.getLangKey(), opt.getLangKey()), "<val>", String.valueOf(newVal));
                                     gui.openSettingsMenu(p, session, page);
                                 } catch (Exception ex) {
                                     gui.sendMessage(p, "number_error");
@@ -325,8 +325,8 @@ public class EditorMenuListener implements Listener {
                     session.awaitInput(EditorSession.InputType.EDIT_CONDITION_CHECK, "edit_condition_check", val -> {
                         String newKey = "cond_" + System.currentTimeMillis();
                         session.getConfig().set("conditions." + newKey + ".check", val);
-                        session.getConfig().set("conditions." + newKey + ".msg", gui.getWord("default_condition_msg"));
-                        session.getConfig().set("conditions." + newKey + ".name", gui.getWord("default_condition_name").replace("<key>", newKey));
+                        session.getConfig().set("conditions." + newKey + ".msg", gui.getWord("default_condition_msg", "Requirements not met"));
+                        session.getConfig().set("conditions." + newKey + ".name", gui.getWord("default_condition_name", "Condition <key>").replace("<key>", newKey));
                         gui.openConditionList(p, session, page);
                     });
                     plugin.getEditorListener().startListening(p, session);
@@ -413,7 +413,7 @@ public class EditorMenuListener implements Listener {
                                     try {
                                         int newAmount = Math.max(0, Integer.parseInt(val));
                                         session.getConfig().set("rewards.tiers." + timeStr, newAmount);
-                                        gui.sendMessage(p, "update_val", "<key>", gui.getWord("chest_amount").replace("<time>", timeStr), "<val>", String.valueOf(newAmount));
+                                        gui.sendMessage(p, "update_val", "<key>", gui.getWord("chest_amount", "Chests").replace("<time>", timeStr), "<val>", String.valueOf(newAmount));
                                         gui.openRewardTiers(p, session, page);
                                     } catch (Exception ex) {
                                         gui.sendMessage(p, "number_error");
@@ -528,7 +528,7 @@ public class EditorMenuListener implements Listener {
                     } else if (e.getClick() == ClickType.LEFT) {
                         session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_value_" + currentType.toLowerCase(), val -> {
                             session.getConfig().set(path + ".value", val);
-                            gui.sendMessage(p, "update_val", "<key>", gui.getWord("value"), "<val>", val);
+                            gui.sendMessage(p, "update_val", "<key>", gui.getWord("value", "Value"), "<val>", val);
                             gui.openRewardEditor(p, session);
                         });
                         plugin.getEditorListener().startListening(p, session);
@@ -536,7 +536,7 @@ public class EditorMenuListener implements Listener {
                 } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                         try {
-                            double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
+                            double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val))); // Java 17 safe clamp
                             session.getConfig().set(path + ".chance", chance);
                             gui.openRewardEditor(p, session);
                         } catch (Exception ex) {
@@ -597,7 +597,7 @@ public class EditorMenuListener implements Listener {
                             if (e.getClick() == ClickType.SHIFT_RIGHT) {
                                 session.getConfig().set("stages." + stage, null);
                                 gui.openStageList(p, session, page);
-                                String msg = gui.getMsg("chat.stage_deleted");
+                                String msg = plugin.getMessagesFile().getString("editor.chat.stage_deleted");
                                 if (msg != null && !msg.isEmpty()) {
                                     p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<stage>", stage)));
                                 }
@@ -607,7 +607,7 @@ public class EditorMenuListener implements Listener {
                             } else if (e.getClick() == ClickType.RIGHT) {
                                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_stage_chance", val -> {
                                     try {
-                                        double c = Math.clamp(Double.parseDouble(val), 0.0, 100.0);
+                                        double c = Math.max(0.0, Math.min(100.0, Double.parseDouble(val))); // Java 17 safe clamp
                                         session.getConfig().set("stages." + stage + ".chance", c);
                                         gui.openStageList(p, session, page);
                                     } catch (Exception ex) {

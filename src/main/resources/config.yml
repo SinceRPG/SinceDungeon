@@ -114,6 +114,7 @@ leaderboard:
     category_time: CLOCK
     category_kills: DIAMOND_SWORD
     category_clears: NETHER_STAR
+    category_party_time: GOLDEN_APPLE
 
 # =========================================================
 # [COOLDOWN SYSTEM CONFIGURATION]

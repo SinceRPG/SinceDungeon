@@ -183,12 +183,31 @@ public final class SinceDungeon extends JavaPlugin {
         }
     }
 
+    /**
+     * Reloads configuration files, language files, and dungeon templates.
+     * Automatically detects if core files were deleted by the admin and regenerates
+     * them from the plugin jar before attempting to load them into memory.
+     *
+     * @param sender The entity (Player or Console) executing the reload command.
+     */
     public void reloadFiles(CommandSender sender) {
+        // 1. Force regenerate config.yml if it was deleted by the user
+        if (!new File(getDataFolder(), "config.yml").exists()) {
+            saveResource("config.yml", false);
+        }
+
+        // 2. Force regenerate default language files if they were deleted
+        extractDefaultLocales();
+
+        // 3. Reload ConfigUtils instances into memory
         if (configFile != null) configFile.reload();
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
+
+        // 4. Setup language again to catch any locale changes in the fresh config
         setupLanguage();
 
+        // 5. Asynchronously reload dungeon templates
         if (dungeonManager != null) {
             dungeonManager.reload().thenRun(() -> {
                 String msg = messagesFile.getString("admin.reload");

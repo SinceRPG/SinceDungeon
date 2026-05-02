@@ -28,9 +28,6 @@ public class TopManager {
 
     /**
      * Wipes the leaderboard for a given map.
-     * Since this manager fetches directly from the DB, no local cache needs clearing.
-     *
-     * @param map The map identifier to reset.
      */
     public void resetLeaderboard(String map) {
         plugin.getDatabaseManager().resetLeaderboard(map);
@@ -38,10 +35,6 @@ public class TopManager {
 
     /**
      * Synchronously retrieves the total number of times a specific player has cleared a specific dungeon.
-     *
-     * @param dungeonId  The ID of the dungeon.
-     * @param playerUuid The UUID of the player.
-     * @return The total clear count, or 0 if never cleared.
      */
     public int getPlayerClears(String dungeonId, UUID playerUuid) {
         if (!db.isConnected()) return 0;
@@ -95,6 +88,28 @@ public class TopManager {
                 }
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to save clear time.", e);
+            }
+        });
+    }
+
+    /**
+     * Saves a Party clear time record into the database as a unique run entry.
+     */
+    public void savePartyClearTime(String dungeonId, String membersNames, int timeSeconds) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try (Connection conn = db.getConnection()) {
+                String sql = "INSERT INTO party_top_fastest (record_id, dungeon_id, members_names, time_seconds, recorded_at) VALUES (?,?,?,?,?)";
+
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, UUID.randomUUID().toString());
+                    ps.setString(2, dungeonId);
+                    ps.setString(3, membersNames);
+                    ps.setInt(4, timeSeconds);
+                    ps.setLong(5, System.currentTimeMillis());
+                    ps.executeUpdate();
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to save party clear time.", e);
             }
         });
     }
@@ -185,30 +200,41 @@ public class TopManager {
             String table;
             String valueCol;
             String order;
+            String sql;
 
             switch (category) {
                 case FASTEST_TIME -> {
                     table = "top_fastest";
                     valueCol = "time_seconds";
                     order = "ASC";
+                    sql = "SELECT player_uuid, player_name, " + valueCol + ", recorded_at FROM " + table
+                            + " WHERE dungeon_id = ? ORDER BY " + valueCol + " " + order + " LIMIT ?";
+                }
+                case PARTY_FASTEST_TIME -> {
+                    table = "party_top_fastest";
+                    valueCol = "time_seconds";
+                    order = "ASC";
+                    sql = "SELECT record_id AS player_uuid, members_names AS player_name, " + valueCol + ", recorded_at FROM " + table
+                            + " WHERE dungeon_id = ? ORDER BY " + valueCol + " " + order + " LIMIT ?";
                 }
                 case MOST_KILLS -> {
                     table = "top_kills";
                     valueCol = "kill_count";
                     order = "DESC";
+                    sql = "SELECT player_uuid, player_name, " + valueCol + ", recorded_at FROM " + table
+                            + " WHERE dungeon_id = ? ORDER BY " + valueCol + " " + order + " LIMIT ?";
                 }
                 case MOST_CLEARS -> {
                     table = "top_clears";
                     valueCol = "clear_count";
                     order = "DESC";
+                    sql = "SELECT player_uuid, player_name, " + valueCol + ", recorded_at FROM " + table
+                            + " WHERE dungeon_id = ? ORDER BY " + valueCol + " " + order + " LIMIT ?";
                 }
                 default -> {
                     return results;
                 }
             }
-
-            String sql = "SELECT player_uuid, player_name, " + valueCol + ", recorded_at FROM " + table
-                    + " WHERE dungeon_id = ? ORDER BY " + valueCol + " " + order + " LIMIT ?";
 
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, dungeonId);
@@ -232,7 +258,7 @@ public class TopManager {
     }
 
     public enum TopCategory {
-        FASTEST_TIME, MOST_KILLS, MOST_CLEARS
+        FASTEST_TIME, PARTY_FASTEST_TIME, MOST_KILLS, MOST_CLEARS
     }
 
     public record TopEntry(String playerUuid, String playerName, long value, long recordedAt) {

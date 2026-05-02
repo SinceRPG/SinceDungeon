@@ -59,17 +59,22 @@ public class TopMenuListener implements Listener {
             return;
         }
 
-        if (slot == guiSize - 7) {
+        if (slot == guiSize - 8) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             gui.openTopGUI(p, holder.dungeonId(), TopManager.TopCategory.FASTEST_TIME, 0);
             return;
         }
-        if (slot == guiSize - 5) {
+        if (slot == guiSize - 6) {
+            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+            gui.openTopGUI(p, holder.dungeonId(), TopManager.TopCategory.PARTY_FASTEST_TIME, 0);
+            return;
+        }
+        if (slot == guiSize - 4) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             gui.openTopGUI(p, holder.dungeonId(), TopManager.TopCategory.MOST_KILLS, 0);
             return;
         }
-        if (slot == guiSize - 3) {
+        if (slot == guiSize - 2) {
             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
             gui.openTopGUI(p, holder.dungeonId(), TopManager.TopCategory.MOST_CLEARS, 0);
         }

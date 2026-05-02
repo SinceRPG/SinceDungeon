@@ -48,9 +48,15 @@ lives:
   time_out_penalty: "&cYou failed to complete the task in time and lost <amount> lives! Current: <current>"
 
 top:
+  category_time: "&b&lSolo Fastest Clears"
+  category_party_time: "&d&lParty Fastest Clears"
+  party_time_lore:
+    - "&7Time: &a<value>"
+    - "&7Date: &f<date>"
+    - "&7Members:"
+    - "&f<members>"
   gui_title: "&6&lLeaderboard: &e<map>"
   loading: "&eLoading leaderboard data from database..."
-  category_time: "&b&lFastest Clears"
   category_kills: "&c&lMost Kills"
   category_clears: "&a&lMost Clears"
   item_format: "&e#<rank> &f<player>"

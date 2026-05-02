@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * Represents an active instance of a Dungeon.
@@ -710,6 +711,15 @@ public class DungeonGame {
 
             PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
             UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
+
+            // NEW: Record Party Clear if more than one participant
+            if (participants.size() > 1) {
+                String membersNames = participants.stream()
+                        .filter(Player::isOnline)
+                        .map(Player::getName)
+                        .collect(Collectors.joining(", "));
+                topManager.savePartyClearTime(dungeonId, membersNames, finalElapsed);
+            }
 
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 for (Player p : participants) {

@@ -87,6 +87,15 @@ public class DatabaseManager {
                     )
                     """);
             stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS party_top_fastest (
+                        record_id VARCHAR(36) PRIMARY KEY,
+                        dungeon_id VARCHAR(64) NOT NULL,
+                        members_names TEXT NOT NULL,
+                        time_seconds INT NOT NULL,
+                        recorded_at BIGINT NOT NULL
+                    )
+                    """);
+            stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_kills (
                         dungeon_id VARCHAR(64) NOT NULL,
                         player_uuid VARCHAR(36) NOT NULL,
@@ -162,19 +171,22 @@ public class DatabaseManager {
 
     /**
      * Executes the SQL DELETE commands to wipe all records for a specific map asynchronously.
-     * Clears records from top_fastest, top_kills, and top_clears.
-     *
-     * @param map The map identifier (dungeon_id) to wipe.
      */
     public void resetLeaderboard(String map) {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String sqlFastest = "DELETE FROM top_fastest WHERE dungeon_id = ?";
+            String sqlPartyFastest = "DELETE FROM party_top_fastest WHERE dungeon_id = ?";
             String sqlKills = "DELETE FROM top_kills WHERE dungeon_id = ?";
             String sqlClears = "DELETE FROM top_clears WHERE dungeon_id = ?";
 
             try (Connection conn = this.getConnection()) {
 
                 try (PreparedStatement ps = conn.prepareStatement(sqlFastest)) {
+                    ps.setString(1, map);
+                    ps.executeUpdate();
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlPartyFastest)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
