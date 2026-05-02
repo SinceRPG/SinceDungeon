@@ -121,7 +121,7 @@ public class DefaultRegistry {
             for (ItemStack drop : left.values()) {
                 p.getWorld().dropItem(p.getLocation(), drop);
             }
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("reward.messages.inventory_full", "&cInventory full! Item dropped on the ground.")));
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("reward.messages.inventory_full", "&cInventory full! Item dropped on the ground.")));
         }
 
         String displayName = fallbackName;
@@ -129,7 +129,7 @@ public class DefaultRegistry {
             displayName = ColorUtils.toPlainText(item.getItemMeta().displayName());
         }
 
-        String msg = plugin.getMessagesFile().getString("reward.messages.received_item", "&7Received: &a<item>");
+        String msg = plugin.getLanguageManager().getString("reward.messages.received_item", "&7Received: &a<item>");
         if (msg != null) {
             p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? item.getType().name() : displayName)));
         }
@@ -147,7 +147,7 @@ public class DefaultRegistry {
                 cmd = cmd.substring(1);
             }
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-            String msg = plugin.getMessagesFile().getString("reward.messages.received_custom", "&7Reward: &a<item>");
+            String msg = plugin.getLanguageManager().getString("reward.messages.received_custom", "&7Reward: &a<item>");
             if (displayName != null && msg != null && !msg.isEmpty()) {
                 p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
             }
@@ -172,13 +172,13 @@ public class DefaultRegistry {
 
                 giveCustomItemReward(plugin, p, item, mat.name() + " x" + amount);
             } catch (Exception e) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.error", "&cSystem Error: Item <item> is misconfigured.").replace("<item>", val)));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.error", "&cSystem Error: Item <item> is misconfigured.").replace("<item>", val)));
             }
         });
 
         manager.registerRewardProcessor("MMOITEM", (p, val, displayName) -> {
             if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_installed", "&cSystem Error: MMOItems is not installed.")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.not_installed", "&cSystem Error: MMOItems is not installed.")));
                 return;
             }
             try {
@@ -192,7 +192,7 @@ public class DefaultRegistry {
                 if (item != null) {
                     giveCustomItemReward(plugin, p, item, displayName == null ? mId : displayName);
                 } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.mmoitems.not_found", "&cSystem Error: MMOItem not found.").replace("<type>", mType).replace("<id>", mId)));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.not_found", "&cSystem Error: MMOItem not found.").replace("<type>", mType).replace("<id>", mId)));
                 }
             } catch (Exception ignored) {
             }
@@ -283,8 +283,8 @@ public class DefaultRegistry {
                     if (map.get("custom_drops") instanceof List<?> l) l.forEach(o -> customDrops.add(o.toString()));
 
                     return new SpawnWaveAction(mob, amount, v, customName, isBaby, attributesList, equipmentList, scaleWithParty, customDrops);
-                }, plugin.getMessagesFile().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
-                plugin.getMessagesFile().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
+                }, plugin.getLanguageManager().getString("editor.actions_name.spawn_wave", "Spawn Vanilla Mob"), Material.ZOMBIE_HEAD,
+                plugin.getLanguageManager().getString("editor.actions.spawn_wave", "Spawn Vanilla Mobs"),
                 spawnDefaults, new HashMap<>());
 
         Map<String, Object> reachDefaults = new HashMap<>();
@@ -298,8 +298,8 @@ public class DefaultRegistry {
                     Vector target = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("target", "0,0,0")));
                     double radius = getDouble(map.get("radius"), (double) reachDefaults.get("radius"));
                     return new ReachLocationAction(target, radius);
-                }, plugin.getMessagesFile().getString("editor.actions_name.reach_location", "Reach Checkpoint"), Material.COMPASS,
-                plugin.getMessagesFile().getString("editor.actions.reach_location", "Reach Location"),
+                }, plugin.getLanguageManager().getString("editor.actions_name.reach_location", "Reach Checkpoint"), Material.COMPASS,
+                plugin.getLanguageManager().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
         Map<String, Object> chestDefaults = new HashMap<>();
@@ -330,8 +330,8 @@ public class DefaultRegistry {
                         }
                     }
                     return new LootChestAction(loc, itemsConfig);
-                }, plugin.getMessagesFile().getString("editor.actions_name.loot_chest", "Loot Treasure Chest"), Material.CHEST,
-                plugin.getMessagesFile().getString("editor.actions.loot_chest", "Loot Chest"),
+                }, plugin.getLanguageManager().getString("editor.actions_name.loot_chest", "Loot Treasure Chest"), Material.CHEST,
+                plugin.getLanguageManager().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
 
         Map<String, Object> wallDefaults = new HashMap<>();
@@ -346,8 +346,8 @@ public class DefaultRegistry {
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("trigger", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner1", "0,0,0"))),
                         DungeonLoader.parseVector(String.valueOf(map.getOrDefault("corner2", "0,0,0")))
-                ), plugin.getMessagesFile().getString("editor.actions_name.break_wall", "Break Wall via Block"), Material.IRON_PICKAXE,
-                plugin.getMessagesFile().getString("editor.actions.break_wall", "Break Wall"),
+                ), plugin.getLanguageManager().getString("editor.actions_name.break_wall", "Break Wall via Block"), Material.IRON_PICKAXE,
+                plugin.getLanguageManager().getString("editor.actions.break_wall", "Break Wall"),
                 wallDefaults, new HashMap<>());
 
         Map<String, Object> mmDefaults = new HashMap<>();
@@ -368,8 +368,8 @@ public class DefaultRegistry {
                     boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) mmDefaults.get("scale_with_party");
 
                     return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty);
-                }, plugin.getMessagesFile().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
-                plugin.getMessagesFile().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
+                }, plugin.getLanguageManager().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
+                plugin.getLanguageManager().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
 
         List<String> defaultRandomMobs = new ArrayList<>(Arrays.asList("VANILLA:ZOMBIE:50", "VANILLA:SKELETON:30", "MYTHIC:SkeletonKing:20:1"));
@@ -397,8 +397,8 @@ public class DefaultRegistry {
                     if (map.get("custom_drops") instanceof List<?> l) l.forEach(o -> customDrops.add(o.toString()));
 
                     return new RandomWaveAction(amount, v, RandomWaveAction.parseMobPool(rawStrings), scaleWithParty, customDrops);
-                }, plugin.getMessagesFile().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
-                plugin.getMessagesFile().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
+                }, plugin.getLanguageManager().getString("editor.actions_name.random_wave", "Random Mob Wave"), Material.TRIAL_SPAWNER,
+                plugin.getLanguageManager().getString("editor.actions.random_wave", "Spawn a random mix of Vanilla and Mythic mobs from a pool"),
                 randomDefaults, new HashMap<>());
 
         Map<String, Object> zoneDefaults = new HashMap<>();
@@ -439,8 +439,8 @@ public class DefaultRegistry {
                     if (equipObj instanceof List<?> l) l.forEach(o -> equipmentList.add(o.toString()));
 
                     return new ControlZoneAction(center, startRadius, endRadius, requiredTime, mob, mobInterval, mobLevel, customName, isBaby, attributesList, equipmentList);
-                }, plugin.getMessagesFile().getString("editor.actions_name.control_zone", "Control The Zone"), Material.BEACON,
-                plugin.getMessagesFile().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
+                }, plugin.getLanguageManager().getString("editor.actions_name.control_zone", "Control The Zone"), Material.BEACON,
+                plugin.getLanguageManager().getString("editor.actions.control_zone", "Hold the area for X seconds. Circle can shrink over time."),
                 zoneDefaults, new HashMap<>());
 
         Map<String, Object> doorDefaults = new HashMap<>();
@@ -461,8 +461,8 @@ public class DefaultRegistry {
                     String particle = String.valueOf(map.getOrDefault("particle", "ENCHANT"));
 
                     return new UnlockDoorAction(trigger, c1, c2, keyId, particle);
-                }, plugin.getMessagesFile().getString("editor.actions_name.unlock_door", "Find Key & Unlock Door"), Material.IRON_DOOR,
-                plugin.getMessagesFile().getString("editor.actions.unlock_door", "Requires player to find a key item to open the door."),
+                }, plugin.getLanguageManager().getString("editor.actions_name.unlock_door", "Find Key & Unlock Door"), Material.IRON_DOOR,
+                plugin.getLanguageManager().getString("editor.actions.unlock_door", "Requires player to find a key item to open the door."),
                 doorDefaults, new HashMap<>());
 
         Map<String, Object> bossDefaults = new HashMap<>();
@@ -540,8 +540,8 @@ public class DefaultRegistry {
                     }
 
                     return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, equipment, phases, enrageTime, enrageMessage, enrageAttrs, customDrops);
-                }, plugin.getMessagesFile().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
-                plugin.getMessagesFile().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
+                }, plugin.getLanguageManager().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
+                plugin.getLanguageManager().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
                 bossDefaults, new HashMap<>());
     }
 

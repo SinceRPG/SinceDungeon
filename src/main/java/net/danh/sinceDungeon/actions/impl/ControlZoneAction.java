@@ -61,7 +61,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     public String getObjectiveText() {
         int percent = (int) (((double) accumulatedMillis / requiredMillis) * 100);
         percent = Math.min(100, Math.max(0, percent));
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.control_zone", "<aqua>Control the Zone: <percent>%");
+        String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.control_zone", "<aqua>Control the Zone: <percent>%");
         return base.replace("<percent>", String.valueOf(percent));
     }
 

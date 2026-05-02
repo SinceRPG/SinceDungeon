@@ -42,7 +42,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.loot_chest", "<gold>Loot the chest to proceed");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.loot_chest", "<gold>Loot the chest to proceed");
     }
 
     @Override
@@ -154,7 +154,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                 if (blockAction) {
                     e.setCancelled(true);
                     if (e.getWhoClicked() instanceof Player p) {
-                        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.cannot_store_in_lootchest", "<red>You cannot store items here!");
+                        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("error.cannot_store_in_lootchest", "<red>You cannot store items here!");
                         p.sendMessage(ColorUtils.parseWithPrefix(msg));
                     }
                 }

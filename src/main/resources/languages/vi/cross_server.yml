@@ -1,0 +1,5 @@
+cross_server:
+  searching: "&eHệ thống đang tìm kiếm Máy chủ trống để khởi tạo Hầm ngục..."
+  found: "&aĐã tìm thấy máy chủ (<server>). Đang dịch chuyển toàn đội..."
+  timeout: "&cKhông có máy chủ Hầm ngục nào đang rảnh. Vui lòng thử lại sau!"
+  already_searching: "&cHệ thống đang trong quá trình tìm kiếm, vui lòng đợi!"

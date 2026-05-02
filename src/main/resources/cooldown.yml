@@ -1,0 +1,12 @@
+cooldown:
+  check_other: "&e<player>'s cooldown for <map>: &c<time>"
+  check_other_ready: "&e<player> is ready to enter <map>."
+  no_active_cooldowns: "&cYou don't have any active dungeon cooldowns!"
+  item_reset_received: "&aYou received a Cooldown Reset Ticket x<amount>!"
+  item_reset_used: "&aAll your dungeon cooldowns have been fully reset!"
+  item_reduce_received: "&aYou received a Time Skip Ticket (-<time>s) x<amount>!"
+  item_reduce_used: "&aAll your dungeon cooldowns have been reduced by <time>s!"
+  admin_gave_reset: "&aGave <amount> Cooldown Reset Ticket(s) to <player>."
+  admin_gave_reduce: "&aGave <amount> Time Skip Ticket(s) (-<time>s) to <player>."
+  admin_reduced: "&aSuccessfully reduced all cooldowns for <player> by <time> seconds."
+  admin_reset_all: "&aSuccessfully reset ALL dungeon cooldowns for <player>."

@@ -38,7 +38,7 @@ public class RewardSessionManager {
                     if (p != null && p.isOnline()) {
                         gui.forceClaimAll(p, entry.getValue());
                         p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(
-                                plugin.getMessagesFile().getString("reward.messages.auto_claimed_expired", "<yellow>Your rewards were auto-claimed due to timeout.")
+                                plugin.getLanguageManager().getString("reward.messages.auto_claimed_expired", "<yellow>Your rewards were auto-claimed due to timeout.")
                         ));
                     }
                     sessions.remove(entry.getKey());

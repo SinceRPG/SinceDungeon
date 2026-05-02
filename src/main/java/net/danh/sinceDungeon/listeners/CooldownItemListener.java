@@ -52,14 +52,14 @@ public class CooldownItemListener implements Listener {
             p.setCooldown(item.getType(), 10);
 
             if (!plugin.getCooldownManager().hasAnyCooldown(p.getUniqueId())) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.no_active_cooldowns")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.no_active_cooldowns")));
                 return;
             }
 
             item.setAmount(item.getAmount() - 1);
             plugin.getCooldownManager().resetAllCooldowns(p.getUniqueId());
 
-            String msg = plugin.getMessagesFile().getString("cooldown.item_reset_used");
+            String msg = plugin.getLanguageManager().getString("cooldown.item_reset_used");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
             playConsumeEffects(p, "cooldown.reset-item");
@@ -72,7 +72,7 @@ public class CooldownItemListener implements Listener {
             p.setCooldown(item.getType(), 10);
 
             if (!plugin.getCooldownManager().hasAnyCooldown(p.getUniqueId())) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.no_active_cooldowns")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.no_active_cooldowns")));
                 return;
             }
 
@@ -82,7 +82,7 @@ public class CooldownItemListener implements Listener {
             item.setAmount(item.getAmount() - 1);
             plugin.getCooldownManager().reduceAllCooldowns(p.getUniqueId(), secondsToReduce);
 
-            String msg = plugin.getMessagesFile().getString("cooldown.item_reduce_used").replace("<time>", String.valueOf(secondsToReduce));
+            String msg = plugin.getLanguageManager().getString("cooldown.item_reduce_used").replace("<time>", String.valueOf(secondsToReduce));
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
             playConsumeEffects(p, "cooldown.reduce-item");

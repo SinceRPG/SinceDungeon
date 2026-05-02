@@ -56,7 +56,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.unlock_door", "<gold>Find the Key and Unlock the Door");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.unlock_door", "<gold>Find the Key and Unlock the Door");
     }
 
     @Override
@@ -72,7 +72,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 .setTag(compassTag, PersistentDataType.BYTE, (byte) 1)
                 .build();
 
-        String compassMsg = SinceDungeon.getPlugin().getMessagesFile().getString("action.compass_received", "&bYou received a Tracking Compass!");
+        String compassMsg = SinceDungeon.getPlugin().getLanguageManager().getString("action.compass_received", "&bYou received a Tracking Compass!");
         String soundPickup = SinceDungeon.getPlugin().getConfigFile().getString("sounds.compass_receive", "entity.item.pickup");
 
         for (Player p : game.getParticipants()) {
@@ -145,7 +145,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 ItemStack handItem = e.getItem();
 
                 if (handItem == null || handItem.getType() == Material.AIR) {
-                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.key_not_found", "&cYou need a Key!");
+                    String msg = SinceDungeon.getPlugin().getLanguageManager().getString("error.key_not_found", "&cYou need a Key!");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
                     playDenySound(p);
                     return;
@@ -171,7 +171,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                         if (player.isOnline()) player.setCompassTarget(spawnLoc);
                     });
                 } else {
-                    String msg = SinceDungeon.getPlugin().getMessagesFile().getString("error.wrong_key", "&cWrong key!");
+                    String msg = SinceDungeon.getPlugin().getLanguageManager().getString("error.wrong_key", "&cWrong key!");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
                     playDenySound(p);
                 }
@@ -188,7 +188,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
     private void removeCompasses(DungeonGame game) {
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
-        String msg = SinceDungeon.getPlugin().getMessagesFile().getString("action.compass_removed", "&7The Tracking Compass faded away.");
+        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.compass_removed", "&7The Tracking Compass faded away.");
 
         for (Player p : game.getParticipants()) {
             if (!p.isOnline()) continue;

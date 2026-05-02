@@ -61,14 +61,14 @@ public class LifeItemListener implements Listener {
             if (lives == null) return;
 
             if (lives.getCurrentLives() >= lives.getMaxLives()) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.max_reached")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.max_reached")));
                 return;
             }
 
             item.setAmount(item.getAmount() - 1);
             plugin.getLivesManager().addLives(p.getUniqueId(), amount);
 
-            String msg = plugin.getMessagesFile().getString("lives.item_used")
+            String msg = plugin.getLanguageManager().getString("lives.item_used")
                     .replace("<amount>", String.valueOf(amount))
                     .replace("<current>", String.valueOf(lives.getCurrentLives()))
                     .replace("<max>", String.valueOf(lives.getMaxLives()));

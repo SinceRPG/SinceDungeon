@@ -590,7 +590,7 @@ public class EditorMenuListener implements Listener {
                             if (e.getClick() == ClickType.SHIFT_RIGHT) {
                                 session.getConfig().set("stages." + stage, null);
                                 gui.openStageList(p, session, page);
-                                String msg = plugin.getMessagesFile().getString("editor.chat.stage_deleted");
+                                String msg = plugin.getLanguageManager().getString("editor.chat.stage_deleted");
                                 if (msg != null && !msg.isEmpty()) {
                                     p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<stage>", stage)));
                                 }
@@ -668,7 +668,7 @@ public class EditorMenuListener implements Listener {
                 }
 
                 if (key.equalsIgnoreCase("notifications")) {
-                    for (String line : plugin.getMessagesFile().getStringList("editor.chat.notifications_hint")) {
+                    for (String line : plugin.getLanguageManager().getStringList("editor.chat.notifications_hint")) {
                         p.sendMessage(ColorUtils.parse(line));
                     }
                     return;
@@ -748,7 +748,7 @@ public class EditorMenuListener implements Listener {
                         }
 
                         Object finalVal = gui.getFinalVal(val, key);
-                        String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
+                        String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
 
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
@@ -825,7 +825,7 @@ public class EditorMenuListener implements Listener {
 
                 if (slot == 11 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_phase_message", val -> {
-                        String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
+                        String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
                         if (val.equalsIgnoreCase(clearKw)) val = "";
                         session.getConfig().set(basePath + ".message", val);
                         gui.openPhaseEditor(p, session);
@@ -865,7 +865,7 @@ public class EditorMenuListener implements Listener {
                     plugin.getEditorListener().startListening(p, session);
                 } else if (slot == 13 && e.getClick() == ClickType.LEFT) {
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reinforcement_name", val -> {
-                        String clearKw = plugin.getMessagesFile().getString("editor.words.clear", "clear");
+                        String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
                         if (val.equalsIgnoreCase(clearKw)) val = "";
                         session.getConfig().set(basePath + ".custom_name", val);
                         gui.openReinforcementEditor(p, session);

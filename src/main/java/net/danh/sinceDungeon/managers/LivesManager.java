@@ -114,7 +114,7 @@ public class LivesManager {
 
                 Player p = Bukkit.getPlayer(data.getUuid());
                 if (p != null && p.isOnline()) {
-                    String msg = plugin.getMessagesFile().getString("lives.regenerated")
+                    String msg = plugin.getLanguageManager().getString("lives.regenerated")
                             .replace("<amount>", String.valueOf(recovered))
                             .replace("<current>", String.valueOf(newLives))
                             .replace("<max>", String.valueOf(data.getMaxLives()));

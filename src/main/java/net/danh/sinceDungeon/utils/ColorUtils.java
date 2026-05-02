@@ -40,7 +40,7 @@ public class ColorUtils {
      * @return The parsed Component.
      */
     public static @NotNull Component parseWithPrefix(@NotNull String input) {
-        String prefix = SinceDungeon.getPlugin().getMessagesFile().getString("prefix", "");
+        String prefix = SinceDungeon.getPlugin().getLanguageManager().getString("prefix", "");
         return parse(prefix + input);
     }
 

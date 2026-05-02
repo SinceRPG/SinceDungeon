@@ -1,0 +1,24 @@
+reward:
+  gui_title: "&6&lDungeon Rewards"
+  messages:
+    auto_claim: "&aAuto-claimed <count> remaining chests."
+    claimed_all: "&aYou have claimed all your rewards!"
+    received_item: "&7Received: &a<item>"
+    received_custom: "&7Reward: &a<item>"
+    inventory_full: "&cInventory full! Item dropped on the ground."
+    auto_claimed_expired: "&eYour Dungeon rewards have been auto-claimed due to timeout."
+  settings:
+    gui_size: 27
+    button_slot: 13
+  icons:
+    button:
+      material: CHEST
+      name: "&6&lOpen Chest"
+      lore:
+        - "&7Click to open a random chest!"
+        - "&7Remaining: &e<count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "&d&lMystery Chest"
+      lore:
+        - "&7What's inside?"

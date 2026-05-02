@@ -1,0 +1,25 @@
+top:
+  party_run_name: "Tổ Đội Nhóm"
+  category_time: "&b&lKỷ Lục Tốc Độ (Solo)"
+  category_party_time: "&d&lKỷ Lục Tốc Độ (Tổ Đội)"
+  party_time_lore:
+    - "&7Thời gian: &a<value>"
+    - "&7Ngày lập: &f<date>"
+    - "&7Thành viên:"
+    - "&f<members>"
+  gui_title: "&6&lBảng Xếp Hạng: &e<map>"
+  loading: "&eĐang tải dữ liệu từ máy chủ..."
+  category_kills: "&c&lSát Thủ Kills"
+  category_clears: "&a&lChăm Chỉ Nhất"
+  item_format: "&e#<rank> &f<player>"
+  time_lore:
+    - "&7Thời gian: &a<value>"
+    - "&7Ngày lập: &f<date>"
+  kills_lore:
+    - "&7Tổng Kills: &c<value>"
+    - "&7Ngày lập: &f<date>"
+  clears_lore:
+    - "&7Lượt hoàn thành: &a<value>"
+    - "&7Ngày lập: &f<date>"
+  click_to_switch:
+    - "&eChuột Trái để xem hạng mục này!"

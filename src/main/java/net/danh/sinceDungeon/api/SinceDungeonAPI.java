@@ -155,7 +155,7 @@ public class SinceDungeonAPI {
     public void registerCustomAction(String type, ActionParser parser, String displayName, Material icon, String description, Map<String, Object> defaultParams, Map<String, List<String>> customPrompts) {
         plugin.getDungeonManager().registerAction(type, parser, displayName, icon, description, defaultParams, customPrompts);
 
-        String logMsg = plugin.getMessagesFile().getString("admin.log.api_action_registered", "[API] Registered Custom Action: <type>");
+        String logMsg = plugin.getLanguageManager().getString("admin.log.api_action_registered", "[API] Registered Custom Action: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
@@ -168,7 +168,7 @@ public class SinceDungeonAPI {
     public void registerRewardProcessor(String type, RewardProcessor processor) {
         plugin.getDungeonManager().registerRewardProcessor(type, processor);
 
-        String logMsg = plugin.getMessagesFile().getString("admin.log.api_reward_registered", "[API] Registered Reward Processor: <type>");
+        String logMsg = plugin.getLanguageManager().getString("admin.log.api_reward_registered", "[API] Registered Reward Processor: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
@@ -181,7 +181,7 @@ public class SinceDungeonAPI {
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         plugin.getDungeonManager().registerConditionProcessor(type, processor);
 
-        String logMsg = plugin.getMessagesFile().getString("admin.log.api_condition_registered", "[API] Registered Condition Processor: <type>");
+        String logMsg = plugin.getLanguageManager().getString("admin.log.api_condition_registered", "[API] Registered Condition Processor: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
@@ -252,7 +252,7 @@ public class SinceDungeonAPI {
     public void registerItemProvider(String prefix, CustomItemProvider provider) {
         plugin.getDungeonManager().registerItemProvider(prefix, provider);
 
-        String logMsg = plugin.getMessagesFile().getString("admin.log.api_item_provider_registered", "[API] Registered Custom Item Provider: <type>");
+        String logMsg = plugin.getLanguageManager().getString("admin.log.api_item_provider_registered", "[API] Registered Custom Item Provider: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", prefix.toUpperCase()));
     }
 

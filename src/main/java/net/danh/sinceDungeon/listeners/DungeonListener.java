@@ -177,7 +177,7 @@ public class DungeonListener implements Listener {
                 List<String> allowed = plugin.getConfigFile().getStringList("dungeon.gameplay.allowed-commands");
                 if (!allowed.contains(cmd)) {
                     e.setCancelled(true);
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.command_blocked")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.command_blocked")));
                 }
             }
         }
@@ -287,17 +287,17 @@ public class DungeonListener implements Listener {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
             World ghostWorld = p.getLocation().getWorld();
-            String logMsg = plugin.getMessagesFile().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
+            String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
 
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
-                    String msg = plugin.getMessagesFile().getString("admin.ghost_rescued", "&eThe system rescued you from a deleted or corrupted Dungeon instance.");
+                    String msg = plugin.getLanguageManager().getString("admin.ghost_rescued", "&eThe system rescued you from a deleted or corrupted Dungeon instance.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         if (ghostWorld.getPlayers().isEmpty()) {
-                            String delLog = plugin.getMessagesFile().getString("admin.log.deleting_ghost_world", "Ghost World <world> is now empty. Deleting permanently...");
+                            String delLog = plugin.getLanguageManager().getString("admin.log.deleting_ghost_world", "Ghost World <world> is now empty. Deleting permanently...");
                             plugin.getLogger().info(delLog.replace("<world>", ghostWorld.getName()));
                             WorldManager.forceUnloadAndDelete(plugin, ghostWorld);
                         }
@@ -362,7 +362,7 @@ public class DungeonListener implements Listener {
                     String act = e.getAction().name();
                     if (act.contains("DROP")) {
                         e.setCancelled(true);
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.can_not_drop")));
                     }
                 }
                 pass(p, e);
@@ -476,10 +476,10 @@ public class DungeonListener implements Listener {
                     return;
                 }
 
-                String logMsg = plugin.getMessagesFile().getString("admin.log.unauthorized_entry", "Intercepted unauthorized entry by <player> into <world>");
+                String logMsg = plugin.getLanguageManager().getString("admin.log.unauthorized_entry", "Intercepted unauthorized entry by <player> into <world>");
                 plugin.getLogger().warning(logMsg.replace("<player>", p.getName()).replace("<world>", p.getWorld().getName()));
 
-                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_entry", "<red>Area sealed. Unauthorized entry detected!");
+                String blockMsg = plugin.getLanguageManager().getString("error.dungeon_sealed_entry", "<red>Area sealed. Unauthorized entry detected!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
 
                 p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
@@ -489,7 +489,7 @@ public class DungeonListener implements Listener {
 
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
-            String logLeave = plugin.getMessagesFile().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
+            String logLeave = plugin.getLanguageManager().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
             plugin.getLogger().info(p.getName() + logLeave);
             game.handlePlayerDisconnect(p);
         }
@@ -535,7 +535,7 @@ public class DungeonListener implements Listener {
                 int current = livesData != null ? livesData.getCurrentLives() : 0;
                 int max = livesData != null ? livesData.getMaxLives() : 0;
 
-                String lossMsg = plugin.getMessagesFile().getString("lives.deducted")
+                String lossMsg = plugin.getLanguageManager().getString("lives.deducted")
                         .replace("<amount>", String.valueOf(deductLives))
                         .replace("<current>", String.valueOf(current))
                         .replace("<max>", String.valueOf(max));
@@ -563,20 +563,20 @@ public class DungeonListener implements Listener {
                 if (finalOutOfLives) {
                     String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
                     if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_spectate")));
                         p.setGameMode(GameMode.SPECTATOR);
                         game.checkWipeout();
                     } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
                         game.handlePlayerDisconnect(p);
                     }
                 } else if (deathAction.equalsIgnoreCase("FAIL")) {
                     game.stop(true, DungeonEndEvent.EndReason.FAILED);
                 } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.death_spectate")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.death_spectate")));
                     p.setGameMode(GameMode.SPECTATOR);
                     game.checkWipeout();
                 } else {
@@ -607,7 +607,7 @@ public class DungeonListener implements Listener {
                 }
 
                 e.setCancelled(true);
-                String blockMsg = plugin.getMessagesFile().getString("error.dungeon_sealed_teleport", "<red>Area sealed. Teleportation magic nullified!");
+                String blockMsg = plugin.getLanguageManager().getString("error.dungeon_sealed_teleport", "<red>Area sealed. Teleportation magic nullified!");
                 p.sendMessage(ColorUtils.parseWithPrefix(blockMsg));
                 return;
             }
@@ -632,7 +632,7 @@ public class DungeonListener implements Listener {
                 }
 
                 e.setCancelled(true);
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_teleport")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.can_not_teleport")));
             }
         }
     }
@@ -649,7 +649,7 @@ public class DungeonListener implements Listener {
             }
             if (preventDrop) {
                 e.setCancelled(true);
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.can_not_drop")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.can_not_drop")));
             }
         }
     }

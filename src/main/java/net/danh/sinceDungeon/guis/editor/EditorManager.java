@@ -27,7 +27,7 @@ public class EditorManager implements Listener {
 
     public void startEditing(Player p, String filename) {
         if (!filename.matches("^[a-zA-Z0-9_\\-]+$")) {
-            String msg = plugin.getMessagesFile().getString("editor.chat.invalid_filename");
+            String msg = plugin.getLanguageManager().getString("editor.chat.invalid_filename");
             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
             return;
         }
@@ -38,7 +38,7 @@ public class EditorManager implements Listener {
             try {
                 file.getParentFile().mkdirs();
                 file.createNewFile();
-                String msg = plugin.getMessagesFile().getString("editor.chat.created");
+                String msg = plugin.getLanguageManager().getString("editor.chat.created");
                 if (msg != null) p.sendMessage(msg.replace("<file>", filename));
             } catch (Exception e) {
                 e.printStackTrace();

@@ -29,7 +29,7 @@ public class PartyManager {
     }
 
     public void forceCreateCrossServerParty(UUID leader, String[] members) {
-        String defaultLeaderName = plugin.getMessagesFile().getString("party.leader_default_name", "Leader");
+        String defaultLeaderName = plugin.getLanguageManager().getString("party.leader_default_name", "Leader");
         Party party = new Party(leader, defaultLeaderName);
         for (String mem : members) {
             String[] split = mem.split("~");
@@ -72,7 +72,7 @@ public class PartyManager {
             DungeonGame game = plugin.getDungeonManager().getGame(uuid);
             if (game != null) {
                 game.handlePlayerDisconnect(p);
-                String msg = plugin.getMessagesFile().getString("party.left_dungeon_due_to_party", "&cYou have been removed from the Dungeon because you left the Party!");
+                String msg = plugin.getLanguageManager().getString("party.left_dungeon_due_to_party", "&cYou have been removed from the Dungeon because you left the Party!");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg));
             }
         }
@@ -183,7 +183,7 @@ public class PartyManager {
             clearSentInvites(party.getLeader());
             party.setLeader(newLeader);
             String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-            sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
+            sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.new_leader").replace("<player>", party.getMemberName(newLeader)));
         } else {
             disbandParty(party);
         }
@@ -226,14 +226,14 @@ public class PartyManager {
 
         if (plugin.getDungeonManager().getGame(leader) != null) {
             targetInvites.remove(leader);
-            String msg = plugin.getMessagesFile().getString("party.leader_in_dungeon", "&cCannot join! The Party Leader is currently fighting inside a Dungeon!");
+            String msg = plugin.getLanguageManager().getString("party.leader_in_dungeon", "&cCannot join! The Party Leader is currently fighting inside a Dungeon!");
             target.sendMessage(ColorUtils.parseWithPrefix(msg));
             return false;
         }
 
         if (plugin.getDungeonManager().getGame(target.getUniqueId()) != null) {
             targetInvites.remove(leader);
-            String msg = plugin.getMessagesFile().getString("party.cannot_accept_in_dungeon", "&cYou cannot accept a party invite while inside a Dungeon!");
+            String msg = plugin.getLanguageManager().getString("party.cannot_accept_in_dungeon", "&cYou cannot accept a party invite while inside a Dungeon!");
             target.sendMessage(ColorUtils.parseWithPrefix(msg));
             return false;
         }
@@ -262,7 +262,7 @@ public class PartyManager {
             party.setLeader(newLeader);
         }
         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-        sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.promoted").replace("<player>", party.getMemberName(newLeader)));
+        sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.promoted").replace("<player>", party.getMemberName(newLeader)));
     }
 
     public Set<Player> getEligibleMembers(Party party, double radius) {
@@ -282,7 +282,7 @@ public class PartyManager {
         String safeMsg = MiniMessage.miniMessage().escapeTags(message);
         String mmSender = ColorUtils.convertLegacyToMiniMessage(safeSender);
         String mmMessage = ColorUtils.convertLegacyToMiniMessage(safeMsg);
-        String rawFormat = plugin.getMessagesFile().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
+        String rawFormat = plugin.getLanguageManager().getString("party.chat_format", "<aqua>[Party] <sender>: <white><msg>");
         String mmFormat = ColorUtils.convertLegacyToMiniMessage(rawFormat);
         Component finalComponent = MiniMessage.miniMessage().deserialize(
                 mmFormat,
@@ -379,7 +379,7 @@ public class PartyManager {
         }
 
         public String getMemberName(UUID uuid) {
-            return members.getOrDefault(uuid, SinceDungeon.getPlugin().getMessagesFile().getString("party.unknown_player", "Unknown"));
+            return members.getOrDefault(uuid, SinceDungeon.getPlugin().getLanguageManager().getString("party.unknown_player", "Unknown"));
         }
 
         public void addMember(Player p) {

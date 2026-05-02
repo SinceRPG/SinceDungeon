@@ -1,0 +1,5 @@
+cross_server:
+  searching: "&eSearching for an available Node Server to initialize the Dungeon..."
+  found: "&aAvailable server found (<server>). Teleporting your party..."
+  timeout: "&cNo available Dungeon servers found. Please try again later!"
+  already_searching: "&cSystem is already searching for a server, please wait!"

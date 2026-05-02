@@ -50,7 +50,7 @@ public class LivesExpansion extends PlaceholderExpansion {
             if (plugin.getCooldownManager().isOnCooldown(player.getUniqueId(), map)) {
                 return plugin.getCooldownManager().getRemainingTimeFormatted(player.getUniqueId(), map);
             } else {
-                return plugin.getMessagesFile().getString("papi.cooldown_ready", "Ready");
+                return plugin.getLanguageManager().getString("papi.cooldown_ready", "Ready");
             }
         }
 
@@ -80,11 +80,11 @@ public class LivesExpansion extends PlaceholderExpansion {
 
             case "lives_time_to_regen":
                 if (lives.getCurrentLives() >= lives.getMaxLives()) {
-                    return plugin.getMessagesFile().getString("papi.time_full", "Full");
+                    return plugin.getLanguageManager().getString("papi.time_full", "Full");
                 }
 
                 if (customInterval <= 0 || customAmount <= 0) {
-                    return plugin.getMessagesFile().getString("papi.time_never", "Never");
+                    return plugin.getLanguageManager().getString("papi.time_never", "Never");
                 }
 
                 long intervalMillis = customInterval * 1000L;

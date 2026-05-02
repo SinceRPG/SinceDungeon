@@ -93,8 +93,8 @@ public class DungeonGame {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         this.worldName = prefix + initiator.getName() + "_" + UUID.randomUUID().toString().substring(0, 8);
 
-        this.cachedObjectivePrefix = plugin.getMessagesFile().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
-        this.cachedTimeLeftFormat = plugin.getMessagesFile().getString("game.hud.time_left", " <red>(<time>s)");
+        this.cachedObjectivePrefix = plugin.getLanguageManager().getString("game.hud.objective_prefix", "<gold><bold>OBJECTIVES: <reset>");
+        this.cachedTimeLeftFormat = plugin.getLanguageManager().getString("game.hud.time_left", " <red>(<time>s)");
 
         parseStages();
     }
@@ -190,7 +190,7 @@ public class DungeonGame {
                 cmd = cmd.substring(endIdx + 1).trim();
 
                 if (!condition.isEmpty() && !PAPIHook.checkCondition(p, condition)) {
-                    continue; // Skip execution if the PAPI condition evaluation returns false
+                    continue;
                 }
             }
 
@@ -272,8 +272,8 @@ public class DungeonGame {
                     return;
                 }
 
-                String titleMain = plugin.getMessagesFile().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
-                String titleSub = plugin.getMessagesFile().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
+                String titleMain = plugin.getLanguageManager().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
+                String titleSub = plugin.getLanguageManager().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
 
                 for (Player p : participants) {
                     if (p.isOnline()) {
@@ -438,7 +438,7 @@ public class DungeonGame {
             LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
             int current = livesData != null ? livesData.getCurrentLives() : 0;
 
-            String lossMsg = plugin.getMessagesFile().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>")
+            String lossMsg = plugin.getLanguageManager().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>")
                     .replace("<amount>", String.valueOf(penalty))
                     .replace("<current>", String.valueOf(current));
             p.sendMessage(ColorUtils.parseWithPrefix(lossMsg));
@@ -447,14 +447,14 @@ public class DungeonGame {
                 outOfLives = true;
                 String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
                 if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_spectate")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_spectate")));
                     p.setGameMode(GameMode.SPECTATOR);
                 } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
                     stop(true, DungeonEndEvent.EndReason.FAILED);
                     return;
                 } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.out_of_lives_kick")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
                     handlePlayerDisconnect(p);
                 }
             }
@@ -649,13 +649,13 @@ public class DungeonGame {
 
                     switch (displayType) {
                         case "ACTIONBAR":
-                            String actionMsg = plugin.getMessagesFile().getString("game.kick_countdown.actionbar", "&eTeleporting to Lobby in &c<time>s&e...");
+                            String actionMsg = plugin.getLanguageManager().getString("game.kick_countdown.actionbar", "&eTeleporting to Lobby in &c<time>s&e...");
                             p.sendActionBar(ColorUtils.parse(actionMsg.replace("<time>", String.valueOf(timeLeft))));
                             break;
 
                         case "TITLE":
-                            String titleMain = plugin.getMessagesFile().getString("game.kick_countdown.title.main", "&c<time>");
-                            String titleSub = plugin.getMessagesFile().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
+                            String titleMain = plugin.getLanguageManager().getString("game.kick_countdown.title.main", "&c<time>");
+                            String titleSub = plugin.getLanguageManager().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
 
                             Title.Times times = Title.Times.times(
                                     Duration.ZERO,
@@ -671,7 +671,7 @@ public class DungeonGame {
                             break;
 
                         case "CHAT":
-                            String chatMsg = plugin.getMessagesFile().getString("game.kick_countdown.chat", "&eThe dungeon will close in &c<time> &eseconds.");
+                            String chatMsg = plugin.getLanguageManager().getString("game.kick_countdown.chat", "&eThe dungeon will close in &c<time> &eseconds.");
                             p.sendMessage(ColorUtils.parseWithPrefix(chatMsg.replace("<time>", String.valueOf(timeLeft))));
                             break;
 
@@ -716,7 +716,6 @@ public class DungeonGame {
             PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
             UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
 
-            // Record Party Clear if more than one participant
             if (participants.size() > 1) {
                 String membersNames = participants.stream()
                         .filter(Player::isOnline)
@@ -729,7 +728,6 @@ public class DungeonGame {
                 for (Player p : participants) {
                     if (!p.isOnline()) continue;
 
-                    // Evaluate if the player is eligible for First-Time Commands BEFORE incrementing clears.
                     int previousClears = topManager.getPlayerClears(dungeonId, p.getUniqueId());
                     boolean isFirstTime = (previousClears == 0);
 
@@ -770,8 +768,8 @@ public class DungeonGame {
         int stay = plugin.getConfigFile().getInt("titles.stay", 3000);
         int fadeOut = plugin.getConfigFile().getInt("titles.fade-out", 500);
 
-        String titleMain = plugin.getMessagesFile().getString("game.title.finish_main", "<green><bold>CLEARED!");
-        String titleSub = plugin.getMessagesFile().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
+        String titleMain = plugin.getLanguageManager().getString("game.title.finish_main", "<green><bold>CLEARED!");
+        String titleSub = plugin.getLanguageManager().getString("game.title.finish_sub", "<yellow>Time: <time>").replace("<time>", formattedTime);
         Title victoryTitle = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut)));
 
         for (Player p : participants) {
@@ -794,7 +792,7 @@ public class DungeonGame {
                 UUID currentLeader = party != null ? party.getLeader() : initiatorId;
 
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                    // Bypass rewards for non-leader members
+                    // Logic allows the leader only to be rewarded.
                 } else if (eventChestCount > 0 && hasRewards) {
                     RewardSession oldSession = RewardSessionManager.getSession(p);
                     if (oldSession != null && oldSession.getChestCount() > 0) {
@@ -819,7 +817,7 @@ public class DungeonGame {
                                 if (eventChestCount > 0 && hasRewards && (shareMode.equalsIgnoreCase("EQUAL") || p.getUniqueId().equals(currentLeader))) {
                                     rewardHelper.openRewardGUI(p, eventChestCount, template);
                                 } else {
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("game.no_reward")));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward")));
                                 }
                             }
                         }, 15L);
@@ -1114,10 +1112,10 @@ public class DungeonGame {
     public void broadcastMessage(String key, String... placeholders) {
         if (participants == null || participants.isEmpty()) return;
 
-        String msg = plugin.getMessagesFile().getString(key);
+        String msg = plugin.getLanguageManager().getString(key);
         if (msg == null || msg.isEmpty()) return;
 
-        String prefix = plugin.getMessagesFile().getString("prefix", "");
+        String prefix = plugin.getLanguageManager().getString("prefix", "");
         for (int i = 0; i < placeholders.length; i += 2) {
             msg = msg.replace(placeholders[i], (i + 1 < placeholders.length) ? placeholders[i + 1] : "");
         }
@@ -1131,8 +1129,8 @@ public class DungeonGame {
     public void broadcastTitle(String mainKey, String subKey, int fadeIn, int stay, int fadeOut) {
         if (participants == null || participants.isEmpty()) return;
 
-        String main = plugin.getMessagesFile().getString(mainKey, "");
-        String sub = plugin.getMessagesFile().getString(subKey, "");
+        String main = plugin.getLanguageManager().getString(mainKey, "");
+        String sub = plugin.getLanguageManager().getString(subKey, "");
         Title title = Title.title(ColorUtils.parse(main), ColorUtils.parse(sub), Title.Times.times(Duration.ofMillis(fadeIn), Duration.ofMillis(stay), Duration.ofMillis(fadeOut)));
         participants.forEach(p -> {
             if (p.isOnline()) p.showTitle(title);

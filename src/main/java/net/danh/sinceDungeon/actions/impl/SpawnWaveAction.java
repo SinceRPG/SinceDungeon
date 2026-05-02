@@ -55,7 +55,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.spawn_wave", "<yellow>Eliminate <red><mob> <gray>(Remaining: <remain>)");
+        String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.spawn_wave", "<yellow>Eliminate <red><mob> <gray>(Remaining: <remain>)");
         return base.replace("<mob>", type.name()).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 

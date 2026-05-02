@@ -48,7 +48,7 @@ public class DungeonManager {
         Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
         this.templates.putAll(initialTemplates);
 
-        String msg = plugin.getMessagesFile().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
+        String msg = plugin.getLanguageManager().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
         plugin.getLogger().info(msg.replace("<count>", String.valueOf(initialTemplates.size())));
     }
 
@@ -63,7 +63,7 @@ public class DungeonManager {
                 pendingCrossServerGames.remove(leader);
                 plugin.getPartyManager().disbandParty(plugin.getPartyManager().getParty(leader));
 
-                String logMsg = plugin.getMessagesFile().getString("admin.log.cross_server_timeout_cancel");
+                String logMsg = plugin.getLanguageManager().getString("admin.log.cross_server_timeout_cancel");
                 if (logMsg != null) {
                     plugin.getLogger().warning(logMsg.replace("<player>", leader.toString()));
                 }
@@ -80,7 +80,7 @@ public class DungeonManager {
         if (leader == null || !leader.isOnline()) return;
 
         PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
-        String foundMsg = plugin.getMessagesFile().getString("cross_server.found");
+        String foundMsg = plugin.getLanguageManager().getString("cross_server.found");
         if (foundMsg != null)
             leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
 
@@ -109,17 +109,17 @@ public class DungeonManager {
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
             PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             if (party != null && !party.getLeader().equals(p.getUniqueId())) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                 return;
             }
 
             if (pendingRequests.containsKey(p.getUniqueId())) {
-                String spamMsg = plugin.getMessagesFile().getString("cross_server.already_searching");
+                String spamMsg = plugin.getLanguageManager().getString("cross_server.already_searching");
                 if (spamMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(spamMsg));
                 return;
             }
 
-            String searchingMsg = plugin.getMessagesFile().getString("cross_server.searching", "&eSearching for an available Node Server to initialize the Dungeon...");
+            String searchingMsg = plugin.getLanguageManager().getString("cross_server.searching", "&eSearching for an available Node Server to initialize the Dungeon...");
             p.sendMessage(ColorUtils.parseWithPrefix(searchingMsg));
 
             pendingRequests.put(p.getUniqueId(), System.currentTimeMillis());
@@ -137,7 +137,7 @@ public class DungeonManager {
                 if (pendingRequests.containsKey(p.getUniqueId())) {
                     pendingRequests.remove(p.getUniqueId());
                     if (p.isOnline()) {
-                        String timeoutMsg = plugin.getMessagesFile().getString("cross_server.timeout", "&cNo available Dungeon servers found. Please try again later!");
+                        String timeoutMsg = plugin.getLanguageManager().getString("cross_server.timeout", "&cNo available Dungeon servers found. Please try again later!");
                         p.sendMessage(ColorUtils.parseWithPrefix(timeoutMsg));
                     }
                 }
@@ -200,10 +200,10 @@ public class DungeonManager {
                 dropLoc.getWorld().dropItem(dropLoc, drop);
             }
 
-            String fullMsg = plugin.getMessagesFile().getString("reward.messages.inventory_full");
+            String fullMsg = plugin.getLanguageManager().getString("reward.messages.inventory_full");
             if (fullMsg != null) p.sendMessage(ColorUtils.parseWithPrefix(fullMsg));
         }
-        String msg = plugin.getMessagesFile().getString("reward.messages.received_item");
+        String msg = plugin.getLanguageManager().getString("reward.messages.received_item");
         if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName)));
     }
 
@@ -285,7 +285,7 @@ public class DungeonManager {
         return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
             templates.clear();
             templates.putAll(newTemplates);
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.dungeon_reloaded"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.dungeon_reloaded"));
         }));
     }
 
@@ -327,7 +327,7 @@ public class DungeonManager {
 
             if (party != null) {
                 if (!party.getLeader().equals(p.getUniqueId())) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                     return;
                 }
 
@@ -349,22 +349,22 @@ public class DungeonManager {
                 }
 
                 if (offlineCount > 0) {
-                    String warnMsg = plugin.getMessagesFile().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
+                    String warnMsg = plugin.getLanguageManager().getString("party.offline_left_behind", "<yellow>Warning: <count> member(s) are Offline and were left behind!");
                     p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(offlineCount))));
                 }
                 if (deadCount > 0) {
-                    String warnMsg = plugin.getMessagesFile().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
+                    String warnMsg = plugin.getLanguageManager().getString("party.dead_left_behind", "<yellow>Warning: <count> member(s) are Dead and were left behind!");
                     p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(deadCount))));
                 }
                 if (farCount > 0) {
-                    String warnMsg = plugin.getMessagesFile().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
+                    String warnMsg = plugin.getLanguageManager().getString("party.distance_warning", "<yellow>Warning: <count> member(s) are too far away and were left behind!");
                     p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
                 }
 
                 for (UUID uid : party.getMembers()) {
                     Player leftBehind = Bukkit.getPlayer(uid);
                     if (leftBehind != null && leftBehind.isOnline() && !participants.contains(leftBehind)) {
-                        leftBehind.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.member_failed_condition", "&cYou were left behind because you didn't meet the entry requirements or were too far away!")));
+                        leftBehind.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.member_failed_condition", "&cYou were left behind because you didn't meet the entry requirements or were too far away!")));
                     }
                 }
             } else {
@@ -373,13 +373,13 @@ public class DungeonManager {
 
             for (Player participant : participants) {
                 if (activeGames.containsKey(participant.getUniqueId())) {
-                    String errorMsg = plugin.getMessagesFile().getString("error.member_already_in", "<red>Member <player> is currently in another Dungeon! Cannot start.");
+                    String errorMsg = plugin.getLanguageManager().getString("error.member_already_in", "<red>Member <player> is currently in another Dungeon! Cannot start.");
                     p.sendMessage(ColorUtils.parseWithPrefix(errorMsg.replace("<player>", participant.getName())));
                     return;
                 }
 
                 if (transitioningPlayers.contains(participant.getUniqueId())) {
-                    String transMsg = plugin.getMessagesFile().getString("error.transition_processing", "<red>System is processing data, please try again in a moment!");
+                    String transMsg = plugin.getLanguageManager().getString("error.transition_processing", "<red>System is processing data, please try again in a moment!");
                     p.sendMessage(ColorUtils.parseWithPrefix(transMsg));
                     return;
                 }
@@ -388,13 +388,13 @@ public class DungeonManager {
                 if (plugin.getCooldownManager().isOnCooldown(participant.getUniqueId(), id)) {
                     String formattedTime = plugin.getCooldownManager().getRemainingTimeFormatted(participant.getUniqueId(), id);
                     if (participant.equals(p)) {
-                        String msg = plugin.getMessagesFile().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
+                        String msg = plugin.getLanguageManager().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
                         p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<time>", formattedTime)));
                     } else {
-                        String leaderMsg = plugin.getMessagesFile().getString("error.party_member_on_cooldown", "&cCannot start! Member <player> is on cooldown for: &e<time>");
+                        String leaderMsg = plugin.getLanguageManager().getString("error.party_member_on_cooldown", "&cCannot start! Member <player> is on cooldown for: &e<time>");
                         p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName()).replace("<time>", formattedTime)));
 
-                        String childMsg = plugin.getMessagesFile().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
+                        String childMsg = plugin.getLanguageManager().getString("error.on_cooldown", "&cYou are on cooldown! Please wait: &e<time>");
                         participant.sendMessage(ColorUtils.parseWithPrefix(childMsg.replace("<time>", formattedTime)));
                     }
                     return; // Abort entry for everyone
@@ -403,14 +403,14 @@ public class DungeonManager {
 
             DungeonTemplate tmpl = templates.get(id);
             if (tmpl == null) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", id)));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
                 return;
             }
 
             // --- MAX PLAYERS VERIFICATION ---
             int maxPlayers = tmpl.settings().maxPlayers();
             if (maxPlayers > 0 && participants.size() > maxPlayers) {
-                String msg = plugin.getMessagesFile().getString("error.exceed_max_players", "&cThis dungeon allows a maximum of <max> players! Your party is too large.");
+                String msg = plugin.getLanguageManager().getString("error.exceed_max_players", "&cThis dungeon allows a maximum of <max> players! Your party is too large.");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<max>", String.valueOf(maxPlayers))));
                 return;
             }
@@ -422,13 +422,13 @@ public class DungeonManager {
                         net.danh.sinceDungeon.managers.LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
                         int current = lives != null ? lives.getCurrentLives() : 0;
 
-                        String msg = plugin.getMessagesFile().getString("lives.not_enough")
+                        String msg = plugin.getLanguageManager().getString("lives.not_enough")
                                 .replace("<required>", String.valueOf(reqLives))
                                 .replace("<current>", String.valueOf(current));
 
                         participant.sendMessage(ColorUtils.parseWithPrefix(msg));
                         if (!participant.equals(p)) {
-                            String leaderMsg = plugin.getMessagesFile().getString("lives.party_member_not_enough");
+                            String leaderMsg = plugin.getLanguageManager().getString("lives.party_member_not_enough");
                             if (leaderMsg != null) {
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
                             }
@@ -457,7 +457,7 @@ public class DungeonManager {
                 for (Player participant : participants) {
                     activeGames.remove(participant.getUniqueId());
                 }
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.init_failed")));
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.init_failed")));
             }
         }
     }
@@ -469,7 +469,7 @@ public class DungeonManager {
     public void cancelPendingRequest(UUID uuid) {
         if (pendingRequests.containsKey(uuid)) {
             pendingRequests.remove(uuid);
-            String logMsg = plugin.getMessagesFile().getString("admin.log.cross_server_request_cancelled_quit", "[CrossServer] Cancelled pending request for <player>.");
+            String logMsg = plugin.getLanguageManager().getString("admin.log.cross_server_request_cancelled_quit", "[CrossServer] Cancelled pending request for <player>.");
             if (logMsg != null && !logMsg.isEmpty()) {
                 plugin.getLogger().info(logMsg.replace("<player>", uuid.toString()));
             }

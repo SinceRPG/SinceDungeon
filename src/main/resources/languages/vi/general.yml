@@ -1,0 +1,6 @@
+prefix: "&6&lSinceDungeon &8» &7"
+
+papi:
+  time_full: "Đã đầy"
+  time_never: "Không hồi"
+  cooldown_ready: "Sẵn sàng"

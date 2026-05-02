@@ -31,22 +31,22 @@ public class EditorGUI {
     }
 
     public String getMsg(String path, String def) {
-        String res = plugin.getMessagesFile().getString("editor." + path);
+        String res = plugin.getLanguageManager().getString("editor." + path);
         return (res == null || res.isEmpty()) ? def : res;
     }
 
     public String getWord(String key, String def) {
-        String res = plugin.getMessagesFile().getString("editor.words." + key);
+        String res = plugin.getLanguageManager().getString("editor.words." + key);
         return (res == null || res.isEmpty()) ? def : res;
     }
 
     private List<String> getLoreList(String path, List<String> defaultLore) {
-        List<String> list = plugin.getMessagesFile().getStringList("editor.items." + path);
+        List<String> list = plugin.getLanguageManager().getStringList("editor.items." + path);
         return (list == null || list.isEmpty()) ? defaultLore : list;
     }
 
     public void sendMessage(Player p, String key, String... placeholders) {
-        String msg = plugin.getMessagesFile().getString("editor.chat." + key);
+        String msg = plugin.getLanguageManager().getString("editor.chat." + key);
         if (msg == null || msg.isEmpty()) {
             if (key.equals("val_cleared")) msg = "&eData cleared.";
             else if (key.equals("line_removed")) msg = "&eLast line removed from the list.";
@@ -56,7 +56,7 @@ public class EditorGUI {
             else return;
         }
 
-        String prefix = plugin.getMessagesFile().getString("prefix", "");
+        String prefix = plugin.getLanguageManager().getString("prefix", "");
         msg = prefix + msg;
 
         for (int i = 0; i < placeholders.length; i += 2) {

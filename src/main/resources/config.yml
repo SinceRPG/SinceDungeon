@@ -256,8 +256,8 @@ lives:
       speed: 0.15
 
 settings:
-  # Language setting (e.g., vi, en). The plugin will automatically load messages_<locale>.yml
-  # Cài đặt ngôn ngữ (vd: vi, en). Plugin sẽ tự động tải file messages_<locale>.yml
+  # Language setting (e.g., languages, en). The plugin will automatically load messages_<locale>.yml
+  # Cài đặt ngôn ngữ (vd: languages, en). Plugin sẽ tự động tải file messages_<locale>.yml
   locale: "en"
 
   # Debug mode: Enable to view detailed logs when an error occurs

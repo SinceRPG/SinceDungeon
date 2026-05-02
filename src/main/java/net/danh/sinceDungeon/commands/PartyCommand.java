@@ -40,28 +40,28 @@ public class PartyCommand {
                 .executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player)) {
-                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
-                    sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_main")));
+                    sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_main")));
                     return 1;
                 })
 
                 .then(Commands.literal("create").executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player p)) {
-                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
                     if (pm.getParty(p.getUniqueId()) != null) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_in_party")));
                         return 0;
                     }
                     PartyManager.Party party = pm.createParty(p);
                     if (party != null) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.created")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.created")));
                     } else {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_in_party")));
                     }
                     return 1;
                 }))
@@ -69,16 +69,16 @@ public class PartyCommand {
                 .then(Commands.literal("disband").executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player p)) {
-                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                         return 0;
                     }
                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.disbanded"));
+                    pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.disbanded"));
                     pm.disbandParty(party);
                     return 1;
                 }))
@@ -87,10 +87,10 @@ public class PartyCommand {
                         .executes(ctx -> {
                             CommandSender sender = ctx.getSource().getSender();
                             if (!(sender instanceof Player)) {
-                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
-                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_invite")));
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_invite")));
                             return 1;
                         })
                         .then(Commands.argument("target", StringArgumentType.word())
@@ -116,37 +116,37 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     CommandSender sender = ctx.getSource().getSender();
                                     if (!(sender instanceof Player p)) {
-                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
                                     boolean isAutoCreated = false;
 
                                     if (party != null && !party.getLeader().equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                                         return 0;
                                     }
 
                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
 
                                     if (target != null && target.equals(p)) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_self")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.invite_self")));
                                         return 0;
                                     }
 
                                     if (target == null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_found")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.player_not_found")));
                                         return 0;
                                     }
 
                                     if (pm.getParty(target.getUniqueId()) != null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.target_already_in_party")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.target_already_in_party")));
                                         return 0;
                                     }
 
                                     int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
                                     if (party != null && party.getMembers().size() >= maxMembers) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.full")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.full")));
                                         return 0;
                                     }
 
@@ -164,13 +164,13 @@ public class PartyCommand {
                                     boolean sent = pm.invitePlayer(p.getUniqueId(), target.getUniqueId());
                                     if (sent) {
                                         if (isAutoCreated) {
-                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.auto_created")));
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.auto_created")));
                                         }
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_sent").replace("<player>", target.getName())));
-                                        target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.invite_received").replace("<player>", p.getName())));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.invite_sent").replace("<player>", target.getName())));
+                                        target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
                                         if (isAutoCreated) pm.disbandParty(party);
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_invited")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_invited")));
                                     }
                                     return 1;
                                 })
@@ -181,10 +181,10 @@ public class PartyCommand {
                         .executes(ctx -> {
                             CommandSender sender = ctx.getSource().getSender();
                             if (!(sender instanceof Player)) {
-                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
-                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_accept")));
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_accept")));
                             return 1;
                         })
                         .then(Commands.argument("leader", StringArgumentType.word())
@@ -204,18 +204,18 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     CommandSender sender = ctx.getSource().getSender();
                                     if (!(sender instanceof Player p)) {
-                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
 
                                     if (pm.getParty(p.getUniqueId()) != null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.already_in_party")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_in_party")));
                                         return 0;
                                     }
 
                                     Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
                                     if (invites == null || invites.isEmpty()) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.no_invite")));
                                         return 0;
                                     }
 
@@ -234,16 +234,16 @@ public class PartyCommand {
                                     }
 
                                     if (leaderId == null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_found")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.player_not_found")));
                                         return 0;
                                     }
 
                                     if (pm.acceptInvite(p, leaderId)) {
                                         PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                                        pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_joined").replace("<player>", p.getName()));
+                                        pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_joined").replace("<player>", p.getName()));
                                     } else {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.no_invite")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.no_invite")));
                                     }
                                     return 1;
                                 })
@@ -253,22 +253,22 @@ public class PartyCommand {
                 .then(Commands.literal("leave").executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player p)) {
-                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                     if (party == null) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                         return 0;
                     }
 
                     pm.quitParty(p.getUniqueId());
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.left")));
 
                     if (pm.getParty(party.getLeader()) != null) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                        pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_left").replace("<player>", p.getName()));
+                        pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_left").replace("<player>", p.getName()));
                     }
                     return 1;
                 }))
@@ -277,10 +277,10 @@ public class PartyCommand {
                         .executes(ctx -> {
                             CommandSender sender = ctx.getSource().getSender();
                             if (!(sender instanceof Player)) {
-                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
-                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_promote")));
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_promote")));
                             return 1;
                         })
                         .then(Commands.argument("target", StringArgumentType.word())
@@ -300,13 +300,13 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     CommandSender sender = ctx.getSource().getSender();
                                     if (!(sender instanceof Player p)) {
-                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                                         return 0;
                                     }
 
@@ -322,12 +322,12 @@ public class PartyCommand {
                                     }
 
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.promote_self")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.promote_self")));
                                         return 0;
                                     }
 
                                     if (targetId == null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.player_not_in_party")));
                                         return 0;
                                     }
 
@@ -341,10 +341,10 @@ public class PartyCommand {
                         .executes(ctx -> {
                             CommandSender sender = ctx.getSource().getSender();
                             if (!(sender instanceof Player)) {
-                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
-                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.usage_kick")));
+                            sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_kick")));
                             return 1;
                         })
                         .then(Commands.argument("target", StringArgumentType.word())
@@ -364,13 +364,13 @@ public class PartyCommand {
                                 .executes(ctx -> {
                                     CommandSender sender = ctx.getSource().getSender();
                                     if (!(sender instanceof Player p)) {
-                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
                                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_leader")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                                         return 0;
                                     }
 
@@ -386,12 +386,12 @@ public class PartyCommand {
                                     }
 
                                     if (targetId != null && targetId.equals(p.getUniqueId())) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kick_self")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.kick_self")));
                                         return 0;
                                     }
 
                                     if (targetId == null) {
-                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.player_not_in_party")));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.player_not_in_party")));
                                         return 0;
                                     }
 
@@ -399,11 +399,11 @@ public class PartyCommand {
 
                                     Player targetOnline = Bukkit.getPlayer(targetId);
                                     if (targetOnline != null && targetOnline.isOnline()) {
-                                        targetOnline.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.kicked")));
+                                        targetOnline.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.kicked")));
                                     }
 
                                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                                    pm.sendPartyMessage(party, sysName, plugin.getMessagesFile().getString("party.player_kicked").replace("<player>", targetName));
+                                    pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_kicked").replace("<player>", targetName));
                                     return 1;
                                 })
                         )
@@ -413,17 +413,17 @@ public class PartyCommand {
                         .executes(ctx -> {
                             CommandSender sender = ctx.getSource().getSender();
                             if (!(sender instanceof Player p)) {
-                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
                             PartyManager.Party party = pm.getParty(p.getUniqueId());
                             if (party == null) {
-                                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
+                                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                                 return 0;
                             }
                             boolean enabled = pm.togglePartyChat(p.getUniqueId());
-                            String state = enabled ? plugin.getMessagesFile().getString("editor.words.true_word") : plugin.getMessagesFile().getString("editor.words.false_word");
-                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.chat_toggled").replace("<status>", state)));
+                            String state = enabled ? plugin.getLanguageManager().getString("editor.words.true_word") : plugin.getLanguageManager().getString("editor.words.false_word");
+                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.chat_toggled").replace("<status>", state)));
                             return 1;
                         })
                 )
@@ -431,18 +431,18 @@ public class PartyCommand {
                 .then(Commands.literal("list").executes(ctx -> {
                     CommandSender sender = ctx.getSource().getSender();
                     if (!(sender instanceof Player p)) {
-                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
                     PartyManager.Party party = pm.getParty(p.getUniqueId());
 
                     if (party == null) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.not_in_party")));
+                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                         return 0;
                     }
 
-                    String offlineTxt = plugin.getMessagesFile().getString("party.offline", "Offline");
-                    String leaderSuffix = plugin.getMessagesFile().getString("party.leader_suffix", " (Leader)");
+                    String offlineTxt = plugin.getLanguageManager().getString("party.offline", "Offline");
+                    String leaderSuffix = plugin.getLanguageManager().getString("party.leader_suffix", " (Leader)");
 
                     String members = party.getMembers().stream()
                             .map(id -> {
@@ -456,7 +456,7 @@ public class PartyCommand {
                             })
                             .collect(Collectors.joining(", "));
 
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.list").replace("<members>", members)));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.list").replace("<members>", members)));
                     return 1;
                 }))
                 .build();

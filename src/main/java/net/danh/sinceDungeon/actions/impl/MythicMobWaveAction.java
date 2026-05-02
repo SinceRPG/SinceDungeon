@@ -43,7 +43,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.mythic_wave", "<dark_red>Defeat Boss <red><mob> <gray>(Remaining: <remain>)");
+        String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.mythic_wave", "<dark_red>Defeat Boss <red><mob> <gray>(Remaining: <remain>)");
         return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 

@@ -27,7 +27,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.reach_location", "<green>Move to the designated coordinates");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.reach_location", "<green>Move to the designated coordinates");
     }
 
     @Override

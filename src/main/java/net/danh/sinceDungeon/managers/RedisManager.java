@@ -36,7 +36,7 @@ public class RedisManager {
             jedisPool = new JedisPool(poolConfig, host, port, 2000);
         }
 
-        plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.redis_connected", "[Redis] Connected to Redis successfully!"));
+        plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_connected", "[Redis] Connected to Redis successfully!"));
         startListening();
     }
 
@@ -46,7 +46,7 @@ public class RedisManager {
         }
         if (jedisPool != null && !jedisPool.isClosed()) {
             jedisPool.close();
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.redis_disconnected", "[Redis] Redis connection closed."));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_disconnected", "[Redis] Redis connection closed."));
         }
     }
 
@@ -62,10 +62,10 @@ public class RedisManager {
                             }
                         }
                     };
-                    plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.redis_connected", "[Redis] Ready to receive Cross-server messages."));
+                    plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_connected", "[Redis] Ready to receive Cross-server messages."));
                     jedis.subscribe(pubSub, channelName);
                 } catch (Exception e) {
-                    plugin.getLogger().severe(plugin.getMessagesFile().getString("admin.log.redis_listen_error", "[Redis] Listener error/disconnected: ") + e.getMessage());
+                    plugin.getLogger().severe(plugin.getLanguageManager().getString("admin.log.redis_listen_error", "[Redis] Listener error/disconnected: ") + e.getMessage());
                     plugin.getLogger().info("[Redis] Trying to reconnect after 5 seconds...");
                     try {
                         Thread.sleep(5000);
@@ -82,7 +82,7 @@ public class RedisManager {
             try (Jedis jedis = jedisPool.getResource()) {
                 jedis.publish(channelName, message);
             } catch (Exception e) {
-                plugin.getLogger().warning(plugin.getMessagesFile().getString("admin.log.redis_publish_error", "[Redis] Cannot publish message: ") + e.getMessage());
+                plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.redis_publish_error", "[Redis] Cannot publish message: ") + e.getMessage());
             }
         });
     }

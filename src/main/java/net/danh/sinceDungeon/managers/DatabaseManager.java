@@ -53,20 +53,20 @@ public class DatabaseManager {
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_mysql_init"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_mysql_init"));
         } else {
             File dbFile = new File(plugin.getDataFolder(), "data.db");
             config.setJdbcUrl("jdbc:sqlite:" + dbFile.getAbsolutePath());
             config.setMaximumPoolSize(1);
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_sqlite_init"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_sqlite_init"));
         }
 
         try {
             dataSource = new HikariDataSource(config);
             createTables();
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_connected"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_connected"));
         } catch (Exception e) {
-            String errorMsg = plugin.getMessagesFile().getString("admin.log.db_error_hikari", "[Database] Failed to initialize: <error>");
+            String errorMsg = plugin.getLanguageManager().getString("admin.log.db_error_hikari", "[Database] Failed to initialize: <error>");
             plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
         }
     }
@@ -151,7 +151,7 @@ public class DatabaseManager {
     public void disconnect() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            plugin.getLogger().info(plugin.getMessagesFile().getString("admin.log.db_closed"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_closed"));
         }
     }
 

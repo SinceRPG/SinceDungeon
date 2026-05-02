@@ -139,7 +139,7 @@ public class DungeonLoader {
 
             return new Vector(Double.parseDouble(split[0]), Double.parseDouble(split[1]), Double.parseDouble(split[2]));
         } catch (Exception e) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
+            String msg = SinceDungeon.getPlugin().getLanguageManager().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
             SinceDungeon.getPlugin().getLogger().warning(msg.replace("<data>", s));
             return new Vector(0, 0, 0);
         }

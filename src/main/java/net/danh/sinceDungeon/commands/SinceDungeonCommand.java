@@ -62,13 +62,13 @@ public class SinceDungeonCommand {
                                             String map = StringArgumentType.getString(ctx, "map");
 
                                             if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
-                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
                                                 return 0;
                                             }
 
                                             plugin.getTopManager().resetLeaderboard(map);
 
-                                            String msg = plugin.getMessagesFile().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
+                                            String msg = plugin.getLanguageManager().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
                                             sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
                                             return 1;
                                         })
@@ -97,9 +97,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                 plugin.getLivesManager().addLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_add").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_add").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 ))
@@ -115,9 +115,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                 plugin.getLivesManager().setLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_set").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 ))
@@ -133,9 +133,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                 plugin.getLivesManager().addMaxLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_addmax").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_addmax").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 ))
@@ -150,9 +150,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int amount = IntegerArgumentType.getInteger(ctx, "amount");
                                                 plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_set_regen_amount").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set_regen_amount").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 ))
@@ -168,9 +168,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
                                                 plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), seconds);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_set_regen_interval").replace("<amount>", String.valueOf(seconds)).replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set_regen_interval").replace("<amount>", String.valueOf(seconds)).replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 ))
@@ -180,9 +180,9 @@ public class SinceDungeonCommand {
                                             if (target != null) {
                                                 plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), -1);
                                                 plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), -1);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_reset_regen").replace("<player>", target.getName())));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_reset_regen").replace("<player>", target.getName())));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 )
@@ -194,7 +194,7 @@ public class SinceDungeonCommand {
                                                 int interval = l.getCustomRegenInterval() != -1 ? l.getCustomRegenInterval() : plugin.getConfigFile().getInt("lives.regen-interval-seconds", 3600);
                                                 int amt = l.getCustomRegenAmount() != -1 ? l.getCustomRegenAmount() : plugin.getConfigFile().getInt("lives.regen-amount", 1);
 
-                                                String msg = plugin.getMessagesFile().getString("lives.check_other")
+                                                String msg = plugin.getLanguageManager().getString("lives.check_other")
                                                         .replace("<player>", target.getName())
                                                         .replace("<current>", String.valueOf(l.getCurrentLives()))
                                                         .replace("<max>", String.valueOf(l.getMaxLives()))
@@ -202,7 +202,7 @@ public class SinceDungeonCommand {
                                                         .replace("<time>", String.valueOf(interval));
                                                 ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg));
                                             } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.player_not_found")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
                                             return 1;
                                         })
                                 )
@@ -240,12 +240,12 @@ public class SinceDungeonCommand {
 
                                                 target.getInventory().addItem(item);
 
-                                                target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.item_received").replace("<amount>", String.valueOf(amount))));
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("lives.admin_gave_item")
+                                                target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.item_received").replace("<amount>", String.valueOf(amount))));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_gave_item")
                                                         .replace("<amount>", String.valueOf(amount))
                                                         .replace("<player>", target.getName())));
                                             } else {
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player")));
                                             }
                                             return 1;
                                         })
@@ -276,17 +276,17 @@ public class SinceDungeonCommand {
                                                 .executes(ctx -> {
                                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                                     if (target == null) {
-                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player", "&cPlayer not found.")));
                                                         return 0;
                                                     }
                                                     String map = StringArgumentType.getString(ctx, "map");
 
                                                     if (plugin.getCooldownManager().isOnCooldown(target.getUniqueId(), map)) {
                                                         String time = plugin.getCooldownManager().getRemainingTimeFormatted(target.getUniqueId(), map);
-                                                        String msg = plugin.getMessagesFile().getString("cooldown.check_other", "&e<player>'s cooldown for <map>: &c<time>");
+                                                        String msg = plugin.getLanguageManager().getString("cooldown.check_other", "&e<player>'s cooldown for <map>: &c<time>");
                                                         ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName()).replace("<map>", map).replace("<time>", time)));
                                                     } else {
-                                                        String msg = plugin.getMessagesFile().getString("cooldown.check_other_ready", "&e<player> is ready to enter <map>.");
+                                                        String msg = plugin.getLanguageManager().getString("cooldown.check_other_ready", "&e<player> is ready to enter <map>.");
                                                         ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName()).replace("<map>", map)));
                                                     }
                                                     return 1;
@@ -307,13 +307,13 @@ public class SinceDungeonCommand {
                                         .executes(ctx -> {
                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                             if (target == null) {
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player", "&cPlayer not found.")));
                                                 return 0;
                                             }
 
                                             plugin.getCooldownManager().resetAllCooldowns(target.getUniqueId());
 
-                                            String successMsg = plugin.getMessagesFile().getString("cooldown.admin_reset_all", "&aReset all cooldowns for <player>.");
+                                            String successMsg = plugin.getLanguageManager().getString("cooldown.admin_reset_all", "&aReset all cooldowns for <player>.");
                                             ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName())));
                                             return 1;
                                         })
@@ -339,14 +339,14 @@ public class SinceDungeonCommand {
                                                 .executes(ctx -> {
                                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                                     if (target == null) {
-                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player", "&cPlayer not found.")));
                                                         return 0;
                                                     }
 
                                                     int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
                                                     plugin.getCooldownManager().reduceAllCooldowns(target.getUniqueId(), seconds);
 
-                                                    String successMsg = plugin.getMessagesFile().getString("cooldown.admin_reduced", "&aReduced <player>'s cooldowns by <time>s.");
+                                                    String successMsg = plugin.getLanguageManager().getString("cooldown.admin_reduced", "&aReduced <player>'s cooldowns by <time>s.");
                                                     ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<time>", String.valueOf(seconds))));
                                                     return 1;
                                                 })
@@ -376,14 +376,14 @@ public class SinceDungeonCommand {
                                                 .executes(ctx -> {
                                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                                     if (target == null) {
-                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player", "&cPlayer not found.")));
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player", "&cPlayer not found.")));
                                                         return 0;
                                                     }
 
                                                     String map = StringArgumentType.getString(ctx, "map");
                                                     plugin.getCooldownManager().resetCooldown(target.getUniqueId(), map);
 
-                                                    String successMsg = plugin.getMessagesFile().getString("admin.cooldown_reset_success", "&aSuccessfully reset dungeon cooldown for <player> in map <map>!");
+                                                    String successMsg = plugin.getLanguageManager().getString("admin.cooldown_reset_success", "&aSuccessfully reset dungeon cooldown for <player> in map <map>!");
                                                     ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName()).replace("<map>", map)));
                                                     return 1;
                                                 })
@@ -411,7 +411,7 @@ public class SinceDungeonCommand {
                                                 .executes(ctx -> {
                                                     Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                                     if (target == null) {
-                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player")));
                                                         return 0;
                                                     }
 
@@ -427,8 +427,8 @@ public class SinceDungeonCommand {
 
                                                     target.getInventory().addItem(item);
 
-                                                    target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.item_reset_received").replace("<amount>", String.valueOf(amount))));
-                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.admin_gave_reset").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
+                                                    target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.item_reset_received").replace("<amount>", String.valueOf(amount))));
+                                                    ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.admin_gave_reset").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
                                                     return 1;
                                                 })
                                         )
@@ -459,7 +459,7 @@ public class SinceDungeonCommand {
                                                         .executes(ctx -> {
                                                             Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
                                                             if (target == null) {
-                                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player")));
                                                                 return 0;
                                                             }
 
@@ -477,8 +477,8 @@ public class SinceDungeonCommand {
 
                                                             target.getInventory().addItem(item);
 
-                                                            target.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.item_reduce_received").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds))));
-                                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("cooldown.admin_gave_reduce").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds)).replace("<player>", target.getName())));
+                                                            target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.item_reduce_received").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds))));
+                                                            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("cooldown.admin_gave_reduce").replace("<amount>", String.valueOf(amount)).replace("<time>", String.valueOf(seconds)).replace("<player>", target.getName())));
                                                             return 1;
                                                         })
                                                 )
@@ -503,13 +503,13 @@ public class SinceDungeonCommand {
                                             String map = StringArgumentType.getString(ctx, "map");
 
                                             if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
-                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
                                                 return 0;
                                             }
 
                                             plugin.getTopManager().resetLeaderboard(map);
 
-                                            String msg = plugin.getMessagesFile().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
+                                            String msg = plugin.getLanguageManager().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
                                             sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
                                             return 1;
                                         })

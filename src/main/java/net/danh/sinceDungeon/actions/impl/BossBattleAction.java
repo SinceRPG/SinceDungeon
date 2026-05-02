@@ -76,7 +76,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.boss_battle", "<red>Defeat the Boss!");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.boss_battle", "<red>Defeat the Boss!");
     }
 
     @Override

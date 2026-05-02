@@ -47,7 +47,7 @@ public class DungeonCommand {
                                 LivesManager.PlayerLives l = plugin.getLivesManager().getLives(p.getUniqueId());
                                 if (l != null) {
                                     String time = plugin.getConfigFile().getInt("lives.regen-interval-seconds", 3600) + "s";
-                                    String msg = plugin.getMessagesFile().getString("lives.check")
+                                    String msg = plugin.getLanguageManager().getString("lives.check")
                                             .replace("<current>", String.valueOf(l.getCurrentLives()))
                                             .replace("<max>", String.valueOf(l.getMaxLives()))
                                             .replace("<time>", time);
@@ -76,10 +76,10 @@ public class DungeonCommand {
                                         if (plugin.getDungeonManager().getTemplates().containsKey(map)) {
                                             new TopGUI(plugin).openTopGUI(p, map, TopManager.TopCategory.FASTEST_TIME, 0);
                                         } else {
-                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.file_not_found").replace("<file>", map)));
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
                                         }
                                     } else {
-                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                     }
                                     return 1;
                                 })
@@ -102,7 +102,7 @@ public class DungeonCommand {
                                     if (ctx.getSource().getExecutor() instanceof Player p) {
                                         plugin.getDungeonManager().joinDungeon(p, StringArgumentType.getString(ctx, "name"));
                                     } else {
-                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.join_dungeon.console_error")));
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.join_dungeon.console_error")));
                                     }
                                     return 1;
                                 })
@@ -122,7 +122,7 @@ public class DungeonCommand {
                                             if (target != null) {
                                                 plugin.getDungeonManager().joinDungeon(target, StringArgumentType.getString(ctx, "name"));
                                             } else {
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.join_dungeon.not_found_player")
+                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.join_dungeon.not_found_player")
                                                         .replace("<player>", targetName)));
                                             }
                                             return 1;
@@ -136,12 +136,12 @@ public class DungeonCommand {
                                 DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
                                 if (game != null) {
                                     game.handlePlayerDisconnect(p);
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("party.left_dungeon_due_to_party")));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.left_dungeon_due_to_party")));
                                 } else {
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("error.not_in_dungeon")));
+                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.not_in_dungeon")));
                                 }
                             } else {
-                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_admin")));
+                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_admin")));
                             }
                             return 1;
                         })
@@ -152,7 +152,7 @@ public class DungeonCommand {
                             if (ctx.getSource().getExecutor() instanceof Player p) {
                                 plugin.getEditorManager().openEditor(p);
                             } else {
-                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_admin")));
+                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_admin")));
                             }
                             return 1;
                         })
@@ -181,21 +181,21 @@ public class DungeonCommand {
                                                 p.setGameMode(GameMode.SPECTATOR);
                                                 p.teleportAsync(target.getLocation());
 
-                                                String successMsg = plugin.getMessagesFile().getString("admin.spectate_success");
+                                                String successMsg = plugin.getLanguageManager().getString("admin.spectate_success");
                                                 if (successMsg != null) {
                                                     p.sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<player>", target.getName())));
                                                 }
                                             } else {
-                                                String notFoundMsg = plugin.getMessagesFile().getString("admin.target_not_in_dungeon");
+                                                String notFoundMsg = plugin.getLanguageManager().getString("admin.target_not_in_dungeon");
                                                 if (notFoundMsg != null) {
                                                     p.sendMessage(ColorUtils.parseWithPrefix(notFoundMsg));
                                                 }
                                             }
                                         } else {
-                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.invalid_player")));
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player")));
                                         }
                                     } else {
-                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                     }
                                     return 1;
                                 })
@@ -225,12 +225,12 @@ public class DungeonCommand {
 
                                         p.getInventory().addItem(keyItem);
 
-                                        String successMsg = plugin.getMessagesFile().getString("admin.getkey_success");
+                                        String successMsg = plugin.getLanguageManager().getString("admin.getkey_success");
                                         if (successMsg != null) {
                                             p.sendMessage(ColorUtils.parseWithPrefix(successMsg.replace("<id>", keyId)));
                                         }
                                     } else {
-                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getMessagesFile().getString("admin.only_player")));
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                     }
                                     return 1;
                                 })

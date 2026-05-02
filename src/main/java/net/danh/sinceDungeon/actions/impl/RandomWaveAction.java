@@ -165,7 +165,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        String base = SinceDungeon.getPlugin().getMessagesFile().getString("objective.random_wave", "<red>Eliminate all enemies <gray>(Remaining: <remain>)");
+        String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.random_wave", "<red>Eliminate all enemies <gray>(Remaining: <remain>)");
         return base.replace("<remain>", String.valueOf(spawnedMobs.size()));
     }
 

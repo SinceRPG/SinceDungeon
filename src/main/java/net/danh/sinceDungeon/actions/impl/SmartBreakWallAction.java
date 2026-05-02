@@ -40,7 +40,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getMessagesFile().getString("objective.break_wall", "<aqua>Find and break the sealing block");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.break_wall", "<aqua>Find and break the sealing block");
     }
 
     @Override
@@ -112,7 +112,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 
         if (volume > 50000) {
-            String msg = SinceDungeon.getPlugin().getMessagesFile().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
+            String msg = SinceDungeon.getPlugin().getLanguageManager().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
             SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
             return;
         }

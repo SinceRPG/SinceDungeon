@@ -1,0 +1,24 @@
+reward:
+  gui_title: "&6&lPhần Thưởng Dungeon"
+  messages:
+    auto_claim: "&aHệ thống tự động thu thập <count> rương còn sót lại."
+    claimed_all: "&aBạn đã nhận toàn bộ phần thưởng!"
+    received_item: "&7Nhận được: &a<item>"
+    received_custom: "&7Phần thưởng: &a<item>"
+    inventory_full: "&cTúi đồ đã đầy! Vật phẩm bị rớt xuống đất."
+    auto_claimed_expired: "&ePhần thưởng Dungeon của bạn đã được tự động mở do để quá lâu."
+  settings:
+    gui_size: 27
+    button_slot: 13
+  icons:
+    button:
+      material: CHEST
+      name: "&6&lMở Rương Kho Báu"
+      lore:
+        - "&7Nhấn để chọn và mở rương ngẫu nhiên!"
+        - "&7Lượt mở còn lại: &e<count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "&d&lRương Bí Ẩn"
+      lore:
+        - "&7Nhấn để xem bên trong có gì!"

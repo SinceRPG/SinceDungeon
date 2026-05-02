@@ -34,7 +34,7 @@ public class EditorListener implements Listener {
     }
 
     private void sendMsg(Player p, String key) {
-        String s = plugin.getMessagesFile().getString("editor.chat." + key);
+        String s = plugin.getLanguageManager().getString("editor.chat." + key);
         if (s != null) p.sendMessage(ColorUtils.parseWithPrefix(s));
     }
 
@@ -44,14 +44,14 @@ public class EditorListener implements Listener {
 
         p.playSound(p.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 2f);
 
-        String titleMain = plugin.getMessagesFile().getString("editor.input.title_main", "<gold><bold>INPUT MODE");
-        String titleSub = plugin.getMessagesFile().getString("editor.input.title_sub", "<white>Check the chat for instructions!");
+        String titleMain = plugin.getLanguageManager().getString("editor.input.title_main", "<gold><bold>INPUT MODE");
+        String titleSub = plugin.getLanguageManager().getString("editor.input.title_sub", "<white>Check the chat for instructions!");
         Title.Times times = Title.Times.times(Duration.ofMillis(100), Duration.ofSeconds(2), Duration.ofMillis(500));
         Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
         p.showTitle(title);
 
-        String prefix = plugin.getMessagesFile().getString("prefix", "");
-        String header = plugin.getMessagesFile().getString("editor.input.header", "<yellow>=== INPUT MODE ===");
+        String prefix = plugin.getLanguageManager().getString("prefix", "");
+        String header = plugin.getLanguageManager().getString("editor.input.header", "<yellow>=== INPUT MODE ===");
         p.sendMessage(ColorUtils.parse(prefix + header));
 
         List<String> prompts = null;
@@ -71,16 +71,16 @@ public class EditorListener implements Listener {
         }
 
         if (prompts == null && session.getPromptKey() != null) {
-            prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + session.getPromptKey());
+            prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + session.getPromptKey());
         }
 
         if (prompts == null || prompts.isEmpty()) {
             String defaultTypeKey = session.getInputType().name().toLowerCase();
-            prompts = plugin.getMessagesFile().getStringList("editor.input.prompts." + defaultTypeKey);
+            prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + defaultTypeKey);
         }
 
         if (prompts == null || prompts.isEmpty()) {
-            prompts = plugin.getMessagesFile().getStringList("editor.input.prompts.default");
+            prompts = plugin.getLanguageManager().getStringList("editor.input.prompts.default");
         }
 
         for (String line : prompts) {
@@ -88,14 +88,14 @@ public class EditorListener implements Listener {
         }
 
         if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
-            String rightClickHint = plugin.getMessagesFile().getString("editor.input.right_click_hint", "<aqua>or RIGHT-CLICK on any Block to get its coordinates.");
+            String rightClickHint = plugin.getLanguageManager().getString("editor.input.right_click_hint", "<aqua>or RIGHT-CLICK on any Block to get its coordinates.");
             p.sendMessage(ColorUtils.parse(rightClickHint));
         }
 
-        String cancelHint = plugin.getMessagesFile().getString("editor.input.cancel_hint", "<gray>Type <red>cancel <gray>to abort.");
+        String cancelHint = plugin.getLanguageManager().getString("editor.input.cancel_hint", "<gray>Type <red>cancel <gray>to abort.");
         p.sendMessage(ColorUtils.parse(cancelHint));
 
-        String footer = plugin.getMessagesFile().getString("editor.input.footer", "<yellow>=====================");
+        String footer = plugin.getLanguageManager().getString("editor.input.footer", "<yellow>=====================");
         p.sendMessage(ColorUtils.parse(prefix + footer));
     }
 
@@ -117,15 +117,15 @@ public class EditorListener implements Listener {
                     try {
                         session.completeInput(msg);
                     } catch (Exception ex) {
-                        String msg_error = plugin.getMessagesFile().getString("editor.chat.input_error");
+                        String msg_error = plugin.getLanguageManager().getString("editor.chat.input_error");
                         if (msg_error != null)
                             p.sendMessage(ColorUtils.parseWithPrefix(msg_error.replace("<error>", ex.getMessage())));
                         session.reopenLastMenu();
                     }
                 });
 
-                String m = plugin.getMessagesFile().getString("editor.chat.input_here");
-                String prefix = plugin.getMessagesFile().getString("prefix", "");
+                String m = plugin.getLanguageManager().getString("editor.chat.input_here");
+                String prefix = plugin.getLanguageManager().getString("prefix", "");
                 if (m != null) p.sendMessage(ColorUtils.parseWithPrefix(prefix + m.replace("<loc>", msg)));
             }
         }
@@ -141,8 +141,8 @@ public class EditorListener implements Listener {
 
         String msg = PlainTextComponentSerializer.plainText().serialize(e.message()).trim();
 
-        String cancelKw = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").trim();
-        String hereKw = plugin.getMessagesFile().getString("editor.words.here", "here").trim();
+        String cancelKw = plugin.getLanguageManager().getString("editor.words.cancel", "cancel").trim();
+        String hereKw = plugin.getLanguageManager().getString("editor.words.here", "here").trim();
 
         if (msg.equalsIgnoreCase(cancelKw)) {
             sendMsg(p, "input_cancel");
@@ -155,8 +155,8 @@ public class EditorListener implements Listener {
                 Location l = p.getLocation();
                 msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
 
-                String m = plugin.getMessagesFile().getString("editor.chat.input_here");
-                String prefix = plugin.getMessagesFile().getString("prefix", "");
+                String m = plugin.getLanguageManager().getString("editor.chat.input_here");
+                String prefix = plugin.getLanguageManager().getString("prefix", "");
                 if (m != null) p.sendMessage(ColorUtils.parseWithPrefix(prefix + m.replace("<loc>", msg)));
             }
         }
@@ -171,7 +171,7 @@ public class EditorListener implements Listener {
                 try {
                     session.completeInput(finalValue);
                 } catch (Exception ex) {
-                    String msg_error = plugin.getMessagesFile().getString("editor.chat.input_error");
+                    String msg_error = plugin.getLanguageManager().getString("editor.chat.input_error");
                     if (msg_error != null)
                         p.sendMessage(ColorUtils.parseWithPrefix(msg_error.replace("<error>", ex.getMessage())));
                     session.reopenLastMenu();
@@ -188,7 +188,7 @@ public class EditorListener implements Listener {
 
             String cmd = e.getMessage().toLowerCase().trim();
 
-            String cancelKwStr = plugin.getMessagesFile().getString("editor.words.cancel", "cancel").toLowerCase().trim();
+            String cancelKwStr = plugin.getLanguageManager().getString("editor.words.cancel", "cancel").toLowerCase().trim();
             String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
 
             if (cmd.equals(cancelKw) || cmd.equals("/cancel") || cmd.startsWith(cancelKw + " ") || cmd.startsWith("/cancel ")) {
@@ -198,7 +198,7 @@ public class EditorListener implements Listener {
                 return;
             }
 
-            String msg = plugin.getMessagesFile().getString("admin.in_editor", "<red>You are in editor mode! Please type cancel.");
+            String msg = plugin.getLanguageManager().getString("admin.in_editor", "<red>You are in editor mode! Please type cancel.");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
         }
     }

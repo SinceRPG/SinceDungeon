@@ -64,7 +64,7 @@ public class EditorSession {
                 Files.writeString(file.toPath(), yamlData);
 
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    String msg = plugin.getMessagesFile().getString("editor.chat.saved");
+                    String msg = plugin.getLanguageManager().getString("editor.chat.saved");
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     String soundName = plugin.getConfigFile().getString("sounds.editor_save");
@@ -85,7 +85,7 @@ public class EditorSession {
                 });
             } catch (IOException e) {
                 Bukkit.getScheduler().runTask(plugin, () -> {
-                    String errorMsg = plugin.getMessagesFile().getString("editor.chat.save_error");
+                    String errorMsg = plugin.getLanguageManager().getString("editor.chat.save_error");
                     if (errorMsg != null && player.isOnline())
                         player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
                 });

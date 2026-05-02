@@ -38,8 +38,8 @@ public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
     private MiniMessage miniMessage;
 
-    private ConfigUtils configFile;
-    private ConfigUtils messagesFile;
+    private ConfigManager configFile;
+    private LanguageManager languageManager;
 
     private DungeonManager dungeonManager;
     private PartyManager partyManager;
@@ -58,15 +58,15 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onLoad() {
         plugin = this;
-        configFile = new ConfigUtils(this, "config.yml");
+        configFile = new ConfigManager(this);
         String lang = configFile.getString("settings.locale", "en");
-        messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
+        languageManager = new LanguageManager(this, lang);
 
         if (ServerVersion.isAtMost(1, 21, 11)) {
-            String msg = messagesFile.getString("admin.log.startup_paper_modern", "Running natively for Paper 1.21+ | NMS Version: <nms>");
+            String msg = languageManager.getString("admin.log.startup_paper_modern", "Running natively for Paper 1.21+ | NMS Version: <nms>");
             getLogger().info(msg.replace("<nms>", ServerVersion.getNmsVersion()));
         } else {
-            String msg = messagesFile.getString("admin.log.startup_paper_legacy", "Running natively for Paper 26.1+ | Version: <version>");
+            String msg = languageManager.getString("admin.log.startup_paper_legacy", "Running natively for Paper 26.1+ | Version: <version>");
             getLogger().info(msg.replace("<version>", "v" + ServerVersion.getMajor() + "_" + ServerVersion.getMinor() + "_" + ServerVersion.getPatch()));
         }
     }
@@ -74,9 +74,8 @@ public final class SinceDungeon extends JavaPlugin {
     @Override
     public void onEnable() {
         miniMessage = MiniMessage.miniMessage();
-        if (configFile == null) configFile = new ConfigUtils(this, "config.yml");
-        extractDefaultLocales();
-        if (messagesFile == null) setupLanguage();
+        if (configFile == null) configFile = new ConfigManager(this);
+        if (languageManager == null) setupLanguage();
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
         dungeonManager = new DungeonManager(this);
@@ -104,9 +103,9 @@ public final class SinceDungeon extends JavaPlugin {
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new LivesExpansion(this).register();
-            getLogger().info(messagesFile.getString("admin.log.papi_registered"));
+            getLogger().info(languageManager.getString("admin.log.papi_registered"));
         } else {
-            getLogger().warning(messagesFile.getString("admin.log.papi_missing"));
+            getLogger().warning(languageManager.getString("admin.log.papi_missing"));
         }
 
         SinceDungeonAPI.init(this);
@@ -130,7 +129,7 @@ public final class SinceDungeon extends JavaPlugin {
         cleanUpStuckWorlds();
 
         if (ServerVersion.isOlderThan(1, 21, 11) || ServerVersion.isAtLeast(26, 1)) {
-            getLogger().warning(messagesFile.getString("admin.log.version_warning"));
+            getLogger().warning(languageManager.getString("admin.log.version_warning"));
         }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -138,20 +137,10 @@ public final class SinceDungeon extends JavaPlugin {
         }
     }
 
-    private void extractDefaultLocales() {
-        String[] defaultLocales = {"messages_vi.yml", "messages_en.yml"};
-        for (String loc : defaultLocales) {
-            File file = new File(getDataFolder(), loc);
-            if (!file.exists() && getResource(loc) != null) {
-                saveResource(loc, false);
-            }
-        }
-    }
-
     private void setupLanguage() {
         String lang = configFile.getString("settings.locale", "en");
-        messagesFile = new ConfigUtils(this, "messages_" + lang + ".yml");
-        getLogger().info("Loaded language file: messages_" + lang + ".yml");
+        languageManager = new LanguageManager(this, lang);
+        getLogger().info("Loaded modular language files for locale: " + lang);
     }
 
     @Override
@@ -176,41 +165,26 @@ public final class SinceDungeon extends JavaPlugin {
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();
-        if (messagesFile != null) messagesFile.save();
         if (databaseManager != null) databaseManager.disconnect();
         if (redisManager != null) {
             redisManager.disconnect();
         }
     }
 
-    /**
-     * Reloads configuration files, language files, and dungeon templates.
-     * Automatically detects if core files were deleted by the admin and regenerates
-     * them from the plugin jar before attempting to load them into memory.
-     *
-     * @param sender The entity (Player or Console) executing the reload command.
-     */
     public void reloadFiles(CommandSender sender) {
-        // 1. Force regenerate config.yml if it was deleted by the user
         if (!new File(getDataFolder(), "config.yml").exists()) {
             saveResource("config.yml", false);
         }
 
-        // 2. Force regenerate default language files if they were deleted
-        extractDefaultLocales();
-
-        // 3. Reload ConfigUtils instances into memory
         if (configFile != null) configFile.reload();
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
 
-        // 4. Setup language again to catch any locale changes in the fresh config
         setupLanguage();
 
-        // 5. Asynchronously reload dungeon templates
         if (dungeonManager != null) {
             dungeonManager.reload().thenRun(() -> {
-                String msg = messagesFile.getString("admin.reload");
+                String msg = languageManager.getString("admin.reload");
                 if (sender != null && msg != null) {
                     sender.sendMessage(ColorUtils.parseWithPrefix(msg));
                 }
@@ -218,7 +192,7 @@ public final class SinceDungeon extends JavaPlugin {
             });
         } else {
             if (sender != null) {
-                sender.sendMessage(ColorUtils.parseWithPrefix(messagesFile.getString("admin.reload")));
+                sender.sendMessage(ColorUtils.parseWithPrefix(languageManager.getString("admin.reload")));
             }
             getLogger().info("Configuration and Language reloaded.");
         }
@@ -239,7 +213,7 @@ public final class SinceDungeon extends JavaPlugin {
                                 Bukkit.unloadWorld(w, false);
                             }
                             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                                String msg = messagesFile.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
+                                String msg = languageManager.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
                                 getLogger().info(msg.replace("<world>", file.getName()));
                                 WorldUtils.deleteWorld(file);
                             });
@@ -266,11 +240,11 @@ public final class SinceDungeon extends JavaPlugin {
         return miniMessage;
     }
 
-    public ConfigUtils getMessagesFile() {
-        return messagesFile;
+    public LanguageManager getLanguageManager() {
+        return languageManager;
     }
 
-    public ConfigUtils getConfigFile() {
+    public ConfigManager getConfigFile() {
         return configFile;
     }
 
