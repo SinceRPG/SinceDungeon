@@ -7,11 +7,16 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Configuration and Language Manager for SinceDungeon Premium.
  * Responsibilities:
  * - Initializes, loads, and saves config.yml and messages.yml.
+ * - Auto-Updates YAML files with new keys from the plugin jar to prevent errors.
  * - Retrieves values safely and applies modern MiniMessage coloring via Core's ColorUtils.
  */
 public class FileManager {
@@ -36,12 +41,45 @@ public class FileManager {
             plugin.saveResource("config.yml", false);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
+        autoUpdate(config, configFile, "config.yml");
 
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         if (!messagesFile.exists()) {
             plugin.saveResource("messages.yml", false);
         }
         messages = YamlConfiguration.loadConfiguration(messagesFile);
+        autoUpdate(messages, messagesFile, "messages.yml");
+    }
+
+    /**
+     * Compares the current file with the default resource inside the jar and injects missing keys.
+     *
+     * @param currentConfig The loaded FileConfiguration.
+     * @param file          The physical file to save to.
+     * @param resourceName  The exact name of the file inside the resources folder.
+     */
+    private void autoUpdate(FileConfiguration currentConfig, File file, String resourceName) {
+        InputStream defaultStream = plugin.getResource(resourceName);
+        if (defaultStream == null) return;
+
+        YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStream, StandardCharsets.UTF_8));
+        boolean changed = false;
+
+        for (String key : defaultConfig.getKeys(true)) {
+            if (!currentConfig.contains(key)) {
+                currentConfig.set(key, defaultConfig.get(key));
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            try {
+                currentConfig.save(file);
+                plugin.getLogger().info("[Auto-Updater] Automatically updated " + resourceName + " with missing keys.");
+            } catch (IOException e) {
+                plugin.getLogger().warning("Failed to auto-update " + resourceName + ": " + e.getMessage());
+            }
+        }
     }
 
     public FileConfiguration getConfig() {
@@ -65,6 +103,8 @@ public class FileManager {
             finalMsg = finalMsg.replace(placeholders[i], (i + 1 < placeholders.length) ? placeholders[i + 1] : "");
         }
 
-        player.sendMessage(ColorUtils.parse(finalMsg));
+        if (player != null && player.isOnline()) {
+            player.sendMessage(ColorUtils.parse(finalMsg));
+        }
     }
 }

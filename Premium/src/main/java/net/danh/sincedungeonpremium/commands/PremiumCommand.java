@@ -5,6 +5,7 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
+import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.entity.Player;
 
@@ -13,6 +14,7 @@ import org.bukkit.entity.Player;
  * Responsibilities:
  * - Admin command for reloading Premium configs and Holograms.
  * - In-game utility to dynamically place Holographic Leaderboards without editing the config file.
+ * - Provides full, dynamic tab-completion for all arguments, integrating with Core's API.
  */
 public class PremiumCommand {
 
@@ -32,12 +34,22 @@ public class PremiumCommand {
                 )
                 .then(Commands.literal("hologram")
                         .then(Commands.argument("map_id", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    String remaining = builder.getRemainingLowerCase();
+                                    for (String mapId : SinceDungeonAPI.get().getAvailableTemplates()) {
+                                        if (mapId.toLowerCase().startsWith(remaining)) {
+                                            builder.suggest(mapId);
+                                        }
+                                    }
+                                    return builder.buildFuture();
+                                })
                                 .then(Commands.argument("category", StringArgumentType.word())
                                         .suggests((ctx, builder) -> {
-                                            builder.suggest("FASTEST_TIME");
-                                            builder.suggest("PARTY_FASTEST_TIME");
-                                            builder.suggest("MOST_KILLS");
-                                            builder.suggest("MOST_CLEARS");
+                                            String remaining = builder.getRemainingLowerCase();
+                                            if ("FASTEST_TIME".toLowerCase().startsWith(remaining)) builder.suggest("FASTEST_TIME");
+                                            if ("PARTY_FASTEST_TIME".toLowerCase().startsWith(remaining)) builder.suggest("PARTY_FASTEST_TIME");
+                                            if ("MOST_KILLS".toLowerCase().startsWith(remaining)) builder.suggest("MOST_KILLS");
+                                            if ("MOST_CLEARS".toLowerCase().startsWith(remaining)) builder.suggest("MOST_CLEARS");
                                             return builder.buildFuture();
                                         })
                                         .executes(ctx -> {
