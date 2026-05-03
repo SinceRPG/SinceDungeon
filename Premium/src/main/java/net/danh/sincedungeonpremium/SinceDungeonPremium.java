@@ -12,6 +12,7 @@ import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
 import net.danh.sincedungeonpremium.managers.RouletteManager;
 import net.danh.sincedungeonpremium.registry.PremiumActionRegistry;
+import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,9 +21,9 @@ import org.bukkit.plugin.java.JavaPlugin;
  * Core Entry Point for SinceDungeon Premium Addon.
  * Responsibilities:
  * - Validates dependency presence (SinceDungeon Core).
+ * - Automatically injects GUI translations into Core.
  * - Initializes Managers for Files, Holograms, and Roulette GUIs.
  * - Hooks into the core API to inject Premium actions, rewards, and conditions.
- * - Registers premium event listeners (Affixes, Webhooks, Custom Drops).
  */
 public final class SinceDungeonPremium extends JavaPlugin {
 
@@ -63,12 +64,14 @@ public final class SinceDungeonPremium extends JavaPlugin {
             return;
         }
 
+        // Auto-inject missing premium language keys directly into Core files
+        PremiumLanguageInjector.inject(net.danh.sinceDungeon.SinceDungeon.getPlugin());
+
         hologramManager = new HologramManager(this);
         hologramManager.startUpdater();
 
         rouletteManager = new RouletteManager(this);
 
-        // Delegated heavy action registration to a dedicated registry class
         PremiumActionRegistry.registerAll(this);
 
         registerPremiumProcessors();
@@ -88,20 +91,12 @@ public final class SinceDungeonPremium extends JavaPlugin {
         }
     }
 
-    /**
-     * Registers the premium-specific administrative commands via Paper Lifecycle.
-     */
     private void registerCommands() {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             PremiumCommand.register(this, event);
         });
     }
 
-    /**
-     * Registers premium reward processors.
-     * Includes isolated MMOCore integration for personalized class loot.
-     * Uses the MMOCoreHook to prevent JVM crashes on servers without MMOCore.
-     */
     private void registerPremiumProcessors() {
         SinceDungeonAPI api = SinceDungeonAPI.get();
 
@@ -145,9 +140,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
         api.registerConditionProcessor("HAS_PERMISSION", (player, value) -> player.hasPermission(value.trim()));
     }
 
-    /**
-     * Registers the plugin's Bukkit Event Listeners.
-     */
     private void registerPremiumListeners() {
         getServer().getPluginManager().registerEvents(new AffixListener(this), this);
         getServer().getPluginManager().registerEvents(new WebhookListener(this), this);

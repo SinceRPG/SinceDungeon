@@ -25,78 +25,8 @@ rewards:
   class_loot: "&aYou received a class-specific item: &e<item>&a!"
   no_spins_left: "&cYou don't have any spins left!"
 
-escort:
-  failed: "&cThe VIP has been killed! The mission has failed."
-
-branch:
-  path_chosen: "&aYou have chosen to advance to stage <stage>!"
-
-puzzle:
-  failed: "&cWrong sequence! The puzzle has been reset."
-  solved: "&aCorrect sequence! The mechanism unlocks."
-
-affixes:
-  volcanic_hit: "&cYou were burned by a Volcanic explosion!"
-
 holograms:
   header: "&6&lSinceDungeon Leaderboard"
   map_line: "&eMap: &f<map>"
   format: "&e#<rank> &f<player> &8- &a<value>"
   empty: "&7No records found yet."
-
-prompts:
-  levers:
-    - "&7Add lever coordinates (X,Y,Z)"
-    - "&7Format: &aX,Y,Z"
-    - "&7The order you add them is the solution sequence!"
-    - "&7Tip: Type &ahere &7to use your current block."
-  escort_start:
-    - "&7Set the spawn coordinates (X,Y,Z) for the NPC."
-    - "&7Tip: Type &ahere &7to use your current location."
-  escort_target:
-    - "&7Set the destination coordinates (X,Y,Z) for the NPC."
-    - "&7Tip: Type &ahere &7to use your current location."
-  escort_mob:
-    - "&7Enter the EntityType for the VIP NPC."
-    - "&7Example: &aVILLAGER"
-  escort_attacker_mob:
-    - "&7Enter the EntityType for the Attacker (or NONE to disable)."
-    - "&7Example: &aZOMBIE"
-  escort_attacker_interval:
-    - "&7Enter the delay in ticks between attacker spawns (20 ticks = 1s)."
-    - "&7Example: &a100"
-  escort_attacker_name:
-    - "&7Enter a custom name for the attacker (Color codes supported)."
-  escort_attacker_is_baby:
-    - "&7Is the attacker a baby? Enter &atrue &7or &cfalse&7."
-  escort_attacker_attributes:
-    - "&7Set custom attributes for the attackers."
-    - "&7Format: &a<attribute>:<value>"
-  escort_attacker_equipment:
-    - "&7Set the equipment for the attackers."
-    - "&7Format: &a<slot>:<item_data>"
-  vip_is_baby:
-    - "&7Is the VIP a baby? Enter &atrue &7or &cfalse&7."
-  vip_attributes:
-    - "&7Set custom attributes for the VIP."
-    - "&7Format: &a<attribute>:<value>"
-  vip_equipment:
-    - "&7Set the equipment for the VIP."
-    - "&7Format: &a<slot>:<item_data>"
-  branch_path_a:
-    - "&7Set the coordinates for Path A's decision zone."
-  branch_path_b:
-    - "&7Set the coordinates for Path B's decision zone."
-  branch_stage_a:
-    - "&7Enter the Stage Number to jump to if players choose Path A."
-  branch_stage_b:
-    - "&7Enter the Stage Number to jump to if players choose Path B."
-  buff_effect:
-    - "&7Enter the PotionEffectType to apply."
-    - "&7Example: &aSPEED &7or &aSTRENGTH"
-  buff_duration:
-    - "&7Enter the duration in ticks (20 ticks = 1s)."
-    - "&7Example: &a200"
-  buff_amplifier:
-    - "&7Enter the potion level (0 = Level 1)."
-    - "&7Example: &a1 &7(Applies Level 2 effect)"

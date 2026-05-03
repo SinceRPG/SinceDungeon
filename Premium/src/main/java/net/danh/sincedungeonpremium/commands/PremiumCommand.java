@@ -5,16 +5,14 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
+import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.entity.Player;
 
 /**
  * Premium-Exclusive Command: /sdp
- * Responsibilities:
- * - Admin command for reloading Premium configs and Holograms.
- * - In-game utility to dynamically place Holographic Leaderboards without editing the config file.
- * - Provides full, dynamic tab-completion for all arguments, integrating with Core's API.
  */
 public class PremiumCommand {
 
@@ -24,6 +22,9 @@ public class PremiumCommand {
                 .then(Commands.literal("reload")
                         .executes(ctx -> {
                             plugin.getFileManager().setup();
+                            // Re-inject on reload to guarantee safety if admin wiped the core files
+                            PremiumLanguageInjector.inject(SinceDungeon.getPlugin());
+
                             if (plugin.getHologramManager() != null) {
                                 plugin.getHologramManager().clearAllHolograms();
                                 plugin.getHologramManager().startUpdater();
@@ -46,10 +47,14 @@ public class PremiumCommand {
                                 .then(Commands.argument("category", StringArgumentType.word())
                                         .suggests((ctx, builder) -> {
                                             String remaining = builder.getRemainingLowerCase();
-                                            if ("FASTEST_TIME".toLowerCase().startsWith(remaining)) builder.suggest("FASTEST_TIME");
-                                            if ("PARTY_FASTEST_TIME".toLowerCase().startsWith(remaining)) builder.suggest("PARTY_FASTEST_TIME");
-                                            if ("MOST_KILLS".toLowerCase().startsWith(remaining)) builder.suggest("MOST_KILLS");
-                                            if ("MOST_CLEARS".toLowerCase().startsWith(remaining)) builder.suggest("MOST_CLEARS");
+                                            if ("FASTEST_TIME".toLowerCase().startsWith(remaining))
+                                                builder.suggest("FASTEST_TIME");
+                                            if ("PARTY_FASTEST_TIME".toLowerCase().startsWith(remaining))
+                                                builder.suggest("PARTY_FASTEST_TIME");
+                                            if ("MOST_KILLS".toLowerCase().startsWith(remaining))
+                                                builder.suggest("MOST_KILLS");
+                                            if ("MOST_CLEARS".toLowerCase().startsWith(remaining))
+                                                builder.suggest("MOST_CLEARS");
                                             return builder.buildFuture();
                                         })
                                         .executes(ctx -> {

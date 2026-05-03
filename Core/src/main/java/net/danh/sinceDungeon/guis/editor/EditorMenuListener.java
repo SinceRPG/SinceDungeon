@@ -134,7 +134,7 @@ public class EditorMenuListener implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorGUI gui = new EditorGUI(plugin);
-        net.danh.sinceDungeon.guis.editor.EditorManager manager = plugin.getEditorManager();
+        EditorManager manager = plugin.getEditorManager();
         final EditorSession session = holder.session();
         String menuType = holder.menuType();
         int page = holder.page();
@@ -927,7 +927,7 @@ public class EditorMenuListener implements Listener {
                         prompt = "default";
                     }
 
-                    session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
+                    session.awaitInput(EditorSession.InputType.EDIT_LIST, prompt, val -> {
                         List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
                         list.add(val);
                         session.getConfig().set(session.getCurrentListPath(), list);

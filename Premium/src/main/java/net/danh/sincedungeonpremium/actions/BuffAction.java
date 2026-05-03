@@ -1,5 +1,6 @@
 package net.danh.sincedungeonpremium.actions;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
@@ -11,25 +12,16 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.Locale;
 
-/**
- * Premium-Exclusive Action: Apply Buff
- * Responsibilities:
- * - Grants a specific PotionEffect to all alive/online participants in the dungeon.
- * - Adapts to Paper 1.21.4+ Registry.MOB_EFFECT for retrieving PotionEffectTypes safely, mitigating deprecation warnings.
- * - Instantly completes to avoid halting the dungeon phase progression.
- */
 public class BuffAction extends DungeonAction {
 
     private final String effectType;
     private final int durationTicks;
     private final int amplifier;
-    private final String objectiveText;
 
-    public BuffAction(String effectType, int durationTicks, int amplifier, String objectiveText) {
+    public BuffAction(String effectType, int durationTicks, int amplifier) {
         this.effectType = effectType;
         this.durationTicks = durationTicks;
         this.amplifier = amplifier;
-        this.objectiveText = objectiveText;
     }
 
     @Override
@@ -52,6 +44,6 @@ public class BuffAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return objectiveText;
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.apply_buff");
     }
 }

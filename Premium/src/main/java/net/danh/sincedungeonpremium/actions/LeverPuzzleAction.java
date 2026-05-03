@@ -1,5 +1,6 @@
 package net.danh.sincedungeonpremium.actions;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
@@ -17,23 +18,14 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Premium-Exclusive Action: Lever Puzzle
- * Responsibilities:
- * - Requires players to flip levers in a precise, configured sequence.
- * - Resets progress and plays error feedback if a wrong lever is flipped.
- * - Fetches specific sound files from configuration to adhere to zero-hardcoding standards.
- */
 public class LeverPuzzleAction extends DungeonAction {
 
     private final List<String> rawLevers;
-    private final String objectiveText;
     private final List<Location> parsedLevers = new ArrayList<>();
     private int currentIndex = 0;
 
-    public LeverPuzzleAction(List<String> rawLevers, String objectiveText) {
+    public LeverPuzzleAction(List<String> rawLevers) {
         this.rawLevers = rawLevers;
-        this.objectiveText = objectiveText;
     }
 
     @Override
@@ -73,7 +65,6 @@ public class LeverPuzzleAction extends DungeonAction {
                             expectedLoc.getBlockY() == clickedLoc.getBlockY() &&
                             expectedLoc.getBlockZ() == clickedLoc.getBlockZ()) {
 
-                        // Correct lever pulled
                         currentIndex++;
                         String soundSuccessStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_success", "block.note_block.chime");
                         Sound soundSuccess = SoundUtils.getSound(soundSuccessStr);
@@ -82,11 +73,10 @@ public class LeverPuzzleAction extends DungeonAction {
                         }
 
                         if (currentIndex >= parsedLevers.size()) {
-                            SinceDungeonPremium.getInstance().getFileManager().sendMessage(e.getPlayer(), "puzzle.solved");
+                            game.broadcastMessage("action.puzzle_solved");
                             this.forceComplete();
                         }
                     } else {
-                        // Wrong lever pulled, reset progress
                         e.setCancelled(true);
                         currentIndex = 0;
 
@@ -96,7 +86,7 @@ public class LeverPuzzleAction extends DungeonAction {
                             e.getPlayer().playSound(clickedLoc, soundFail, 1f, 0.5f);
                         }
 
-                        SinceDungeonPremium.getInstance().getFileManager().sendMessage(e.getPlayer(), "puzzle.failed");
+                        game.broadcastMessage("action.puzzle_failed");
                     }
                 }
             }
@@ -105,6 +95,6 @@ public class LeverPuzzleAction extends DungeonAction {
 
     @Override
     public String getObjectiveText() {
-        return objectiveText;
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.lever_puzzle");
     }
 }

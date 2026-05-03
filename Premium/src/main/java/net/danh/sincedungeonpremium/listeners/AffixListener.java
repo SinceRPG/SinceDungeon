@@ -1,5 +1,6 @@
 package net.danh.sincedungeonpremium.listeners;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
@@ -18,13 +19,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
 
-/**
- * Premium-Exclusive Listener: Mythic+ Affixes
- * Responsibilities:
- * - Detects actions inside dungeons and checks the configuration to determine if affixes are active.
- * - Implements Volcanic (Explosions on mob death) and Vampiric (Mobs heal on hitting players).
- * - Retrieves configurable particle effects to eliminate hardcoded instances.
- */
 public class AffixListener implements Listener {
 
     private final SinceDungeonPremium plugin;
@@ -51,10 +45,6 @@ public class AffixListener implements Listener {
         return fallback;
     }
 
-    /**
-     * Handles the Vampiric Affix.
-     * Mobs heal a percentage of the damage they deal to players.
-     */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMobDamagePlayer(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player player)) return;
@@ -73,10 +63,6 @@ public class AffixListener implements Listener {
         }
     }
 
-    /**
-     * Handles the Volcanic Affix.
-     * Mobs spawn a delayed explosion that damages nearby players upon death.
-     */
     @EventHandler(priority = EventPriority.NORMAL)
     public void onMobDeath(EntityDeathEvent e) {
         LivingEntity entity = e.getEntity();
@@ -111,7 +97,10 @@ public class AffixListener implements Listener {
                     for (Player p : deathLoc.getWorld().getPlayers()) {
                         if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {
                             p.damage(damage);
-                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getFileManager().getMessageRaw("affixes.volcanic_hit")));
+
+                            // Query message dynamically directly from Core Language System
+                            String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.affix_volcanic_hit", "&cYou were burned by a Volcanic explosion!");
+                            p.sendMessage(ColorUtils.parseWithPrefix(msg));
                         }
                     }
                 }

@@ -12,7 +12,6 @@ action-defaults:
     default-effect: "SPEED"
     default-duration: 200
     default-amplifier: 1
-    objective_text: "&aA mysterious power grants you strength!"
 
   escort:
     default-mob: "VILLAGER"
@@ -21,37 +20,28 @@ action-defaults:
     default-speed: 1.0
     default-radius: 4.0
     vip_is_baby: false
-    vip_attributes: []
-    vip_equipment: []
+    vip_attributes: [ ]
+    vip_equipment: [ ]
     attacker_mob: "ZOMBIE"
     attacker_amount: 3
     attacker_interval: 100
     attacker_name: "&cAssassin"
     attacker_is_baby: false
-    attacker_attributes: []
-    attacker_equipment: []
-    objective_text: "&eProtect the VIP and escort them to safety!"
+    attacker_attributes: [ ]
+    attacker_equipment: [ ]
 
   branch:
-    objective_text: "&aChoose your destiny!"
+    path_a_loc: "0,64,0"
+    path_b_loc: "10,64,10"
+    stage_a: 3
+    stage_b: 4
+    radius: 3.0
 
   puzzle:
-    objective_text: "&ePull the levers in the correct order!"
-
-gui:
-  actions:
-    apply_buff:
-      name: "&d&lPremium: Apply Buff"
-      desc: "Instantly applies a potion effect to all party members."
-    escort:
-      name: "&6&lPremium: Escort NPC"
-      desc: "Spawns an NPC that walks to a target. Fails if it dies."
-    branch:
-      name: "&e&lPremium: Branching Path"
-      desc: "Allows players to choose between two different stages."
-    puzzle:
-      name: "&b&lPremium: Lever Puzzle"
-      desc: "Requires players to activate levers in a specific sequence."
+    levers:
+      - "0,64,0"
+      - "2,64,0"
+      - "4,64,0"
 
 # ---------------------------------------------------------
 # [MYTHIC+ AFFIXES]
@@ -86,11 +76,6 @@ hologram-leaderboard:
   update-interval-seconds: 300
   locations:
   # Note: Admins can use the internal API / command to set this up in-game now.
-  # Example format:
-  # holo_1:
-  #   map: "example_dungeon"
-  #   category: "FASTEST_TIME"
-  #   location: "world,0.5,64,0.5"
 
 # ---------------------------------------------------------
 # [DISCORD WEBHOOKS]

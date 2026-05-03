@@ -1,6 +1,8 @@
 package net.danh.sincedungeonpremium.registry;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.managers.LanguageManager;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.actions.BranchingPathAction;
 import net.danh.sincedungeonpremium.actions.BuffAction;
@@ -8,21 +10,14 @@ import net.danh.sincedungeonpremium.actions.EscortAction;
 import net.danh.sincedungeonpremium.actions.LeverPuzzleAction;
 import org.bukkit.Material;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Handles the registration of all Premium custom actions.
- * Extracted from the main class to reduce file size and improve modular management.
+ * Directly reads GUI prompts and language from the Core's LanguageManager.
  */
 public class PremiumActionRegistry {
 
-    /**
-     * Helper method to parse lists from unknown generic objects securely.
-     */
     private static List<String> parseList(Object obj) {
         List<String> list = new ArrayList<>();
         if (obj instanceof List<?> l) {
@@ -31,9 +26,6 @@ public class PremiumActionRegistry {
         return list;
     }
 
-    /**
-     * Safely parses an integer from a generic object, returning a fallback on failure.
-     */
     private static int parseSafeInt(Object obj, int fallback) {
         if (obj == null) return fallback;
         if (obj instanceof Number number) return number.intValue();
@@ -44,9 +36,6 @@ public class PremiumActionRegistry {
         }
     }
 
-    /**
-     * Safely parses a double from a generic object, returning a fallback on failure.
-     */
     private static double parseSafeDouble(Object obj, double fallback) {
         if (obj == null) return fallback;
         if (obj instanceof Number number) return number.doubleValue();
@@ -57,13 +46,9 @@ public class PremiumActionRegistry {
         }
     }
 
-    /**
-     * Primary execution method to register all premium actions into the Core API.
-     *
-     * @param plugin The SinceDungeonPremium instance handling the registration.
-     */
     public static void registerAll(SinceDungeonPremium plugin) {
         SinceDungeonAPI api = SinceDungeonAPI.get();
+        LanguageManager coreLang = SinceDungeon.getPlugin().getLanguageManager();
 
         // ---------------------------------------------------------
         // 1. APPLY BUFF ACTION
@@ -72,24 +57,22 @@ public class PremiumActionRegistry {
         buffDefaults.put("effect", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.default-effect"));
         buffDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-duration"));
         buffDefaults.put("amplifier", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-amplifier"));
-        buffDefaults.put("objective_text", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.objective_text"));
 
         Map<String, List<String>> buffPrompts = new HashMap<>();
-        buffPrompts.put("effect", plugin.getFileManager().getMessages().getStringList("prompts.buff_effect"));
-        buffPrompts.put("duration", plugin.getFileManager().getMessages().getStringList("prompts.buff_duration"));
-        buffPrompts.put("amplifier", plugin.getFileManager().getMessages().getStringList("prompts.buff_amplifier"));
+        buffPrompts.put("effect", coreLang.getStringList("editor.input.prompts.edit_action_effect"));
+        buffPrompts.put("duration", coreLang.getStringList("editor.input.prompts.edit_action_duration"));
+        buffPrompts.put("amplifier", coreLang.getStringList("editor.input.prompts.edit_action_amplifier"));
 
         api.registerCustomAction(
                 "APPLY_BUFF",
                 map -> new BuffAction(
                         String.valueOf(map.getOrDefault("effect", buffDefaults.get("effect"))),
                         parseSafeInt(map.get("duration"), (int) buffDefaults.get("duration")),
-                        parseSafeInt(map.get("amplifier"), (int) buffDefaults.get("amplifier")),
-                        String.valueOf(map.getOrDefault("objective_text", buffDefaults.get("objective_text")))
+                        parseSafeInt(map.get("amplifier"), (int) buffDefaults.get("amplifier"))
                 ),
-                plugin.getFileManager().getConfig().getString("gui.actions.apply_buff.name"),
+                coreLang.getString("editor.actions_name.apply_buff"),
                 Material.POTION,
-                plugin.getFileManager().getConfig().getString("gui.actions.apply_buff.desc"),
+                coreLang.getString("editor.actions.apply_buff"),
                 buffDefaults,
                 buffPrompts
         );
@@ -117,22 +100,19 @@ public class PremiumActionRegistry {
         escortDefaults.put("attacker_attributes", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_attributes"));
         escortDefaults.put("attacker_equipment", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_equipment"));
 
-        escortDefaults.put("objective_text", plugin.getFileManager().getConfig().getString("action-defaults.escort.objective_text"));
-
         Map<String, List<String>> escortPrompts = new HashMap<>();
-        escortPrompts.put("start_location", plugin.getFileManager().getMessages().getStringList("prompts.escort_start"));
-        escortPrompts.put("target_location", plugin.getFileManager().getMessages().getStringList("prompts.escort_target"));
-        escortPrompts.put("mob", plugin.getFileManager().getMessages().getStringList("prompts.escort_mob"));
-        escortPrompts.put("vip_is_baby", plugin.getFileManager().getMessages().getStringList("prompts.vip_is_baby"));
-        escortPrompts.put("vip_attributes", plugin.getFileManager().getMessages().getStringList("prompts.vip_attributes"));
-        escortPrompts.put("vip_equipment", plugin.getFileManager().getMessages().getStringList("prompts.vip_equipment"));
-
-        escortPrompts.put("attacker_mob", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_mob"));
-        escortPrompts.put("attacker_interval", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_interval"));
-        escortPrompts.put("attacker_name", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_name"));
-        escortPrompts.put("attacker_is_baby", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_is_baby"));
-        escortPrompts.put("attacker_attributes", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_attributes"));
-        escortPrompts.put("attacker_equipment", plugin.getFileManager().getMessages().getStringList("prompts.escort_attacker_equipment"));
+        escortPrompts.put("start_location", coreLang.getStringList("editor.input.prompts.edit_action_start_location"));
+        escortPrompts.put("target_location", coreLang.getStringList("editor.input.prompts.edit_action_target_location"));
+        escortPrompts.put("mob", coreLang.getStringList("editor.input.prompts.edit_action_mob"));
+        escortPrompts.put("vip_is_baby", coreLang.getStringList("editor.input.prompts.edit_action_vip_is_baby"));
+        escortPrompts.put("vip_attributes", coreLang.getStringList("editor.input.prompts.edit_action_vip_attributes"));
+        escortPrompts.put("vip_equipment", coreLang.getStringList("editor.input.prompts.edit_action_vip_equipment"));
+        escortPrompts.put("attacker_mob", coreLang.getStringList("editor.input.prompts.edit_action_attacker_mob"));
+        escortPrompts.put("attacker_interval", coreLang.getStringList("editor.input.prompts.edit_action_attacker_interval"));
+        escortPrompts.put("attacker_name", coreLang.getStringList("editor.input.prompts.edit_action_attacker_name"));
+        escortPrompts.put("attacker_is_baby", coreLang.getStringList("editor.input.prompts.edit_action_attacker_is_baby"));
+        escortPrompts.put("attacker_attributes", coreLang.getStringList("editor.input.prompts.edit_action_attacker_attributes"));
+        escortPrompts.put("attacker_equipment", coreLang.getStringList("editor.input.prompts.edit_action_attacker_equipment"));
 
         api.registerCustomAction(
                 "ESCORT_NPC",
@@ -153,12 +133,11 @@ public class PremiumActionRegistry {
                         String.valueOf(map.getOrDefault("attacker_name", escortDefaults.get("attacker_name"))),
                         Boolean.parseBoolean(String.valueOf(map.getOrDefault("attacker_is_baby", escortDefaults.get("attacker_is_baby")))),
                         parseList(map.getOrDefault("attacker_attributes", escortDefaults.get("attacker_attributes"))),
-                        parseList(map.getOrDefault("attacker_equipment", escortDefaults.get("attacker_equipment"))),
-                        String.valueOf(map.getOrDefault("objective_text", escortDefaults.get("objective_text")))
+                        parseList(map.getOrDefault("attacker_equipment", escortDefaults.get("attacker_equipment")))
                 ),
-                plugin.getFileManager().getConfig().getString("gui.actions.escort.name"),
+                coreLang.getString("editor.actions_name.escort_npc"),
                 Material.MINECART,
-                plugin.getFileManager().getConfig().getString("gui.actions.escort.desc"),
+                coreLang.getString("editor.actions.escort_npc"),
                 escortDefaults,
                 escortPrompts
         );
@@ -172,13 +151,12 @@ public class PremiumActionRegistry {
         branchDefaults.put("stage_a", 3);
         branchDefaults.put("stage_b", 4);
         branchDefaults.put("radius", 3.0);
-        branchDefaults.put("objective_text", plugin.getFileManager().getConfig().getString("action-defaults.branch.objective_text"));
 
         Map<String, List<String>> branchPrompts = new HashMap<>();
-        branchPrompts.put("path_a_loc", plugin.getFileManager().getMessages().getStringList("prompts.branch_path_a"));
-        branchPrompts.put("path_b_loc", plugin.getFileManager().getMessages().getStringList("prompts.branch_path_b"));
-        branchPrompts.put("stage_a", plugin.getFileManager().getMessages().getStringList("prompts.branch_stage_a"));
-        branchPrompts.put("stage_b", plugin.getFileManager().getMessages().getStringList("prompts.branch_stage_b"));
+        branchPrompts.put("path_a_loc", coreLang.getStringList("editor.input.prompts.edit_action_path_a_loc"));
+        branchPrompts.put("path_b_loc", coreLang.getStringList("editor.input.prompts.edit_action_path_b_loc"));
+        branchPrompts.put("stage_a", coreLang.getStringList("editor.input.prompts.edit_action_stage_a"));
+        branchPrompts.put("stage_b", coreLang.getStringList("editor.input.prompts.edit_action_stage_b"));
 
         api.registerCustomAction(
                 "BRANCHING_PATH",
@@ -187,12 +165,11 @@ public class PremiumActionRegistry {
                         String.valueOf(map.getOrDefault("path_b_loc", branchDefaults.get("path_b_loc"))),
                         parseSafeInt(map.get("stage_a"), (int) branchDefaults.get("stage_a")),
                         parseSafeInt(map.get("stage_b"), (int) branchDefaults.get("stage_b")),
-                        parseSafeDouble(map.get("radius"), (double) branchDefaults.get("radius")),
-                        String.valueOf(map.getOrDefault("objective_text", branchDefaults.get("objective_text")))
+                        parseSafeDouble(map.get("radius"), (double) branchDefaults.get("radius"))
                 ),
-                plugin.getFileManager().getConfig().getString("gui.actions.branch.name"),
+                coreLang.getString("editor.actions_name.branching_path"),
                 Material.OAK_SIGN,
-                plugin.getFileManager().getConfig().getString("gui.actions.branch.desc"),
+                coreLang.getString("editor.actions.branching_path"),
                 branchDefaults,
                 branchPrompts
         );
@@ -202,10 +179,9 @@ public class PremiumActionRegistry {
         // ---------------------------------------------------------
         Map<String, Object> puzzleDefaults = new HashMap<>();
         puzzleDefaults.put("levers", new ArrayList<>(Arrays.asList("0,64,0", "2,64,0", "4,64,0")));
-        puzzleDefaults.put("objective_text", plugin.getFileManager().getConfig().getString("action-defaults.puzzle.objective_text"));
 
         Map<String, List<String>> puzzlePrompts = new HashMap<>();
-        puzzlePrompts.put("levers", plugin.getFileManager().getMessages().getStringList("prompts.levers"));
+        puzzlePrompts.put("levers", coreLang.getStringList("editor.input.prompts.edit_action_levers"));
 
         api.registerCustomAction(
                 "LEVER_PUZZLE",
@@ -215,12 +191,11 @@ public class PremiumActionRegistry {
                     if (obj instanceof List<?> l) {
                         for (Object o : l) levers.add(o.toString());
                     }
-                    String objText = String.valueOf(map.getOrDefault("objective_text", puzzleDefaults.get("objective_text")));
-                    return new LeverPuzzleAction(levers, objText);
+                    return new LeverPuzzleAction(levers);
                 },
-                plugin.getFileManager().getConfig().getString("gui.actions.puzzle.name"),
+                coreLang.getString("editor.actions_name.lever_puzzle"),
                 Material.LEVER,
-                plugin.getFileManager().getConfig().getString("gui.actions.puzzle.desc"),
+                coreLang.getString("editor.actions.lever_puzzle"),
                 puzzleDefaults,
                 puzzlePrompts
         );
