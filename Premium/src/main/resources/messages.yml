@@ -65,6 +65,24 @@ prompts:
   escort_attacker_interval:
     - "&7Enter the delay in ticks between attacker spawns (20 ticks = 1s)."
     - "&7Example: &a100"
+  escort_attacker_name:
+    - "&7Enter a custom name for the attacker (Color codes supported)."
+  escort_attacker_is_baby:
+    - "&7Is the attacker a baby? Enter &atrue &7or &cfalse&7."
+  escort_attacker_attributes:
+    - "&7Set custom attributes for the attackers."
+    - "&7Format: &a<attribute>:<value>"
+  escort_attacker_equipment:
+    - "&7Set the equipment for the attackers."
+    - "&7Format: &a<slot>:<item_data>"
+  vip_is_baby:
+    - "&7Is the VIP a baby? Enter &atrue &7or &cfalse&7."
+  vip_attributes:
+    - "&7Set custom attributes for the VIP."
+    - "&7Format: &a<attribute>:<value>"
+  vip_equipment:
+    - "&7Set the equipment for the VIP."
+    - "&7Format: &a<slot>:<item_data>"
   branch_path_a:
     - "&7Set the coordinates for Path A's decision zone."
   branch_path_b:

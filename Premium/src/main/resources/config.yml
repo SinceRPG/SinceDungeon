@@ -20,9 +20,16 @@ action-defaults:
     default-health: 100.0
     default-speed: 1.0
     default-radius: 4.0
-    attacker-mob: "ZOMBIE"
-    attacker-amount: 3
-    attacker-interval: 100
+    vip_is_baby: false
+    vip_attributes: []
+    vip_equipment: []
+    attacker_mob: "ZOMBIE"
+    attacker_amount: 3
+    attacker_interval: 100
+    attacker_name: "&cAssassin"
+    attacker_is_baby: false
+    attacker_attributes: []
+    attacker_equipment: []
     objective_text: "&eProtect the VIP and escort them to safety!"
 
   branch:
