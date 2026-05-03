@@ -3,6 +3,7 @@ package net.danh.sincedungeonpremium.actions;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,6 +22,7 @@ import java.util.List;
  * Responsibilities:
  * - Requires players to flip levers in a precise, configured sequence.
  * - Resets progress and plays error feedback if a wrong lever is flipped.
+ * - Fetches specific sound files from configuration to adhere to zero-hardcoding standards.
  */
 public class LeverPuzzleAction extends DungeonAction {
 
@@ -73,7 +75,11 @@ public class LeverPuzzleAction extends DungeonAction {
 
                         // Correct lever pulled
                         currentIndex++;
-                        e.getPlayer().playSound(clickedLoc, Sound.BLOCK_NOTE_BLOCK_CHIME, 1f, 2f);
+                        String soundSuccessStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_success", "block.note_block.chime");
+                        Sound soundSuccess = SoundUtils.getSound(soundSuccessStr);
+                        if (soundSuccess != null) {
+                            e.getPlayer().playSound(clickedLoc, soundSuccess, 1f, 2f);
+                        }
 
                         if (currentIndex >= parsedLevers.size()) {
                             SinceDungeonPremium.getInstance().getFileManager().sendMessage(e.getPlayer(), "puzzle.solved");
@@ -83,7 +89,13 @@ public class LeverPuzzleAction extends DungeonAction {
                         // Wrong lever pulled, reset progress
                         e.setCancelled(true);
                         currentIndex = 0;
-                        e.getPlayer().playSound(clickedLoc, Sound.BLOCK_NOTE_BLOCK_BASS, 1f, 0.5f);
+
+                        String soundFailStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_fail", "block.note_block.bass");
+                        Sound soundFail = SoundUtils.getSound(soundFailStr);
+                        if (soundFail != null) {
+                            e.getPlayer().playSound(clickedLoc, soundFail, 1f, 0.5f);
+                        }
+
                         SinceDungeonPremium.getInstance().getFileManager().sendMessage(e.getPlayer(), "puzzle.failed");
                     }
                 }

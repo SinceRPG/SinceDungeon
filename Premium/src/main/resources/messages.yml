@@ -25,3 +25,9 @@ puzzle:
 
 affixes:
   volcanic_hit: "&cYou were burned by a Volcanic explosion!"
+
+holograms:
+  header: "&6&lSinceDungeon Leaderboard"
+  map_line: "&eMap: &f<map>"
+  format: "&e#<rank> &f<player> &8- &a<value>"
+  empty: "&7No records found yet."

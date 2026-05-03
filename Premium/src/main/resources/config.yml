@@ -91,3 +91,17 @@ webhooks:
   embed-title: "🎉 Dungeon Cleared!"
   embed-color: "5814783" # Decimal color code (Purple)
   embed-description: "Map: **%dungeon%**\nTime: **%time%s**\nPlayers: **%players%**"
+
+# ---------------------------------------------------------
+# [EFFECTS & FEEDBACK]
+# ---------------------------------------------------------
+sounds:
+  puzzle_success: "block.note_block.chime"
+  puzzle_fail: "block.note_block.bass"
+  roulette_tick: "block.note_block.hat"
+  roulette_finish: "entity.player.levelup"
+
+particles:
+  affix_vampiric: "HEART"
+  affix_volcanic_warn: "FLAME"
+  affix_volcanic_boom: "EXPLOSION"

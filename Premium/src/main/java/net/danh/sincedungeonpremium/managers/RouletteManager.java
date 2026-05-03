@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -19,7 +20,11 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Manager handling the Premium Roulette Gacha animation.
+ * Premium-Exclusive Manager: Interactive Roulette Spin
+ * Responsibilities:
+ * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
+ * - Reads sounds dynamically from config to keep the plugin highly configurable.
+ * - Forces fairness rolls identically to the Core implementation but visually impressive.
  */
 public class RouletteManager {
 
@@ -40,18 +45,15 @@ public class RouletteManager {
         String title = plugin.getFileManager().getConfig().getString("roulette.title", "&6&lReward Spin");
         Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
 
-        // Create visual borders
         ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         for (int i = 0; i < 9; i++) inv.setItem(i, border);
         for (int i = 18; i < 27; i++) inv.setItem(i, border);
 
-        // Highlight center
         inv.setItem(4, new ItemStack(Material.HOPPER));
         inv.setItem(22, new ItemStack(Material.HOPPER));
 
         player.openInventory(inv);
 
-        // Deduct chest count securely
         session.decreaseChestCount();
 
         List<DungeonReward> pool = session.getTemplate().rewardPool();
@@ -64,7 +66,7 @@ public class RouletteManager {
         new BukkitRunnable() {
             int ticks = 0;
             int delay = 1;
-            int maxTicks = 60; // 3 seconds total
+            int maxTicks = 60;
 
             @Override
             public void run() {
@@ -73,21 +75,22 @@ public class RouletteManager {
                     return;
                 }
 
-                // Shift items to the right
                 for (int i = 16; i > 9; i--) {
                     inv.setItem(i, inv.getItem(i - 1));
                 }
 
-                // Add random item on the left
                 DungeonReward nextReward = getRandomReward(pool);
                 ItemStack displayItem = buildDisplayItem(nextReward);
                 inv.setItem(9, displayItem);
 
-                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1f, 1f);
+                String soundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_tick", "block.note_block.hat");
+                Sound soundTick = SoundUtils.getSound(soundStr);
+                if (soundTick != null) {
+                    player.playSound(player.getLocation(), soundTick, 1f, 1f);
+                }
 
                 ticks++;
 
-                // Slow down algorithm
                 if (ticks > 40) delay = 2;
                 if (ticks > 50) delay = 4;
                 if (ticks > 55) delay = 8;
@@ -96,22 +99,23 @@ public class RouletteManager {
                     this.cancel();
                     finishSpin(player, inv, session, pool);
                 } else if (ticks % delay != 0) {
-                    // Skip updates to simulate slowing down
+                    // Loop skip
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
     private void finishSpin(Player player, Inventory inv, RewardSession session, List<DungeonReward> pool) {
-        // Center item is slot 13
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        String finishSoundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_finish", "entity.player.levelup");
+        Sound finishSound = SoundUtils.getSound(finishSoundStr);
+        if (finishSound != null) {
+            player.playSound(player.getLocation(), finishSound, 1f, 1f);
+        }
 
-        // Finalize reward
-        DungeonReward wonReward = getRandomReward(pool); // Re-roll one final time to guarantee fairness
+        DungeonReward wonReward = getRandomReward(pool);
         ItemStack wonDisplay = buildDisplayItem(wonReward);
         inv.setItem(13, wonDisplay);
 
-        // Dispatch reward via Core's pipeline
         Bukkit.getPluginManager().callEvent(new DungeonRewardClaimEvent(player, wonReward));
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {

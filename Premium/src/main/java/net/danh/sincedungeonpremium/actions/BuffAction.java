@@ -15,7 +15,7 @@ import java.util.Locale;
  * Premium-Exclusive Action: Apply Buff
  * Responsibilities:
  * - Grants a specific PotionEffect to all alive/online participants in the dungeon.
- * - Adapts to Paper 1.21+ Registry for retrieving PotionEffectTypes safely.
+ * - Adapts to Paper 1.21.4+ Registry.MOB_EFFECT for retrieving PotionEffectTypes safely, mitigating deprecation warnings.
  * - Instantly completes to avoid halting the dungeon phase progression.
  */
 public class BuffAction extends DungeonAction {
@@ -34,11 +34,7 @@ public class BuffAction extends DungeonAction {
 
     @Override
     public void start(DungeonGame game) {
-        PotionEffectType type = Registry.POTION_EFFECT_TYPE.get(NamespacedKey.minecraft(effectType.toLowerCase(Locale.ROOT)));
-
-        if (type == null) {
-            type = PotionEffectType.getByName(effectType.toUpperCase(Locale.ROOT));
-        }
+        PotionEffectType type = Registry.MOB_EFFECT.get(NamespacedKey.minecraft(effectType.toLowerCase(Locale.ROOT)));
 
         if (type != null) {
             PotionEffect effect = new PotionEffect(type, durationTicks, amplifier);

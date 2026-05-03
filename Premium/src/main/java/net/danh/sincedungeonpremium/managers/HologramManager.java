@@ -16,6 +16,7 @@ import java.util.List;
  * Responsibilities:
  * - Integrates with DecentHolograms API to render 3D top player leaderboards in the world.
  * - Schedules asynchronous updates pulling direct data from the SinceDungeon Core Database.
+ * - Adheres to zero-hardcoding paradigms by pulling template texts from messages.yml.
  */
 public class HologramManager {
 
@@ -67,19 +68,23 @@ public class HologramManager {
         Location loc = new Location(Bukkit.getWorld(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]));
 
         List<String> lines = new ArrayList<>();
-        lines.add("&6&lSinceDungeon Leaderboard");
-        lines.add("&eMap: &f" + mapId);
+        lines.add(plugin.getFileManager().getMessageRaw("holograms.header"));
+        lines.add(plugin.getFileManager().getMessageRaw("holograms.map_line").replace("<map>", mapId));
         lines.add("");
 
         int rank = 1;
+        String format = plugin.getFileManager().getMessageRaw("holograms.format");
+
         for (TopManager.TopEntry entry : topEntries) {
             String valueStr = String.valueOf(entry.value());
-            lines.add("&e#" + rank + " &f" + entry.playerName() + " &8- &a" + valueStr);
+            lines.add(format.replace("<rank>", String.valueOf(rank))
+                    .replace("<player>", entry.playerName())
+                    .replace("<value>", valueStr));
             rank++;
         }
 
         if (topEntries.isEmpty()) {
-            lines.add("&7No records found yet.");
+            lines.add(plugin.getFileManager().getMessageRaw("holograms.empty"));
         }
 
         if (DHAPI.getHologram(holoId) == null) {

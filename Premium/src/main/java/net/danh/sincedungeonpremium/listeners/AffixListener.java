@@ -23,6 +23,7 @@ import java.util.List;
  * Responsibilities:
  * - Detects actions inside dungeons and checks the configuration to determine if affixes are active.
  * - Implements Volcanic (Explosions on mob death) and Vampiric (Mobs heal on hitting players).
+ * - Retrieves configurable particle effects to eliminate hardcoded instances.
  */
 public class AffixListener implements Listener {
 
@@ -37,6 +38,17 @@ public class AffixListener implements Listener {
         String dungeonId = game.getTemplate().id();
         List<String> activeAffixes = plugin.getFileManager().getConfig().getStringList("affixes." + dungeonId);
         return activeAffixes.contains(affix.toUpperCase());
+    }
+
+    private Particle getParticle(String path, Particle fallback) {
+        try {
+            String pStr = plugin.getFileManager().getConfig().getString(path);
+            if (pStr != null) {
+                return Particle.valueOf(pStr.toUpperCase());
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        return fallback;
     }
 
     /**
@@ -56,7 +68,8 @@ public class AffixListener implements Listener {
             double maxHealth = damager.getAttribute(Attribute.MAX_HEALTH).getValue();
             damager.setHealth(Math.min(maxHealth, damager.getHealth() + healAmount));
 
-            damager.getWorld().spawnParticle(Particle.HEART, damager.getLocation().add(0, 1, 0), 3, 0.5, 0.5, 0.5, 0);
+            Particle particle = getParticle("particles.affix_vampiric", Particle.HEART);
+            damager.getWorld().spawnParticle(particle, damager.getLocation().add(0, 1, 0), 3, 0.5, 0.5, 0.5, 0);
         }
     }
 
@@ -83,13 +96,16 @@ public class AffixListener implements Listener {
             final double radius = plugin.getFileManager().getConfig().getDouble("affixes-settings.volcanic.radius", 3.0);
             final int delayTicks = plugin.getFileManager().getConfig().getInt("affixes-settings.volcanic.delay-ticks", 40);
 
-            entity.getWorld().spawnParticle(Particle.FLAME, deathLoc, 10, 0.5, 0.1, 0.5, 0.05);
+            Particle warnParticle = getParticle("particles.affix_volcanic_warn", Particle.FLAME);
+            entity.getWorld().spawnParticle(warnParticle, deathLoc, 10, 0.5, 0.1, 0.5, 0.05);
 
             new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (deathLoc.getWorld() == null) return;
-                    deathLoc.getWorld().spawnParticle(Particle.EXPLOSION, deathLoc, 2);
+
+                    Particle boomParticle = getParticle("particles.affix_volcanic_boom", Particle.EXPLOSION);
+                    deathLoc.getWorld().spawnParticle(boomParticle, deathLoc, 2);
                     deathLoc.getWorld().playSound(deathLoc, org.bukkit.Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
                     for (Player p : deathLoc.getWorld().getPlayers()) {

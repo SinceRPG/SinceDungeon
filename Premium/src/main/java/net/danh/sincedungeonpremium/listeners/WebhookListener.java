@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
  * Responsibilities:
  * - Detects successful dungeon completions.
  * - Formats a lightweight JSON payload manually to bypass heavy library dependencies.
- * - Dispatches HTTP POST requests asynchronously to Discord.
+ * - Dispatches HTTP POST requests asynchronously to Discord, using the modern URI-to-URL conversion.
  */
 public class WebhookListener implements Listener {
 
@@ -61,14 +62,14 @@ public class WebhookListener implements Listener {
     private void sendWebhookAsync(String urlString, String title, String description, String colorDec) {
         CompletableFuture.runAsync(() -> {
             try {
-                URL url = new URL(urlString);
+                // Replaces deprecated new URL(String) from Java 20
+                URL url = URI.create(urlString).toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json; utf-8");
                 connection.setRequestProperty("User-Agent", "SinceDungeonPremium");
                 connection.setDoOutput(true);
 
-                // Manually construct JSON to avoid importing org.json or Gson, maintaining a lightweight footprint
                 String jsonPayload = String.format(
                         "{\"embeds\":[{\"title\":\"%s\",\"description\":\"%s\",\"color\":%s}]}",
                         escapeJson(title),

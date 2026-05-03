@@ -3,8 +3,10 @@ package net.danh.sincedungeonpremium.listeners;
 import net.danh.sinceDungeon.api.events.DungeonRewardClaimEvent;
 import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.models.DungeonReward;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -19,6 +21,7 @@ import org.bukkit.util.Vector;
  * Premium-Exclusive Listener: Advanced Loot & Roulette
  * Responsibilities:
  * - Intercepts core reward claiming to implement Holographic Ground Drops.
+ * - Parses display names into Adventure Components securely for custom nametags.
  * - Intercepts core Reward GUI opening to inject the Roulette Spin GUI system.
  */
 public class PremiumRewardListener implements Listener {
@@ -47,17 +50,15 @@ public class PremiumRewardListener implements Listener {
             Location dropLoc = player.getLocation().add(0, 1, 0);
             Item droppedItem = player.getWorld().dropItem(dropLoc, itemStack);
 
-            // Scatter velocity
             droppedItem.setVelocity(new Vector((Math.random() - 0.5) * 0.3, 0.5, (Math.random() - 0.5) * 0.3));
-            droppedItem.setPickupDelay(40); // Prevent instant pickup
+            droppedItem.setPickupDelay(40);
             droppedItem.setGlowing(true);
 
-            // Display hologram-like text using vanilla custom names for ultra-stability
             String displayName = reward.displayName() != null ? reward.displayName() : itemStack.getType().name();
-            droppedItem.setCustomName(net.danh.sinceDungeon.utils.ColorUtils.toPlainText(net.danh.sinceDungeon.utils.ColorUtils.parse(displayName)));
+            Component nameComp = ColorUtils.parse(displayName);
+            droppedItem.customName(nameComp);
             droppedItem.setCustomNameVisible(true);
 
-            // Cancel the event so the Core doesn't also give the item directly into the inventory
             e.setCancelled(true);
         }
     }
@@ -74,7 +75,6 @@ public class PremiumRewardListener implements Listener {
 
             if (useRoulette) {
                 e.setCancelled(true);
-                // Delay execution by 1 tick to prevent inventory overlap conflicts
                 org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
                     plugin.getRouletteManager().openRoulette(player, holder.session());
                 });
