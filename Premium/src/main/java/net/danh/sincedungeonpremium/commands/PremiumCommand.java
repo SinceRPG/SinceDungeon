@@ -9,10 +9,17 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+
+import java.util.List;
 
 /**
  * Premium-Exclusive Command: /sdp
+ * Responsibilities:
+ * - Admin command for reloading Premium configs and Holograms.
+ * - In-game utility to dynamically place and remove Holographic Leaderboards.
+ * - Provides full, dynamic tab-completion for all arguments, integrating with Core's API and config files.
  */
 public class PremiumCommand {
 
@@ -34,34 +41,61 @@ public class PremiumCommand {
                         })
                 )
                 .then(Commands.literal("hologram")
-                        .then(Commands.argument("map_id", StringArgumentType.word())
-                                .suggests((ctx, builder) -> {
-                                    String remaining = builder.getRemainingLowerCase();
-                                    for (String mapId : SinceDungeonAPI.get().getAvailableTemplates()) {
-                                        if (mapId.toLowerCase().startsWith(remaining)) {
-                                            builder.suggest(mapId);
-                                        }
-                                    }
-                                    return builder.buildFuture();
-                                })
-                                .then(Commands.argument("category", StringArgumentType.word())
+                        .then(Commands.literal("create")
+                                .then(Commands.argument("map_id", StringArgumentType.word())
                                         .suggests((ctx, builder) -> {
                                             String remaining = builder.getRemainingLowerCase();
-                                            if ("FASTEST_TIME".toLowerCase().startsWith(remaining))
-                                                builder.suggest("FASTEST_TIME");
-                                            if ("PARTY_FASTEST_TIME".toLowerCase().startsWith(remaining))
-                                                builder.suggest("PARTY_FASTEST_TIME");
-                                            if ("MOST_KILLS".toLowerCase().startsWith(remaining))
-                                                builder.suggest("MOST_KILLS");
-                                            if ("MOST_CLEARS".toLowerCase().startsWith(remaining))
-                                                builder.suggest("MOST_CLEARS");
+                                            for (String mapId : SinceDungeonAPI.get().getAvailableTemplates()) {
+                                                if (mapId.toLowerCase().startsWith(remaining)) {
+                                                    builder.suggest(mapId);
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("category", StringArgumentType.word())
+                                                .suggests((ctx, builder) -> {
+                                                    String remaining = builder.getRemainingLowerCase();
+                                                    if ("FASTEST_TIME".toLowerCase().startsWith(remaining))
+                                                        builder.suggest("FASTEST_TIME");
+                                                    if ("PARTY_FASTEST_TIME".toLowerCase().startsWith(remaining))
+                                                        builder.suggest("PARTY_FASTEST_TIME");
+                                                    if ("MOST_KILLS".toLowerCase().startsWith(remaining))
+                                                        builder.suggest("MOST_KILLS");
+                                                    if ("MOST_CLEARS".toLowerCase().startsWith(remaining))
+                                                        builder.suggest("MOST_CLEARS");
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    if (ctx.getSource().getExecutor() instanceof Player player) {
+                                                        String mapId = StringArgumentType.getString(ctx, "map_id");
+                                                        String category = StringArgumentType.getString(ctx, "category");
+                                                        plugin.getHologramManager().createHologramInGame(player, mapId, category);
+                                                    } else {
+                                                        plugin.getFileManager().sendMessage(null, "admin.invalid_player");
+                                                    }
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
+                        .then(Commands.literal("delete")
+                                .then(Commands.argument("hologram_id", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            ConfigurationSection sec = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
+                                            if (sec != null) {
+                                                for (String key : sec.getKeys(false)) {
+                                                    if (key.toLowerCase().startsWith(remaining)) {
+                                                        builder.suggest(key);
+                                                    }
+                                                }
+                                            }
                                             return builder.buildFuture();
                                         })
                                         .executes(ctx -> {
                                             if (ctx.getSource().getExecutor() instanceof Player player) {
-                                                String mapId = StringArgumentType.getString(ctx, "map_id");
-                                                String category = StringArgumentType.getString(ctx, "category");
-                                                plugin.getHologramManager().createHologramInGame(player, mapId, category);
+                                                String holoId = StringArgumentType.getString(ctx, "hologram_id");
+                                                plugin.getHologramManager().deleteHologramInGame(player, holoId);
                                             } else {
                                                 plugin.getFileManager().sendMessage(null, "admin.invalid_player");
                                             }
@@ -72,6 +106,6 @@ public class PremiumCommand {
                 )
                 .build();
 
-        event.registrar().register(node, "SinceDungeon Premium Commands", java.util.List.of("sdpremium"));
+        event.registrar().register(node, "SinceDungeon Premium Commands", List.of("sdpremium"));
     }
 }

@@ -15,10 +15,12 @@ log:
 admin:
   reload: "&aPremium configuration and holograms reloaded successfully!"
   holo_created: "&aHologram created and saved successfully!"
+  holo_deleted: "&aHologram removed successfully!"
+  holo_not_found: "&cCould not find a hologram with that ID."
   holo_save_fail: "&cFailed to save hologram to config.yml!"
   no_permission: "&cYou don't have permission to do this."
   invalid_player: "&cOnly players can use this command."
-  invalid_args: "&cInvalid arguments. Usage: /sdp hologram <map_id> <category>"
+  invalid_args: "&cInvalid arguments. Usage: /sdp hologram <create|delete>"
 
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"

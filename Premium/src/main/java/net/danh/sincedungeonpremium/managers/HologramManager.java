@@ -19,6 +19,7 @@ import java.util.List;
  * Responsibilities:
  * - Integrates with DecentHolograms API to render 3D top player leaderboards in the world.
  * - Schedules asynchronous updates pulling direct data from the SinceDungeon Core Database.
+ * - Handles creation and deletion of physical holograms seamlessly.
  * - Adheres to zero-hardcoding paradigms by pulling template texts from messages.yml.
  */
 public class HologramManager {
@@ -54,6 +55,32 @@ public class HologramManager {
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to save hologram to config!");
             plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
+        }
+    }
+
+    /**
+     * Premium Feature: In-Game Hologram Deletion
+     * Removes an active hologram from the world and erases its entry from config.yml.
+     *
+     * @param player The admin player removing the hologram.
+     * @param holoId The unique configuration ID of the hologram to remove.
+     */
+    public void deleteHologramInGame(Player player, String holoId) {
+        ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
+        if (holos != null && holos.contains(holoId)) {
+            plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId, null);
+            try {
+                plugin.getFileManager().getConfig().save(new File(plugin.getDataFolder(), "config.yml"));
+                if (Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) {
+                    DHAPI.removeHologram(holoId);
+                }
+                plugin.getFileManager().sendMessage(player, "admin.holo_deleted");
+            } catch (IOException e) {
+                plugin.getLogger().warning("Failed to save config after deleting hologram!");
+                plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
+            }
+        } else {
+            plugin.getFileManager().sendMessage(player, "admin.holo_not_found");
         }
     }
 
