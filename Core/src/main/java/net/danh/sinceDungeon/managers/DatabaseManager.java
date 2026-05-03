@@ -41,7 +41,7 @@ public class DatabaseManager {
         if (type.equals("mysql")) {
             String host = plugin.getConfigFile().getString("database.host", "localhost");
             int port = plugin.getConfigFile().getInt("database.port", 3306);
-            String database = plugin.getConfigFile().getString("database.database", "sincedungeon");
+            String database = plugin.getConfigFile().getString("database.database", "sincedungeonpremium");
             String username = plugin.getConfigFile().getString("database.username", "root");
             String password = plugin.getConfigFile().getString("database.password", "");
 

@@ -21,12 +21,12 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.List;
 
 /**
- * Handles the registration and execution of administrative /sincedungeon commands.
+ * Handles the registration and execution of administrative /sincedungeonpremium commands.
  */
 public class SinceDungeonCommand {
 
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
+        String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeonpremium");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.admin-aliases");
 
         LiteralCommandNode<CommandSourceStack> adminNode = Commands.literal(commandName)

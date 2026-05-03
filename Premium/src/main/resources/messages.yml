@@ -1,0 +1,12 @@
+# =========================================================
+# SINCE DUNGEON PREMIUM - MESSAGES
+# =========================================================
+
+prefix: "&6&lPremium &8» &7"
+
+log:
+  plugin_enabled: "SinceDungeon-PremiumAddon has been successfully enabled and hooked into Core!"
+  plugin_disabled: "SinceDungeon-PremiumAddon has been disabled."
+
+rewards:
+  exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"

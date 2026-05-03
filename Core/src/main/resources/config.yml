@@ -47,7 +47,7 @@ database:
   type: "sqlite"
   host: "localhost"
   port: 3306
-  database: "sincedungeon"
+  database: "sincedungeonpremium"
   username: "root"
   password: ""
 
@@ -79,7 +79,7 @@ commands:
   dungeon-aliases:
     - "dg"
     - "inst"
-  admin: "sincedungeon"
+  admin: "sincedungeonpremium"
   admin-aliases:
     - "sd"
     - "sdungeon"

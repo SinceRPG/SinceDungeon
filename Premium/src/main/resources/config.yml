@@ -1,0 +1,16 @@
+# =========================================================
+# SINCE DUNGEON PREMIUM - MAIN CONFIGURATION
+# =========================================================
+
+action-defaults:
+  apply_buff:
+    default-effect: "SPEED"
+    default-duration: 200
+    default-amplifier: 1
+    objective_text: "&aA mysterious power grants you strength!"
+
+gui:
+  actions:
+    apply_buff:
+      name: "&d&lPremium: Apply Buff"
+      desc: "Instantly applies a potion effect to all party members."

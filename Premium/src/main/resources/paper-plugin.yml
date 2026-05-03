@@ -1,0 +1,11 @@
+name: SinceDungeon-PremiumAddon
+version: '${version}'
+main: net.danh.sincedungeonpremium.SinceDungeonPremium
+api-version: '1.21'
+authors: [ VoChiDanh ]
+website: https://gitlab.com/sincerpg/SinceDungeon/-/wikis/home
+dependencies:
+  server:
+    SinceDungeon:
+      load: BEFORE
+      required: true
