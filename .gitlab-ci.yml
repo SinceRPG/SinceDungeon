@@ -8,9 +8,24 @@ variables:
   WEBHOOK_URL_PREMIUM: "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX"
   THREAD_ID_PREMIUM: "1500473399594451044"
 
+  # Gradle Settings
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+  # Bot Identity & Assets
   ICON_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
   THUMBNAIL_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
+  BOT_NAME_CORE: "SinceDungeon Build"
+  BOT_NAME_PREM: "SinceDungeon Premium"
+
+  # Embed Colors (Decimal format)
+  COLOR_PENDING_CORE: "16766720"  # Yellow
+  COLOR_PENDING_PREM: "16753920"  # Orange
+  COLOR_SUCCESS: "5763719"        # Green
+  COLOR_FAIL: "15548997"          # Red
+
+  # Default Texts
+  NO_CHANGELOG_TEXT: "No specific changelog provided."
+  FAIL_DESC_TEXT: "A syntax or compilation error occurred. Please check the GitLab Pipeline Console."
 
 stages:
   - notify_start
@@ -27,14 +42,19 @@ notify_start:
     - AUTHOR=$(git log -1 --pretty=%an)
     - HASH=$(git log -1 --pretty=%h)
     - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    # Extract versions gracefully
     - CORE_VER=$(gradle :Core:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
     - PREM_VER=$(gradle :Premium:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+
+    # Initialize the artifact file to store Message IDs
     - touch build.env
+
     - |
       # 1. CREATE PENDING MESSAGE FOR CORE
       if echo "$COMMIT_MSG" | grep -q "Core:"; then
         CORE_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Core:/{f=1; next} /^Premium:/{f=0} f')
-        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="No specific changelog provided."
+        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="$NO_CHANGELOG_TEXT"
       
         jq -n \
           --arg author "$AUTHOR triggered a build for SinceDungeon" \
@@ -43,11 +63,13 @@ notify_start:
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
           --arg thumb "$THUMBNAIL_URL" \
+          --arg bot_name "$BOT_NAME_CORE" \
+          --argjson color "$COLOR_PENDING_CORE" \
           '{
-            username: "SinceDungeon Build",
+            username: $bot_name,
             avatar_url: $icon,
             embeds: [{
-              color: 16766720,
+              color: $color,
               author: { name: $author, icon_url: $icon },
               title: "⏳ Building Core version...",
               description: $desc,
@@ -57,16 +79,17 @@ notify_start:
             }]
           }' > core_start.json
 
-        # Properly construct URL for creating a message in a thread
+        # Send message and extract ID, save to build.env for later stages
         RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @core_start.json "${WEBHOOK_URL_FREE}?thread_id=${THREAD_ID_FREE}&wait=true")
         MSG_ID=$(echo $RESPONSE | jq -r '.id')
         if [ "$MSG_ID" != "null" ]; then echo "CORE_MSG_ID=$MSG_ID" >> build.env; fi
       fi
+
     - |
       # 2. CREATE PENDING MESSAGE FOR PREMIUM
       if echo "$COMMIT_MSG" | grep -q "Premium:"; then
         PREMIUM_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Premium:/{f=1; next} /^Core:/{f=0} f')
-        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
+        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="$NO_CHANGELOG_TEXT"
       
         jq -n \
           --arg author "$AUTHOR triggered a build for SinceDungeon Premium" \
@@ -75,11 +98,13 @@ notify_start:
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
           --arg thumb "$THUMBNAIL_URL" \
+          --arg bot_name "$BOT_NAME_PREM" \
+          --argjson color "$COLOR_PENDING_PREM" \
           '{
-            username: "SinceDungeon Premium",
+            username: $bot_name,
             avatar_url: $icon,
             embeds: [{
-              color: 16753920,
+              color: $color,
               author: { name: $author, icon_url: $icon },
               title: "⏳ Building Premium version...",
               description: $desc,
@@ -89,10 +114,12 @@ notify_start:
             }]
           }' > prem_start.json
 
+        # Send message and extract ID, save to build.env for later stages
         RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @prem_start.json "${WEBHOOK_URL_PREMIUM}?thread_id=${THREAD_ID_PREMIUM}&wait=true")
         MSG_ID=$(echo $RESPONSE | jq -r '.id')
         if [ "$MSG_ID" != "null" ]; then echo "PREM_MSG_ID=$MSG_ID" >> build.env; fi
       fi
+
   artifacts:
     reports:
       dotenv: build.env
@@ -122,11 +149,12 @@ notify_success:
     - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     - CORE_VER=$(gradle :Core:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
     - PREM_VER=$(gradle :Premium:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+
     - |
-      # 1. EDIT CORE MESSAGE
+      # 1. EDIT CORE MESSAGE ON SUCCESS
       if [ -n "$CORE_MSG_ID" ]; then
         CORE_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Core:/{f=1; next} /^Premium:/{f=0} f')
-        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="No specific changelog provided."
+        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="$NO_CHANGELOG_TEXT"
       
         jq -n \
           --arg author "$AUTHOR pushed an update for SinceDungeon" \
@@ -135,9 +163,10 @@ notify_success:
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
           --arg thumb "$THUMBNAIL_URL" \
+          --argjson color "$COLOR_SUCCESS" \
           '{
             embeds: [{
-              color: 5763719,
+              color: $color,
               author: { name: $author, icon_url: $icon },
               title: "Build Successful! 🚀",
               description: $desc,
@@ -147,19 +176,20 @@ notify_success:
             }]
           }' > core_success.json
 
+        # Locate the JAR artifact and PATCH the existing Discord message
         CORE_JAR=$(find Core/build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" | head -n 1)
         if [ -f "$CORE_JAR" ]; then
-          # Properly construct URL for editing a message in a thread
           curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
         else
           curl -X PATCH -H "Content-Type: application/json" -d @core_success.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
         fi
       fi
+
     - |
-      # 2. EDIT PREMIUM MESSAGE
+      # 2. EDIT PREMIUM MESSAGE ON SUCCESS
       if [ -n "$PREM_MSG_ID" ]; then
         PREMIUM_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Premium:/{f=1; next} /^Core:/{f=0} f')
-        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
+        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="$NO_CHANGELOG_TEXT"
       
         jq -n \
           --arg author "$AUTHOR pushed an update for SinceDungeon Premium" \
@@ -168,9 +198,10 @@ notify_success:
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
           --arg thumb "$THUMBNAIL_URL" \
+          --argjson color "$COLOR_SUCCESS" \
           '{
             embeds: [{
-              color: 5763719,
+              color: $color,
               author: { name: $author, icon_url: $icon },
               title: "Premium Version Ready! 👑",
               description: $desc,
@@ -180,6 +211,7 @@ notify_success:
             }]
           }' > prem_success.json
 
+        # Locate the JAR artifact and PATCH the existing Discord message
         PREMIUM_JAR=$(find Premium/build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
         if [ -f "$PREMIUM_JAR" ]; then
           curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
@@ -198,16 +230,56 @@ notify_failure:
   script:
     - HASH=$(git log -1 --pretty=%h)
     - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    - JOB_URL="$CI_PROJECT_URL/-/jobs/$CI_JOB_ID"
+
+    # FIX: Changed CI_JOB_ID to CI_PIPELINE_URL to link to the entire pipeline view instead of just the notification job
+    - PIPELINE_URL="$CI_PIPELINE_URL"
+
     - |
+      # 1. EDIT CORE MESSAGE ON FAILURE
       if [ -n "$CORE_MSG_ID" ]; then
-        jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
-        '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
-        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
+        jq -n \
+          --arg url "$PIPELINE_URL" \
+          --arg footer "Build Failed • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg desc "$FAIL_DESC_TEXT" \
+          --argjson color "$COLOR_FAIL" \
+          '{ 
+            embeds: [{ 
+              color: $color, 
+              author: { name: "Build Failed ❌", icon_url: $icon }, 
+              title: "Click here to view Pipeline Logs", 
+              url: $url, 
+              description: $desc, 
+              footer: { text: $footer }, 
+              timestamp: $timestamp 
+            }] 
+          }' > core_fail.json
+      
+        curl -X PATCH -H "Content-Type: application/json" -d @core_fail.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
       fi
+
     - |
+      # 2. EDIT PREMIUM MESSAGE ON FAILURE
       if [ -n "$PREM_MSG_ID" ]; then
-        jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
-        '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
-        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
+        jq -n \
+          --arg url "$PIPELINE_URL" \
+          --arg footer "Build Failed • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg desc "$FAIL_DESC_TEXT" \
+          --argjson color "$COLOR_FAIL" \
+          '{ 
+            embeds: [{ 
+              color: $color, 
+              author: { name: "Build Failed ❌", icon_url: $icon }, 
+              title: "Click here to view Pipeline Logs", 
+              url: $url, 
+              description: $desc, 
+              footer: { text: $footer }, 
+              timestamp: $timestamp 
+            }] 
+          }' > prem_fail.json
+      
+        curl -X PATCH -H "Content-Type: application/json" -d @prem_fail.json "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
       fi
