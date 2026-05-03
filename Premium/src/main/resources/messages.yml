@@ -10,3 +10,18 @@ log:
 
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"
+  class_loot: "&aYou received a class-specific item: &e<item>&a!"
+  no_spins_left: "&cYou don't have any spins left!"
+
+escort:
+  failed: "&cThe VIP has been killed! The mission has failed."
+
+branch:
+  path_chosen: "&aYou have chosen to advance to stage <stage>!"
+
+puzzle:
+  failed: "&cWrong sequence! The puzzle has been reset."
+  solved: "&aCorrect sequence! The mechanism unlocks."
+
+affixes:
+  volcanic_hit: "&cYou were burned by a Volcanic explosion!"

@@ -2,6 +2,11 @@
 # SINCE DUNGEON PREMIUM - MAIN CONFIGURATION
 # =========================================================
 
+# ---------------------------------------------------------
+# [ADVANCED ACTIONS DEFAULTS]
+# Configures the default values populated when an admin
+# creates these tasks in the Editor GUI.
+# ---------------------------------------------------------
 action-defaults:
   apply_buff:
     default-effect: "SPEED"
@@ -9,8 +14,80 @@ action-defaults:
     default-amplifier: 1
     objective_text: "&aA mysterious power grants you strength!"
 
+  escort:
+    default-mob: "VILLAGER"
+    default-name: "&aVIP Escort"
+    default-health: 100.0
+    default-speed: 0.6
+    default-radius: 4.0
+    objective_text: "&eProtect the VIP and escort them to safety!"
+
+  branch:
+    objective_text: "&aChoose your destiny!"
+
+  puzzle:
+    objective_text: "&ePull the levers in the correct order!"
+
 gui:
   actions:
     apply_buff:
       name: "&d&lPremium: Apply Buff"
       desc: "Instantly applies a potion effect to all party members."
+    escort:
+      name: "&6&lPremium: Escort NPC"
+      desc: "Spawns an NPC that walks to a target. Fails if it dies."
+    branch:
+      name: "&e&lPremium: Branching Path"
+      desc: "Allows players to choose between two different stages."
+    puzzle:
+      name: "&b&lPremium: Lever Puzzle"
+      desc: "Requires players to activate levers in a specific sequence."
+
+# ---------------------------------------------------------
+# [MYTHIC+ AFFIXES]
+# Attach affixes to specific Dungeon Template IDs.
+# Available Affixes: VOLCANIC, VAMPIRIC
+# ---------------------------------------------------------
+affixes:
+  example_dungeon:
+    - "VOLCANIC"
+    - "VAMPIRIC"
+
+affixes-settings:
+  volcanic:
+    damage: 10.0
+    radius: 3.0
+    delay-ticks: 40 # 2 seconds before explosion
+  vampiric:
+    heal-percentage: 0.5 # Heals 50% of the damage dealt to players
+
+# ---------------------------------------------------------
+# [ADVANCED LOOT SYSTEMS]
+# ---------------------------------------------------------
+hologram-drops:
+  enabled: true
+
+roulette:
+  enabled: true
+  title: "&6&lReward Spin"
+
+hologram-leaderboard:
+  # Interval in seconds to pull data from DB and update displays
+  update-interval-seconds: 300
+  locations:
+  # Example format:
+  # holo_1:
+  #   map: "example_dungeon"
+  #   category: "FASTEST_TIME"
+  #   location: "world,0.5,64,0.5"
+
+# ---------------------------------------------------------
+# [DISCORD WEBHOOKS]
+# Sends notifications to a Discord channel upon completion.
+# ---------------------------------------------------------
+webhooks:
+  enabled: true
+  url: "YOUR_DISCORD_WEBHOOK_URL_HERE"
+  embed-title: "🎉 Dungeon Cleared!"
+  embed-color: "5814783" # Decimal color code (Purple)
+  embed-description: "Map: **%dungeon%**\nTime: **%time%s**\nPlayers: **%players%**"

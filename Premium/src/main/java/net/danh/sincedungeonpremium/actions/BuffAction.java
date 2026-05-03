@@ -15,7 +15,7 @@ import java.util.Locale;
  * Premium-Exclusive Action: Apply Buff
  * Responsibilities:
  * - Grants a specific PotionEffect to all alive/online participants in the dungeon.
- * - Adapts to Paper 1.21+ Registry for retrieving PotionEffectTypes safely, mitigating deprecation warnings.
+ * - Adapts to Paper 1.21+ Registry for retrieving PotionEffectTypes safely.
  * - Instantly completes to avoid halting the dungeon phase progression.
  */
 public class BuffAction extends DungeonAction {

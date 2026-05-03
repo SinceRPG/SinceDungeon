@@ -28,7 +28,7 @@ public class FileManager {
 
     public void setup() {
         if (!plugin.getDataFolder().exists()) {
-            plugin.getDataFolder().mkdir();
+            plugin.getDataFolder().mkdirs();
         }
 
         configFile = new File(plugin.getDataFolder(), "config.yml");
@@ -46,6 +46,10 @@ public class FileManager {
 
     public FileConfiguration getConfig() {
         return config;
+    }
+
+    public FileConfiguration getMessages() {
+        return messages;
     }
 
     public String getMessageRaw(String path) {
