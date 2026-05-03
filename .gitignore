@@ -1,7 +1,12 @@
-# Project exclude paths
 /.gradle/
 /build/
 /build/classes/java/main/
+/Core/.gradle/
+/Core/build/
+/Core/build/classes/java/main/
+/Premium/.gradle/
+/Premium/build/
+/Premium/build/classes/java/main/
 /.idea/
 /.vscode/
 config.json
