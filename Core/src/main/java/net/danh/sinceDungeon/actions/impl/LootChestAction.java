@@ -22,12 +22,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Handles spawning a lootable chest that players must empty to proceed.
@@ -37,13 +32,11 @@ public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
     private final Map<Integer, String> itemsConfig;
     private final boolean perPlayer;
-
-    private boolean isOpened = false;
-    private Block chestBlock = null;
-
     // Data for Per-Player Instanced Loot
     private final Map<UUID, Inventory> personalInventories = new HashMap<>();
     private final Set<UUID> finishedPlayers = new HashSet<>();
+    private boolean isOpened = false;
+    private Block chestBlock = null;
 
     public LootChestAction(Vector location, Map<Integer, String> itemsConfig, boolean perPlayer) {
         this.chestLocation = location;

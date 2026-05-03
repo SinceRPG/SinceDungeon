@@ -1,118 +1,211 @@
 image: gradle:9-jdk21
 
 variables:
-  # Thay thế URL Webhook của bạn vào đây
-  DISCORD_WEBHOOK_URL: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_?thread_id=1475129559530864852"
+  # Replace with your actual Webhook URLs
+  DISCORD_WEBHOOK_URL_FREE: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_?thread_id=1475129559530864852"
+  DISCORD_WEBHOOK_URL_PREMIUM: "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX?thread_id=1500473399594451044"
+
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  # URL ảnh icon nhỏ ở góc và ảnh lớn bên phải (Thumbnail)
-  # Bạn nên thay link này bằng link logo plugin của bạn (đuôi .png/.jpg)
   ICON_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
   THUMBNAIL_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
 
 stages:
+  - notify_start
   - build
-  - notify
+  - notify_result
 
-# --- STAGE 1: BUILD ---
+# --- STAGE 1: NOTIFY BUILD START (SENDS THE "WAITING" MESSAGE) ---
+notify_start:
+  stage: notify_start
+  before_script:
+    - apt-get update && apt-get install -y git jq curl
+  script:
+    - COMMIT_MSG=$(git log -1 --pretty=%B)
+    - AUTHOR=$(git log -1 --pretty=%an)
+    - HASH=$(git log -1 --pretty=%h)
+    - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    - CORE_VER=$(gradle :Core:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+    - PREM_VER=$(gradle :Premium:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+    - touch build.env
+    - |
+      # 1. CREATE PENDING MESSAGE FOR CORE
+      if echo "$COMMIT_MSG" | grep -q "Core:"; then
+        CORE_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Core:/{f=1; next} /^Premium:/{f=0} f')
+        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="No specific changelog provided."
+      
+        jq -n \
+          --arg author "$AUTHOR triggered a build for SinceDungeon" \
+          --arg desc "$CORE_CHANGELOG" \
+          --arg footer "Core v$CORE_VER • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg thumb "$THUMBNAIL_URL" \
+          '{
+            username: "SinceDungeon Build",
+            avatar_url: $icon,
+            embeds: [{
+              color: 16753920,
+              author: { name: $author, icon_url: $icon },
+              title: "⏳ Building Core version...",
+              description: $desc,
+              thumbnail: { url: $thumb },
+              footer: { text: $footer },
+              timestamp: $timestamp
+            }]
+          }' > core_start.json
+
+        # Send the message with ?wait=true so Discord returns the Message ID
+        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @core_start.json "${DISCORD_WEBHOOK_URL_FREE}&wait=true")
+        MSG_ID=$(echo $RESPONSE | jq -r '.id')
+        if [ "$MSG_ID" != "null" ]; then echo "CORE_MSG_ID=$MSG_ID" >> build.env; fi
+      fi
+    - |
+      # 2. CREATE PENDING MESSAGE FOR PREMIUM
+      if echo "$COMMIT_MSG" | grep -q "Premium:"; then
+        PREMIUM_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Premium:/{f=1; next} /^Core:/{f=0} f')
+        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
+      
+        jq -n \
+          --arg author "$AUTHOR triggered a build for SinceDungeon" \
+          --arg desc "$PREMIUM_CHANGELOG" \
+          --arg footer "Premium v$PREM_VER • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg thumb "$THUMBNAIL_URL" \
+          '{
+            username: "SinceDungeon Premium",
+            avatar_url: $icon,
+            embeds: [{
+              color: 16753920,
+              author: { name: $author, icon_url: $icon },
+              title: "⏳ Building Premium version...",
+              description: $desc,
+              thumbnail: { url: $thumb },
+              footer: { text: $footer },
+              timestamp: $timestamp
+            }]
+          }' > prem_start.json
+
+        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @prem_start.json "${DISCORD_WEBHOOK_URL_PREMIUM}&wait=true")
+        MSG_ID=$(echo $RESPONSE | jq -r '.id')
+        if [ "$MSG_ID" != "null" ]; then echo "PREM_MSG_ID=$MSG_ID" >> build.env; fi
+      fi
+  artifacts:
+    reports:
+      # Pass these generated Message IDs to the next stages
+      dotenv: build.env
+
+# --- STAGE 2: ACTUAL BUILD PROCESS ---
 build_job:
   stage: build
   script:
     - gradle clean build
   artifacts:
     paths:
-      - build/libs/*.jar
+      - Core/build/libs/SinceDungeon-*.jar
+      - Premium/build/libs/SinceDungeon-PremiumAddon-*.jar
     expire_in: never
 
-# --- STAGE 2: NOTIFY SUCCESS (Chạy khi build thành công) ---
+# --- STAGE 3A: IF BUILD SUCCESSFUL (EDIT OLD MESSAGE & ATTACH FILE) ---
 notify_success:
-  stage: notify
-  needs: [ "build_job" ]
+  stage: notify_result
+  needs: [ "notify_start", "build_job" ]
   when: on_success
   before_script:
     - apt-get update && apt-get install -y git jq curl
   script:
+    - COMMIT_MSG=$(git log -1 --pretty=%B)
+    - AUTHOR=$(git log -1 --pretty=%an)
+    - HASH=$(git log -1 --pretty=%h)
+    - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    - CORE_VER=$(gradle :Core:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
+    - PREM_VER=$(gradle :Premium:properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
     - |
-      # 1. LẤY THÔNG TIN
-      COMMIT_MSG=$(git log -1 --pretty=%B)
-      AUTHOR=$(git log -1 --pretty=%an)
-      HASH=$(git log -1 --pretty=%h)
-      VERSION=$(gradle properties -q | grep "^version:" | awk '{print $2}' || echo "Unknown")
-      NAME=$(gradle properties -q | grep "^name:" | awk '{print $2}' || echo "Plugin")
-      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      # 1. EDIT CORE MESSAGE
+      if [ -n "$CORE_MSG_ID" ]; then
+        CORE_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Core:/{f=1; next} /^Premium:/{f=0} f')
+        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="No specific changelog provided."
       
-      # 2. TẠO JSON EMBED (MÀU XANH)
-      # Màu 5763719 (Green)
-      jq -n \
-        --arg author "$AUTHOR pushed an update for $NAME" \
-        --arg desc "$COMMIT_MSG" \
-        --arg footer "Build Success • Version $VERSION • $HASH" \
-        --arg timestamp "$TIMESTAMP" \
-        --arg icon "$ICON_URL" \
-        --arg thumb "$THUMBNAIL_URL" \
-        '{
-          username: "SinceDungeon Build",
-          avatar_url: $icon,
-          embeds: [{
-            color: 5763719,
-            author: { name: $author, icon_url: $icon },
-            title: "Build Successful & Ready!",
-            description: $desc,
-            thumbnail: { url: $thumb },
-            footer: { text: $footer },
-            timestamp: $timestamp
-          }]
-        }' > success_payload.json
+        jq -n \
+          --arg author "$AUTHOR pushed an update for SinceDungeon" \
+          --arg desc "$CORE_CHANGELOG" \
+          --arg footer "Core v$CORE_VER • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg thumb "$THUMBNAIL_URL" \
+          '{
+            embeds: [{
+              color: 5763719,
+              author: { name: $author, icon_url: $icon },
+              title: "Build Successful! 🚀",
+              description: $desc,
+              thumbnail: { url: $thumb },
+              footer: { text: $footer },
+              timestamp: $timestamp
+            }]
+          }' > core_success.json
 
-      # 3. GỬI EMBED TRƯỚC
-      curl -H "Content-Type: application/json" -d @success_payload.json "$DISCORD_WEBHOOK_URL"
+        CORE_JAR=$(find Core/build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" | head -n 1)
+        if [ -f "$CORE_JAR" ]; then
+          # PATCH request to edit the Discord message and attach the JAR simultaneously
+          curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+        else
+          curl -X PATCH -H "Content-Type: application/json" -d @core_success.json "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+        fi
+      fi
+    - |
+      # 2. EDIT PREMIUM MESSAGE
+      if [ -n "$PREM_MSG_ID" ]; then
+        PREMIUM_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Premium:/{f=1; next} /^Core:/{f=0} f')
+        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
       
-      # 4. UPLOAD FILE JAR NGAY SAU ĐÓ
-      JAR_FILE=$(find build/libs -name "*.jar" | head -n 1)
-      if [ -f "$JAR_FILE" ]; then
-        echo "Uploading $JAR_FILE..."
-        curl -X POST -F "file=@$JAR_FILE" "$DISCORD_WEBHOOK_URL"
-      else
-        echo "Jar file not found!"
+        jq -n \
+          --arg author "$AUTHOR pushed an update for SinceDungeon" \
+          --arg desc "$PREMIUM_CHANGELOG" \
+          --arg footer "Premium v$PREM_VER • $HASH" \
+          --arg timestamp "$TIMESTAMP" \
+          --arg icon "$ICON_URL" \
+          --arg thumb "$THUMBNAIL_URL" \
+          '{
+            embeds: [{
+              color: 16766720,
+              author: { name: $author, icon_url: $icon },
+              title: "Premium Version Ready! 👑",
+              description: $desc,
+              thumbnail: { url: $thumb },
+              footer: { text: $footer },
+              timestamp: $timestamp
+            }]
+          }' > prem_success.json
+
+        PREMIUM_JAR=$(find Premium/build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
+        if [ -f "$PREMIUM_JAR" ]; then
+          curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+        else
+          curl -X PATCH -H "Content-Type: application/json" -d @prem_success.json "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+        fi
       fi
 
-# --- STAGE 2: NOTIFY FAILURE (Chạy khi build thất bại) ---
+# --- STAGE 3B: IF BUILD FAILS (EDIT MESSAGE TO RED) ---
 notify_failure:
-  stage: notify
-  needs: [ "build_job" ]
+  stage: notify_result
+  needs: [ "notify_start", "build_job" ]
   when: on_failure
   before_script:
     - apt-get update && apt-get install -y git jq curl
   script:
+    - HASH=$(git log -1 --pretty=%h)
+    - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    - JOB_URL="$CI_PROJECT_URL/-/jobs/$CI_JOB_ID"
     - |
-      # 1. LẤY THÔNG TIN
-      AUTHOR=$(git log -1 --pretty=%an)
-      HASH=$(git log -1 --pretty=%h)
-      NAME=$(gradle properties -q | grep "^name:" | awk '{print $2}' || echo "Plugin")
-      TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-      JOB_URL="$CI_PROJECT_URL/-/jobs/$CI_JOB_ID"
-
-      # 2. TẠO JSON EMBED (MÀU ĐỎ)
-      # Màu 15548997 (Red)
-      jq -n \
-        --arg author "$AUTHOR broke the build for $NAME!" \
-        --arg desc "The build failed. Please check the console logs." \
-        --arg url "$JOB_URL" \
-        --arg footer "Build Failed • $HASH" \
-        --arg timestamp "$TIMESTAMP" \
-        --arg icon "$ICON_URL" \
-        '{
-          username: "SinceDungeon Build",
-          avatar_url: $icon,
-          embeds: [{
-            color: 15548997,
-            author: { name: $author, icon_url: $icon },
-            title: "Build Failed ❌",
-            url: $url,
-            description: $desc,
-            footer: { text: $footer },
-            timestamp: $timestamp
-          }]
-        }' > fail_payload.json
-
-      # 3. GỬI CẢNH BÁO
-      curl -H "Content-Type: application/json" -d @fail_payload.json "$DISCORD_WEBHOOK_URL"
+      if [ -n "$CORE_MSG_ID" ]; then
+        jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
+        '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
+        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+      fi
+    - |
+      if [ -n "$PREM_MSG_ID" ]; then
+        jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
+        '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
+        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+      fi

@@ -1,1 +1,3 @@
 rootProject.name = 'SinceDungeon'
+include('Core')
+include('Premium')
