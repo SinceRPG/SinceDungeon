@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
+import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.PartyManager.Party;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
@@ -533,7 +534,7 @@ public class DungeonListener implements Listener {
             boolean outOfLives = false;
             if (deductLives > 0) {
                 plugin.getLivesManager().removeLives(p.getUniqueId(), deductLives);
-                net.danh.sinceDungeon.managers.LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
+                LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
                 int current = livesData != null ? livesData.getCurrentLives() : 0;
                 int max = livesData != null ? livesData.getMaxLives() : 0;
 

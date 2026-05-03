@@ -437,7 +437,7 @@ public class DungeonManager {
             if (reqLives > 0) {
                 for (Player participant : participants) {
                     if (!plugin.getLivesManager().hasEnoughLives(participant.getUniqueId(), reqLives)) {
-                        net.danh.sinceDungeon.managers.LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
+                        LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
                         int current = lives != null ? lives.getCurrentLives() : 0;
 
                         String msg = plugin.getLanguageManager().getString("lives.not_enough")

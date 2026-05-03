@@ -912,8 +912,20 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
                 if (slot == 49) {
-                    String prompt = session.getCurrentListPath().contains("commands") ? "edit_commands" : "default";
-                    if (session.getCurrentListPath().contains("custom_drops")) prompt = "edit_custom_drops";
+                    String listPath = session.getCurrentListPath();
+                    String prompt;
+
+                    if (listPath.contains(".actions.")) {
+                        String[] pathParts = listPath.split("\\.");
+                        String fieldName = pathParts[pathParts.length - 1];
+                        prompt = "edit_action_" + fieldName;
+                    } else if (listPath.contains("commands")) {
+                        prompt = "edit_commands";
+                    } else if (listPath.contains("custom_drops")) {
+                        prompt = "edit_custom_drops";
+                    } else {
+                        prompt = "default";
+                    }
 
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
                         List<String> list = session.getConfig().getStringList(session.getCurrentListPath());

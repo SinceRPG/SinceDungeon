@@ -1,6 +1,7 @@
 package net.danh.sincedungeonpremium.listeners;
 
 import net.danh.sinceDungeon.api.events.DungeonRewardClaimEvent;
+import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
@@ -73,7 +74,7 @@ public class PremiumRewardListener implements Listener {
     public void onInventoryOpen(InventoryOpenEvent e) {
         if (!(e.getPlayer() instanceof Player player)) return;
 
-        if (e.getInventory().getHolder() instanceof net.danh.sinceDungeon.guis.reward.RewardHolder holder) {
+        if (e.getInventory().getHolder() instanceof RewardHolder holder) {
             boolean useRoulette = plugin.getFileManager().getConfig().getBoolean("roulette.enabled", false);
 
             if (useRoulette) {
