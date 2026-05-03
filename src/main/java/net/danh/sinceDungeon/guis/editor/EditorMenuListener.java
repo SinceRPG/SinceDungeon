@@ -61,6 +61,10 @@ public class EditorMenuListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
+        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
+        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
+        if (e.getView().getTopInventory().getLocation() != null) return;
+
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder) {
             if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) return;
 
@@ -82,6 +86,12 @@ public class EditorMenuListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
+
+        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
+        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
+        if (e.getView().getTopInventory().getLocation() != null) return;
+        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder)) return;
+
         if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
 
         if (!p.hasPermission("SinceDungeon.admin")) {
@@ -933,6 +943,10 @@ public class EditorMenuListener implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
+        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
+        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
+        if (e.getView().getTopInventory().getLocation() != null) return;
+
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder && e.getPlayer() instanceof Player p) {
             EditorSession session = holder.session();
             if (session != null && "EDIT_ACTION_ITEMS".equals(holder.menuType())) {

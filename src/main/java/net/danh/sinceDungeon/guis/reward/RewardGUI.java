@@ -223,6 +223,7 @@ public class RewardGUI implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
+        if (e.getView().getTopInventory().getLocation() != null) return;
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder) {
             for (int slot : e.getRawSlots()) {
                 if (slot < e.getView().getTopInventory().getSize()) {
@@ -236,7 +237,8 @@ public class RewardGUI implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-
+        if (e.getView().getTopInventory().getLocation() != null) return;
+        if (!(e.getWhoClicked() instanceof Player)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof RewardHolder holder)) return;
 
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
@@ -336,6 +338,7 @@ public class RewardGUI implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
+        if (e.getView().getTopInventory().getLocation() != null) return;
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder holder && e.getPlayer() instanceof Player p) {
             RewardSession session = holder.session();
             if (session != null) {

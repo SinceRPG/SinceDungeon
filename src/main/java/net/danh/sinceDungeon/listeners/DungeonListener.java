@@ -25,6 +25,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.Inventory;
 
 import java.util.List;
 
@@ -452,7 +453,8 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p);
         }
 
-        if (p.getOpenInventory().getTopInventory().getHolder() instanceof RewardHolder) {
+        Inventory topInv = p.getOpenInventory().getTopInventory();
+        if (topInv.getLocation() == null && topInv.getHolder() instanceof RewardHolder) {
             if (p.getItemOnCursor().getType() != Material.AIR) {
                 p.getInventory().addItem(p.getItemOnCursor());
                 p.setItemOnCursor(null);

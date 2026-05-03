@@ -119,7 +119,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
                     }
 
                     if (!cursorHasItem) {
-                        completeChestLogic(game, chest);
+                        completeChestLogic(game, chest.getBlockInventory());
                     }
                 }
             }
@@ -182,7 +182,8 @@ public class LootChestAction extends DungeonAction implements Tickable {
         } else if (event instanceof InventoryCloseEvent e) {
             Inventory inv = e.getInventory();
             if (perPlayer) {
-                if (inv.getHolder() instanceof VirtualLootHolder) {
+                // Note: Avoid inv.getHolder() if the inventory has a location matching the target.
+                if (inv.getLocation() == null && inv.getHolder() instanceof VirtualLootHolder) {
                     if (isInventoryEmpty(inv)) {
                         finishedPlayers.add(e.getPlayer().getUniqueId());
                         game.sendActionMessage(this, "progress", "action.chest_personal_looted", "<player>", e.getPlayer().getName());
@@ -191,13 +192,12 @@ public class LootChestAction extends DungeonAction implements Tickable {
                     }
                 }
             } else {
-                if (inv.getHolder() instanceof Chest chest) {
-                    if (isTargetChest(chest.getBlock())) {
-                        if (isInventoryEmpty(inv) && !completed) {
-                            completeChestLogic(game, chest);
-                        } else if (!completed) {
-                            game.sendActionMessage(this, "warning", "action.chest_not_empty");
-                        }
+                Location invLoc = inv.getLocation();
+                if (invLoc != null && isTargetChest(invLoc.getBlock())) {
+                    if (isInventoryEmpty(inv) && !completed) {
+                        completeChestLogic(game, inv);
+                    } else if (!completed) {
+                        game.sendActionMessage(this, "warning", "action.chest_not_empty");
                     }
                 }
             }
@@ -205,8 +205,14 @@ public class LootChestAction extends DungeonAction implements Tickable {
             Inventory inv = e.getInventory();
 
             boolean isTarget = false;
-            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) isTarget = true;
-            else if (inv.getHolder() instanceof VirtualLootHolder) isTarget = true;
+
+            // Note: Avoid inv.getHolder() on world blocks to prevent BlockState snapshot lag.
+            Location invLoc = inv.getLocation();
+            if (invLoc != null && isTargetChest(invLoc.getBlock())) {
+                isTarget = true;
+            } else if (inv.getLocation() == null && inv.getHolder() instanceof VirtualLootHolder) {
+                isTarget = true;
+            }
 
             if (isTarget) {
                 if (e.getWhoClicked() instanceof Player p && p.getGameMode() == GameMode.SPECTATOR) {
@@ -241,8 +247,13 @@ public class LootChestAction extends DungeonAction implements Tickable {
         } else if (event instanceof InventoryDragEvent e) {
             Inventory inv = e.getInventory();
             boolean isTarget = false;
-            if (inv.getHolder() instanceof Chest chest && isTargetChest(chest.getBlock())) isTarget = true;
-            else if (inv.getHolder() instanceof VirtualLootHolder) isTarget = true;
+
+            Location invLoc = inv.getLocation();
+            if (invLoc != null && isTargetChest(invLoc.getBlock())) {
+                isTarget = true;
+            } else if (inv.getLocation() == null && inv.getHolder() instanceof VirtualLootHolder) {
+                isTarget = true;
+            }
 
             if (isTarget) {
                 for (int slot : e.getRawSlots()) {
@@ -255,12 +266,12 @@ public class LootChestAction extends DungeonAction implements Tickable {
         }
     }
 
-    private void completeChestLogic(DungeonGame game, Chest chest) {
+    private void completeChestLogic(DungeonGame game, Inventory chestInv) {
         this.completed = true;
         game.sendActionMessage(this, "complete", "action.loot_complete");
 
-        if (chest != null) {
-            for (HumanEntity viewer : new ArrayList<>(chest.getBlockInventory().getViewers())) {
+        if (chestInv != null) {
+            for (HumanEntity viewer : new ArrayList<>(chestInv.getViewers())) {
                 viewer.closeInventory();
             }
         } else {

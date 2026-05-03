@@ -24,6 +24,10 @@ public class TopMenuListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
+        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
+        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
+        if (e.getView().getTopInventory().getLocation() != null) return;
+
         if (e.getView().getTopInventory().getHolder() instanceof TopHolder) {
             for (int slot : e.getRawSlots()) {
                 if (slot < e.getView().getTopInventory().getSize()) {
@@ -37,6 +41,11 @@ public class TopMenuListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
+
+        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
+        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
+        if (e.getView().getTopInventory().getLocation() != null) return;
+
         if (!(e.getView().getTopInventory().getHolder() instanceof TopHolder holder)) return;
 
         e.setCancelled(true);
