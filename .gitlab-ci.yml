@@ -1,9 +1,12 @@
 image: gradle:9-jdk21
 
 variables:
-  # Replace with your actual Webhook URLs
-  DISCORD_WEBHOOK_URL_FREE: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_?thread_id=1475129559530864852"
-  DISCORD_WEBHOOK_URL_PREMIUM: "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX?thread_id=1500473399594451044"
+  # Base Webhook URLs (NO ?thread_id AT THE END)
+  WEBHOOK_URL_FREE: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_"
+  THREAD_ID_FREE: "1475129559530864852"
+
+  WEBHOOK_URL_PREMIUM: "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX"
+  THREAD_ID_PREMIUM: "1500473399594451044"
 
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
   ICON_URL: "https://gitlab.com/uploads/-/system/group/avatar/121690756/SinceRPG.png?width=48"
@@ -54,8 +57,8 @@ notify_start:
             }]
           }' > core_start.json
 
-        # Send the message with ?wait=true so Discord returns the Message ID
-        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @core_start.json "${DISCORD_WEBHOOK_URL_FREE}&wait=true")
+        # Properly construct URL for creating a message in a thread
+        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @core_start.json "${WEBHOOK_URL_FREE}?thread_id=${THREAD_ID_FREE}&wait=true")
         MSG_ID=$(echo $RESPONSE | jq -r '.id')
         if [ "$MSG_ID" != "null" ]; then echo "CORE_MSG_ID=$MSG_ID" >> build.env; fi
       fi
@@ -86,13 +89,12 @@ notify_start:
             }]
           }' > prem_start.json
 
-        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @prem_start.json "${DISCORD_WEBHOOK_URL_PREMIUM}&wait=true")
+        RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" -d @prem_start.json "${WEBHOOK_URL_PREMIUM}?thread_id=${THREAD_ID_PREMIUM}&wait=true")
         MSG_ID=$(echo $RESPONSE | jq -r '.id')
         if [ "$MSG_ID" != "null" ]; then echo "PREM_MSG_ID=$MSG_ID" >> build.env; fi
       fi
   artifacts:
     reports:
-      # Pass these generated Message IDs to the next stages
       dotenv: build.env
 
 # --- STAGE 2: ACTUAL BUILD PROCESS ---
@@ -147,10 +149,10 @@ notify_success:
 
         CORE_JAR=$(find Core/build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" | head -n 1)
         if [ -f "$CORE_JAR" ]; then
-          # PATCH request to edit the Discord message and attach the JAR simultaneously
-          curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+          # Properly construct URL for editing a message in a thread
+          curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
         else
-          curl -X PATCH -H "Content-Type: application/json" -d @core_success.json "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+          curl -X PATCH -H "Content-Type: application/json" -d @core_success.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
         fi
       fi
     - |
@@ -180,9 +182,9 @@ notify_success:
 
         PREMIUM_JAR=$(find Premium/build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
         if [ -f "$PREMIUM_JAR" ]; then
-          curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+          curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
         else
-          curl -X PATCH -H "Content-Type: application/json" -d @prem_success.json "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+          curl -X PATCH -H "Content-Type: application/json" -d @prem_success.json "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
         fi
       fi
 
@@ -201,11 +203,11 @@ notify_failure:
       if [ -n "$CORE_MSG_ID" ]; then
         jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
         '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
-        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${DISCORD_WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}"
+        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
       fi
     - |
       if [ -n "$PREM_MSG_ID" ]; then
         jq -n --arg url "$JOB_URL" --arg footer "Build Failed • $HASH" --arg timestamp "$TIMESTAMP" --arg icon "$ICON_URL" \
         '{ embeds: [{ color: 15548997, author: { name: "Build Failed ❌", icon_url: $icon }, title: "Click here to view Logs", url: $url, description: "A syntax or compilation error occurred. Please check the GitLab Console.", footer: { text: $footer }, timestamp: $timestamp }] }' > fail.json
-        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${DISCORD_WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}"
+        curl -X PATCH -H "Content-Type: application/json" -d @fail.json "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
       fi
