@@ -7,7 +7,10 @@ import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +38,7 @@ public class HologramManager {
      * @param mapId    The ID of the dungeon map (e.g., example_dungeon).
      * @param category The leaderboard category (e.g., FASTEST_TIME, MOST_KILLS).
      */
-    public void createHologramInGame(org.bukkit.entity.Player player, String mapId, String category) {
+    public void createHologramInGame(Player player, String mapId, String category) {
         String holoId = "holo_" + System.currentTimeMillis();
         Location loc = player.getLocation();
         String locStr = loc.getWorld().getName() + "," + loc.getX() + "," + loc.getY() + "," + loc.getZ();
@@ -45,12 +48,12 @@ public class HologramManager {
         plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId + ".location", locStr);
 
         try {
-            plugin.getFileManager().getConfig().save(new java.io.File(plugin.getDataFolder(), "config.yml"));
-            player.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse("&aHologram created and saved successfully!"));
+            plugin.getFileManager().getConfig().save(new File(plugin.getDataFolder(), "config.yml"));
+            plugin.getFileManager().sendMessage(player, "admin.holo_created");
             updateAllHolograms(); // Force an immediate visual refresh
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
             plugin.getLogger().warning("Failed to save hologram to config!");
-            player.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse("&cFailed to save hologram to config.yml!"));
+            plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
         }
     }
 
@@ -65,7 +68,7 @@ public class HologramManager {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
     }
 
-    private void updateAllHolograms() {
+    public void updateAllHolograms() {
         ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
         if (holos == null) return;
 

@@ -3,15 +3,21 @@ package net.danh.sincedungeonpremium.actions;
 import com.destroystokyo.paper.entity.Pathfinder;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.api.events.DungeonEndEvent;
+import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.util.Vector;
 
 import java.util.UUID;
 
@@ -21,6 +27,7 @@ import java.util.UUID;
  * - Spawns a custom-named Mob and utilizes Paper's Pathfinder API to navigate it to a destination.
  * - Monitors the NPC's health. If it dies, forcefully stops the dungeon resulting in a failure.
  * - Monitors distance to the target location and successfully completes when within the specified radius.
+ * - Features an Attacker System that spawns enemy waves at configured intervals to attempt assassination.
  */
 public class EscortAction extends DungeonAction implements Tickable {
 
@@ -31,12 +38,16 @@ public class EscortAction extends DungeonAction implements Tickable {
     private final String targetLocStr;
     private final double speed;
     private final double successRadius;
+    private final String attackerMob;
+    private final int attackerAmount;
+    private final int attackerInterval;
     private final String objectiveText;
 
     private UUID npcId = null;
     private Location targetLocation = null;
+    private int tickCounter = 0;
 
-    public EscortAction(String entityTypeStr, String customName, double maxHealth, String startLocStr, String targetLocStr, double speed, double successRadius, String objectiveText) {
+    public EscortAction(String entityTypeStr, String customName, double maxHealth, String startLocStr, String targetLocStr, double speed, double successRadius, String attackerMob, int attackerAmount, int attackerInterval, String objectiveText) {
         this.entityTypeStr = entityTypeStr;
         this.customName = customName;
         this.maxHealth = maxHealth;
@@ -44,6 +55,9 @@ public class EscortAction extends DungeonAction implements Tickable {
         this.targetLocStr = targetLocStr;
         this.speed = speed;
         this.successRadius = successRadius;
+        this.attackerMob = attackerMob;
+        this.attackerAmount = attackerAmount;
+        this.attackerInterval = attackerInterval;
         this.objectiveText = objectiveText;
     }
 
@@ -60,8 +74,8 @@ public class EscortAction extends DungeonAction implements Tickable {
             return;
         }
 
-        org.bukkit.util.Vector startVec = net.danh.sinceDungeon.managers.DungeonLoader.parseVector(startLocStr);
-        org.bukkit.util.Vector targetVec = net.danh.sinceDungeon.managers.DungeonLoader.parseVector(targetLocStr);
+        Vector startVec = DungeonLoader.parseVector(startLocStr);
+        Vector targetVec = DungeonLoader.parseVector(targetLocStr);
 
         Location startLocation = new Location(game.getWorld(), startVec.getX() + 0.5, startVec.getY(), startVec.getZ() + 0.5);
         this.targetLocation = new Location(game.getWorld(), targetVec.getX() + 0.5, targetVec.getY(), targetVec.getZ() + 0.5);
@@ -89,18 +103,21 @@ public class EscortAction extends DungeonAction implements Tickable {
         mob.setRemoveWhenFarAway(false);
         mob.setPersistent(true);
 
+        // Disable target AI to prevent wandering away from the path
+        mob.setTarget(null);
+
         if (customName != null && !customName.isEmpty()) {
-            mob.customName(net.danh.sinceDungeon.utils.ColorUtils.parse(customName));
+            mob.customName(ColorUtils.parse(customName));
             mob.setCustomNameVisible(true);
         }
 
-        org.bukkit.attribute.AttributeInstance healthAttr = mob.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        AttributeInstance healthAttr = mob.getAttribute(Attribute.MAX_HEALTH);
         if (healthAttr != null) {
             healthAttr.setBaseValue(maxHealth);
             mob.setHealth(maxHealth);
         }
 
-        org.bukkit.attribute.AttributeInstance speedAttr = mob.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED);
+        AttributeInstance speedAttr = mob.getAttribute(Attribute.MOVEMENT_SPEED);
         if (speedAttr != null) {
             speedAttr.setBaseValue(speedAttr.getBaseValue() * speed);
         }
@@ -113,6 +130,7 @@ public class EscortAction extends DungeonAction implements Tickable {
 
     /**
      * Monitors the NPC continuously. Forces failure if the NPC is killed.
+     * Manages attacker spawning intervals.
      *
      * @param game The active dungeon instance.
      */
@@ -120,11 +138,12 @@ public class EscortAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed || npcId == null || targetLocation == null) return;
 
+        tickCounter++;
         Entity entity = Bukkit.getEntity(npcId);
 
         if (!(entity instanceof Mob mob) || mob.isDead()) {
             sendFailureMessage(game);
-            game.stop(true, net.danh.sinceDungeon.api.events.DungeonEndEvent.EndReason.FAILED);
+            game.stop(true, DungeonEndEvent.EndReason.FAILED);
             this.forceComplete();
             return;
         }
@@ -134,8 +153,43 @@ public class EscortAction extends DungeonAction implements Tickable {
             return;
         }
 
-        if (game.getWorld().getTime() % 40 == 0) {
+        if (game.getWorld().getTime() % 10 == 0) {
             forcePathfind(mob);
+            // Draw a marker at the target destination
+            game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, targetLocation.clone().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0);
+        }
+
+        // Handle attacker wave spawning
+        if (attackerMob != null && !attackerMob.equalsIgnoreCase("NONE") && attackerInterval > 0) {
+            if (tickCounter % attackerInterval == 0) {
+                spawnAttackers(game, mob.getLocation());
+            }
+        }
+    }
+
+    /**
+     * Spawns attackers around the NPC to force players to protect it.
+     */
+    private void spawnAttackers(DungeonGame game, Location npcLoc) {
+        EntityType type;
+        try {
+            type = EntityType.valueOf(attackerMob.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+
+        for (int i = 0; i < attackerAmount; i++) {
+            double offsetX = (Math.random() - 0.5) * 6.0;
+            double offsetZ = (Math.random() - 0.5) * 6.0;
+            Location spawnLoc = npcLoc.clone().add(offsetX, 0, offsetZ);
+
+            Entity attacker = game.getWorld().spawnEntity(spawnLoc, type);
+            if (attacker instanceof Mob attMob) {
+                attMob.setRemoveWhenFarAway(false);
+                attMob.setPersistent(true);
+                this.spawnedEntities.add(attMob.getUniqueId());
+                game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
+            }
         }
     }
 
@@ -143,6 +197,7 @@ public class EscortAction extends DungeonAction implements Tickable {
         if (targetLocation == null) return;
         Pathfinder pathfinder = mob.getPathfinder();
         if (!pathfinder.hasPath()) {
+            mob.setTarget(null); // Prevent distraction
             pathfinder.moveTo(targetLocation);
         }
     }

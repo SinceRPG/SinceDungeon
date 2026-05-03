@@ -1,11 +1,13 @@
 package net.danh.sincedungeonpremium;
 
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sincedungeonpremium.actions.BranchingPathAction;
 import net.danh.sincedungeonpremium.actions.BuffAction;
 import net.danh.sincedungeonpremium.actions.EscortAction;
 import net.danh.sincedungeonpremium.actions.LeverPuzzleAction;
+import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.hooks.MMOCoreHook;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
 import net.danh.sincedungeonpremium.listeners.PremiumRewardListener;
@@ -75,6 +77,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
         registerPremiumActions();
         registerPremiumProcessors();
         registerPremiumListeners();
+        registerCommands();
 
         getLogger().info(fileManager.getMessageRaw("log.plugin_enabled"));
     }
@@ -90,7 +93,17 @@ public final class SinceDungeonPremium extends JavaPlugin {
     }
 
     /**
+     * Registers the premium-specific administrative commands.
+     */
+    private void registerCommands() {
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            PremiumCommand.register(this, event);
+        });
+    }
+
+    /**
      * Registers all premium-exclusive actions into the SinceDungeon Core via API.
+     * Contains comprehensive custom prompts guiding users during editor setup.
      */
     private void registerPremiumActions() {
         SinceDungeonAPI api = SinceDungeonAPI.get();
@@ -101,6 +114,11 @@ public final class SinceDungeonPremium extends JavaPlugin {
         buffDefaults.put("duration", fileManager.getConfig().getInt("action-defaults.apply_buff.default-duration"));
         buffDefaults.put("amplifier", fileManager.getConfig().getInt("action-defaults.apply_buff.default-amplifier"));
         buffDefaults.put("objective_text", fileManager.getConfig().getString("action-defaults.apply_buff.objective_text"));
+
+        Map<String, List<String>> buffPrompts = new HashMap<>();
+        buffPrompts.put("effect", fileManager.getMessages().getStringList("prompts.buff_effect"));
+        buffPrompts.put("duration", fileManager.getMessages().getStringList("prompts.buff_duration"));
+        buffPrompts.put("amplifier", fileManager.getMessages().getStringList("prompts.buff_amplifier"));
 
         api.registerCustomAction(
                 "APPLY_BUFF",
@@ -114,7 +132,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
                 Material.POTION,
                 fileManager.getConfig().getString("gui.actions.apply_buff.desc"),
                 buffDefaults,
-                null
+                buffPrompts
         );
 
         // 2. Escort NPC Action
@@ -126,7 +144,17 @@ public final class SinceDungeonPremium extends JavaPlugin {
         escortDefaults.put("target_location", "10,64,10");
         escortDefaults.put("speed", fileManager.getConfig().getDouble("action-defaults.escort.default-speed"));
         escortDefaults.put("radius", fileManager.getConfig().getDouble("action-defaults.escort.default-radius"));
+        escortDefaults.put("attacker_mob", fileManager.getConfig().getString("action-defaults.escort.attacker-mob"));
+        escortDefaults.put("attacker_amount", fileManager.getConfig().getInt("action-defaults.escort.attacker-amount"));
+        escortDefaults.put("attacker_interval", fileManager.getConfig().getInt("action-defaults.escort.attacker-interval"));
         escortDefaults.put("objective_text", fileManager.getConfig().getString("action-defaults.escort.objective_text"));
+
+        Map<String, List<String>> escortPrompts = new HashMap<>();
+        escortPrompts.put("start_location", fileManager.getMessages().getStringList("prompts.escort_start"));
+        escortPrompts.put("target_location", fileManager.getMessages().getStringList("prompts.escort_target"));
+        escortPrompts.put("mob", fileManager.getMessages().getStringList("prompts.escort_mob"));
+        escortPrompts.put("attacker_mob", fileManager.getMessages().getStringList("prompts.escort_attacker_mob"));
+        escortPrompts.put("attacker_interval", fileManager.getMessages().getStringList("prompts.escort_attacker_interval"));
 
         api.registerCustomAction(
                 "ESCORT_NPC",
@@ -138,13 +166,16 @@ public final class SinceDungeonPremium extends JavaPlugin {
                         String.valueOf(map.getOrDefault("target_location", escortDefaults.get("target_location"))),
                         parseSafeDouble(map.get("speed"), (double) escortDefaults.get("speed")),
                         parseSafeDouble(map.get("radius"), (double) escortDefaults.get("radius")),
+                        String.valueOf(map.getOrDefault("attacker_mob", escortDefaults.get("attacker_mob"))),
+                        parseSafeInt(map.get("attacker_amount"), (int) escortDefaults.get("attacker_amount")),
+                        parseSafeInt(map.get("attacker_interval"), (int) escortDefaults.get("attacker_interval")),
                         String.valueOf(map.getOrDefault("objective_text", escortDefaults.get("objective_text")))
                 ),
                 fileManager.getConfig().getString("gui.actions.escort.name"),
                 Material.MINECART,
                 fileManager.getConfig().getString("gui.actions.escort.desc"),
                 escortDefaults,
-                null
+                escortPrompts
         );
 
         // 3. Branching Paths Action
@@ -155,6 +186,12 @@ public final class SinceDungeonPremium extends JavaPlugin {
         branchDefaults.put("stage_b", 4);
         branchDefaults.put("radius", 3.0);
         branchDefaults.put("objective_text", fileManager.getConfig().getString("action-defaults.branch.objective_text"));
+
+        Map<String, List<String>> branchPrompts = new HashMap<>();
+        branchPrompts.put("path_a_loc", fileManager.getMessages().getStringList("prompts.branch_path_a"));
+        branchPrompts.put("path_b_loc", fileManager.getMessages().getStringList("prompts.branch_path_b"));
+        branchPrompts.put("stage_a", fileManager.getMessages().getStringList("prompts.branch_stage_a"));
+        branchPrompts.put("stage_b", fileManager.getMessages().getStringList("prompts.branch_stage_b"));
 
         api.registerCustomAction(
                 "BRANCHING_PATH",
@@ -170,13 +207,16 @@ public final class SinceDungeonPremium extends JavaPlugin {
                 Material.OAK_SIGN,
                 fileManager.getConfig().getString("gui.actions.branch.desc"),
                 branchDefaults,
-                null
+                branchPrompts
         );
 
         // 4. Lever Puzzle Action
         Map<String, Object> puzzleDefaults = new HashMap<>();
         puzzleDefaults.put("levers", new ArrayList<>(Arrays.asList("0,64,0", "2,64,0", "4,64,0")));
         puzzleDefaults.put("objective_text", fileManager.getConfig().getString("action-defaults.puzzle.objective_text"));
+
+        Map<String, List<String>> puzzlePrompts = new HashMap<>();
+        puzzlePrompts.put("levers", fileManager.getMessages().getStringList("prompts.levers"));
 
         api.registerCustomAction(
                 "LEVER_PUZZLE",
@@ -193,10 +233,9 @@ public final class SinceDungeonPremium extends JavaPlugin {
                 Material.LEVER,
                 fileManager.getConfig().getString("gui.actions.puzzle.desc"),
                 puzzleDefaults,
-                null
+                puzzlePrompts
         );
     }
-
 
     /**
      * Registers premium reward processors.

@@ -12,6 +12,14 @@ log:
   mmocore_missing: "CLASS_LOOT requires MMOCore to be installed."
   core_missing: "SinceDungeon Core is not installed! Disabling Premium Addon."
 
+admin:
+  reload: "&aPremium configuration and holograms reloaded successfully!"
+  holo_created: "&aHologram created and saved successfully!"
+  holo_save_fail: "&cFailed to save hologram to config.yml!"
+  no_permission: "&cYou don't have permission to do this."
+  invalid_player: "&cOnly players can use this command."
+  invalid_args: "&cInvalid arguments. Usage: /sdp hologram <map_id> <category>"
+
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"
   class_loot: "&aYou received a class-specific item: &e<item>&a!"
@@ -35,3 +43,42 @@ holograms:
   map_line: "&eMap: &f<map>"
   format: "&e#<rank> &f<player> &8- &a<value>"
   empty: "&7No records found yet."
+
+prompts:
+  levers:
+    - "&7Add lever coordinates (X,Y,Z)"
+    - "&7Format: &aX,Y,Z"
+    - "&7The order you add them is the solution sequence!"
+    - "&7Tip: Type &ahere &7to use your current block."
+  escort_start:
+    - "&7Set the spawn coordinates (X,Y,Z) for the NPC."
+    - "&7Tip: Type &ahere &7to use your current location."
+  escort_target:
+    - "&7Set the destination coordinates (X,Y,Z) for the NPC."
+    - "&7Tip: Type &ahere &7to use your current location."
+  escort_mob:
+    - "&7Enter the EntityType for the VIP NPC."
+    - "&7Example: &aVILLAGER"
+  escort_attacker_mob:
+    - "&7Enter the EntityType for the Attacker (or NONE to disable)."
+    - "&7Example: &aZOMBIE"
+  escort_attacker_interval:
+    - "&7Enter the delay in ticks between attacker spawns (20 ticks = 1s)."
+    - "&7Example: &a100"
+  branch_path_a:
+    - "&7Set the coordinates for Path A's decision zone."
+  branch_path_b:
+    - "&7Set the coordinates for Path B's decision zone."
+  branch_stage_a:
+    - "&7Enter the Stage Number to jump to if players choose Path A."
+  branch_stage_b:
+    - "&7Enter the Stage Number to jump to if players choose Path B."
+  buff_effect:
+    - "&7Enter the PotionEffectType to apply."
+    - "&7Example: &aSPEED &7or &aSTRENGTH"
+  buff_duration:
+    - "&7Enter the duration in ticks (20 ticks = 1s)."
+    - "&7Example: &a200"
+  buff_amplifier:
+    - "&7Enter the potion level (0 = Level 1)."
+    - "&7Example: &a1 &7(Applies Level 2 effect)"

@@ -18,8 +18,11 @@ action-defaults:
     default-mob: "VILLAGER"
     default-name: "&aVIP Escort"
     default-health: 100.0
-    default-speed: 0.6
+    default-speed: 1.0
     default-radius: 4.0
+    attacker-mob: "ZOMBIE"
+    attacker-amount: 3
+    attacker-interval: 100
     objective_text: "&eProtect the VIP and escort them to safety!"
 
   branch:
