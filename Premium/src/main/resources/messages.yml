@@ -7,6 +7,10 @@ prefix: "&6&lPremium &8» &7"
 log:
   plugin_enabled: "SinceDungeon-PremiumAddon has been successfully enabled and hooked into Core!"
   plugin_disabled: "SinceDungeon-PremiumAddon has been disabled."
+  invalid_exp: "Invalid EXP level value provided: <value>"
+  mmocore_error: "Error processing MMOCore CLASS_LOOT: <error>"
+  mmocore_missing: "CLASS_LOOT requires MMOCore to be installed."
+  core_missing: "SinceDungeon Core is not installed! Disabling Premium Addon."
 
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"

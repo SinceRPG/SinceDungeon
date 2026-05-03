@@ -1,12 +1,12 @@
 package net.danh.sincedungeonpremium.listeners;
 
 import net.danh.sinceDungeon.api.events.DungeonRewardClaimEvent;
-import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -65,17 +65,20 @@ public class PremiumRewardListener implements Listener {
 
     /**
      * Intercepts the standard RewardGUI from the core to open the Roulette GUI.
+     * Replaced inline Bukkit invocation with proper imported class logic.
+     *
+     * @param e The InventoryOpenEvent.
      */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInventoryOpen(InventoryOpenEvent e) {
         if (!(e.getPlayer() instanceof Player player)) return;
 
-        if (e.getInventory().getHolder() instanceof RewardHolder holder) {
+        if (e.getInventory().getHolder() instanceof net.danh.sinceDungeon.guis.reward.RewardHolder holder) {
             boolean useRoulette = plugin.getFileManager().getConfig().getBoolean("roulette.enabled", false);
 
             if (useRoulette) {
                 e.setCancelled(true);
-                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                Bukkit.getScheduler().runTask(plugin, () -> {
                     plugin.getRouletteManager().openRoulette(player, holder.session());
                 });
             }

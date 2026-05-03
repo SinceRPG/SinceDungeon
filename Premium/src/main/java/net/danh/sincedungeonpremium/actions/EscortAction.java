@@ -3,18 +3,15 @@ package net.danh.sincedungeonpremium.actions;
 import com.destroystokyo.paper.entity.Pathfinder;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
-import net.danh.sinceDungeon.api.events.DungeonEndEvent;
-import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
-import org.bukkit.util.Vector;
 
 import java.util.UUID;
 
@@ -50,6 +47,12 @@ public class EscortAction extends DungeonAction implements Tickable {
         this.objectiveText = objectiveText;
     }
 
+    /**
+     * Initializes the escort mission by spawning the target entity.
+     * Properly utilizes imported classes instead of inline full paths.
+     *
+     * @param game The active dungeon instance.
+     */
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) {
@@ -57,8 +60,8 @@ public class EscortAction extends DungeonAction implements Tickable {
             return;
         }
 
-        Vector startVec = DungeonLoader.parseVector(startLocStr);
-        Vector targetVec = DungeonLoader.parseVector(targetLocStr);
+        org.bukkit.util.Vector startVec = net.danh.sinceDungeon.managers.DungeonLoader.parseVector(startLocStr);
+        org.bukkit.util.Vector targetVec = net.danh.sinceDungeon.managers.DungeonLoader.parseVector(targetLocStr);
 
         Location startLocation = new Location(game.getWorld(), startVec.getX() + 0.5, startVec.getY(), startVec.getZ() + 0.5);
         this.targetLocation = new Location(game.getWorld(), targetVec.getX() + 0.5, targetVec.getY(), targetVec.getZ() + 0.5);
@@ -74,7 +77,7 @@ public class EscortAction extends DungeonAction implements Tickable {
             type = EntityType.VILLAGER;
         }
 
-        org.bukkit.entity.Entity entity = game.getWorld().spawnEntity(startLocation, type);
+        Entity entity = game.getWorld().spawnEntity(startLocation, type);
 
         if (!(entity instanceof Mob mob)) {
             SinceDungeonPremium.getInstance().getLogger().warning("Escort entity must be a Mob! Provided: " + entityTypeStr);
@@ -87,17 +90,17 @@ public class EscortAction extends DungeonAction implements Tickable {
         mob.setPersistent(true);
 
         if (customName != null && !customName.isEmpty()) {
-            mob.customName(ColorUtils.parse(customName));
+            mob.customName(net.danh.sinceDungeon.utils.ColorUtils.parse(customName));
             mob.setCustomNameVisible(true);
         }
 
-        AttributeInstance healthAttr = mob.getAttribute(Attribute.MAX_HEALTH);
+        org.bukkit.attribute.AttributeInstance healthAttr = mob.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         if (healthAttr != null) {
             healthAttr.setBaseValue(maxHealth);
             mob.setHealth(maxHealth);
         }
 
-        AttributeInstance speedAttr = mob.getAttribute(Attribute.MOVEMENT_SPEED);
+        org.bukkit.attribute.AttributeInstance speedAttr = mob.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED);
         if (speedAttr != null) {
             speedAttr.setBaseValue(speedAttr.getBaseValue() * speed);
         }
@@ -108,15 +111,20 @@ public class EscortAction extends DungeonAction implements Tickable {
         forcePathfind(mob);
     }
 
+    /**
+     * Monitors the NPC continuously. Forces failure if the NPC is killed.
+     *
+     * @param game The active dungeon instance.
+     */
     @Override
     public void onTick(DungeonGame game) {
         if (completed || npcId == null || targetLocation == null) return;
 
-        org.bukkit.entity.Entity entity = org.bukkit.Bukkit.getEntity(npcId);
+        Entity entity = Bukkit.getEntity(npcId);
 
         if (!(entity instanceof Mob mob) || mob.isDead()) {
             sendFailureMessage(game);
-            game.stop(true, DungeonEndEvent.EndReason.FAILED);
+            game.stop(true, net.danh.sinceDungeon.api.events.DungeonEndEvent.EndReason.FAILED);
             this.forceComplete();
             return;
         }

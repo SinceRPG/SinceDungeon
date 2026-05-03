@@ -75,6 +75,7 @@ hologram-leaderboard:
   # Interval in seconds to pull data from DB and update displays
   update-interval-seconds: 300
   locations:
+  # Note: Admins can use the internal API / command to set this up in-game now.
   # Example format:
   # holo_1:
   #   map: "example_dungeon"

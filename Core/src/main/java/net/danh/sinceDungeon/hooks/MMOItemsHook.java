@@ -1,5 +1,6 @@
 package net.danh.sinceDungeon.hooks;
 
+import io.lumine.mythic.lib.api.item.NBTItem;
 import net.Indyuce.mmoitems.MMOItems;
 import net.Indyuce.mmoitems.api.Type;
 import org.bukkit.inventory.ItemStack;
@@ -31,6 +32,7 @@ public class MMOItemsHook {
 
     /**
      * Automatically extracts the string info of an MMOItem to save into the Config.
+     * Utilizes the imported NBTItem class to prevent messy inline classpathing.
      *
      * @param item The item to check.
      * @return Formatted string MMOITEMS:TYPE:ID:AMOUNT, or null if not an MMOItem.
@@ -38,7 +40,7 @@ public class MMOItemsHook {
     public static String getMMOItemString(ItemStack item) {
         try {
             if (item == null || !item.hasItemMeta()) return null;
-            io.lumine.mythic.lib.api.item.NBTItem nbtItem = io.lumine.mythic.lib.api.item.NBTItem.get(item);
+            NBTItem nbtItem = NBTItem.get(item);
             if (nbtItem.hasType() && nbtItem.getString("MMOITEMS_ITEM_ID") != null && !nbtItem.getString("MMOITEMS_ITEM_ID").isEmpty()) {
                 return "MMOITEMS:" + nbtItem.getType() + ":" + nbtItem.getString("MMOITEMS_ITEM_ID") + ":" + item.getAmount();
             }

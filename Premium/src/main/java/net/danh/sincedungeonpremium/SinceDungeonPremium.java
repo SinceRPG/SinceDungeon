@@ -6,6 +6,7 @@ import net.danh.sincedungeonpremium.actions.BranchingPathAction;
 import net.danh.sincedungeonpremium.actions.BuffAction;
 import net.danh.sincedungeonpremium.actions.EscortAction;
 import net.danh.sincedungeonpremium.actions.LeverPuzzleAction;
+import net.danh.sincedungeonpremium.hooks.MMOCoreHook;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
 import net.danh.sincedungeonpremium.listeners.PremiumRewardListener;
 import net.danh.sincedungeonpremium.listeners.WebhookListener;
@@ -14,6 +15,7 @@ import net.danh.sincedungeonpremium.managers.HologramManager;
 import net.danh.sincedungeonpremium.managers.RouletteManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -60,7 +62,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
         fileManager.setup();
 
         if (getServer().getPluginManager().getPlugin("SinceDungeon") == null) {
-            getLogger().severe("SinceDungeon Core is not installed! Disabling Premium Addon.");
+            getLogger().severe(fileManager.getMessageRaw("log.core_missing"));
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -195,9 +197,11 @@ public final class SinceDungeonPremium extends JavaPlugin {
         );
     }
 
+
     /**
      * Registers premium reward processors.
-     * Includes MMOCore integration for personalized class loot.
+     * Includes isolated MMOCore integration for personalized class loot.
+     * Uses the MMOCoreHook to prevent JVM crashes on servers without MMOCore.
      */
     private void registerPremiumProcessors() {
         SinceDungeonAPI api = SinceDungeonAPI.get();
@@ -208,20 +212,22 @@ public final class SinceDungeonPremium extends JavaPlugin {
                 player.giveExpLevels(levels);
                 fileManager.sendMessage(player, "rewards.exp_levels", "<levels>", String.valueOf(levels));
             } catch (NumberFormatException e) {
-                getLogger().warning("Invalid EXP level value provided: " + value);
+                getLogger().warning(fileManager.getMessageRaw("log.invalid_exp").replace("<value>", value));
             }
         });
 
         api.registerRewardProcessor("CLASS_LOOT", (player, value, displayName) -> {
             if (Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
                 try {
-                    String playerClass = net.Indyuce.mmocore.api.player.PlayerData.get(player).getProfess().getId();
+                    String playerClass = MMOCoreHook.getPlayerClass(player);
+                    if (playerClass == null) return;
+
                     String[] options = value.split(";");
 
                     for (String option : options) {
                         String[] split = option.split("->");
                         if (split.length == 2 && split[0].equalsIgnoreCase(playerClass)) {
-                            org.bukkit.inventory.ItemStack item = ItemBuilder.parseDynamicItem(split[1].trim());
+                            ItemStack item = ItemBuilder.parseDynamicItem(split[1].trim());
                             if (item != null) {
                                 player.getInventory().addItem(item);
                                 fileManager.sendMessage(player, "rewards.class_loot", "<item>", item.getType().name());
@@ -230,10 +236,10 @@ public final class SinceDungeonPremium extends JavaPlugin {
                         }
                     }
                 } catch (Exception e) {
-                    getLogger().warning("Error processing MMOCore CLASS_LOOT: " + e.getMessage());
+                    getLogger().warning(fileManager.getMessageRaw("log.mmocore_error").replace("<error>", e.getMessage()));
                 }
             } else {
-                getLogger().warning("CLASS_LOOT requires MMOCore to be installed.");
+                getLogger().warning(fileManager.getMessageRaw("log.mmocore_missing"));
             }
         });
 

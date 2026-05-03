@@ -26,6 +26,34 @@ public class HologramManager {
         this.plugin = plugin;
     }
 
+    /**
+     * Premium Feature: In-Game Hologram Setup
+     * Creates a new hologram at the exact location the player is standing,
+     * automatically writes the coordinates to the config.yml, and forces a refresh.
+     *
+     * @param player   The admin player setting up the hologram.
+     * @param mapId    The ID of the dungeon map (e.g., example_dungeon).
+     * @param category The leaderboard category (e.g., FASTEST_TIME, MOST_KILLS).
+     */
+    public void createHologramInGame(org.bukkit.entity.Player player, String mapId, String category) {
+        String holoId = "holo_" + System.currentTimeMillis();
+        Location loc = player.getLocation();
+        String locStr = loc.getWorld().getName() + "," + loc.getX() + "," + loc.getY() + "," + loc.getZ();
+
+        plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId + ".map", mapId);
+        plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId + ".category", category.toUpperCase());
+        plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId + ".location", locStr);
+
+        try {
+            plugin.getFileManager().getConfig().save(new java.io.File(plugin.getDataFolder(), "config.yml"));
+            player.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse("&aHologram created and saved successfully!"));
+            updateAllHolograms(); // Force an immediate visual refresh
+        } catch (java.io.IOException e) {
+            plugin.getLogger().warning("Failed to save hologram to config!");
+            player.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parse("&cFailed to save hologram to config.yml!"));
+        }
+    }
+
     public void startUpdater() {
         if (!Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) {
             plugin.getLogger().warning("DecentHolograms not installed. Holographic Leaderboards disabled.");
