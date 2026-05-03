@@ -47,7 +47,7 @@ notify_start:
             username: "SinceDungeon Build",
             avatar_url: $icon,
             embeds: [{
-              color: 16753920,
+              color: 16766720,
               author: { name: $author, icon_url: $icon },
               title: "⏳ Building Core version...",
               description: $desc,
@@ -69,7 +69,7 @@ notify_start:
         [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
       
         jq -n \
-          --arg author "$AUTHOR triggered a build for SinceDungeon" \
+          --arg author "$AUTHOR triggered a build for SinceDungeon Premium" \
           --arg desc "$PREMIUM_CHANGELOG" \
           --arg footer "Premium v$PREM_VER • $HASH" \
           --arg timestamp "$TIMESTAMP" \
@@ -162,7 +162,7 @@ notify_success:
         [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="No specific changelog provided."
       
         jq -n \
-          --arg author "$AUTHOR pushed an update for SinceDungeon" \
+          --arg author "$AUTHOR pushed an update for SinceDungeon Premium" \
           --arg desc "$PREMIUM_CHANGELOG" \
           --arg footer "Premium v$PREM_VER • $HASH" \
           --arg timestamp "$TIMESTAMP" \
@@ -170,7 +170,7 @@ notify_success:
           --arg thumb "$THUMBNAIL_URL" \
           '{
             embeds: [{
-              color: 16766720,
+              color: 5763719,
               author: { name: $author, icon_url: $icon },
               title: "Premium Version Ready! 👑",
               description: $desc,
