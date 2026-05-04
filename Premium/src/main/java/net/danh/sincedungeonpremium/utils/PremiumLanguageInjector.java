@@ -90,6 +90,14 @@ public class PremiumLanguageInjector {
             }
 
             // --- Lever Puzzle Action ---
+            // Inside Editor Config Injection:
+            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_fail_time_penalty")) {
+                editorCfg.set("editor.input.prompts.edit_action_fail_time_penalty", Arrays.asList(
+                        "&7Enter the amount of time (in seconds) to deduct when players pull the wrong lever.",
+                        "&7Example: &a5 &7(Subtracts 5 seconds from the timer)"
+                ));
+                editorChanged = true;
+            }
             if (!editorCfg.getConfig().contains("editor.actions_name.lever_puzzle")) {
                 editorCfg.set("editor.actions_name.lever_puzzle", "&b&lPremium: Lever Puzzle");
                 editorCfg.set("editor.actions.lever_puzzle", "Requires players to activate levers in a specific sequence.");
@@ -140,6 +148,10 @@ public class PremiumLanguageInjector {
                 gameCfg.set("objective.lever_puzzle", "&ePull the levers in the correct order!");
                 gameCfg.set("action.puzzle_failed", "&cWrong sequence! The puzzle has been reset.");
                 gameCfg.set("action.puzzle_solved", "&aCorrect sequence! The mechanism unlocks.");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("action.puzzle_failed_penalty")) {
+                gameCfg.set("action.puzzle_failed_penalty", "&cWrong lever sequence! The puzzle has reset and you lost <time> seconds.");
                 gameChanged = true;
             }
             if (!gameCfg.getConfig().contains("action.affix_volcanic_hit")) {

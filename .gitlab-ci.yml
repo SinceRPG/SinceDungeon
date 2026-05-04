@@ -228,21 +228,23 @@ notify_failure:
   before_script:
     - apt-get update && apt-get install -y git jq curl
   script:
+    - COMMIT_MSG=$(git log -1 --pretty=%B)
     - HASH=$(git log -1 --pretty=%h)
     - TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-    # FIX: Changed CI_JOB_ID to CI_PIPELINE_URL to link to the entire pipeline view instead of just the notification job
     - PIPELINE_URL="$CI_PIPELINE_URL"
 
     - |
       # 1. EDIT CORE MESSAGE ON FAILURE
       if [ -n "$CORE_MSG_ID" ]; then
+        CORE_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Core:/{f=1; next} /^Premium:/{f=0} f')
+        [ -z "$(echo "$CORE_CHANGELOG" | tr -d '[:space:]')" ] && CORE_CHANGELOG="$FAIL_DESC_TEXT"
+      
         jq -n \
           --arg url "$PIPELINE_URL" \
           --arg footer "Build Failed • $HASH" \
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
-          --arg desc "$FAIL_DESC_TEXT" \
+          --arg desc "$CORE_CHANGELOG" \
           --argjson color "$COLOR_FAIL" \
           '{ 
             embeds: [{ 
@@ -262,12 +264,15 @@ notify_failure:
     - |
       # 2. EDIT PREMIUM MESSAGE ON FAILURE
       if [ -n "$PREM_MSG_ID" ]; then
+        PREMIUM_CHANGELOG=$(echo "$COMMIT_MSG" | awk '/^Premium:/{f=1; next} /^Core:/{f=0} f')
+        [ -z "$(echo "$PREMIUM_CHANGELOG" | tr -d '[:space:]')" ] && PREMIUM_CHANGELOG="$FAIL_DESC_TEXT"
+      
         jq -n \
           --arg url "$PIPELINE_URL" \
           --arg footer "Build Failed • $HASH" \
           --arg timestamp "$TIMESTAMP" \
           --arg icon "$ICON_URL" \
-          --arg desc "$FAIL_DESC_TEXT" \
+          --arg desc "$PREMIUM_CHANGELOG" \
           --argjson color "$COLOR_FAIL" \
           '{ 
             embeds: [{ 

@@ -167,20 +167,23 @@ public class PremiumActionRegistry {
 
         // 4. LEVER PUZZLE ACTION
         Map<String, Object> puzzleDefaults = new HashMap<>();
+        puzzleDefaults.put("fail_time_penalty", 5);
         puzzleDefaults.put("levers", new ArrayList<>(Arrays.asList("0,64,0", "2,64,0", "4,64,0")));
 
         Map<String, List<String>> puzzlePrompts = new HashMap<>();
+        puzzlePrompts.put("fail_time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_fail_time_penalty"));
         puzzlePrompts.put("levers", coreLang.getStringList("editor.input.prompts.edit_action_levers"));
 
         api.registerCustomAction(
                 "LEVER_PUZZLE",
                 map -> {
+                    int failTimePenalty = parseSafeInt(map.get("fail_time_penalty"), 5);
                     List<String> levers = new ArrayList<>();
                     Object obj = map.get("levers");
                     if (obj instanceof List<?> l) {
                         for (Object o : l) levers.add(o.toString());
                     }
-                    return new LeverPuzzleAction(levers);
+                    return new LeverPuzzleAction(levers, failTimePenalty);
                 },
                 coreLang.getString("editor.actions_name.lever_puzzle"),
                 Material.LEVER,

@@ -19,20 +19,25 @@ import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Handles the Lever Puzzle objective.
- * Physically places levers at defined locations and requires players
- * to interact with them in the exact order they were registered.
+ * Physically places levers with random states at defined locations.
+ * Requires players to interact with them in the exact order.
+ * Applies a time penalty if the sequence is broken.
  */
 public class LeverPuzzleAction extends DungeonAction {
 
     private final List<String> rawLevers;
+    private final int failTimePenalty;
     private final List<Location> parsedLevers = new ArrayList<>();
+    private final Random random = new Random();
     private int currentIndex = 0;
 
-    public LeverPuzzleAction(List<String> rawLevers) {
+    public LeverPuzzleAction(List<String> rawLevers, int failTimePenalty) {
         this.rawLevers = rawLevers;
+        this.failTimePenalty = failTimePenalty;
     }
 
     @Override
@@ -47,22 +52,17 @@ public class LeverPuzzleAction extends DungeonAction {
             Location loc = new Location(game.getWorld(), vec.getBlockX(), vec.getBlockY(), vec.getBlockZ());
             parsedLevers.add(loc);
 
-            // Automatically physically place the Lever in the world
             Block block = loc.getBlock();
             block.setType(Material.LEVER);
 
-            // Explicitly set the attachment face to FLOOR so it doesn't pop off dynamically
             if (block.getBlockData() instanceof Switch leverData) {
                 leverData.setAttachedFace(FaceAttachable.AttachedFace.FLOOR);
+                leverData.setPowered(random.nextBoolean()); // Randomize initial visual state
                 block.setBlockData(leverData);
             }
         }
     }
 
-    /**
-     * Deconstructs the puzzle and removes the placed levers to prevent map clutter.
-     * Clears arrays and counters to prevent soft-locks if the stage restarts.
-     */
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
@@ -73,7 +73,6 @@ public class LeverPuzzleAction extends DungeonAction {
                 }
             }
         }
-        // Fix: Properly resets memory states to prevent stuck levers on stage reboot
         parsedLevers.clear();
         currentIndex = 0;
     }
@@ -123,7 +122,13 @@ public class LeverPuzzleAction extends DungeonAction {
                             e.getPlayer().playSound(clickedLoc, soundFail, 1f, 0.5f);
                         }
 
-                        game.broadcastMessage("action.puzzle_failed");
+                        // Apply Time Penalty by pushing the start time further into the past
+                        if (this.getTimeLimitSeconds() > 0 && failTimePenalty > 0) {
+                            this.setStartTimeMillis(this.getStartTimeMillis() - (failTimePenalty * 1000L));
+                            game.broadcastMessage("action.puzzle_failed_penalty", "<time>", String.valueOf(failTimePenalty));
+                        } else {
+                            game.broadcastMessage("action.puzzle_failed");
+                        }
                     }
                 }
             }

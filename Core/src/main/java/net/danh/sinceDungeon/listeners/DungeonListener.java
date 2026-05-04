@@ -656,4 +656,17 @@ public class DungeonListener implements Listener {
             }
         }
     }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityTarget(EntityTargetEvent e) {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
+                if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
+                    game.onEvent(e);
+                    break;
+                }
+            }
+        }
+    }
 }

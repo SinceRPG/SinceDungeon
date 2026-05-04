@@ -15,6 +15,9 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
+import org.bukkit.event.Event;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
@@ -22,6 +25,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Premium Action: Escort NPC
+ * Spawns an NPC that walks to a target location.
+ * Attackers will explicitly target the VIP, and players cannot damage the VIP.
+ */
 public class EscortAction extends DungeonAction implements Tickable {
 
     private final String entityTypeStr;
@@ -236,14 +244,37 @@ public class EscortAction extends DungeonAction implements Tickable {
             if (tickCounter % attackerInterval == 0) spawnAttackers(game, mob.getLocation());
         }
 
-        // Fix: Force AI to constantly target the VIP instead of players
+        // Force AI to constantly target the VIP
         if (tickCounter % 20 == 0) {
             for (UUID id : this.spawnedEntities) {
                 if (id.equals(npcId)) continue;
                 Entity e = Bukkit.getEntity(id);
-                if (e instanceof Mob attackerMob) {
-                    if (attackerMob.getTarget() == null || attackerMob.getTarget().getType() == EntityType.PLAYER) {
-                        attackerMob.setTarget(mob);
+                if (e instanceof Mob attackerMobInstance) {
+                    attackerMobInstance.setTarget(mob);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onEvent(DungeonGame game, Event event) {
+        if (completed || npcId == null) return;
+
+        // Prevent players from damaging the VIP
+        if (event instanceof EntityDamageByEntityEvent e) {
+            if (e.getEntity().getUniqueId().equals(npcId)) {
+                if (e.getDamager() instanceof Player || (e.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player)) {
+                    e.setCancelled(true);
+                }
+            }
+        }
+        // Prevent attackers from switching targets to players
+        else if (event instanceof EntityTargetEvent e) {
+            if (spawnedEntities.contains(e.getEntity().getUniqueId()) && !e.getEntity().getUniqueId().equals(npcId)) {
+                if (e.getTarget() instanceof Player) {
+                    Entity vip = Bukkit.getEntity(npcId);
+                    if (vip instanceof LivingEntity livingVip) {
+                        e.setTarget(livingVip);
                     }
                 }
             }
