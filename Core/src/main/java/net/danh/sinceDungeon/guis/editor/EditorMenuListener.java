@@ -944,14 +944,14 @@ public class EditorMenuListener implements Listener {
                     String listPath = session.getCurrentListPath();
                     String prompt;
 
-                    if (listPath.contains(".actions.")) {
+                    if (listPath.endsWith("custom_drops") || listPath.contains("custom_drops")) {
+                        prompt = "edit_custom_drops";
+                    } else if (listPath.endsWith("commands") || listPath.contains("commands")) {
+                        prompt = "edit_commands";
+                    } else if (listPath.contains(".actions.")) {
                         String[] pathParts = listPath.split("\\.");
                         String fieldName = pathParts[pathParts.length - 1];
                         prompt = "edit_action_" + fieldName;
-                    } else if (listPath.contains("commands")) {
-                        prompt = "edit_commands";
-                    } else if (listPath.contains("custom_drops")) {
-                        prompt = "edit_custom_drops";
                     } else {
                         prompt = "default";
                     }
