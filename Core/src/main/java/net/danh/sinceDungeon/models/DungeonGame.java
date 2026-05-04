@@ -625,7 +625,6 @@ public class DungeonGame {
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
 
-        // Deduct 1 to convert to the internal 0-based array index used by startStage()
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(targetStage - 1), 60L);
     }
 
