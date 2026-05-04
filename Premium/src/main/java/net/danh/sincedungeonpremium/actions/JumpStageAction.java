@@ -5,8 +5,6 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 
-import java.lang.reflect.Field;
-
 /**
  * Premium Action: Jump Stage
  * Explicitly terminates the current stage branch and forcibly jumps execution
@@ -23,14 +21,7 @@ public class JumpStageAction extends DungeonAction {
     @Override
     public void start(DungeonGame game) {
         try {
-            Field stageIndexField = DungeonGame.class.getDeclaredField("currentStageIndex");
-            stageIndexField.setAccessible(true);
-            stageIndexField.set(game, targetStage - 2);
-
-            Field actionIndexField = DungeonGame.class.getDeclaredField("currentActionIndex");
-            actionIndexField.setAccessible(true);
-            actionIndexField.set(game, 9999);
-
+            game.jumpToStage(targetStage);
             this.forceComplete();
         } catch (Exception e) {
             SinceDungeonPremium.getInstance().getLogger().severe("Failed to jump stage: " + e.getMessage());

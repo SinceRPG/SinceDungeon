@@ -599,6 +599,38 @@ public class DungeonGame {
     }
 
     /**
+     * Safely bypasses the remaining actions, terminates the current stage cleanly,
+     * and forcibly jumps to the target stage without causing recursive reflection crashes.
+     * Supplying a target stage greater than the total stages will instantly finish the dungeon.
+     *
+     * @param targetStage The 1-based index of the stage to jump to (e.g. 5 jumps to Stage 5).
+     */
+    public void jumpToStage(int targetStage) {
+        if (!isRunning || stageCompleting) return;
+
+        stageCompleting = true;
+
+        participants.forEach(p -> {
+            if (p.isOnline()) p.sendActionBar(ColorUtils.parse(" "));
+        });
+
+        broadcastMessage("game.stage_complete", "<stage>", String.valueOf(currentStageIndex + 1));
+        participants.forEach(p -> playSound(p, "stage_complete", 1f, 1f));
+
+        DungeonTemplate.StageData stageData = template.stages().get(currentStageIndex);
+        if (stageData != null) {
+            executeActionCommands(stageData.commands(), currentStageIndex);
+        }
+
+        DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
+        Bukkit.getPluginManager().callEvent(stageEvent);
+
+        // Deduct 1 to convert to the internal 0-based array index used by startStage()
+        Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(targetStage - 1), 60L);
+    }
+
+
+    /**
      * Checks if all participants are disconnected, dead, or spectating.
      * Forcibly stops the game instance as a failure if conditions are met.
      */

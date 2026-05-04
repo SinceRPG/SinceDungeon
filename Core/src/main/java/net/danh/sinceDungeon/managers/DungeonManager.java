@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
+import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.DefaultRegistry;
 import org.bukkit.Bukkit;
@@ -88,11 +89,11 @@ public class DungeonManager {
             for (UUID memId : party.getMembers()) {
                 Player mem = Bukkit.getPlayer(memId);
                 if (mem != null && mem.isOnline()) {
-                    net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(mem, targetServer);
+                    BungeeUtils.sendPlayerToServer(mem, targetServer);
                 }
             }
         } else {
-            net.danh.sinceDungeon.utils.BungeeUtils.sendPlayerToServer(leader, targetServer);
+            BungeeUtils.sendPlayerToServer(leader, targetServer);
         }
     }
 

@@ -11,8 +11,6 @@ import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
-import java.lang.reflect.Field;
-
 public class BranchingPathAction extends DungeonAction implements Tickable {
 
     private final String pathAStr;
@@ -68,24 +66,17 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
     }
 
     /**
-     * Fix: Offsets the reflection states perfectly to ensure Core triggers checkStageCompletion()
-     * and advances naturally into the targeted stage without skipping internal states.
+     * Utilizes Core's native jumpToStage method to transition paths.
      */
     private void jumpToStage(DungeonGame game, int targetStage) {
         try {
-            Field stageIndexField = DungeonGame.class.getDeclaredField("currentStageIndex");
-            stageIndexField.setAccessible(true);
-            stageIndexField.set(game, targetStage - 2);
-
-            Field actionIndexField = DungeonGame.class.getDeclaredField("currentActionIndex");
-            actionIndexField.setAccessible(true);
-            actionIndexField.set(game, 9999); // Triggers next stage
+            game.jumpToStage(targetStage);
 
             this.forceComplete();
 
             game.broadcastMessage("action.branch_path_chosen", "<stage>", String.valueOf(targetStage));
         } catch (Exception e) {
-            SinceDungeonPremium.getInstance().getLogger().severe("Failed to execute BranchingPath reflection: " + e.getMessage());
+            SinceDungeonPremium.getInstance().getLogger().severe("Failed to execute BranchingPath natively: " + e.getMessage());
             this.forceComplete();
         }
     }

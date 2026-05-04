@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.guis.reward;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
@@ -37,7 +38,7 @@ public class RewardSessionManager {
                     Player p = Bukkit.getPlayer(entry.getKey());
                     if (p != null && p.isOnline()) {
                         gui.forceClaimAll(p, entry.getValue());
-                        p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(
+                        p.sendMessage(ColorUtils.parseWithPrefix(
                                 plugin.getLanguageManager().getString("reward.messages.auto_claimed_expired", "<yellow>Your rewards were auto-claimed due to timeout.")
                         ));
                     }

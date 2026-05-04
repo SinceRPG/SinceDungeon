@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -118,7 +119,7 @@ public class LivesManager {
                             .replace("<amount>", String.valueOf(recovered))
                             .replace("<current>", String.valueOf(newLives))
                             .replace("<max>", String.valueOf(data.getMaxLives()));
-                    p.sendMessage(net.danh.sinceDungeon.utils.ColorUtils.parseWithPrefix(msg));
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
                 }
             }
         }
