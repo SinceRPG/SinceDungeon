@@ -1,4 +1,5 @@
 admin:
+  invalid_map: "&cCannot find the requested Dungeon Map file."
   getkey_success: "&aReceived system key: &e<id>"
   reload: "&aSuccessfully reloaded all configuration and dungeon files."
   invalid_player: "&cPlayer not found."

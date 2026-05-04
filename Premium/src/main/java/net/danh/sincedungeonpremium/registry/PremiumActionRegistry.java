@@ -6,6 +6,8 @@ import net.danh.sinceDungeon.managers.LanguageManager;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.actions.BranchingPathAction;
 import net.danh.sincedungeonpremium.actions.BuffAction;
+import net.danh.sincedungeonpremium.actions.CheckpointAction;
+import net.danh.sincedungeonpremium.actions.DamageZoneAction;
 import net.danh.sincedungeonpremium.actions.EscortAction;
 import net.danh.sincedungeonpremium.actions.LeverPuzzleAction;
 import org.bukkit.Material;
@@ -50,9 +52,7 @@ public class PremiumActionRegistry {
         SinceDungeonAPI api = SinceDungeonAPI.get();
         LanguageManager coreLang = SinceDungeon.getPlugin().getLanguageManager();
 
-        // ---------------------------------------------------------
         // 1. APPLY BUFF ACTION
-        // ---------------------------------------------------------
         Map<String, Object> buffDefaults = new HashMap<>();
         buffDefaults.put("effect", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.default-effect"));
         buffDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-duration"));
@@ -77,9 +77,7 @@ public class PremiumActionRegistry {
                 buffPrompts
         );
 
-        // ---------------------------------------------------------
         // 2. ESCORT NPC ACTION
-        // ---------------------------------------------------------
         Map<String, Object> escortDefaults = new HashMap<>();
         escortDefaults.put("mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-mob"));
         escortDefaults.put("name", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-name"));
@@ -142,9 +140,7 @@ public class PremiumActionRegistry {
                 escortPrompts
         );
 
-        // ---------------------------------------------------------
         // 3. BRANCHING PATHS ACTION
-        // ---------------------------------------------------------
         Map<String, Object> branchDefaults = new HashMap<>();
         branchDefaults.put("path_a_loc", "0,64,0");
         branchDefaults.put("path_b_loc", "10,64,10");
@@ -174,9 +170,7 @@ public class PremiumActionRegistry {
                 branchPrompts
         );
 
-        // ---------------------------------------------------------
         // 4. LEVER PUZZLE ACTION
-        // ---------------------------------------------------------
         Map<String, Object> puzzleDefaults = new HashMap<>();
         puzzleDefaults.put("levers", new ArrayList<>(Arrays.asList("0,64,0", "2,64,0", "4,64,0")));
 
@@ -198,6 +192,65 @@ public class PremiumActionRegistry {
                 coreLang.getString("editor.actions.lever_puzzle"),
                 puzzleDefaults,
                 puzzlePrompts
+        );
+
+        // 5. SAVE CHECKPOINT ACTION
+        Map<String, Object> checkpointDefaults = new HashMap<>();
+        checkpointDefaults.put("location", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.location", "0,64,0"));
+        checkpointDefaults.put("sound", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.sound", "entity.player.levelup"));
+        checkpointDefaults.put("particle", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.particle", "TOTEM_OF_UNDYING"));
+
+        Map<String, List<String>> checkpointPrompts = new HashMap<>();
+        checkpointPrompts.put("location", coreLang.getStringList("editor.input.prompts.edit_action_loc_single"));
+        checkpointPrompts.put("sound", coreLang.getStringList("editor.input.prompts.edit_action_sound"));
+        checkpointPrompts.put("particle", coreLang.getStringList("editor.input.prompts.edit_action_particle"));
+
+        api.registerCustomAction(
+                "SAVE_CHECKPOINT",
+                map -> new CheckpointAction(
+                        String.valueOf(map.getOrDefault("location", checkpointDefaults.get("location"))),
+                        String.valueOf(map.getOrDefault("sound", checkpointDefaults.get("sound"))),
+                        String.valueOf(map.getOrDefault("particle", checkpointDefaults.get("particle")))
+                ),
+                coreLang.getString("editor.actions_name.save_checkpoint"),
+                Material.BEACON,
+                coreLang.getString("editor.actions.save_checkpoint"),
+                checkpointDefaults,
+                checkpointPrompts
+        );
+
+        // 6. DAMAGE ZONE ACTION
+        Map<String, Object> damageZoneDefaults = new HashMap<>();
+        damageZoneDefaults.put("center", plugin.getFileManager().getConfig().getString("action-defaults.damage_zone.center", "0,64,0"));
+        damageZoneDefaults.put("radius", plugin.getFileManager().getConfig().getDouble("action-defaults.damage_zone.radius", 5.0));
+        damageZoneDefaults.put("damage", plugin.getFileManager().getConfig().getDouble("action-defaults.damage_zone.damage", 4.0));
+        damageZoneDefaults.put("interval", plugin.getFileManager().getConfig().getInt("action-defaults.damage_zone.interval", 20));
+        damageZoneDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.damage_zone.duration", 200));
+        damageZoneDefaults.put("particle", plugin.getFileManager().getConfig().getString("action-defaults.damage_zone.particle", "CAMPFIRE_COSY_SMOKE"));
+
+        Map<String, List<String>> damageZonePrompts = new HashMap<>();
+        damageZonePrompts.put("center", coreLang.getStringList("editor.input.prompts.edit_action_loc_single"));
+        damageZonePrompts.put("radius", coreLang.getStringList("editor.input.prompts.edit_action_radius"));
+        damageZonePrompts.put("damage", coreLang.getStringList("editor.input.prompts.edit_action_damage"));
+        damageZonePrompts.put("interval", coreLang.getStringList("editor.input.prompts.edit_action_damage_interval"));
+        damageZonePrompts.put("duration", coreLang.getStringList("editor.input.prompts.edit_action_duration"));
+        damageZonePrompts.put("particle", coreLang.getStringList("editor.input.prompts.edit_action_particle"));
+
+        api.registerCustomAction(
+                "DAMAGE_ZONE",
+                map -> new DamageZoneAction(
+                        String.valueOf(map.getOrDefault("center", damageZoneDefaults.get("center"))),
+                        parseSafeDouble(map.get("radius"), (double) damageZoneDefaults.get("radius")),
+                        parseSafeDouble(map.get("damage"), (double) damageZoneDefaults.get("damage")),
+                        parseSafeInt(map.get("interval"), (int) damageZoneDefaults.get("interval")),
+                        parseSafeInt(map.get("duration"), (int) damageZoneDefaults.get("duration")),
+                        String.valueOf(map.getOrDefault("particle", damageZoneDefaults.get("particle")))
+                ),
+                coreLang.getString("editor.actions_name.damage_zone"),
+                Material.CAMPFIRE,
+                coreLang.getString("editor.actions.damage_zone"),
+                damageZoneDefaults,
+                damageZonePrompts
         );
     }
 }

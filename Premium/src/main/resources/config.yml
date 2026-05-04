@@ -43,6 +43,14 @@ action-defaults:
       - "2,64,0"
       - "4,64,0"
 
+  damage_zone:
+    center: "0,64,0"
+    radius: 5.0
+    damage: 4.0
+    interval: 20
+    duration: 200
+    particle: "CAMPFIRE_COSY_SMOKE"
+
 # ---------------------------------------------------------
 # [MYTHIC+ AFFIXES]
 # Attach affixes to specific Dungeon Template IDs.

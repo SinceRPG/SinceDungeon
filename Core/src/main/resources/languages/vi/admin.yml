@@ -1,4 +1,5 @@
 admin:
+  invalid_map: "&cKhông thể tìm thấy tệp bản đồ Dungeon được yêu cầu."
   getkey_success: "&aĐã nhận Chìa khóa hệ thống: &e<id>"
   reload: "&aĐã tải lại toàn bộ cấu hình và dữ liệu Dungeon thành công."
   invalid_player: "&cKhông tìm thấy người chơi này."

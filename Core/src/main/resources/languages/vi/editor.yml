@@ -53,6 +53,10 @@ editor:
     edit_action_items: "&lSắp xếp Rương: <index>"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    insert_stage: "&bChèn Giai Đoạn Vào Đây"
+    insert_stage_lore:
+      - "&7Đẩy các màn chơi xuống dưới để tạo chỗ trống."
+      - "&eChuột Trái: Nhập vị trí muốn chèn"
     action_val_hint_open_gui: "&eChuột Trái: Mở giao diện"
     phase_item: "&eGiai đoạn ở mức <hp>% HP"
     phase_lore:
@@ -256,6 +260,9 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_insert_stage:
+        - "&7Nhập vị trí Giai đoạn bạn muốn chèn vào."
+        - "&7Ví dụ: &a2 &7(Sẽ đẩy màn 2 cũ xuống 3, để trống màn 2 mới)"
       edit_action_per_player:
         - "&7Mỗi người chơi có được một kho đồ riêng không?"
         - "&7Vui lòng nhập &atrue &7hoặc &cfalse&7."
@@ -470,6 +477,7 @@ editor:
         - "&7Ví dụ Vanilla: &aTRIPWIRE_HOOK:1"
         - "&7Ví dụ MMOItems: &aMMOITEMS:KEY:DUNGEON_KEY:1"
   chat:
+    stage_inserted: "&aĐã chèn và đẩy lùi cấu hình xuống để tạo Giai đoạn <pos> thành công!"
     dungeon_deleted: "&aĐã xóa thành công Dungeon: &e<dungeon>"
     notifications_hint:
       - "&7[Thông báo] Vui lòng chỉnh sửa mục này thủ công trong file YAML."

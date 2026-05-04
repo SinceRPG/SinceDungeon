@@ -21,12 +21,23 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
-            // --- Shift/Insert Stage Feature ---
-            if (!editorCfg.getConfig().contains("editor.items.insert_stage")) {
-                editorCfg.set("editor.items.insert_stage", "&bInsert Stage Here");
-                editorCfg.set("editor.items.insert_stage_lore", Arrays.asList("&7Shifts stages down to make room.", "&eLeft Click: Enter position"));
-                editorCfg.set("editor.input.prompts.edit_insert_stage", Arrays.asList("&7Enter the Stage position you want to insert.", "&7Example: &a2 &7(Moves stage 2 to 3, leaving 2 blank)"));
-                editorCfg.set("editor.chat.stage_inserted", "&aSuccessfully shifted configuration and inserted Stage <pos>!");
+            // --- Checkpoint Action ---
+            if (!editorCfg.getConfig().contains("editor.actions_name.save_checkpoint")) {
+                editorCfg.set("editor.actions_name.save_checkpoint", "&b&lPremium: Save Checkpoint");
+                editorCfg.set("editor.actions.save_checkpoint", "Saves a new respawn point for players in the dungeon.");
+                editorCfg.set("editor.input.prompts.edit_action_loc_single", Arrays.asList("&7Set the respawn coordinates (X,Y,Z).", "&7Tip: Type &ahere &7to use your current location."));
+                editorCfg.set("editor.input.prompts.edit_action_sound", Arrays.asList("&7Enter the sound to play on activation."));
+                editorCfg.set("editor.input.prompts.edit_action_particle", Arrays.asList("&7Enter the particle to spawn on activation."));
+                editorChanged = true;
+            }
+
+            // --- Damage Zone Action ---
+            if (!editorCfg.getConfig().contains("editor.actions_name.damage_zone")) {
+                editorCfg.set("editor.actions_name.damage_zone", "&c&lPremium: Damage Hazard Zone");
+                editorCfg.set("editor.actions.damage_zone", "Creates a temporary hazardous zone dealing damage to players inside.");
+                editorCfg.set("editor.input.prompts.edit_action_radius", Arrays.asList("&7Enter the radius of the hazard.", "&7Example: &a5.0"));
+                editorCfg.set("editor.input.prompts.edit_action_damage", Arrays.asList("&7Enter the amount of damage dealt per interval.", "&7Example: &a4.0 &7(2 hearts)"));
+                editorCfg.set("editor.input.prompts.edit_action_damage_interval", Arrays.asList("&7Enter the damage interval in ticks (20 ticks = 1s).", "&7Example: &a20"));
                 editorChanged = true;
             }
 
@@ -91,6 +102,14 @@ public class PremiumLanguageInjector {
         if (gameCfg != null) {
             boolean gameChanged = false;
 
+            if (!gameCfg.getConfig().contains("objective.save_checkpoint")) {
+                gameCfg.set("objective.save_checkpoint", "&aCheckpoint Reached!");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.damage_zone")) {
+                gameCfg.set("objective.damage_zone", "&cSurvive the Hazard!");
+                gameChanged = true;
+            }
             if (!gameCfg.getConfig().contains("objective.apply_buff")) {
                 gameCfg.set("objective.apply_buff", "&aA mysterious power grants you strength!");
                 gameChanged = true;

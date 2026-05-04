@@ -53,6 +53,10 @@ editor:
     edit_action_items: "&lChest Editor: <index>"
     string_list: "&lEditing List"
   items:
+    insert_stage: "&bInsert Stage Here"
+    insert_stage_lore:
+      - "&7Shifts stages down to make room."
+      - "&eLeft Click: Enter position"
     action_val_hint_open_gui: "&eLeft Click: Open GUI"
     phase_item: "&ePhase at <hp>% HP"
     phase_lore:
@@ -256,6 +260,9 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_insert_stage:
+        - "&7Enter the Stage position you want to insert."
+        - "&7Example: &a2 &7(Moves stage 2 to 3, leaving 2 blank)"
       edit_action_per_player:
         - "&7Should each player get their own instanced loot?"
         - "&7Enter &atrue &7or &cfalse&7."
@@ -470,6 +477,7 @@ editor:
         - "&7Vanilla Example: &aTRIPWIRE_HOOK:1"
         - "&7MMOItems Example: &aMMOITEMS:KEY:DUNGEON_KEY:1"
   chat:
+    stage_inserted: "&aSuccessfully shifted configuration and inserted Stage <pos> into <map>!"
     dungeon_deleted: "&aSuccessfully deleted dungeon: &e<dungeon>"
     notifications_hint:
       - "&7[Notifications] Edit this field manually in the dungeon YAML file."

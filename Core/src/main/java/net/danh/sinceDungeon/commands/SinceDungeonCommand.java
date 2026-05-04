@@ -7,6 +7,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
@@ -14,14 +15,20 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Handles the registration and execution of administrative /sincedungeonpremium commands.
+ * Now natively supports the 'stage insert' command to manipulate YAML configurations safely.
  */
 public class SinceDungeonCommand {
 
@@ -36,6 +43,72 @@ public class SinceDungeonCommand {
                             plugin.reloadFiles(ctx.getSource().getSender());
                             return 1;
                         })
+                )
+                .then(Commands.literal("stage")
+                        .then(Commands.literal("insert")
+                                .then(Commands.argument("map_id", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            for (String mapId : SinceDungeonAPI.get().getAvailableTemplates()) {
+                                                if (mapId.toLowerCase().startsWith(remaining)) {
+                                                    builder.suggest(mapId);
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("position", IntegerArgumentType.integer(1))
+                                                .executes(ctx -> {
+                                                    String mapId = StringArgumentType.getString(ctx, "map_id");
+                                                    int pos = IntegerArgumentType.getInteger(ctx, "position");
+
+                                                    File file = new File(plugin.getDataFolder(), "dungeons/" + mapId + ".yml");
+                                                    if (!file.exists()) {
+                                                        if (ctx.getSource().getExecutor() instanceof Player p) {
+                                                            String msg = plugin.getLanguageManager().getString("admin.invalid_map", "&cCannot find the requested Dungeon Map file.");
+                                                            p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                                                        }
+                                                        return 0;
+                                                    }
+
+                                                    YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                                                    ConfigurationSection sec = config.getConfigurationSection("stages");
+
+                                                    if (sec != null) {
+                                                        List<Integer> keys = new ArrayList<>();
+                                                        for (String k : sec.getKeys(false)) {
+                                                            try {
+                                                                keys.add(Integer.parseInt(k));
+                                                            } catch (Exception ignored) {
+                                                            }
+                                                        }
+                                                        keys.sort(Collections.reverseOrder());
+                                                        for (int k : keys) {
+                                                            if (k >= pos) {
+                                                                config.set("stages." + (k + 1), config.get("stages." + k));
+                                                                config.set("stages." + k, null);
+                                                            }
+                                                        }
+                                                    }
+
+                                                    config.createSection("stages." + pos + ".actions");
+                                                    config.set("stages." + pos + ".chance", 100.0);
+                                                    config.set("stages." + pos + ".commands", new ArrayList<String>());
+
+                                                    try {
+                                                        config.save(file);
+                                                        if (ctx.getSource().getExecutor() instanceof Player p) {
+                                                            String msg = plugin.getLanguageManager().getString("admin.stage_inserted", "&aSuccessfully shifted configuration and inserted Stage <pos> into <map>!");
+                                                            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<pos>", String.valueOf(pos)).replace("<map>", mapId)));
+                                                        }
+                                                    } catch (IOException e) {
+                                                        plugin.getLogger().warning("Failed to save stage shift data!");
+                                                    }
+
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
                 )
                 .then(Commands.literal("top")
                         .then(Commands.literal("reset")
@@ -475,36 +548,6 @@ public class SinceDungeonCommand {
                                                         })
                                                 )
                                         )
-                                )
-                        )
-                )
-                .then(Commands.literal("top")
-                        .then(Commands.literal("reset")
-                                .then(Commands.argument("map", StringArgumentType.string())
-                                        .suggests((ctx, builder) -> {
-                                            String remaining = builder.getRemainingLowerCase();
-                                            for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                                if (mapName.toLowerCase().contains(remaining)) {
-                                                    builder.suggest(mapName);
-                                                }
-                                            }
-                                            return builder.buildFuture();
-                                        })
-                                        .executes(ctx -> {
-                                            CommandSender sender = ctx.getSource().getSender();
-                                            String map = StringArgumentType.getString(ctx, "map");
-
-                                            if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
-                                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
-                                                return 0;
-                                            }
-
-                                            plugin.getTopManager().resetLeaderboard(map);
-
-                                            String msg = plugin.getLanguageManager().getString("admin.top_reset_success", "&aSuccessfully reset the leaderboard for map: &e<map>");
-                                            sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
-                                            return 1;
-                                        })
                                 )
                         )
                 )

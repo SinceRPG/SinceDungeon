@@ -14,6 +14,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
@@ -144,7 +145,7 @@ public class RouletteManager {
         ItemStack item = ItemBuilder.parseDynamicItem(reward.value());
         if (item == null) item = new ItemStack(Material.PAPER);
 
-        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        ItemMeta meta = item.getItemMeta();
         if (meta != null && reward.displayName() != null) {
             meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
             item.setItemMeta(meta);

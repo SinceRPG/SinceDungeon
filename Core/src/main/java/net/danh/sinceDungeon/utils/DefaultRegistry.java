@@ -281,7 +281,8 @@ public class DefaultRegistry {
 
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
-        chestDefaults.put("per_player", false); // NEW
+        chestDefaults.put("per_player", false);
+        chestDefaults.put("required_key", "NONE"); // Defined required key default
         chestDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.loot_chest.time_limit", -1));
         chestDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.loot_chest.time_penalty", 1));
         chestDefaults.put("items", new HashMap<String, String>());
@@ -289,7 +290,8 @@ public class DefaultRegistry {
 
         manager.registerAction("LOOT_CHEST", map -> {
                     Vector loc = DungeonLoader.parseVector(String.valueOf(map.getOrDefault("location", "0,0,0")));
-                    boolean perPlayer = map.containsKey("per_player") ? Boolean.parseBoolean(map.get("per_player").toString()) : false; // NEW
+                    boolean perPlayer = map.containsKey("per_player") ? Boolean.parseBoolean(map.get("per_player").toString()) : false;
+                    String requiredKey = String.valueOf(map.getOrDefault("required_key", "NONE"));
 
                     Map<Integer, String> itemsConfig = new HashMap<>();
                     Object itemsObj = map.get("items");
@@ -309,7 +311,8 @@ public class DefaultRegistry {
                             }
                         }
                     }
-                    return new LootChestAction(loc, itemsConfig, perPlayer); // UPDATED
+                    // FIXED: LootChestAction constructor now properly receives 4 arguments (including requiredKey)
+                    return new LootChestAction(loc, itemsConfig, perPlayer, requiredKey);
                 }, plugin.getLanguageManager().getString("editor.actions_name.loot_chest", "Loot Treasure Chest"), Material.CHEST,
                 plugin.getLanguageManager().getString("editor.actions.loot_chest", "Loot Chest"),
                 chestDefaults, new HashMap<>());
