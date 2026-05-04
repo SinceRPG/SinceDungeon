@@ -81,6 +81,14 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            // --- Jump Stage Action ---
+            if (!editorCfg.getConfig().contains("editor.actions_name.jump_stage")) {
+                editorCfg.set("editor.actions_name.jump_stage", "&d&lPremium: Jump Stage");
+                editorCfg.set("editor.actions.jump_stage", "Instantly skips to a specific stage index.");
+                editorCfg.set("editor.input.prompts.edit_action_target_stage", Arrays.asList("&7Enter the Stage Number to jump to."));
+                editorChanged = true;
+            }
+
             // --- Lever Puzzle Action ---
             if (!editorCfg.getConfig().contains("editor.actions_name.lever_puzzle")) {
                 editorCfg.set("editor.actions_name.lever_puzzle", "&b&lPremium: Lever Puzzle");
@@ -122,6 +130,10 @@ public class PremiumLanguageInjector {
             if (!gameCfg.getConfig().contains("objective.branching_path")) {
                 gameCfg.set("objective.branching_path", "&aChoose your destiny!");
                 gameCfg.set("action.branch_path_chosen", "&aYou have chosen to advance to stage <stage>!");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.jump_stage")) {
+                gameCfg.set("objective.jump_stage", "&dJumping to new stage...");
                 gameChanged = true;
             }
             if (!gameCfg.getConfig().contains("objective.lever_puzzle")) {

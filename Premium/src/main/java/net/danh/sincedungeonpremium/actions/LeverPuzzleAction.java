@@ -61,6 +61,7 @@ public class LeverPuzzleAction extends DungeonAction {
 
     /**
      * Deconstructs the puzzle and removes the placed levers to prevent map clutter.
+     * Clears arrays and counters to prevent soft-locks if the stage restarts.
      */
     @Override
     public void cleanup(DungeonGame game) {
@@ -72,6 +73,9 @@ public class LeverPuzzleAction extends DungeonAction {
                 }
             }
         }
+        // Fix: Properly resets memory states to prevent stuck levers on stage reboot
+        parsedLevers.clear();
+        currentIndex = 0;
     }
 
     @Override

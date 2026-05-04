@@ -4,12 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.managers.LanguageManager;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
-import net.danh.sincedungeonpremium.actions.BranchingPathAction;
-import net.danh.sincedungeonpremium.actions.BuffAction;
-import net.danh.sincedungeonpremium.actions.CheckpointAction;
-import net.danh.sincedungeonpremium.actions.DamageZoneAction;
-import net.danh.sincedungeonpremium.actions.EscortAction;
-import net.danh.sincedungeonpremium.actions.LeverPuzzleAction;
+import net.danh.sincedungeonpremium.actions.*;
 import org.bukkit.Material;
 
 import java.util.*;
@@ -54,9 +49,9 @@ public class PremiumActionRegistry {
 
         // 1. APPLY BUFF ACTION
         Map<String, Object> buffDefaults = new HashMap<>();
-        buffDefaults.put("effect", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.default-effect"));
-        buffDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-duration"));
-        buffDefaults.put("amplifier", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-amplifier"));
+        buffDefaults.put("effect", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.default-effect", "SPEED"));
+        buffDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-duration", 200));
+        buffDefaults.put("amplifier", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-amplifier", 1));
 
         Map<String, List<String>> buffPrompts = new HashMap<>();
         buffPrompts.put("effect", coreLang.getStringList("editor.input.prompts.edit_action_effect"));
@@ -79,22 +74,22 @@ public class PremiumActionRegistry {
 
         // 2. ESCORT NPC ACTION
         Map<String, Object> escortDefaults = new HashMap<>();
-        escortDefaults.put("mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-mob"));
-        escortDefaults.put("name", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-name"));
-        escortDefaults.put("health", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-health"));
+        escortDefaults.put("mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-mob", "VILLAGER"));
+        escortDefaults.put("name", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-name", "&aVIP Escort"));
+        escortDefaults.put("health", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-health", 100.0));
         escortDefaults.put("start_location", "0,64,0");
         escortDefaults.put("target_location", "10,64,10");
-        escortDefaults.put("speed", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-speed"));
-        escortDefaults.put("radius", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-radius"));
-        escortDefaults.put("vip_is_baby", plugin.getFileManager().getConfig().getBoolean("action-defaults.escort.vip_is_baby"));
+        escortDefaults.put("speed", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-speed", 1.0));
+        escortDefaults.put("radius", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-radius", 4.0));
+        escortDefaults.put("vip_is_baby", plugin.getFileManager().getConfig().getBoolean("action-defaults.escort.vip_is_baby", false));
         escortDefaults.put("vip_attributes", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.vip_attributes"));
         escortDefaults.put("vip_equipment", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.vip_equipment"));
 
-        escortDefaults.put("attacker_mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_mob"));
-        escortDefaults.put("attacker_amount", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_amount"));
-        escortDefaults.put("attacker_interval", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_interval"));
-        escortDefaults.put("attacker_name", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_name"));
-        escortDefaults.put("attacker_is_baby", plugin.getFileManager().getConfig().getBoolean("action-defaults.escort.attacker_is_baby"));
+        escortDefaults.put("attacker_mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_mob", "ZOMBIE"));
+        escortDefaults.put("attacker_amount", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_amount", 3));
+        escortDefaults.put("attacker_interval", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_interval", 100));
+        escortDefaults.put("attacker_name", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_name", "&cAssassin"));
+        escortDefaults.put("attacker_is_baby", plugin.getFileManager().getConfig().getBoolean("action-defaults.escort.attacker_is_baby", false));
         escortDefaults.put("attacker_attributes", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_attributes"));
         escortDefaults.put("attacker_equipment", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_equipment"));
 
@@ -251,6 +246,23 @@ public class PremiumActionRegistry {
                 coreLang.getString("editor.actions.damage_zone"),
                 damageZoneDefaults,
                 damageZonePrompts
+        );
+
+        // 7. JUMP STAGE ACTION
+        Map<String, Object> jumpDefaults = new HashMap<>();
+        jumpDefaults.put("target_stage", 5);
+
+        Map<String, List<String>> jumpPrompts = new HashMap<>();
+        jumpPrompts.put("target_stage", coreLang.getStringList("editor.input.prompts.edit_action_target_stage"));
+
+        api.registerCustomAction(
+                "JUMP_STAGE",
+                map -> new JumpStageAction(parseSafeInt(map.get("target_stage"), (int) jumpDefaults.get("target_stage"))),
+                coreLang.getString("editor.actions_name.jump_stage", "&d&lPremium: Jump Stage"),
+                Material.ENDER_PEARL,
+                coreLang.getString("editor.actions.jump_stage", "Instantly skips to a specific stage index."),
+                jumpDefaults,
+                jumpPrompts
         );
     }
 }

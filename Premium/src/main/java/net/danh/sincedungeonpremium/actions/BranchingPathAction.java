@@ -67,11 +67,20 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
         }
     }
 
+    /**
+     * Fix: Offsets the reflection states perfectly to ensure Core triggers checkStageCompletion()
+     * and advances naturally into the targeted stage without skipping internal states.
+     */
     private void jumpToStage(DungeonGame game, int targetStage) {
         try {
             Field stageIndexField = DungeonGame.class.getDeclaredField("currentStageIndex");
             stageIndexField.setAccessible(true);
-            stageIndexField.set(game, targetStage - 1);
+            stageIndexField.set(game, targetStage - 2);
+
+            Field actionIndexField = DungeonGame.class.getDeclaredField("currentActionIndex");
+            actionIndexField.setAccessible(true);
+            actionIndexField.set(game, 9999); // Triggers next stage
+
             this.forceComplete();
 
             game.broadcastMessage("action.branch_path_chosen", "<stage>", String.valueOf(targetStage));

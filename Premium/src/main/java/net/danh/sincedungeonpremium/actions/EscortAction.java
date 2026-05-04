@@ -13,6 +13,7 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -234,14 +235,21 @@ public class EscortAction extends DungeonAction implements Tickable {
         if (attackerMob != null && !attackerMob.equalsIgnoreCase("NONE") && attackerInterval > 0) {
             if (tickCounter % attackerInterval == 0) spawnAttackers(game, mob.getLocation());
         }
+
+        // Fix: Force AI to constantly target the VIP instead of players
+        if (tickCounter % 20 == 0) {
+            for (UUID id : this.spawnedEntities) {
+                if (id.equals(npcId)) continue;
+                Entity e = Bukkit.getEntity(id);
+                if (e instanceof Mob attackerMob) {
+                    if (attackerMob.getTarget() == null || attackerMob.getTarget().getType() == EntityType.PLAYER) {
+                        attackerMob.setTarget(mob);
+                    }
+                }
+            }
+        }
     }
 
-// Inside EscortAction.java -> Add this method below onTick() and replace spawnAttackers()
-
-    /**
-     * Computes a safe surface location by scanning vertically to prevent
-     * mobs from spawning inside solid blocks and suffocating instantly.
-     */
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
         for (int i = 0; i < 5; i++) {
@@ -252,8 +260,8 @@ public class EscortAction extends DungeonAction implements Tickable {
             check.subtract(0, 1, 0);
         }
         for (int i = 0; i < 5; i++) {
-            org.bukkit.block.Block block = check.getBlock();
-            org.bukkit.block.Block head = check.clone().add(0, 1, 0).getBlock();
+            Block block = check.getBlock();
+            Block head = check.clone().add(0, 1, 0).getBlock();
             if (!block.getType().isSolid() && !head.getType().isSolid()) {
                 return check;
             }
@@ -262,9 +270,6 @@ public class EscortAction extends DungeonAction implements Tickable {
         return original;
     }
 
-    /**
-     * Dispatches attacker mobs around the VIP utilizing the safe spawn algorithm.
-     */
     private void spawnAttackers(DungeonGame game, Location npcLoc) {
         try {
             EntityType type = EntityType.valueOf(attackerMob.toUpperCase(Locale.ROOT));
@@ -272,19 +277,22 @@ public class EscortAction extends DungeonAction implements Tickable {
                 double offsetX = (Math.random() - 0.5) * 6.0;
                 double offsetZ = (Math.random() - 0.5) * 6.0;
 
-                // Utilizes the new safe spawn function
                 Location spawnLoc = findSafeSpawn(npcLoc.clone().add(offsetX, 0, offsetZ));
 
                 Entity attacker = game.getWorld().spawnEntity(spawnLoc, type);
                 if (attacker instanceof Mob attMob) {
                     applyCustomProperties(attMob, attackerName, attackerIsBaby, attackerAttributes, attackerEquipment);
-                    attMob.setTarget((Mob) Bukkit.getEntity(npcId));
+
+                    Entity vip = Bukkit.getEntity(npcId);
+                    if (vip instanceof Mob vipMob) {
+                        attMob.setTarget(vipMob);
+                    }
+
                     this.spawnedEntities.add(attMob.getUniqueId());
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
             }
         } catch (Exception ignored) {
-            // Failsafe catch for invalid Entity Types
         }
     }
 
