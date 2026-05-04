@@ -1,6 +1,7 @@
 package net.danh.sincedungeonpremium;
 
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
@@ -60,7 +61,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
             return;
         }
 
-        PremiumLanguageInjector.inject(net.danh.sinceDungeon.SinceDungeon.getPlugin());
+        PremiumLanguageInjector.inject(SinceDungeon.getPlugin());
 
         hologramManager = new HologramManager(this);
         hologramManager.startUpdater();

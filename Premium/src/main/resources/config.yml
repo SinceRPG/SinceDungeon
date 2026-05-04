@@ -9,11 +9,15 @@
 # ---------------------------------------------------------
 action-defaults:
   apply_buff:
+    time_limit: -1
+    time_penalty: 1
     default-effect: "SPEED"
     default-duration: 200
     default-amplifier: 1
 
   escort:
+    time_limit: -1
+    time_penalty: 1
     default-mob: "VILLAGER"
     default-name: "&aVIP Escort"
     default-health: 100.0
@@ -31,6 +35,8 @@ action-defaults:
     attacker_equipment: [ ]
 
   branch:
+    time_limit: -1
+    time_penalty: 1
     path_a_loc: "0,64,0"
     path_b_loc: "10,64,10"
     stage_a: 3
@@ -38,18 +44,35 @@ action-defaults:
     radius: 3.0
 
   puzzle:
+    time_limit: -1
+    time_penalty: 1
+    fail_time_penalty: 5
     levers:
       - "0,64,0"
       - "2,64,0"
       - "4,64,0"
 
   damage_zone:
+    time_limit: -1
+    time_penalty: 1
     center: "0,64,0"
     radius: 5.0
     damage: 4.0
     interval: 20
     duration: 200
     particle: "CAMPFIRE_COSY_SMOKE"
+
+  checkpoint:
+    time_limit: -1
+    time_penalty: 1
+    location: "0,64,0"
+    sound: "entity.player.levelup"
+    particle: "TOTEM_OF_UNDYING"
+
+  jump_stage:
+    time_limit: -1
+    time_penalty: 1
+    target_stage: 5
 
 # ---------------------------------------------------------
 # [MYTHIC+ AFFIXES]

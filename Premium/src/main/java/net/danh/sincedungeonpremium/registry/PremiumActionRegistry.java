@@ -52,11 +52,15 @@ public class PremiumActionRegistry {
         buffDefaults.put("effect", plugin.getFileManager().getConfig().getString("action-defaults.apply_buff.default-effect", "SPEED"));
         buffDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-duration", 200));
         buffDefaults.put("amplifier", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.default-amplifier", 1));
+        buffDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.time_limit", -1));
+        buffDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.apply_buff.time_penalty", 1));
 
         Map<String, List<String>> buffPrompts = new HashMap<>();
         buffPrompts.put("effect", coreLang.getStringList("editor.input.prompts.edit_action_effect"));
         buffPrompts.put("duration", coreLang.getStringList("editor.input.prompts.edit_action_duration"));
         buffPrompts.put("amplifier", coreLang.getStringList("editor.input.prompts.edit_action_amplifier"));
+        buffPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        buffPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
 
         api.registerCustomAction(
                 "APPLY_BUFF",
@@ -74,6 +78,8 @@ public class PremiumActionRegistry {
 
         // 2. ESCORT NPC ACTION
         Map<String, Object> escortDefaults = new HashMap<>();
+        escortDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.escort.time_limit", -1));
+        escortDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.escort.time_penalty", 1));
         escortDefaults.put("mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-mob", "VILLAGER"));
         escortDefaults.put("name", plugin.getFileManager().getConfig().getString("action-defaults.escort.default-name", "&aVIP Escort"));
         escortDefaults.put("health", plugin.getFileManager().getConfig().getDouble("action-defaults.escort.default-health", 100.0));
@@ -94,6 +100,8 @@ public class PremiumActionRegistry {
         escortDefaults.put("attacker_equipment", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_equipment"));
 
         Map<String, List<String>> escortPrompts = new HashMap<>();
+        escortPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        escortPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         escortPrompts.put("start_location", coreLang.getStringList("editor.input.prompts.edit_action_start_location"));
         escortPrompts.put("target_location", coreLang.getStringList("editor.input.prompts.edit_action_target_location"));
         escortPrompts.put("mob", coreLang.getStringList("editor.input.prompts.edit_action_mob"));
@@ -137,6 +145,8 @@ public class PremiumActionRegistry {
 
         // 3. BRANCHING PATHS ACTION
         Map<String, Object> branchDefaults = new HashMap<>();
+        branchDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.branch.time_limit", -1));
+        branchDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.branch.time_penalty", 1));
         branchDefaults.put("path_a_loc", "0,64,0");
         branchDefaults.put("path_b_loc", "10,64,10");
         branchDefaults.put("stage_a", 3);
@@ -144,6 +154,8 @@ public class PremiumActionRegistry {
         branchDefaults.put("radius", 3.0);
 
         Map<String, List<String>> branchPrompts = new HashMap<>();
+        branchPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        branchPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         branchPrompts.put("path_a_loc", coreLang.getStringList("editor.input.prompts.edit_action_path_a_loc"));
         branchPrompts.put("path_b_loc", coreLang.getStringList("editor.input.prompts.edit_action_path_b_loc"));
         branchPrompts.put("stage_a", coreLang.getStringList("editor.input.prompts.edit_action_stage_a"));
@@ -167,10 +179,14 @@ public class PremiumActionRegistry {
 
         // 4. LEVER PUZZLE ACTION
         Map<String, Object> puzzleDefaults = new HashMap<>();
-        puzzleDefaults.put("fail_time_penalty", 5);
+        puzzleDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.puzzle.time_limit", -1));
+        puzzleDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.puzzle.time_penalty", 1));
+        puzzleDefaults.put("fail_time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.puzzle.fail_time_penalty", 5));
         puzzleDefaults.put("levers", new ArrayList<>(Arrays.asList("0,64,0", "2,64,0", "4,64,0")));
 
         Map<String, List<String>> puzzlePrompts = new HashMap<>();
+        puzzlePrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        puzzlePrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         puzzlePrompts.put("fail_time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_fail_time_penalty"));
         puzzlePrompts.put("levers", coreLang.getStringList("editor.input.prompts.edit_action_levers"));
 
@@ -194,11 +210,15 @@ public class PremiumActionRegistry {
 
         // 5. SAVE CHECKPOINT ACTION
         Map<String, Object> checkpointDefaults = new HashMap<>();
+        checkpointDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.checkpoint.time_limit", -1));
+        checkpointDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.checkpoint.time_penalty", 1));
         checkpointDefaults.put("location", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.location", "0,64,0"));
         checkpointDefaults.put("sound", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.sound", "entity.player.levelup"));
         checkpointDefaults.put("particle", plugin.getFileManager().getConfig().getString("action-defaults.checkpoint.particle", "TOTEM_OF_UNDYING"));
 
         Map<String, List<String>> checkpointPrompts = new HashMap<>();
+        checkpointPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        checkpointPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         checkpointPrompts.put("location", coreLang.getStringList("editor.input.prompts.edit_action_loc_single"));
         checkpointPrompts.put("sound", coreLang.getStringList("editor.input.prompts.edit_action_sound"));
         checkpointPrompts.put("particle", coreLang.getStringList("editor.input.prompts.edit_action_particle"));
@@ -219,6 +239,8 @@ public class PremiumActionRegistry {
 
         // 6. DAMAGE ZONE ACTION
         Map<String, Object> damageZoneDefaults = new HashMap<>();
+        damageZoneDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.damage_zone.time_limit", -1));
+        damageZoneDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.damage_zone.time_penalty", 1));
         damageZoneDefaults.put("center", plugin.getFileManager().getConfig().getString("action-defaults.damage_zone.center", "0,64,0"));
         damageZoneDefaults.put("radius", plugin.getFileManager().getConfig().getDouble("action-defaults.damage_zone.radius", 5.0));
         damageZoneDefaults.put("damage", plugin.getFileManager().getConfig().getDouble("action-defaults.damage_zone.damage", 4.0));
@@ -227,6 +249,8 @@ public class PremiumActionRegistry {
         damageZoneDefaults.put("particle", plugin.getFileManager().getConfig().getString("action-defaults.damage_zone.particle", "CAMPFIRE_COSY_SMOKE"));
 
         Map<String, List<String>> damageZonePrompts = new HashMap<>();
+        damageZonePrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        damageZonePrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         damageZonePrompts.put("center", coreLang.getStringList("editor.input.prompts.edit_action_loc_single"));
         damageZonePrompts.put("radius", coreLang.getStringList("editor.input.prompts.edit_action_radius"));
         damageZonePrompts.put("damage", coreLang.getStringList("editor.input.prompts.edit_action_damage"));
@@ -253,9 +277,13 @@ public class PremiumActionRegistry {
 
         // 7. JUMP STAGE ACTION
         Map<String, Object> jumpDefaults = new HashMap<>();
+        jumpDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.jump_stage.time_limit", -1));
+        jumpDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.jump_stage.time_penalty", 1));
         jumpDefaults.put("target_stage", 5);
 
         Map<String, List<String>> jumpPrompts = new HashMap<>();
+        jumpPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        jumpPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
         jumpPrompts.put("target_stage", coreLang.getStringList("editor.input.prompts.edit_action_target_stage"));
 
         api.registerCustomAction(
