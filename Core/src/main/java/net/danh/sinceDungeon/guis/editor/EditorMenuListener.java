@@ -689,7 +689,8 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
-                boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
+                // THIS IS THE LINE MODIFIED TO FIX THE 'HERE' KEYWORD FOR ALL PREMIUM LOCATION ACTIONS
+                boolean isLocation = key.toLowerCase().contains("location") || key.toLowerCase().contains("loc") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center") || key.equals("levers");
                 boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;

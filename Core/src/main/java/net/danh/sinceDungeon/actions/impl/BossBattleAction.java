@@ -195,6 +195,16 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
+    @Override
+    public void cleanup(DungeonGame game) {
+        super.cleanup(game);
+        // Clears the BossBar from players' screens if the action is forcefully terminated
+        if (this.bossBar != null) {
+            this.bossBar.removeAll();
+            this.bossBar = null;
+        }
+    }
+
     private void executePhase(DungeonGame game, LivingEntity boss, PhaseData data) {
         if (data.message != null && !data.message.isEmpty()) {
             for (Player p : game.getParticipants()) {
