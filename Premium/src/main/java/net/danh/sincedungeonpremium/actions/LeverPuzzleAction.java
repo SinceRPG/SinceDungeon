@@ -18,6 +18,11 @@ import org.bukkit.util.Vector;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Handles the Lever Puzzle objective.
+ * Physically places levers at defined locations and requires players
+ * to interact with them in the exact order they were registered.
+ */
 public class LeverPuzzleAction extends DungeonAction {
 
     private final List<String> rawLevers;
@@ -37,7 +42,27 @@ public class LeverPuzzleAction extends DungeonAction {
 
         for (String s : rawLevers) {
             Vector vec = DungeonLoader.parseVector(s);
-            parsedLevers.add(new Location(game.getWorld(), vec.getBlockX(), vec.getBlockY(), vec.getBlockZ()));
+            Location loc = new Location(game.getWorld(), vec.getBlockX(), vec.getBlockY(), vec.getBlockZ());
+            parsedLevers.add(loc);
+
+            // Automatically physically place the Lever in the world
+            Block block = loc.getBlock();
+            block.setType(Material.LEVER);
+        }
+    }
+
+    /**
+     * Deconstructs the puzzle and removes the placed levers to prevent map clutter.
+     */
+    @Override
+    public void cleanup(DungeonGame game) {
+        super.cleanup(game);
+        if (game.getWorld() != null) {
+            for (Location loc : parsedLevers) {
+                if (loc.getBlock().getType() == Material.LEVER) {
+                    loc.getBlock().setType(Material.AIR);
+                }
+            }
         }
     }
 
@@ -78,7 +103,7 @@ public class LeverPuzzleAction extends DungeonAction {
                         }
                     } else {
                         e.setCancelled(true);
-                        currentIndex = 0;
+                        currentIndex = 0; // Reset progression
 
                         String soundFailStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_fail", "block.note_block.bass");
                         Sound soundFail = SoundUtils.getSound(soundFailStr);

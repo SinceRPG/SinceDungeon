@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -286,7 +287,7 @@ public class RewardGUI implements Listener {
                 if (session.getTotalPages() > 1) {
                     if (slot == prevSlot && page > 0) {
                         try {
-                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
                         session.setSwitchingPage(true);
@@ -295,7 +296,7 @@ public class RewardGUI implements Listener {
                     }
                     if (slot == nextSlot && page < session.getTotalPages() - 1) {
                         try {
-                            p.playSound(p.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
+                            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                         } catch (Exception ignored) {
                         }
                         session.setSwitchingPage(true);

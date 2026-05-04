@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Location;
 import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -92,7 +93,7 @@ public class AffixListener implements Listener {
 
                     Particle boomParticle = getParticle("particles.affix_volcanic_boom", Particle.EXPLOSION);
                     deathLoc.getWorld().spawnParticle(boomParticle, deathLoc, 2);
-                    deathLoc.getWorld().playSound(deathLoc, org.bukkit.Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+                    deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
 
                     for (Player p : deathLoc.getWorld().getPlayers()) {
                         if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {

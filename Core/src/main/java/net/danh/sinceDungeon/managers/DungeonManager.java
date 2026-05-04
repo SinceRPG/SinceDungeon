@@ -247,7 +247,7 @@ public class DungeonManager {
                 }
                 if (data.containsKey("notifications")) {
                     Object notifObj = data.get("notifications");
-                    Map<String, Boolean> notifMap = new java.util.HashMap<>();
+                    Map<String, Boolean> notifMap = new HashMap<>();
                     if (notifObj instanceof ConfigurationSection sec) {
                         for (String k : sec.getKeys(false)) {
                             notifMap.put(k, sec.getBoolean(k, true));

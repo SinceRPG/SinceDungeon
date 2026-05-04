@@ -236,13 +236,44 @@ public class EscortAction extends DungeonAction implements Tickable {
         }
     }
 
+// Inside EscortAction.java -> Add this method below onTick() and replace spawnAttackers()
+
+    /**
+     * Computes a safe surface location by scanning vertically to prevent
+     * mobs from spawning inside solid blocks and suffocating instantly.
+     */
+    private Location findSafeSpawn(Location original) {
+        Location check = original.clone();
+        for (int i = 0; i < 5; i++) {
+            if (check.getBlock().getType().isSolid()) {
+                check.add(0, 1, 0);
+                break;
+            }
+            check.subtract(0, 1, 0);
+        }
+        for (int i = 0; i < 5; i++) {
+            org.bukkit.block.Block block = check.getBlock();
+            org.bukkit.block.Block head = check.clone().add(0, 1, 0).getBlock();
+            if (!block.getType().isSolid() && !head.getType().isSolid()) {
+                return check;
+            }
+            check.add(0, 1, 0);
+        }
+        return original;
+    }
+
+    /**
+     * Dispatches attacker mobs around the VIP utilizing the safe spawn algorithm.
+     */
     private void spawnAttackers(DungeonGame game, Location npcLoc) {
         try {
-            EntityType type = EntityType.valueOf(attackerMob.toUpperCase());
+            EntityType type = EntityType.valueOf(attackerMob.toUpperCase(Locale.ROOT));
             for (int i = 0; i < attackerAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 6.0;
                 double offsetZ = (Math.random() - 0.5) * 6.0;
-                Location spawnLoc = npcLoc.clone().add(offsetX, 0, offsetZ);
+
+                // Utilizes the new safe spawn function
+                Location spawnLoc = findSafeSpawn(npcLoc.clone().add(offsetX, 0, offsetZ));
 
                 Entity attacker = game.getWorld().spawnEntity(spawnLoc, type);
                 if (attacker instanceof Mob attMob) {
@@ -253,6 +284,7 @@ public class EscortAction extends DungeonAction implements Tickable {
                 }
             }
         } catch (Exception ignored) {
+            // Failsafe catch for invalid Entity Types
         }
     }
 

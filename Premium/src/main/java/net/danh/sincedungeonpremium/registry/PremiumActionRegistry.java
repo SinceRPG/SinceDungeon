@@ -92,9 +92,9 @@ public class PremiumActionRegistry {
         escortDefaults.put("vip_attributes", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.vip_attributes"));
         escortDefaults.put("vip_equipment", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.vip_equipment"));
 
-        escortDefaults.put("attacker_mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker-mob"));
-        escortDefaults.put("attacker_amount", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker-amount"));
-        escortDefaults.put("attacker_interval", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker-interval"));
+        escortDefaults.put("attacker_mob", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_mob"));
+        escortDefaults.put("attacker_amount", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_amount"));
+        escortDefaults.put("attacker_interval", plugin.getFileManager().getConfig().getInt("action-defaults.escort.attacker_interval"));
         escortDefaults.put("attacker_name", plugin.getFileManager().getConfig().getString("action-defaults.escort.attacker_name"));
         escortDefaults.put("attacker_is_baby", plugin.getFileManager().getConfig().getBoolean("action-defaults.escort.attacker_is_baby"));
         escortDefaults.put("attacker_attributes", plugin.getFileManager().getConfig().getStringList("action-defaults.escort.attacker_attributes"));
