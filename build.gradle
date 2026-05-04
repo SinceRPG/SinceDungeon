@@ -4,6 +4,10 @@ plugins {
     id("com.gradleup.shadow") version "9.4.1" apply false
 }
 
+tasks.named('jar') {
+    enabled = false
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'com.gradleup.shadow'

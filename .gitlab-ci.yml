@@ -131,8 +131,8 @@ build_job:
     - gradle clean build
   artifacts:
     paths:
-      - Core/build/libs/SinceDungeon-*.jar
-      - Premium/build/libs/SinceDungeon-PremiumAddon-*.jar
+      - build/libs/SinceDungeon-*.jar
+      - build/libs/SinceDungeon-PremiumAddon-*.jar
     expire_in: never
 
 # --- STAGE 3A: IF BUILD SUCCESSFUL (EDIT OLD MESSAGE & ATTACH FILE) ---
@@ -177,7 +177,7 @@ notify_success:
           }' > core_success.json
 
         # Locate the JAR artifact and PATCH the existing Discord message
-        CORE_JAR=$(find Core/build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" | head -n 1)
+        CORE_JAR=$(find build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" ! -name "SinceDungeon-PremiumAddon-*.jar" | head -n 1)
         if [ -f "$CORE_JAR" ]; then
           curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
         else
@@ -212,7 +212,7 @@ notify_success:
           }' > prem_success.json
 
         # Locate the JAR artifact and PATCH the existing Discord message
-        PREMIUM_JAR=$(find Premium/build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
+        PREMIUM_JAR=$(find build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
         if [ -f "$PREMIUM_JAR" ]; then
           curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
         else

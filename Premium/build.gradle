@@ -23,6 +23,7 @@ tasks.named('compileJava') {
 shadowJar {
     archiveBaseName.set('SinceDungeon-PremiumAddon')
     archiveClassifier.set('')
+    destinationDirectory.set(rootProject.layout.buildDirectory.dir('libs'))
 }
 
 build.dependsOn shadowJar

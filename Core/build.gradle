@@ -17,6 +17,7 @@ tasks.named('jar') {
 
 shadowJar {
     archiveBaseName.set('SinceDungeon')
+    destinationDirectory.set(rootProject.layout.buildDirectory.dir('libs'))
     relocate 'org.sqlite', 'net.danh.sinceDungeon.libs.sqlite'
     relocate 'com.mysql', 'net.danh.sinceDungeon.libs.mysql'
     relocate 'redis.clients', 'net.danh.sinceDungeon.libs.redis.clients'
