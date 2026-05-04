@@ -21,6 +21,8 @@ admin:
   no_permission: "&cYou don't have permission to do this."
   invalid_player: "&cOnly players can use this command."
   invalid_args: "&cInvalid arguments. Usage: /sdp hologram <create|delete>"
+  invalid_map: "&cCannot find the requested Dungeon Map file."
+  stage_inserted: "&aSuccessfully shifted configuration and inserted Stage <pos> into <map>!"
 
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"

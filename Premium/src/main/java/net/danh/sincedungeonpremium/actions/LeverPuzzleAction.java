@@ -10,6 +10,8 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.FaceAttachable;
+import org.bukkit.block.data.type.Switch;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -48,6 +50,12 @@ public class LeverPuzzleAction extends DungeonAction {
             // Automatically physically place the Lever in the world
             Block block = loc.getBlock();
             block.setType(Material.LEVER);
+
+            // Explicitly set the attachment face to FLOOR so it doesn't pop off dynamically
+            if (block.getBlockData() instanceof Switch leverData) {
+                leverData.setAttachedFace(FaceAttachable.AttachedFace.FLOOR);
+                block.setBlockData(leverData);
+            }
         }
     }
 

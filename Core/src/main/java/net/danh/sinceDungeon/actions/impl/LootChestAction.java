@@ -6,10 +6,12 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
 import org.bukkit.entity.HumanEntity;
@@ -20,6 +22,7 @@ import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -27,21 +30,25 @@ import java.util.*;
 /**
  * Handles spawning a lootable chest that players must empty to proceed.
  * Supports both Shared (Physical) and Instanced (Per-Player Virtual) loot modes.
+ * Optionally requires a specific Key item to unlock the chest.
  */
 public class LootChestAction extends DungeonAction implements Tickable {
     private final Vector chestLocation;
     private final Map<Integer, String> itemsConfig;
     private final boolean perPlayer;
+    private final String requiredKey;
+
     // Data for Per-Player Instanced Loot
     private final Map<UUID, Inventory> personalInventories = new HashMap<>();
     private final Set<UUID> finishedPlayers = new HashSet<>();
     private boolean isOpened = false;
     private Block chestBlock = null;
 
-    public LootChestAction(Vector location, Map<Integer, String> itemsConfig, boolean perPlayer) {
+    public LootChestAction(Vector location, Map<Integer, String> itemsConfig, boolean perPlayer, String requiredKey) {
         this.chestLocation = location;
         this.itemsConfig = itemsConfig;
         this.perPlayer = perPlayer;
+        this.requiredKey = requiredKey;
     }
 
     @Override
@@ -138,6 +145,16 @@ public class LootChestAction extends DungeonAction implements Tickable {
         return inv;
     }
 
+    /**
+     * Emits a rejection sound if the player fails a key verification check.
+     */
+    private void playDenySound(Player p) {
+        String soundLocked = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_locked", "block.chest.locked");
+        if (soundLocked != null) {
+            p.playSound(p.getLocation(), SoundUtils.getSound(soundLocked), 1f, 1f);
+        }
+    }
+
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (event instanceof PlayerInteractEvent e) {
@@ -149,6 +166,35 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
             Block b = e.getClickedBlock();
             if (isTargetChest(b)) {
+
+                // --- KEY CHECK LOGIC ---
+                if (this.requiredKey != null && !this.requiredKey.equalsIgnoreCase("NONE") && !isOpened) {
+                    ItemStack handItem = e.getItem();
+                    if (handItem == null || handItem.getType() == Material.AIR) {
+                        e.setCancelled(true);
+                        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("error.key_not_found", "&cYou need a Key!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                        playDenySound(p);
+                        return;
+                    }
+
+                    NamespacedKey keyTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_key_id");
+                    if (!ItemBuilder.hasTag(handItem, keyTag, PersistentDataType.STRING) ||
+                            !this.requiredKey.equals(ItemBuilder.getTag(handItem, keyTag, PersistentDataType.STRING))) {
+                        e.setCancelled(true);
+                        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("error.wrong_key", "&cWrong key!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                        playDenySound(p);
+                        return;
+                    }
+
+                    // Consume the key and play unlock sound
+                    handItem.setAmount(handItem.getAmount() - 1);
+                    String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
+                    p.playSound(p.getLocation(), SoundUtils.getSound(soundUnlock), 1f, 1f);
+                }
+                // --- END KEY CHECK LOGIC ---
+
                 if (perPlayer) {
                     e.setCancelled(true);
 

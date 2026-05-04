@@ -1,5 +1,6 @@
 package net.danh.sincedungeonpremium.commands;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -10,8 +11,13 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,6 +25,7 @@ import java.util.List;
  * Responsibilities:
  * - Admin command for reloading Premium configs and Holograms.
  * - In-game utility to dynamically place and remove Holographic Leaderboards.
+ * - Insert new stages dynamically between existing stages.
  * - Provides full, dynamic tab-completion for all arguments, integrating with Core's API and config files.
  */
 public class PremiumCommand {
@@ -36,9 +43,75 @@ public class PremiumCommand {
                                 plugin.getHologramManager().clearAllHolograms();
                                 plugin.getHologramManager().startUpdater();
                             }
-                            plugin.getFileManager().sendMessage((Player) ctx.getSource().getSender(), "admin.reload");
+                            if (ctx.getSource().getExecutor() instanceof Player p) {
+                                plugin.getFileManager().sendMessage(p, "admin.reload");
+                            }
                             return 1;
                         })
+                )
+                .then(Commands.literal("stage")
+                        .then(Commands.literal("insert")
+                                .then(Commands.argument("map_id", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            for (String mapId : SinceDungeonAPI.get().getAvailableTemplates()) {
+                                                if (mapId.toLowerCase().startsWith(remaining)) {
+                                                    builder.suggest(mapId);
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .then(Commands.argument("position", IntegerArgumentType.integer(1))
+                                                .executes(ctx -> {
+                                                    String mapId = StringArgumentType.getString(ctx, "map_id");
+                                                    int pos = IntegerArgumentType.getInteger(ctx, "position");
+
+                                                    File file = new File(SinceDungeon.getPlugin().getDataFolder(), "dungeons/" + mapId + ".yml");
+                                                    if (!file.exists()) {
+                                                        if (ctx.getSource().getExecutor() instanceof Player p) {
+                                                            plugin.getFileManager().sendMessage(p, "admin.invalid_map");
+                                                        }
+                                                        return 0;
+                                                    }
+
+                                                    YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+                                                    ConfigurationSection sec = config.getConfigurationSection("stages");
+
+                                                    if (sec != null) {
+                                                        List<Integer> keys = new ArrayList<>();
+                                                        for (String k : sec.getKeys(false)) {
+                                                            try {
+                                                                keys.add(Integer.parseInt(k));
+                                                            } catch (Exception ignored) {
+                                                            }
+                                                        }
+                                                        keys.sort(Collections.reverseOrder());
+                                                        for (int k : keys) {
+                                                            if (k >= pos) {
+                                                                config.set("stages." + (k + 1), config.get("stages." + k));
+                                                                config.set("stages." + k, null);
+                                                            }
+                                                        }
+                                                    }
+
+                                                    config.createSection("stages." + pos + ".actions");
+                                                    config.set("stages." + pos + ".chance", 100.0);
+                                                    config.set("stages." + pos + ".commands", new ArrayList<String>());
+
+                                                    try {
+                                                        config.save(file);
+                                                        if (ctx.getSource().getExecutor() instanceof Player p) {
+                                                            plugin.getFileManager().sendMessage(p, "admin.stage_inserted", "<pos>", String.valueOf(pos), "<map>", mapId);
+                                                        }
+                                                    } catch (IOException e) {
+                                                        plugin.getLogger().warning("Failed to save stage shift data!");
+                                                    }
+
+                                                    return 1;
+                                                })
+                                        )
+                                )
+                        )
                 )
                 .then(Commands.literal("hologram")
                         .then(Commands.literal("create")

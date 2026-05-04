@@ -21,6 +21,15 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
+            // --- Shift/Insert Stage Feature ---
+            if (!editorCfg.getConfig().contains("editor.items.insert_stage")) {
+                editorCfg.set("editor.items.insert_stage", "&bInsert Stage Here");
+                editorCfg.set("editor.items.insert_stage_lore", Arrays.asList("&7Shifts stages down to make room.", "&eLeft Click: Enter position"));
+                editorCfg.set("editor.input.prompts.edit_insert_stage", Arrays.asList("&7Enter the Stage position you want to insert.", "&7Example: &a2 &7(Moves stage 2 to 3, leaving 2 blank)"));
+                editorCfg.set("editor.chat.stage_inserted", "&aSuccessfully shifted configuration and inserted Stage <pos>!");
+                editorChanged = true;
+            }
+
             // --- Apply Buff Action ---
             if (!editorCfg.getConfig().contains("editor.actions_name.apply_buff")) {
                 editorCfg.set("editor.actions_name.apply_buff", "&d&lPremium: Apply Buff");

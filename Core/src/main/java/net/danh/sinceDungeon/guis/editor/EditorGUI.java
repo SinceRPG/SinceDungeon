@@ -53,6 +53,8 @@ public class EditorGUI {
             else if (key.equals("list_empty")) msg = "&cThe list is currently empty.";
             else if (key.equals("number_error")) msg = "&cValue must be a valid number!";
             else if (key.equals("dungeon_deleted")) msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
+            else if (key.equals("stage_inserted"))
+                msg = "&aSuccessfully shifted configuration and inserted Stage <pos>!";
             else return;
         }
 
@@ -462,6 +464,8 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage", "&aAdd Stage"), null));
+        // ADDED: The highly requested Insert Stage GUI button!
+        inv.setItem(51, makeItem(Material.PISTON, getMsg("items.insert_stage", "&bInsert Stage Here"), getLoreList("insert_stage_lore", Arrays.asList("&7Shifts stages down to make room.", "&eLeft Click: Enter position"))));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         setPagination(inv, page, maxPage, 48, 50);
 

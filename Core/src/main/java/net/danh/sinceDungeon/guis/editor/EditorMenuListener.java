@@ -23,10 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Captures all inventory click events associated with the Editor GUI.
@@ -61,8 +58,6 @@ public class EditorMenuListener implements Listener {
 
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
-        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
         if (e.getView().getTopInventory().getLocation() != null) return;
 
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder) {
@@ -86,9 +81,6 @@ public class EditorMenuListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-
-        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
-        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
         if (e.getView().getTopInventory().getLocation() != null) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder)) return;
 
@@ -581,6 +573,43 @@ public class EditorMenuListener implements Listener {
                     }
                     session.getConfig().createSection("stages." + next + ".actions");
                     gui.openStageList(p, session, page);
+                } else if (slot == 51) {
+                    // --- THE NEW PREMIUM STAGE SHIFTING / INSERTION LOGIC ---
+                    session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_insert_stage", val -> {
+                        try {
+                            int pos = Integer.parseInt(val);
+                            if (pos < 1) throw new NumberFormatException();
+
+                            ConfigurationSection sec = session.getConfig().getConfigurationSection("stages");
+                            if (sec != null) {
+                                List<Integer> keys = new ArrayList<>();
+                                for (String k : sec.getKeys(false)) {
+                                    try {
+                                        keys.add(Integer.parseInt(k));
+                                    } catch (Exception ignored) {
+                                    }
+                                }
+                                keys.sort(Collections.reverseOrder());
+                                for (int k : keys) {
+                                    if (k >= pos) {
+                                        session.getConfig().set("stages." + (k + 1), session.getConfig().get("stages." + k));
+                                        session.getConfig().set("stages." + k, null);
+                                    }
+                                }
+                            }
+                            session.getConfig().createSection("stages." + pos + ".actions");
+                            session.getConfig().set("stages." + pos + ".chance", 100.0);
+                            session.getConfig().set("stages." + pos + ".commands", new ArrayList<String>());
+
+                            gui.sendMessage(p, "stage_inserted", "<pos>", String.valueOf(pos));
+                            gui.openStageList(p, session, page);
+                        } catch (Exception ex) {
+                            gui.sendMessage(p, "number_error");
+                            gui.openStageList(p, session, page);
+                        }
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+
                 } else if (slot == 45) {
                     gui.openDungeonMenu(p, session);
                 } else if (slot < 45 && cur.getType() == Material.FILLED_MAP) {
@@ -689,7 +718,6 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
-                // THIS IS THE LINE MODIFIED TO FIX THE 'HERE' KEYWORD FOR ALL PREMIUM LOCATION ACTIONS
                 boolean isLocation = key.toLowerCase().contains("location") || key.toLowerCase().contains("loc") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center") || key.equals("levers");
                 boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
 
@@ -956,8 +984,6 @@ public class EditorMenuListener implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
-        // Note: Check if the inventory is a virtual GUI by ensuring it has no physical location.
-        // This prevents massive lag spikes caused by CraftBlockState snapshotting in Paper 1.21+.
         if (e.getView().getTopInventory().getLocation() != null) return;
 
         if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder && e.getPlayer() instanceof Player p) {
