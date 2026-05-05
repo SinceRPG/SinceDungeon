@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Handles the registration of all Premium custom actions.
  * Directly reads GUI prompts and language from the Core's LanguageManager.
- * Employs hardcoded fallbacks for language queries to ensure the Editor GUI renders safely even if language files are wiped.
+ * Employs hardcoded English fallbacks to ensure the Editor GUI renders safely even if language files are wiped.
  */
 public class PremiumActionRegistry {
 
@@ -295,6 +295,61 @@ public class PremiumActionRegistry {
                 coreLang.getString("editor.actions.jump_stage", "Instantly skips to a specific stage index."),
                 jumpDefaults,
                 jumpPrompts
+        );
+
+        // 8. CINEMATIC DIALOGUE ACTION
+        Map<String, Object> cinematicDefaults = new HashMap<>();
+        cinematicDefaults.put("time_limit", plugin.getFileManager().getConfig().getInt("action-defaults.cinematic.time_limit", -1));
+        cinematicDefaults.put("time_penalty", plugin.getFileManager().getConfig().getInt("action-defaults.cinematic.time_penalty", 1));
+        cinematicDefaults.put("frames", new ArrayList<>(Arrays.asList("40;&c&lLich King;&cWho dares enter my domain?;;entity.ender_dragon.growl", "60;;;&cYou shall perish!;entity.wither.spawn")));
+
+        Map<String, List<String>> cinematicPrompts = new HashMap<>();
+        cinematicPrompts.put("time_limit", coreLang.getStringList("editor.input.prompts.edit_action_time_limit"));
+        cinematicPrompts.put("time_penalty", coreLang.getStringList("editor.input.prompts.edit_action_time_penalty"));
+        cinematicPrompts.put("frames", coreLang.getStringList("editor.input.prompts.edit_action_frames"));
+
+        api.registerCustomAction(
+                "CINEMATIC_DIALOGUE",
+                map -> new CinematicDialogueAction(parseList(map.getOrDefault("frames", cinematicDefaults.get("frames")))),
+                coreLang.getString("editor.actions_name.cinematic_dialogue", "&5&lPremium: Cinematic Dialogue"),
+                Material.WRITABLE_BOOK,
+                coreLang.getString("editor.actions.cinematic_dialogue", "Plays timed titles, text, and sounds to tell a story."),
+                cinematicDefaults,
+                cinematicPrompts
+        );
+
+        // 9. PROJECTILE TRAP ACTION
+        Map<String, Object> trapDefaults = new HashMap<>();
+        trapDefaults.put("location", plugin.getFileManager().getConfig().getString("action-defaults.projectile_trap.location", "0,64,0"));
+        trapDefaults.put("direction", plugin.getFileManager().getConfig().getString("action-defaults.projectile_trap.direction", "0,-1,0"));
+        trapDefaults.put("projectile_type", plugin.getFileManager().getConfig().getString("action-defaults.projectile_trap.projectile_type", "ARROW"));
+        trapDefaults.put("interval", plugin.getFileManager().getConfig().getInt("action-defaults.projectile_trap.interval", 20));
+        trapDefaults.put("speed", plugin.getFileManager().getConfig().getDouble("action-defaults.projectile_trap.speed", 1.5));
+        trapDefaults.put("duration", plugin.getFileManager().getConfig().getInt("action-defaults.projectile_trap.duration", 100));
+
+        Map<String, List<String>> trapPrompts = new HashMap<>();
+        trapPrompts.put("location", coreLang.getStringList("editor.input.prompts.edit_action_loc_single"));
+        trapPrompts.put("direction", coreLang.getStringList("editor.input.prompts.edit_action_direction"));
+        trapPrompts.put("projectile_type", coreLang.getStringList("editor.input.prompts.edit_action_projectile_type"));
+        trapPrompts.put("interval", coreLang.getStringList("editor.input.prompts.edit_action_damage_interval"));
+        trapPrompts.put("speed", coreLang.getStringList("editor.input.prompts.edit_action_speed"));
+        trapPrompts.put("duration", coreLang.getStringList("editor.input.prompts.edit_action_duration"));
+
+        api.registerCustomAction(
+                "PROJECTILE_TRAP",
+                map -> new ProjectileTrapAction(
+                        String.valueOf(map.getOrDefault("location", trapDefaults.get("location"))),
+                        String.valueOf(map.getOrDefault("direction", trapDefaults.get("direction"))),
+                        String.valueOf(map.getOrDefault("projectile_type", trapDefaults.get("projectile_type"))),
+                        parseSafeInt(map.get("interval"), (int) trapDefaults.get("interval")),
+                        parseSafeDouble(map.get("speed"), (double) trapDefaults.get("speed")),
+                        parseSafeInt(map.get("duration"), (int) trapDefaults.get("duration"))
+                ),
+                coreLang.getString("editor.actions_name.projectile_trap", "&c&lPremium: Projectile Trap"),
+                Material.DISPENSER,
+                coreLang.getString("editor.actions.projectile_trap", "Periodically fires projectiles from a location."),
+                trapDefaults,
+                trapPrompts
         );
     }
 }

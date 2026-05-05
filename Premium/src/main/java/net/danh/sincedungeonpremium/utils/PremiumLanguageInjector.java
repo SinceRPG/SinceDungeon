@@ -117,6 +117,29 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            // --- Cinematic Dialogue Action ---
+            if (!editorCfg.getConfig().contains("editor.actions_name.cinematic_dialogue")) {
+                editorCfg.set("editor.actions_name.cinematic_dialogue", "&5&lPremium: Cinematic Dialogue");
+                editorCfg.set("editor.actions.cinematic_dialogue", "Plays timed titles, text, and sounds to tell a story.");
+                editorCfg.set("editor.input.prompts.edit_action_frames", Arrays.asList(
+                        "&7Add a cinematic frame to the sequence.",
+                        "&7Format: &adelay_ticks;title;subtitle;chat_msg;sound_id",
+                        "&7Example: &a40;&c&lLich King;&cYou will die!;;entity.ender_dragon.growl",
+                        "&7Leave fields blank if unused. Example (Chat only): &a20;;;&cHello!;"
+                ));
+                editorChanged = true;
+            }
+
+            // --- Projectile Trap Action ---
+            if (!editorCfg.getConfig().contains("editor.actions_name.projectile_trap")) {
+                editorCfg.set("editor.actions_name.projectile_trap", "&c&lPremium: Projectile Trap");
+                editorCfg.set("editor.actions.projectile_trap", "Periodically fires projectiles from a location.");
+                editorCfg.set("editor.input.prompts.edit_action_direction", Arrays.asList("&7Enter the XYZ directional vector.", "&7Example: &a0,-1,0 &7(Shoots straight down)"));
+                editorCfg.set("editor.input.prompts.edit_action_projectile_type", Arrays.asList("&7Enter the Projectile EntityType.", "&7Examples: &aARROW, FIREBALL, WITHER_SKULL, SHULKER_BULLET"));
+                editorCfg.set("editor.input.prompts.edit_action_speed", Arrays.asList("&7Enter the projectile velocity speed.", "&7Example: &a1.5"));
+                editorChanged = true;
+            }
+
             if (editorChanged) editorCfg.save();
         }
 
@@ -163,6 +186,14 @@ public class PremiumLanguageInjector {
             }
             if (!gameCfg.getConfig().contains("action.affix_volcanic_hit")) {
                 gameCfg.set("action.affix_volcanic_hit", "&cYou were burned by a Volcanic explosion!");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.cinematic_dialogue")) {
+                gameCfg.set("objective.cinematic_dialogue", "&dWatching Story Sequence...");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.projectile_trap")) {
+                gameCfg.set("objective.projectile_trap", "&cEvade the incoming projectiles!");
                 gameChanged = true;
             }
 
