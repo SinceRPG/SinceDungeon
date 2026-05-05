@@ -121,7 +121,13 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         if (completed || coreId == null) return;
 
         Entity entity = Bukkit.getEntity(coreId);
-        if (entity == null || entity.isDead()) {
+
+        if (entity == null) {
+            // Entities might temporarily return null if chunks unload. Don't fail the mission immediately.
+            return;
+        }
+
+        if (entity.isDead()) {
             game.broadcastMessage("action.defend_failed");
             game.stop(true, DungeonEndEvent.EndReason.FAILED);
             forceComplete();

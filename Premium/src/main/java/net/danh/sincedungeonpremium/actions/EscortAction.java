@@ -223,6 +223,11 @@ public class EscortAction extends DungeonAction implements Tickable {
         tickCounter++;
         Entity entity = Bukkit.getEntity(npcId);
 
+        if (entity == null) {
+            // Entities might temporarily return null if chunks unload. Don't fail the mission immediately.
+            return;
+        }
+
         if (!(entity instanceof Mob mob) || mob.isDead()) {
             game.broadcastMessage("action.escort_failed");
             game.stop(true, DungeonEndEvent.EndReason.FAILED);
@@ -236,8 +241,12 @@ public class EscortAction extends DungeonAction implements Tickable {
         }
 
         if (game.getWorld().getTime() % 10 == 0) {
-            forcePathfind(mob);
             game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, targetLocation.clone().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0);
+        }
+
+        // Periodically verify the pathfinder is active so the mob doesn't get stuck
+        if (tickCounter % 20 == 0) {
+            forcePathfind(mob);
         }
 
         if (attackerMob != null && !attackerMob.equalsIgnoreCase("NONE") && attackerInterval > 0) {

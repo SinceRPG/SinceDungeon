@@ -98,12 +98,37 @@ public class PremiumLanguageInjector {
                 gameCfg.set("action.defend_failed", "&cThe core has been destroyed! Mission failed.");
                 gameChanged = true;
             }
+            if (!gameCfg.getConfig().contains("objective.escort_npc")) {
+                gameCfg.set("objective.escort_npc", "&aEscort the VIP safely!");
+                gameCfg.set("action.escort_failed", "&cThe VIP has been killed! Mission Failed.");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.branching_path")) {
+                gameCfg.set("objective.branching_path", "&eChoose your path to proceed.");
+                gameCfg.set("action.branch_path_chosen", "&aPath chosen! Proceeding to Stage <stage>...");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.damage_zone")) {
+                gameCfg.set("objective.damage_zone", "&4Survive the hazard!");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.lever_puzzle")) {
+                gameCfg.set("objective.lever_puzzle", "&6Activate the levers in the correct order.");
+                gameCfg.set("action.puzzle_solved", "&aPuzzle solved! The mechanism clicks open.");
+                gameCfg.set("action.puzzle_failed", "&cIncorrect sequence! The mechanism resets.");
+                gameCfg.set("action.puzzle_failed_penalty", "&cIncorrect sequence! The mechanism resets. Lost <time>s!");
+                gameChanged = true;
+            }
             if (!gameCfg.getConfig().contains("objective.give_item")) {
                 gameCfg.set("objective.give_item", "&aReceiving Items...");
                 gameChanged = true;
             }
             if (!gameCfg.getConfig().contains("objective.play_sound")) {
                 gameCfg.set("objective.play_sound", "&dListening...");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.projectile_trap")) {
+                gameCfg.set("objective.projectile_trap", "&8Dodge the incoming projectiles!");
                 gameChanged = true;
             }
 

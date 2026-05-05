@@ -592,7 +592,6 @@ public class EditorMenuListener implements Listener {
                     session.getConfig().createSection("stages." + next + ".actions");
                     gui.openStageList(p, session, page);
                 } else if (slot == 51) {
-                    // --- THE NEW PREMIUM STAGE SHIFTING / INSERTION LOGIC ---
                     session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_insert_stage", val -> {
                         try {
                             int pos = Integer.parseInt(val);
@@ -736,11 +735,12 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
+                // Explicitly check known Premium list fields to guarantee the Editor properly recognizes them
                 boolean isLocation = key.toLowerCase().contains("location") || key.toLowerCase().contains("loc") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center") || key.equals("levers");
-                boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
+                boolean isListField = key.equalsIgnoreCase("random_mobs") || key.equalsIgnoreCase("attributes") || key.equalsIgnoreCase("equipment") || key.endsWith("_attributes") || key.endsWith("_equipment") || key.equals("levers") || key.equals("frames") || key.equals("locations") || key.equals("custom_drops") || key.equals("start_message");
 
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
-                boolean isList = isRandomMobs || session.getConfig().isList(fullPath);
+                boolean isList = isListField || session.getConfig().isList(fullPath);
 
                 EditorSession.InputType inputType;
                 if (isLocation) {
@@ -786,12 +786,12 @@ public class EditorMenuListener implements Listener {
                 }
 
                 if (e.getClick() == ClickType.LEFT) {
-                    if (isList && !isLocation && !isRandomMobs) {
+                    if (isList && !isLocation && !key.equalsIgnoreCase("random_mobs")) {
                         gui.openStringListEditor(p, session, fullPath, "EDIT_ACTION", 0);
                         return;
                     }
 
-                    String promptKey = isRandomMobs ? "edit_random_mobs" : "edit_action_" + key.toLowerCase();
+                    String promptKey = key.equalsIgnoreCase("random_mobs") ? "edit_random_mobs" : "edit_action_" + key.toLowerCase();
 
                     session.awaitInput(inputType, promptKey, val -> {
                         if (inputType == EditorSession.InputType.EDIT_NUMBER) {

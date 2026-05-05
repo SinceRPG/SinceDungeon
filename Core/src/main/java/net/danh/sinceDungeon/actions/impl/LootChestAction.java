@@ -320,7 +320,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
         Bukkit.getScheduler().runTaskLater(SinceDungeon.getPlugin(), () -> {
             if (chestBlock != null) chestBlock.setType(Material.AIR);
             Location soundLoc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
-            game.getWorld().playSound(soundLoc, org.bukkit.Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+            game.getWorld().playSound(soundLoc, Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         }, 1L);
     }
 

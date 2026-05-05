@@ -21,6 +21,7 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
 
     private Location locA;
     private Location locB;
+    private int ticksElapsed = 0;
 
     public BranchingPathAction(String pathAStr, String pathBStr, int stageA, int stageB, double radius) {
         this.pathAStr = pathAStr;
@@ -46,8 +47,9 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
     @Override
     public void onTick(DungeonGame game) {
         if (completed || locA == null || locB == null) return;
+        ticksElapsed++;
 
-        if (game.getWorld().getTime() % 10 == 0) {
+        if (ticksElapsed % 10 == 0) {
             game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, locA, 10, 0.5, 1, 0.5, 0);
             game.getWorld().spawnParticle(Particle.FLAME, locB, 10, 0.5, 1, 0.5, 0);
         }
