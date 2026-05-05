@@ -8,7 +8,8 @@ import java.util.Map;
  */
 public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                               List<Condition> conditions,
-                              Map<Integer, Integer> rewardTiers,
+                              Map<Integer, Integer> soloRewardTiers,
+                              Map<Integer, Integer> partyRewardTiers,
                               List<DungeonReward> rewardPool,
                               Map<Integer, StageData> stages,
                               Settings settings) {

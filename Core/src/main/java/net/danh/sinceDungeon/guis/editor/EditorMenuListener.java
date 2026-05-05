@@ -356,10 +356,17 @@ public class EditorMenuListener implements Listener {
             }
 
             case "REWARDS_MAIN" -> {
-                if (cur.getType() == Material.CLOCK) gui.openRewardTiers(p, session, session.getPage("REWARD_TIERS"));
-                else if (cur.getType() == Material.CHEST)
+                if (slot == 11) {
+                    session.setCurrentTierType("SOLO");
+                    gui.openRewardTiers(p, session, session.getPage("REWARD_TIERS"));
+                } else if (slot == 12) {
+                    session.setCurrentTierType("PARTY");
+                    gui.openRewardTiers(p, session, session.getPage("REWARD_TIERS"));
+                } else if (slot == 15) {
                     gui.openRewardPool(p, session, session.getPage("REWARD_POOL"));
-                else if (slot == 18) gui.openDungeonMenu(p, session);
+                } else if (slot == 18) {
+                    gui.openDungeonMenu(p, session);
+                }
             }
 
             case "REWARD_TIERS" -> {
@@ -372,6 +379,8 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
+                String pathPrefix = session.getCurrentTierType().equalsIgnoreCase("PARTY") ? "rewards.party-tiers" : "rewards.solo-tiers";
+
                 if (slot == 49) {
                     session.awaitInput(EditorSession.InputType.EDIT_TIER, "edit_tier", val -> {
                         try {
@@ -379,7 +388,7 @@ public class EditorMenuListener implements Listener {
                             if (parts.length < 2) throw new Exception();
                             int time = Math.max(1, Integer.parseInt(parts[0]));
                             int amt = Math.max(1, Integer.parseInt(parts[1]));
-                            session.getConfig().set("rewards.tiers." + time, amt);
+                            session.getConfig().set(pathPrefix + "." + time, amt);
                             gui.sendMessage(p, "tier_added", "<time>", String.valueOf(time), "<amount>", String.valueOf(amt));
                             gui.openRewardTiers(p, session, page);
                         } catch (Exception ex) {
@@ -391,7 +400,7 @@ public class EditorMenuListener implements Listener {
                 } else if (slot == 45) {
                     gui.openRewardMenu(p, session);
                 } else if (slot < 45 && cur.getType() == Material.CLOCK) {
-                    ConfigurationSection tiers = session.getConfig().getConfigurationSection("rewards.tiers");
+                    ConfigurationSection tiers = session.getConfig().getConfigurationSection(pathPrefix);
                     if (tiers != null) {
                         List<String> keys = new ArrayList<>(tiers.getKeys(false));
                         keys.sort(Comparator.comparingInt(Integer::parseInt));
@@ -400,14 +409,14 @@ public class EditorMenuListener implements Listener {
                         if (actualIdx < keys.size()) {
                             String timeStr = keys.get(actualIdx);
                             if (e.getClick() == ClickType.RIGHT) {
-                                session.getConfig().set("rewards.tiers." + timeStr, null);
+                                session.getConfig().set(pathPrefix + "." + timeStr, null);
                                 p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                                 gui.openRewardTiers(p, session, page);
                             } else if (e.getClick() == ClickType.LEFT) {
                                 session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_number", val -> {
                                     try {
                                         int newAmount = Math.max(0, Integer.parseInt(val));
-                                        session.getConfig().set("rewards.tiers." + timeStr, newAmount);
+                                        session.getConfig().set(pathPrefix + "." + timeStr, newAmount);
                                         gui.sendMessage(p, "update_val", "<key>", gui.getWord("chest_amount", "Chests").replace("<time>", timeStr), "<val>", String.valueOf(newAmount));
                                         gui.openRewardTiers(p, session, page);
                                     } catch (Exception ex) {

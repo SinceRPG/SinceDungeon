@@ -6,6 +6,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -100,5 +101,22 @@ public class ColorUtils {
         text = text.replace("&r", "<reset>");
 
         return text;
+    }
+
+    /**
+     * Formats raw Enum names (e.g. IRON_NUGGET) into Human Readable titles (Iron Nugget).
+     *
+     * @param name The raw enum string.
+     * @return Formatted Title-Case string.
+     */
+    public static String formatEnumName(String name) {
+        if (name == null || name.isEmpty()) return "";
+        String[] words = name.toLowerCase(Locale.ROOT).split("_");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (word.isEmpty()) continue;
+            sb.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
+        }
+        return sb.toString().trim();
     }
 }

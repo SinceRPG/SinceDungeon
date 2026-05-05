@@ -1,8 +1,10 @@
 package net.danh.sincedungeonpremium.managers;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.api.events.DungeonRewardClaimEvent;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
+import net.danh.sinceDungeon.guis.reward.RewardGUI;
 import net.danh.sinceDungeon.guis.reward.RewardSession;
 import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonReward;
@@ -10,11 +12,15 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
+import net.danh.sincedungeonpremium.guis.RouletteHolder;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -30,14 +36,16 @@ import java.util.Random;
  * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
  * - Preserves ALL metadata formatting (Names, Lore, NBT) when displaying preview items.
  * - Securely pushes execution back into Core systems to process the won rewards.
+ * - Secures rewards in case of early inventory closure.
  */
-public class RouletteManager {
+public class RouletteManager implements Listener {
 
     private final SinceDungeonPremium plugin;
     private final Random random = new Random();
 
     public RouletteManager(SinceDungeonPremium plugin) {
         this.plugin = plugin;
+        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
     public void openRoulette(Player player, RewardSession session) {
@@ -47,8 +55,14 @@ public class RouletteManager {
             return;
         }
 
+        List<DungeonReward> pool = session.getTemplate().rewardPool();
+        if (pool == null || pool.isEmpty()) return;
+
+        session.decreaseChestCount();
+        DungeonReward wonReward = getRandomReward(pool); // Pre-calculate winning reward to secure against closing
+
         String title = plugin.getFileManager().getConfig().getString("roulette.title", "&6&lReward Spin");
-        Inventory inv = Bukkit.createInventory(null, 27, ColorUtils.parse(title));
+        Inventory inv = Bukkit.createInventory(new RouletteHolder(session, wonReward), 27, ColorUtils.parse(title));
 
         ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         for (int i = 0; i < 9; i++) inv.setItem(i, border);
@@ -59,15 +73,10 @@ public class RouletteManager {
 
         player.openInventory(inv);
 
-        session.decreaseChestCount();
-
-        List<DungeonReward> pool = session.getTemplate().rewardPool();
-        if (pool == null || pool.isEmpty()) return;
-
-        startSpinAnimation(player, inv, pool, session);
+        startSpinAnimation(player, inv, pool, session, wonReward);
     }
 
-    private void startSpinAnimation(Player player, Inventory inv, List<DungeonReward> pool, RewardSession session) {
+    private void startSpinAnimation(Player player, Inventory inv, List<DungeonReward> pool, RewardSession session, DungeonReward wonReward) {
         new BukkitRunnable() {
             int ticks = 0;
             int delay = 1;
@@ -102,7 +111,7 @@ public class RouletteManager {
 
                 if (ticks >= maxTicks) {
                     this.cancel();
-                    finishSpin(player, inv, session, pool);
+                    finishSpin(player, inv, session, wonReward);
                 } else if (ticks % delay != 0) {
                     // Loop skip
                 }
@@ -110,28 +119,21 @@ public class RouletteManager {
         }.runTaskTimer(plugin, 0L, 1L);
     }
 
-    private void finishSpin(Player player, Inventory inv, RewardSession session, List<DungeonReward> pool) {
+    private void finishSpin(Player player, Inventory inv, RewardSession session, DungeonReward wonReward) {
+        if (!(inv.getHolder() instanceof RouletteHolder holder)) return;
+
+        holder.setClaimed(true); // Mark as claimed internally so the onClose event doesn't duplicate
+
         String finishSoundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_finish", "entity.player.levelup");
         Sound finishSound = SoundUtils.getSound(finishSoundStr);
         if (finishSound != null) {
             player.playSound(player.getLocation(), finishSound, 1f, 1f);
         }
 
-        DungeonReward wonReward = getRandomReward(pool);
         ItemStack wonDisplay = buildDisplayItem(wonReward);
         inv.setItem(13, wonDisplay);
 
-        // Crucial fix: Evaluate if the event is cancelled (e.g. by Hologram Drops)
-        // If not, force the Core RewardProcessor to actually give the reward to the player!
-        DungeonRewardClaimEvent claimEvent = new DungeonRewardClaimEvent(player, wonReward);
-        Bukkit.getPluginManager().callEvent(claimEvent);
-
-        if (!claimEvent.isCancelled()) {
-            RewardProcessor processor = SinceDungeonAPI.get().getManager().getRewardProcessor(wonReward.type());
-            if (processor != null) {
-                processor.giveReward(player, wonReward.value(), wonReward.displayName());
-            }
-        }
+        grantReward(player, wonReward);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
@@ -142,6 +144,38 @@ public class RouletteManager {
                 }
             }
         }, 40L);
+    }
+
+    private void grantReward(Player player, DungeonReward wonReward) {
+        DungeonRewardClaimEvent claimEvent = new DungeonRewardClaimEvent(player, wonReward);
+        Bukkit.getPluginManager().callEvent(claimEvent);
+
+        if (!claimEvent.isCancelled()) {
+            RewardProcessor processor = SinceDungeonAPI.get().getManager().getRewardProcessor(wonReward.type());
+            if (processor != null) {
+                processor.giveReward(player, wonReward.value(), wonReward.displayName());
+            }
+        }
+    }
+
+    @EventHandler
+    public void onRouletteClose(InventoryCloseEvent e) {
+        if (e.getInventory().getHolder() instanceof RouletteHolder holder) {
+            Player p = (Player) e.getPlayer();
+
+            // If they closed before the spin finished, give the pending reward immediately!
+            if (!holder.isClaimed() && holder.getPendingReward() != null) {
+                holder.setClaimed(true);
+                grantReward(p, holder.getPendingReward());
+            }
+
+            // Securely force-claim the rest of the chests so no data is lost
+            if (holder.getSession() != null && holder.getSession().getChestCount() > 0) {
+                new RewardGUI(SinceDungeon.getPlugin()).forceClaimAll(p, holder.getSession());
+            }
+
+            RewardSessionManager.removeSession(p);
+        }
     }
 
     private DungeonReward getRandomReward(List<DungeonReward> pool) {
@@ -161,9 +195,9 @@ public class RouletteManager {
 
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            if (reward.displayName() != null && !reward.displayName().isEmpty()) {
-                meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
-            }
+            String displayName = reward.displayName() != null && !reward.displayName().isEmpty() ? reward.displayName() : ColorUtils.formatEnumName(item.getType().name());
+            meta.displayName(ColorUtils.parse("<!i>" + displayName));
+
             if (reward.lore() != null && !reward.lore().isEmpty()) {
                 List<Component> lore = new ArrayList<>();
                 for (String line : reward.lore()) {

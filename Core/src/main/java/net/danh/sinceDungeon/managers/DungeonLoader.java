@@ -69,16 +69,12 @@ public class DungeonLoader {
             }
         }
 
-        Map<Integer, Integer> tiers = new HashMap<>();
-        ConfigurationSection tierSec = config.getConfigurationSection("rewards.tiers");
-        if (tierSec != null) {
-            for (String key : tierSec.getKeys(false)) {
-                try {
-                    tiers.put(Integer.parseInt(key), tierSec.getInt(key));
-                } catch (NumberFormatException ignored) {
-                }
-            }
-        }
+        Map<Integer, Integer> soloTiers = loadTiers(config, "rewards.solo-tiers");
+        Map<Integer, Integer> partyTiers = loadTiers(config, "rewards.party-tiers");
+
+        // Backward compatibility fallback
+        if (soloTiers.isEmpty()) soloTiers = loadTiers(config, "rewards.tiers");
+        if (partyTiers.isEmpty()) partyTiers = new HashMap<>(soloTiers);
 
         List<DungeonReward> rewards = new ArrayList<>();
         ConfigurationSection poolSec = config.getConfigurationSection("rewards.pool");
@@ -122,7 +118,21 @@ public class DungeonLoader {
             }
         }
 
-        return new DungeonTemplate(id, world, isPublic, conditions, tiers, rewards, stages, settings);
+        return new DungeonTemplate(id, world, isPublic, conditions, soloTiers, partyTiers, rewards, stages, settings);
+    }
+
+    private static Map<Integer, Integer> loadTiers(YamlConfiguration config, String path) {
+        Map<Integer, Integer> tiers = new HashMap<>();
+        ConfigurationSection tierSec = config.getConfigurationSection(path);
+        if (tierSec != null) {
+            for (String key : tierSec.getKeys(false)) {
+                try {
+                    tiers.put(Integer.parseInt(key), tierSec.getInt(key));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+        }
+        return tiers;
     }
 
     /**

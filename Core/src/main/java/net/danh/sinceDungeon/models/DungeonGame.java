@@ -733,8 +733,9 @@ public class DungeonGame {
         int finalElapsed = (int) elapsedSeconds;
         String formattedTime = formatTime(finalElapsed);
 
+        Map<Integer, Integer> activeTiers = (participants.size() > 1) ? template.partyRewardTiers() : template.soloRewardTiers();
         int chestCount = 1;
-        for (Map.Entry<Integer, Integer> entry : template.rewardTiers().entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : activeTiers.entrySet()) {
             if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
         }
         final int finalChestCount = chestCount;

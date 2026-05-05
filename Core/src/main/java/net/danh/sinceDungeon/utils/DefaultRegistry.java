@@ -114,7 +114,7 @@ public class DefaultRegistry {
 
         String msg = plugin.getLanguageManager().getString("reward.messages.received_item", "&7Received: &a<item>");
         if (msg != null) {
-            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? item.getType().name() : displayName)));
+            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? ColorUtils.formatEnumName(item.getType().name()) : displayName)));
         }
     }
 
@@ -150,7 +150,7 @@ public class DefaultRegistry {
                     }
                 }
 
-                giveCustomItemReward(plugin, p, item, mat.name() + " x" + amount);
+                giveCustomItemReward(plugin, p, item, ColorUtils.formatEnumName(mat.name()) + " x" + amount);
             } catch (Exception e) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.error", "&cSystem Error: Item <item> is misconfigured.").replace("<item>", val)));
             }

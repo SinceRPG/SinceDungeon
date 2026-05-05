@@ -21,6 +21,14 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
+            if (!editorCfg.getConfig().contains("editor.items.reward_solo_tiers")) {
+                editorCfg.set("editor.items.reward_solo_tiers", "&6Solo Time Tiers");
+                editorCfg.set("editor.items.reward_party_tiers", "&6Party Time Tiers");
+                editorCfg.set("editor.title.reward_party_tiers", "&lParty Tiers");
+                editorCfg.set("editor.title.reward_solo_tiers", "&lSolo Tiers");
+                editorChanged = true;
+            }
+
             // --- Checkpoint Action ---
             if (!editorCfg.getConfig().contains("editor.actions_name.save_checkpoint")) {
                 editorCfg.set("editor.actions_name.save_checkpoint", "&b&lPremium: Save Checkpoint");
@@ -90,7 +98,6 @@ public class PremiumLanguageInjector {
             }
 
             // --- Lever Puzzle Action ---
-            // Inside Editor Config Injection:
             if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_fail_time_penalty")) {
                 editorCfg.set("editor.input.prompts.edit_action_fail_time_penalty", Arrays.asList(
                         "&7Enter the amount of time (in seconds) to deduct when players pull the wrong lever.",

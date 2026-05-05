@@ -303,8 +303,11 @@ public class EditorGUI {
     public void openRewardMenu(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openRewardMenu(player, session));
         Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARDS_MAIN", 0), 27, ColorUtils.parse(getMsg("title.rewards_main", "&lRewards Menu")));
-        inv.setItem(11, makeItem(Material.CLOCK, getMsg("items.reward_tiers_item", "&6Time Tiers"), null));
+
+        inv.setItem(11, makeItem(Material.CLOCK, getMsg("items.reward_solo_tiers", "&6Solo Time Tiers"), null));
+        inv.setItem(12, makeItem(Material.GOLD_BLOCK, getMsg("items.reward_party_tiers", "&6Party Time Tiers"), null));
         inv.setItem(15, makeItem(Material.CHEST, getMsg("items.reward_pool_item", "&6Item Pool"), null));
+
         inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         p.openInventory(inv);
     }
@@ -313,7 +316,9 @@ public class EditorGUI {
         session.setPage("REWARD_TIERS", page);
         session.setLastMenuOpener(player -> openRewardTiers(player, session, session.getPage("REWARD_TIERS")));
 
-        ConfigurationSection tiers = session.getConfig().getConfigurationSection("rewards.tiers");
+        String pathPrefix = session.getCurrentTierType().equalsIgnoreCase("PARTY") ? "rewards.party-tiers" : "rewards.solo-tiers";
+        ConfigurationSection tiers = session.getConfig().getConfigurationSection(pathPrefix);
+
         List<String> keys = tiers != null ? new ArrayList<>(tiers.getKeys(false)) : new ArrayList<>();
         keys.sort(Comparator.comparingInt(Integer::parseInt));
 
@@ -321,14 +326,18 @@ public class EditorGUI {
         int maxPage = Math.max(0, (total - 1) / 45);
         page = Math.max(0, Math.min(maxPage, page));
 
-        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARD_TIERS", page), 54, ColorUtils.parse(getMsg("title.reward_tiers", "&lReward Tiers")));
+        String title = session.getCurrentTierType().equalsIgnoreCase("PARTY")
+                ? getMsg("title.reward_party_tiers", "&lParty Tiers")
+                : getMsg("title.reward_solo_tiers", "&lSolo Tiers");
+
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "REWARD_TIERS", page), 54, ColorUtils.parse(title));
 
         for (int i = 0; i < 45; i++) {
             int idx = i + page * 45;
             if (idx >= total) break;
             String key = keys.get(idx);
 
-            int amount = session.getConfig().getInt("rewards.tiers." + key);
+            int amount = session.getConfig().getInt(pathPrefix + "." + key);
             String name = getMsg("items.tier_item", "&e<time>s").replace("<time>", key);
             List<String> lore = new ArrayList<>();
             for (String s : getLoreList("tier_lore", Arrays.asList("&7Chests: &f<amount>", "", "&eLeft Click: Edit amount", "&cRight Click: Delete tier")))
@@ -464,7 +473,6 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage", "&aAdd Stage"), null));
-        // ADDED: The highly requested Insert Stage GUI button!
         inv.setItem(51, makeItem(Material.PISTON, getMsg("items.insert_stage", "&bInsert Stage Here"), getLoreList("insert_stage_lore", Arrays.asList("&7Shifts stages down to make room.", "&eLeft Click: Enter position"))));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         setPagination(inv, page, maxPage, 48, 50);

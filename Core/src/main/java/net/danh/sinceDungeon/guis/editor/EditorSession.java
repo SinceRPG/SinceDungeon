@@ -33,10 +33,11 @@ public class EditorSession {
     private String currentActionKey = null;
     private String currentRewardKey = null;
     private String currentConditionKey = null;
-    private String currentPhaseThreshold = null; // NEW: Tracks boss phase
+    private String currentPhaseThreshold = null;
 
     private String currentListPath = null;
     private String currentListReturnMenu = null;
+    private String currentTierType = "SOLO"; // Used to toggle between SOLO and PARTY tiers
 
     private InputType currentInput = InputType.NONE;
     private String promptKey = null;
@@ -176,6 +177,14 @@ public class EditorSession {
 
     public void setCurrentListReturnMenu(String menu) {
         this.currentListReturnMenu = menu;
+    }
+
+    public String getCurrentTierType() {
+        return currentTierType;
+    }
+
+    public void setCurrentTierType(String currentTierType) {
+        this.currentTierType = currentTierType;
     }
 
     public int getPage(String menuType) {

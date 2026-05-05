@@ -58,7 +58,7 @@ public class PremiumRewardListener implements Listener {
 
         if (itemStack != null) {
             ItemMeta meta = itemStack.getItemMeta();
-            String displayName = reward.displayName() != null && !reward.displayName().isEmpty() ? reward.displayName() : itemStack.getType().name();
+            String displayName = reward.displayName() != null && !reward.displayName().isEmpty() ? reward.displayName() : ColorUtils.formatEnumName(itemStack.getType().name());
 
             // Apply Lore and DisplayName to the ItemStack metadata directly
             if (meta != null) {
