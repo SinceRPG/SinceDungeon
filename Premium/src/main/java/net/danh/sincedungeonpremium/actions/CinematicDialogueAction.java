@@ -61,7 +61,8 @@ public class CinematicDialogueAction extends DungeonAction implements Tickable {
 
         try {
             if (parts.length > 0 && !parts[0].isEmpty()) delay = Integer.parseInt(parts[0].trim());
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
 
         if (parts.length > 1) title = parts[1];
         if (parts.length > 2) subtitle = parts[2];

@@ -49,29 +49,39 @@ public class PremiumRewardListener implements Listener {
         if (!useHoloDrops) return;
 
         DungeonReward reward = e.getReward();
-        if (!reward.type().equalsIgnoreCase("ITEM") && !reward.type().equalsIgnoreCase("MMOITEM")) return;
+
+        // Correctly handle standard items, MMOItems, and MythicItems now
+        if (!reward.type().equalsIgnoreCase("ITEM") && !reward.type().equalsIgnoreCase("MMOITEM") && !reward.type().equalsIgnoreCase("MYTHIC_ITEM"))
+            return;
 
         Player player = e.getPlayer();
-        ItemStack itemStack = ItemBuilder.parseDynamicItem(reward.value());
+
+        // Standardize dynamic string parsing for integration with the Custom Item Provider registry
+        String parseVal = reward.value();
+        if (reward.type().equalsIgnoreCase("MMOITEM") && !parseVal.toUpperCase().startsWith("MMOITEMS:")) {
+            parseVal = "MMOITEMS:" + parseVal;
+        } else if (reward.type().equalsIgnoreCase("MYTHIC_ITEM") && !parseVal.toUpperCase().startsWith("MYTHIC_ITEM:")) {
+            parseVal = "MYTHIC_ITEM:" + parseVal;
+        }
+
+        ItemStack itemStack = ItemBuilder.parseDynamicItem(parseVal);
 
         if (itemStack != null) {
             String defaultName = SinceDungeon.getPlugin().getLanguageManager().getString("editor.words.reward_default_name", "&7Default");
 
-            if (reward.type().equalsIgnoreCase("ITEM")) {
-                if (reward.displayName() != null && !reward.displayName().isEmpty() && !reward.displayName().equals(defaultName)) {
-                    ItemMeta meta = itemStack.getItemMeta();
-                    if (meta != null) {
-                        meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
+            if (reward.displayName() != null && !reward.displayName().isEmpty() && !reward.displayName().equals(defaultName)) {
+                ItemMeta meta = itemStack.getItemMeta();
+                if (meta != null) {
+                    meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
 
-                        if (reward.lore() != null && !reward.lore().isEmpty()) {
-                            List<Component> lore = new ArrayList<>();
-                            for (String line : reward.lore()) {
-                                lore.add(ColorUtils.parse("<!i>" + line));
-                            }
-                            meta.lore(lore);
+                    if (reward.lore() != null && !reward.lore().isEmpty()) {
+                        List<Component> lore = new ArrayList<>();
+                        for (String line : reward.lore()) {
+                            lore.add(ColorUtils.parse("<!i>" + line));
                         }
-                        itemStack.setItemMeta(meta);
+                        meta.lore(lore);
                     }
+                    itemStack.setItemMeta(meta);
                 }
             }
 
@@ -89,6 +99,7 @@ public class PremiumRewardListener implements Listener {
             droppedItem.customName(nameComp);
             droppedItem.setCustomNameVisible(true);
 
+            // Successfully injected - Prevent core loop from giving it straight into inventory
             e.setCancelled(true);
         }
     }

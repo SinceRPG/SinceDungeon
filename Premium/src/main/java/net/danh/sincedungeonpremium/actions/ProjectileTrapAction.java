@@ -47,6 +47,8 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
         }
         Vector vec = DungeonLoader.parseVector(locationStr);
         loc = new Location(game.getWorld(), vec.getX() + 0.5, vec.getY() + 0.5, vec.getZ() + 0.5);
+        loc.getChunk().load(true); // Ensured Chunk is actively generated and simulated prior to physics handling
+
         dir = DungeonLoader.parseVector(directionStr).normalize().multiply(speed);
     }
 

@@ -4,10 +4,15 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.managers.LanguageManager;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
-import net.danh.sincedungeonpremium.actions.*;
+import net.danh.sincedungeonpremium.actions.DefendCoreAction;
+import net.danh.sincedungeonpremium.actions.GiveItemAction;
+import net.danh.sincedungeonpremium.actions.PlaySoundAction;
 import org.bukkit.Material;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Handles the registration of all Premium custom actions.

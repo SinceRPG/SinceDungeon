@@ -95,7 +95,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
     private void registerPremiumHooks() {
         if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
             PremiumMythicMobsHook.register();
-            getLogger().info("MythicMobs found! Hooking into MYTHIC_ITEM CustomProvider.");
+            getLogger().info(fileManager.getMessageRaw("log.mythicmobs_hooked"));
         }
     }
 

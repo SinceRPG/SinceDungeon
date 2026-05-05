@@ -65,15 +65,6 @@ public class DungeonGame {
     private long startTime;
     private int serverTicksActive = 0;
 
-    /**
-     * Constructs a new DungeonGame instance.
-     * Prepares player states, generates a unique world name, and parses dungeon stages.
-     *
-     * @param plugin          The plugin instance.
-     * @param initiator       The player initiating the session.
-     * @param rawParticipants The unmodifiable set of players joining.
-     * @param template        The structured layout of the dungeon map.
-     */
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiatorId = initiator.getUniqueId();
@@ -103,10 +94,6 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
-    /**
-     * Parses and initializes the stages and actions from the template data.
-     * Handles optional rogue-like randomization if configured in the template settings.
-     */
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -151,30 +138,13 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Executes defined console commands globally for all active participants.
-     * Resolves multiple variations of placeholders (e.g., %player%, <player>)
-     * to ensure absolute foolproof configuration, then integrates with PlaceholderAPI.
-     *
-     * @param commands   List of raw command strings to execute.
-     * @param stageIndex Current stage integer index.
-     */
     private void executeActionCommands(List<String> commands, int stageIndex) {
         if (commands == null || commands.isEmpty()) return;
-
         for (Player p : participants) {
             executeActionCommandsForPlayer(commands, p, stageIndex);
         }
     }
 
-    /**
-     * Executes defined console commands explicitly targeted at a single player.
-     * Includes intelligent condition parsing using brackets (e.g., [condition] command).
-     *
-     * @param commands   List of raw command strings to execute.
-     * @param p          The target player to evaluate placeholders against.
-     * @param stageIndex Current stage integer index.
-     */
     private void executeActionCommandsForPlayer(List<String> commands, Player p, int stageIndex) {
         if (commands == null || commands.isEmpty() || p == null || !p.isOnline()) return;
 
@@ -198,19 +168,11 @@ public class DungeonGame {
                     .replace("%stage%", String.valueOf(stageIndex + 1));
 
             parsed = PAPIHook.setPlaceholders(p, parsed);
-
-            if (parsed.startsWith("/")) {
-                parsed = parsed.substring(1);
-            }
-
+            if (parsed.startsWith("/")) parsed = parsed.substring(1);
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed);
         }
     }
 
-    /**
-     * Initiates the asynchronous creation of the dungeon world instance.
-     * Transitions into the lobby countdown phase once the world successfully loads.
-     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
@@ -222,7 +184,6 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
-        // Uses the newly injected InstanceManager strategy
         plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName)
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
                     if (isStopping) {
@@ -249,9 +210,6 @@ public class DungeonGame {
                 });
     }
 
-    /**
-     * Executes the lobby countdown timer before teleporting players into the active dungeon.
-     */
     private void startCountdown() {
         lobbyTask = new BukkitRunnable() {
             int count = plugin.getConfigFile().getInt("dungeon.lobby-countdown", 5);
@@ -283,10 +241,6 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    /**
-     * Teleports all active participants into the dungeon instance.
-     * Manages inventory states, applies startup commands, and starts the main ticking loop for actions.
-     */
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
@@ -363,10 +317,6 @@ public class DungeonGame {
         startStage(0);
     }
 
-    /**
-     * Executes the main dungeon loop.
-     * Evaluates active conditions, manages timeouts, and processes HUD updates.
-     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -416,12 +366,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Evaluates the timeout sequence for a specific action.
-     * Deducts lives, manages spectator transitions, and attempts to restart the stage if possible.
-     *
-     * @param action The active action that breached its time limit.
-     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
@@ -471,12 +415,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Instantiates the progression of a specific stage by index.
-     * Identifies the end of the dungeon if the stages are depleted.
-     *
-     * @param index The ordinal tier of the stage.
-     */
     private void startStage(int index) {
         if (!isRunning) return;
 
@@ -495,9 +433,6 @@ public class DungeonGame {
         startCurrentAction();
     }
 
-    /**
-     * Commences the logic for the currently queued action inside the active stage.
-     */
     private void startCurrentAction() {
         if (!isRunning || stageCompleting) return;
         List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
@@ -528,11 +463,6 @@ public class DungeonGame {
         startCurrentAction();
     }
 
-    /**
-     * Funnels server events to the currently active action object for assessment.
-     *
-     * @param event The Bukkit Event triggering the check.
-     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -562,10 +492,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Orchestrates the transition period between two consecutive stages.
-     * Fires configured stage-complete commands securely.
-     */
     private void checkStageCompletion() {
         if (stageCompleting) return;
         stageCompleting = true;
@@ -588,19 +514,6 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(currentStageIndex + 1), 60L);
     }
 
-    private String formatTime(long seconds) {
-        long m = seconds / 60;
-        long s = seconds % 60;
-        return String.format("%02d:%02d", m, s);
-    }
-
-    /**
-     * Safely bypasses the remaining actions, terminates the current stage cleanly,
-     * and forcibly jumps to the target stage without causing recursive reflection crashes.
-     * Supplying a target stage greater than the total stages will instantly finish the dungeon.
-     *
-     * @param targetStage The 1-based index of the stage to jump to (e.g. 5 jumps to Stage 5).
-     */
     public void jumpToStage(int targetStage) {
         if (!isRunning || stageCompleting) return;
 
@@ -624,11 +537,6 @@ public class DungeonGame {
         Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(targetStage - 1), 60L);
     }
 
-
-    /**
-     * Checks if all participants are disconnected, dead, or spectating.
-     * Forcibly stops the game instance as a failure if conditions are met.
-     */
     public void checkWipeout() {
         boolean allDeadOrSpectating = true;
 
@@ -645,16 +553,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Initiates the countdown sequence after a dungeon is successfully completed.
-     * Handles the visual notifications based on configuration and executes the
-     * provided completion logic when the timer reaches zero.
-     *
-     * @param plugin       The SinceDungeon plugin instance.
-     * @param players      The collection of players currently inside the dungeon instance.
-     * @param delaySeconds The total time in seconds before the execution happens.
-     * @param onComplete   The runnable to execute once the countdown finishes.
-     */
     public void startKickCountdown(SinceDungeon plugin, Collection<Player> players, int delaySeconds, Runnable onComplete) {
         String displayType = plugin.getConfigFile().getString("dungeon.gameplay.kick-countdown.display-type", "ACTIONBAR").toUpperCase();
 
@@ -713,11 +611,17 @@ public class DungeonGame {
     }
 
     /**
-     * Executes the conclusion routines of the dungeon.
-     * Submits scores to the database asynchronously, validates First-Time completion commands,
-     * fires standard conclusion commands, registers player cooldowns, initiates victory titles,
-     * and launches the kick countdown.
+     * Helper method to format elapsed seconds into a clean MM:SS string.
+     *
+     * @param seconds Total seconds elapsed.
+     * @return Formatted MM:SS time string.
      */
+    private String formatTime(long seconds) {
+        long m = seconds / 60;
+        long s = seconds % 60;
+        return String.format("%02d:%02d", m, s);
+    }
+
     private void finishDungeon() {
         this.isCleared = true;
         this.isRunning = false;
@@ -837,33 +741,33 @@ public class DungeonGame {
                 if (p.isInsideVehicle()) p.leaveVehicle();
                 p.setVelocity(new Vector(0, 0, 0));
 
-                PlayerState state = savedStates.get(p.getUniqueId());
-                Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
-
                 plugin.getDungeonManager().addTransitioning(p.getUniqueId());
 
-                p.teleportAsync(targetLoc).thenAccept(success -> {
-                    if (success && p.isOnline()) {
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                    } else if (p.isOnline()) {
-                        Bukkit.getScheduler().runTask(plugin, () -> {
-                            p.teleport(targetLoc);
+                if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+                    String returnServer = plugin.getConfigFile().getString("cross-server.return-server", "lobby");
+                    restorePlayerState(p);
+                    BungeeUtils.sendPlayerToServer(p, returnServer);
+                } else {
+                    PlayerState state = savedStates.get(p.getUniqueId());
+                    Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+
+                    p.teleportAsync(targetLoc).thenAccept(success -> {
+                        if (success && p.isOnline()) {
                             Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                        });
-                    }
-                });
+                        } else if (p.isOnline()) {
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                p.teleport(targetLoc);
+                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                            });
+                        }
+                    });
+                }
             }
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 40L);
         });
     }
 
-    /**
-     * Handles logic when a player leaves the server or is forcefully kicked.
-     * Safely processes inventory restoration regardless of their online state.
-     *
-     * @param p The player entity.
-     */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
@@ -897,23 +801,10 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Interrupts and halts the dungeon sequence cleanly.
-     * Identical to explicitly defining the EndReason as a FORCE_STOPPED state.
-     *
-     * @param teleport Should players be returned to their saved locations.
-     */
     public void stop(boolean teleport) {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
     }
 
-    /**
-     * Executes the overarching unloader mechanism, detaching all players
-     * and signaling the WorldManager to safely purge the dungeon environment.
-     *
-     * @param teleport Should players be returned.
-     * @param reason   The technical reason for closure.
-     */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
@@ -982,10 +873,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Executes an emergency termination sequence.
-     * Deconstructs states faster to resolve potential server deadlocks or ghost worlds.
-     */
     public void forceShutdown() {
         if (isStopping) return;
         isStopping = true;
@@ -1027,11 +914,6 @@ public class DungeonGame {
         aggressivelyCleanupMemory();
     }
 
-    /**
-     * Empties all memory arrays to enforce rigid Java garbage collection.
-     * Prevents NullPointerExceptions by strictly calling `.clear()` instead of setting collections to null,
-     * which prevents asynchronous checking tasks from throwing exceptions when validating loops.
-     */
     private void aggressivelyCleanupMemory() {
         if (savedStates != null) savedStates.clear();
         if (stages != null) {
@@ -1054,12 +936,6 @@ public class DungeonGame {
         this.template = null;
     }
 
-    /**
-     * Reverts a player back to their original state captured before entering the dungeon.
-     * Safely executes even if the player has disconnected from the server.
-     *
-     * @param p The player to restore.
-     */
     public void restorePlayerState(Player p) {
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
@@ -1188,9 +1064,6 @@ public class DungeonGame {
         return cachedTimeLeftFormat;
     }
 
-    /**
-     * Encapsulates the cached metadata of a player prior to entering the dungeon.
-     */
     private static class PlayerState {
         final Location location;
         final GameMode gameMode;

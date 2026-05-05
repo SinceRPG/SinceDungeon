@@ -9,6 +9,7 @@ log:
   plugin_disabled: "SinceDungeon-PremiumAddon has been disabled."
   invalid_exp: "Invalid EXP level value provided: <value>"
   core_missing: "SinceDungeon Core is not installed! Disabling Premium Addon."
+  mythicmobs_hooked: "MythicMobs API Found! Successfully integrated MYTHIC_ITEM."
 
 admin:
   reload: "&aPremium configuration and holograms reloaded successfully!"

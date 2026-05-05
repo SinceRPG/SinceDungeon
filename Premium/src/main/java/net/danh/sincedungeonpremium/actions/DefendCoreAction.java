@@ -9,21 +9,11 @@ import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
-import org.bukkit.Registry;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
@@ -258,14 +248,16 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                 if (ServerVersion.isAtLeast(1, 21, 3)) {
                     try {
                         attribute = Registry.ATTRIBUTE.get(NamespacedKey.minecraft(attrName));
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
                 } else {
                     try {
                         attribute = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
                     } catch (Exception e) {
                         try {
                             attribute = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
 
