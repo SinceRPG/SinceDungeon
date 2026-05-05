@@ -228,6 +228,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Resolves and manages combat occurrences within the instance.
+     * Prevents friendly-fire using the configured PartyProvider API implementation.
+     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");

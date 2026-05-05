@@ -1029,6 +1029,8 @@ public class DungeonGame {
 
     /**
      * Empties all memory arrays to enforce rigid Java garbage collection.
+     * Prevents NullPointerExceptions by strictly calling `.clear()` instead of setting collections to null,
+     * which prevents asynchronous checking tasks from throwing exceptions when validating loops.
      */
     private void aggressivelyCleanupMemory() {
         if (savedStates != null) savedStates.clear();
@@ -1043,11 +1045,9 @@ public class DungeonGame {
                 list.clear();
             }
             stages.clear();
-            stages = null;
         }
         if (participants != null) {
             participants.clear();
-            participants = null;
         }
         this.dungeonWorld = null;
         this.initiatorId = null;

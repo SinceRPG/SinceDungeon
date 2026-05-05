@@ -20,20 +20,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Handles the registration and execution of the /party command ecosystem.
- * Safely disables native commands if a Custom PartyProvider is active, redirecting
- * players to use their respective custom plugin commands.
+ * Handles the registration and execution of the native /party command ecosystem.
+ * Safely blocks execution and redirects players if a 3rd-party custom PartyProvider is active.
+ * Integrates dynamic tab-completion and contextual suggestions based on active party states.
  */
 public class PartyCommand {
 
-    /**
-     * Registers the Party command using Paper's Brigadier API.
-     * The root command literal and aliases are dynamically loaded from the configuration.
-     * Full tab completion logic is applied to dynamic variables like <target> and <leader>.
-     *
-     * @param plugin The main plugin instance.
-     * @param event  The lifecycle registrar event.
-     */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
 
         String commandName = plugin.getConfigFile().getString("commands.party", "party");

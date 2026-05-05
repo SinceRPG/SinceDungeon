@@ -12,6 +12,7 @@ import java.util.*;
 /**
  * Handles the registration of all Premium custom actions.
  * Directly reads GUI prompts and language from the Core's LanguageManager.
+ * Employs hardcoded fallbacks for language queries to ensure the Editor GUI renders safely even if language files are wiped.
  */
 public class PremiumActionRegistry {
 
@@ -69,9 +70,9 @@ public class PremiumActionRegistry {
                         parseSafeInt(map.get("duration"), (int) buffDefaults.get("duration")),
                         parseSafeInt(map.get("amplifier"), (int) buffDefaults.get("amplifier"))
                 ),
-                coreLang.getString("editor.actions_name.apply_buff"),
+                coreLang.getString("editor.actions_name.apply_buff", "&d&lPremium: Apply Buff"),
                 Material.POTION,
-                coreLang.getString("editor.actions.apply_buff"),
+                coreLang.getString("editor.actions.apply_buff", "Instantly applies a potion effect to all party members."),
                 buffDefaults,
                 buffPrompts
         );
@@ -136,9 +137,9 @@ public class PremiumActionRegistry {
                         parseList(map.getOrDefault("attacker_attributes", escortDefaults.get("attacker_attributes"))),
                         parseList(map.getOrDefault("attacker_equipment", escortDefaults.get("attacker_equipment")))
                 ),
-                coreLang.getString("editor.actions_name.escort_npc"),
+                coreLang.getString("editor.actions_name.escort_npc", "&6&lPremium: Escort NPC"),
                 Material.MINECART,
-                coreLang.getString("editor.actions.escort_npc"),
+                coreLang.getString("editor.actions.escort_npc", "Spawns an NPC that walks to a target. Fails if it dies."),
                 escortDefaults,
                 escortPrompts
         );
@@ -170,9 +171,9 @@ public class PremiumActionRegistry {
                         parseSafeInt(map.get("stage_b"), (int) branchDefaults.get("stage_b")),
                         parseSafeDouble(map.get("radius"), (double) branchDefaults.get("radius"))
                 ),
-                coreLang.getString("editor.actions_name.branching_path"),
+                coreLang.getString("editor.actions_name.branching_path", "&e&lPremium: Branching Path"),
                 Material.OAK_SIGN,
-                coreLang.getString("editor.actions.branching_path"),
+                coreLang.getString("editor.actions.branching_path", "Allows players to choose between two different stages."),
                 branchDefaults,
                 branchPrompts
         );
@@ -201,9 +202,9 @@ public class PremiumActionRegistry {
                     }
                     return new LeverPuzzleAction(levers, failTimePenalty);
                 },
-                coreLang.getString("editor.actions_name.lever_puzzle"),
+                coreLang.getString("editor.actions_name.lever_puzzle", "&b&lPremium: Lever Puzzle"),
                 Material.LEVER,
-                coreLang.getString("editor.actions.lever_puzzle"),
+                coreLang.getString("editor.actions.lever_puzzle", "Requires players to activate levers in a specific sequence."),
                 puzzleDefaults,
                 puzzlePrompts
         );
@@ -230,9 +231,9 @@ public class PremiumActionRegistry {
                         String.valueOf(map.getOrDefault("sound", checkpointDefaults.get("sound"))),
                         String.valueOf(map.getOrDefault("particle", checkpointDefaults.get("particle")))
                 ),
-                coreLang.getString("editor.actions_name.save_checkpoint"),
+                coreLang.getString("editor.actions_name.save_checkpoint", "&b&lPremium: Save Checkpoint"),
                 Material.BEACON,
-                coreLang.getString("editor.actions.save_checkpoint"),
+                coreLang.getString("editor.actions.save_checkpoint", "Saves a new respawn point for players in the dungeon."),
                 checkpointDefaults,
                 checkpointPrompts
         );
@@ -268,9 +269,9 @@ public class PremiumActionRegistry {
                         parseSafeInt(map.get("duration"), (int) damageZoneDefaults.get("duration")),
                         String.valueOf(map.getOrDefault("particle", damageZoneDefaults.get("particle")))
                 ),
-                coreLang.getString("editor.actions_name.damage_zone"),
+                coreLang.getString("editor.actions_name.damage_zone", "&c&lPremium: Damage Hazard Zone"),
                 Material.CAMPFIRE,
-                coreLang.getString("editor.actions.damage_zone"),
+                coreLang.getString("editor.actions.damage_zone", "Creates a temporary hazardous zone dealing damage to players inside."),
                 damageZoneDefaults,
                 damageZonePrompts
         );

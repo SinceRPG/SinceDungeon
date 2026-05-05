@@ -14,6 +14,7 @@ import java.util.UUID;
 /**
  * Manages the Redis Pub/Sub connection for cross-server dungeon matchmaking.
  * Safely hooks into the DefaultPartyProvider to synchronize party states across proxy nodes.
+ * Automatically handles reconnection logic and thread-safe Bukkit API dispatching.
  */
 public class RedisManager {
     private final SinceDungeon plugin;
@@ -56,6 +57,10 @@ public class RedisManager {
         }
     }
 
+    /**
+     * Initializes an asynchronous thread to listen for incoming Redis Pub/Sub messages.
+     * Incorporates an infinite while-loop with sleep-backoff to automatically reconnect if the Redis server restarts.
+     */
     private void startListening() {
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             while (!Thread.currentThread().isInterrupted() && jedisPool != null && !jedisPool.isClosed()) {
@@ -111,7 +116,8 @@ public class RedisManager {
 
     /**
      * Parses incoming Pub/Sub messages and delegates internal logic.
-     * Protocol arguments are split by colons (:).
+     * Safely pushes Bukkit API calls back to the main server thread to prevent concurrent modification exceptions.
+     * Utilizes instanceof to ensure safe execution when the Native Party System is active.
      *
      * @param message The raw string payload received from Redis.
      */
