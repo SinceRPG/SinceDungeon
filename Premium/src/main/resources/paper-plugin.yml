@@ -12,3 +12,6 @@ dependencies:
     DecentHolograms:
       load: BEFORE
       required: false
+    MythicMobs:
+      load: BEFORE
+      required: false

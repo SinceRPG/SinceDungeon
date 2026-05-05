@@ -11,9 +11,14 @@ import net.danh.sinceDungeon.managers.PartySystemManager;
 import net.danh.sinceDungeon.managers.RewardManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
+import net.danh.sinceDungeon.utils.ColorUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -134,6 +139,52 @@ public class SinceDungeonAPI {
         plugin.getDungeonManager().registerItemProvider(prefix, provider);
         String logMsg = plugin.getLanguageManager().getString("admin.log.api_item_provider_registered", "[API] Registered Custom Item Provider: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", prefix.toUpperCase()));
+    }
+
+    /**
+     * Universally distributes an ItemStack to a player.
+     * If the inventory is full, it drops the item safely.
+     * If the player is inside a dungeon, it drops it at their pre-dungeon saved location to prevent ghost-world loss.
+     *
+     * @param player       The target player.
+     * @param item         The item to give.
+     * @param fallbackName The chat display name for the item if Meta is absent.
+     */
+    public void giveItemSafely(Player player, ItemStack item, String fallbackName) {
+        if (item == null || item.getType() == Material.AIR) return;
+
+        HashMap<Integer, ItemStack> left = player.getInventory().addItem(item);
+        if (!left.isEmpty()) {
+            Location dropLoc = player.getLocation();
+            DungeonGame game = getGame(player);
+            String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+
+            if (game != null && dropLoc.getWorld() != null && dropLoc.getWorld().equals(game.getWorld())) {
+                Location safeLoc = game.getSavedLocation(player.getUniqueId());
+                if (safeLoc != null && safeLoc.getWorld() != null) {
+                    dropLoc = safeLoc;
+                }
+            }
+
+            if (dropLoc.getWorld() != null && dropLoc.getWorld().getName().startsWith(prefix)) {
+                dropLoc = Bukkit.getWorlds().getFirst().getSpawnLocation();
+            }
+
+            for (ItemStack drop : left.values()) {
+                dropLoc.getWorld().dropItem(dropLoc, drop);
+            }
+            player.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("reward.messages.inventory_full", "&cInventory full! Item dropped on the ground.")));
+        }
+
+        String displayName = fallbackName;
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            displayName = ColorUtils.toPlainText(item.getItemMeta().displayName());
+        }
+
+        String msg = plugin.getLanguageManager().getString("reward.messages.received_item", "&7Received: &a<item>");
+        if (msg != null) {
+            player.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? ColorUtils.formatEnumName(item.getType().name()) : displayName)));
+        }
     }
 
     public String getPluginVersion() {

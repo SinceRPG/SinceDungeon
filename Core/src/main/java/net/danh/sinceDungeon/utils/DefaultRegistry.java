@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.utils;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.impl.*;
+import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.managers.DungeonLoader;
@@ -11,7 +12,6 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -98,26 +98,6 @@ public class DefaultRegistry {
         });
     }
 
-    private static void giveCustomItemReward(SinceDungeon plugin, Player p, ItemStack item, String fallbackName) {
-        HashMap<Integer, ItemStack> left = p.getInventory().addItem(item);
-        if (!left.isEmpty()) {
-            for (ItemStack drop : left.values()) {
-                p.getWorld().dropItem(p.getLocation(), drop);
-            }
-            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("reward.messages.inventory_full", "&cInventory full! Item dropped on the ground.")));
-        }
-
-        String displayName = fallbackName;
-        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
-            displayName = ColorUtils.toPlainText(item.getItemMeta().displayName());
-        }
-
-        String msg = plugin.getLanguageManager().getString("reward.messages.received_item", "&7Received: &a<item>");
-        if (msg != null) {
-            p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<item>", displayName == null ? ColorUtils.formatEnumName(item.getType().name()) : displayName)));
-        }
-    }
-
     private static void registerDefaultProcessors(SinceDungeon plugin, DungeonManager manager) {
         manager.registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
@@ -134,14 +114,8 @@ public class DefaultRegistry {
         }));
 
         manager.registerRewardProcessor("ITEM", (p, val, displayName) -> {
-            try {
-                String parsedVal = PAPIHook.setPlaceholders(p, val);
-                String[] parts = parsedVal.split(":");
-                Material mat = Material.valueOf(parts[0].toUpperCase());
-
-                int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
-                ItemStack item = new ItemStack(mat, amount);
-
+            ItemStack item = ItemBuilder.parseDynamicItem(PAPIHook.setPlaceholders(p, val));
+            if (item != null) {
                 String defaultName = plugin.getLanguageManager().getString("editor.words.reward_default_name", "&7Default");
                 if (displayName != null && !displayName.isEmpty() && !displayName.equals(defaultName)) {
                     ItemMeta meta = item.getItemMeta();
@@ -150,71 +124,34 @@ public class DefaultRegistry {
                         item.setItemMeta(meta);
                     }
                 }
-
-                giveCustomItemReward(plugin, p, item, ColorUtils.formatEnumName(mat.name()) + " x" + amount);
-            } catch (Exception e) {
+                SinceDungeonAPI.get().giveItemSafely(p, item, ColorUtils.formatEnumName(item.getType().name()) + " x" + item.getAmount());
+            } else {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.error", "&cSystem Error: Item <item> is misconfigured.").replace("<item>", val)));
             }
         });
 
         manager.registerRewardProcessor("MMOITEM", (p, val, displayName) -> {
-            if (Bukkit.getPluginManager().getPlugin("MMOItems") == null) {
-                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.not_installed", "&cSystem Error: MMOItems is not installed.")));
-                return;
-            }
-            try {
-                String[] parts = PAPIHook.setPlaceholders(p, val).split(":");
-                String mType = parts[0];
-                String mId = parts[1];
-
-                int amount = parts.length > 2 ? ItemBuilder.parseRandomAmount(parts[2]) : 1;
-
-                ItemStack item = MMOItemsHook.getMMOItem(mType, mId, amount);
-                if (item != null) {
-                    giveCustomItemReward(plugin, p, item, displayName == null ? mId : displayName);
-                } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.not_found", "&cSystem Error: MMOItem not found.").replace("<type>", mType).replace("<id>", mId)));
-                }
-            } catch (Exception ignored) {
+            ItemStack item = ItemBuilder.parseDynamicItem("MMOITEMS:" + PAPIHook.setPlaceholders(p, val));
+            if (item != null) {
+                SinceDungeonAPI.get().giveItemSafely(p, item, displayName == null ? val : displayName);
+            } else {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.mmoitems.not_found", "&cSystem Error: MMOItem not found.").replace("<type>", "MMOITEMS").replace("<id>", val)));
             }
         });
 
         manager.registerRewardProcessor("LIFE_ITEM", (p, val, displayName) -> {
-            int amount = ItemBuilder.parseRandomAmount(val);
-            NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
-            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "items.life_crystal", "NETHER_STAR")
-                    .amount(amount)
-                    .applyConfig(cfg, "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives", "<amount>", String.valueOf(amount))
-                    .setTag(lifeKey, PersistentDataType.INTEGER, amount)
-                    .build();
-            giveCustomItemReward(plugin, p, item, displayName);
+            ItemStack item = ItemBuilder.parseDynamicItem("LIFE_ITEM:" + val);
+            if (item != null) SinceDungeonAPI.get().giveItemSafely(p, item, displayName);
         });
 
         manager.registerRewardProcessor("COOLDOWN_RESET", (p, val, displayName) -> {
-            int amount = ItemBuilder.parseRandomAmount(val);
-            NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
-            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reset");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reset", "PAPER")
-                    .amount(amount)
-                    .applyConfig(cfg, "&e&lCooldown Reset Ticket")
-                    .setTag(resetKey, PersistentDataType.BYTE, (byte) 1)
-                    .build();
-            giveCustomItemReward(plugin, p, item, displayName);
+            ItemStack item = ItemBuilder.parseDynamicItem("COOLDOWN_RESET:" + val);
+            if (item != null) SinceDungeonAPI.get().giveItemSafely(p, item, displayName);
         });
 
         manager.registerRewardProcessor("COOLDOWN_REDUCE", (p, val, displayName) -> {
-            String[] parts = val.split(":");
-            int seconds = parts.length > 0 ? getInt(parts[0], 300) : 300;
-            int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
-            NamespacedKey reduceKey = new NamespacedKey(plugin, "cooldown_reduce");
-            ConfigurationSection cfg = plugin.getConfigFile().getSection("items.cooldown_reduce");
-            ItemStack item = ItemBuilder.fromConfig(plugin, "items.cooldown_reduce", "CLOCK")
-                    .amount(amount)
-                    .applyConfig(cfg, "&a&lTime Skip Ticket", "<time>", String.valueOf(seconds))
-                    .setTag(reduceKey, PersistentDataType.INTEGER, seconds)
-                    .build();
-            giveCustomItemReward(plugin, p, item, displayName);
+            ItemStack item = ItemBuilder.parseDynamicItem("COOLDOWN_REDUCE:" + val);
+            if (item != null) SinceDungeonAPI.get().giveItemSafely(p, item, displayName);
         });
     }
 

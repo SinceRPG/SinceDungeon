@@ -1,13 +1,12 @@
 package net.danh.sincedungeonpremium;
 
-import io.lumine.mythic.api.MythicProvider;
-import io.lumine.mythic.bukkit.MythicBukkit;
-import io.lumine.mythic.core.items.MythicItem;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
+import net.danh.sincedungeonpremium.hooks.PremiumMythicMobsHook;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
+import net.danh.sincedungeonpremium.listeners.PremiumRewardListener;
 import net.danh.sincedungeonpremium.listeners.WebhookListener;
 import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
@@ -16,11 +15,7 @@ import net.danh.sincedungeonpremium.systems.RouletteRewardSystem;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.HashMap;
-import java.util.Optional;
 
 /**
  * Core Entry Point for SinceDungeon Premium Addon.
@@ -71,6 +66,7 @@ public final class SinceDungeonPremium extends JavaPlugin {
 
         PremiumActionRegistry.registerAll(this);
 
+        registerPremiumHooks();
         registerPremiumProcessors();
         registerPremiumListeners();
         registerCommands();
@@ -94,6 +90,13 @@ public final class SinceDungeonPremium extends JavaPlugin {
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
             PremiumCommand.register(this, event);
         });
+    }
+
+    private void registerPremiumHooks() {
+        if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
+            PremiumMythicMobsHook.register();
+            getLogger().info("MythicMobs found! Hooking into MYTHIC_ITEM CustomProvider.");
+        }
     }
 
     private void registerPremiumProcessors() {
@@ -131,41 +134,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
             fileManager.sendMessage(player, "rewards.full_heal");
         });
 
-        // 4. MYTHIC ITEM REWARD
-        api.registerRewardProcessor("MYTHIC_ITEM", (player, value, displayName) -> {
-            if (getServer().getPluginManager().getPlugin("MythicMobs") == null) {
-                getLogger().warning("Cannot give MythicItem. MythicMobs is not installed.");
-                return;
-            }
-
-            try {
-                String[] parts = value.split(":");
-                String internalName = parts[0];
-                int amount = parts.length > 1 ? Integer.parseInt(parts[1]) : 1;
-
-                Optional<MythicItem> optItem = MythicProvider.get().getItemManager().getItem(internalName);
-                if (optItem.isPresent()) {
-                    ItemStack itemStack = MythicBukkit.inst().getItemManager().getItemStack(internalName);
-                    if (itemStack != null) {
-                        itemStack.setAmount(amount);
-                        HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(itemStack);
-                        if (!leftover.isEmpty()) {
-                            for (ItemStack drop : leftover.values()) {
-                                player.getWorld().dropItem(player.getLocation(), drop);
-                            }
-                            player.sendMessage(fileManager.getMessageRaw("rewards.inventory_full"));
-                        }
-                        String name = displayName != null && !displayName.isEmpty() ? displayName : internalName;
-                        fileManager.sendMessage(player, "rewards.mythic_item", "<item>", name);
-                    }
-                } else {
-                    getLogger().warning("MythicItem not found: " + internalName);
-                }
-            } catch (Exception e) {
-                getLogger().warning("Error processing MythicItem reward: " + value);
-            }
-        });
-
         // CONDITION: PERMISSION
         api.registerConditionProcessor("HAS_PERMISSION", (player, value) -> player.hasPermission(value.trim()));
     }
@@ -173,5 +141,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
     private void registerPremiumListeners() {
         getServer().getPluginManager().registerEvents(new AffixListener(this), this);
         getServer().getPluginManager().registerEvents(new WebhookListener(this), this);
+        getServer().getPluginManager().registerEvents(new PremiumRewardListener(this), this);
     }
 }
