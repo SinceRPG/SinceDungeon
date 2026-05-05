@@ -21,7 +21,7 @@ public class LivesExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getIdentifier() {
-        return "sincedungeonpremium";
+        return "sincedungeon";
     }
 
     @Override
