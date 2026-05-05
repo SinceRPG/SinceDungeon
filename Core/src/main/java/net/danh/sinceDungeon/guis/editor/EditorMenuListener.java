@@ -689,7 +689,7 @@ public class EditorMenuListener implements Listener {
                     gui.openActionTypeSelector(p, session, session.getPage("SELECT_TYPE"));
                 } else if (slot == 45) {
                     gui.openStageList(p, session, session.getPage("STAGES"));
-                } else if (slot < 45 && cur.getType() != Material.EMERALD && cur.getType() != gui.getNavItem()) {
+                } else if (slot < 45) {
                     ConfigurationSection sec = session.getConfig().getConfigurationSection("stages." + session.getCurrentStage() + ".actions");
                     if (sec != null) {
                         List<String> keys = new ArrayList<>(sec.getKeys(false));
