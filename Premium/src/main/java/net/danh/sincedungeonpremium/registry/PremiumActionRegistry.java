@@ -91,8 +91,8 @@ public class PremiumActionRegistry {
         escortDefaults.put("entity_type", "VILLAGER");
         escortDefaults.put("custom_name", lang.getString("editor.defaults.escort.vip_name", "&aVIP Escort"));
         escortDefaults.put("max_health", 100.0);
-        escortDefaults.put("start_loc", "0,64,0");
-        escortDefaults.put("target_loc", "20,64,20");
+        escortDefaults.put("start_location", "0,64,0");
+        escortDefaults.put("target_location", "20,64,20");
         escortDefaults.put("speed", 1.0);
         escortDefaults.put("success_radius", 4.0);
         escortDefaults.put("vip_is_baby", false);
@@ -112,8 +112,8 @@ public class PremiumActionRegistry {
                         String.valueOf(map.getOrDefault("entity_type", escortDefaults.get("entity_type"))),
                         String.valueOf(map.getOrDefault("custom_name", escortDefaults.get("custom_name"))),
                         parseSafeDouble(map.get("max_health"), (double) escortDefaults.get("max_health")),
-                        String.valueOf(map.getOrDefault("start_loc", escortDefaults.get("start_loc"))),
-                        String.valueOf(map.getOrDefault("target_loc", escortDefaults.get("target_loc"))),
+                        String.valueOf(map.getOrDefault("start_location", escortDefaults.get("start_location"))),
+                        String.valueOf(map.getOrDefault("target_location", escortDefaults.get("target_location"))),
                         parseSafeDouble(map.get("speed"), (double) escortDefaults.get("speed")),
                         parseSafeDouble(map.get("success_radius"), (double) escortDefaults.get("success_radius")),
                         Boolean.parseBoolean(String.valueOf(map.getOrDefault("vip_is_baby", escortDefaults.get("vip_is_baby")))),
@@ -131,7 +131,7 @@ public class PremiumActionRegistry {
                 Material.EMERALD,
                 lang.getString("editor.actions.escort_npc", "Protect an NPC as they travel to a destination."),
                 escortDefaults,
-                new HashMap<>() // Uses default string logic
+                new HashMap<>()
         );
 
         // 3. BRANCHING PATH ACTION

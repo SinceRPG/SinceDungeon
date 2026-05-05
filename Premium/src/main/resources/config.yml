@@ -21,6 +21,8 @@ action-defaults:
     default-mob: "VILLAGER"
     default-name: "&aVIP Escort"
     default-health: 100.0
+    start_location: "0,64,0"
+    target_location: "20,64,20"
     default-speed: 1.0
     default-radius: 4.0
     vip_is_baby: false
