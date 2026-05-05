@@ -6,7 +6,9 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEvent;
 import net.danh.sinceDungeon.SinceDungeon;
-import net.danh.sinceDungeon.managers.PartyManager;
+import net.danh.sinceDungeon.api.interfaces.PartyProvider;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 
 /**
  * Handles the registration and execution of the /party command ecosystem.
+ * Safely disables native commands if a Custom PartyProvider is active, redirecting
+ * players to use their respective custom plugin commands.
  */
 public class PartyCommand {
 
@@ -31,7 +35,6 @@ public class PartyCommand {
      * @param event  The lifecycle registrar event.
      */
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        PartyManager pm = plugin.getPartyManager();
 
         String commandName = plugin.getConfigFile().getString("commands.party", "party");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.party-aliases");
@@ -43,6 +46,13 @@ public class PartyCommand {
                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
+
+                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                    if (!(provider instanceof DefaultPartyProvider)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                        return 0;
+                    }
+
                     sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.usage_main")));
                     return 1;
                 })
@@ -53,11 +63,17 @@ public class PartyCommand {
                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
-                    if (pm.getParty(p.getUniqueId()) != null) {
+                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                        return 0;
+                    }
+
+                    if (pm.getPartyObject(p.getUniqueId()) != null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_in_party")));
                         return 0;
                     }
-                    PartyManager.Party party = pm.createParty(p);
+                    Party party = pm.createParty(p);
                     if (party != null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.created")));
                     } else {
@@ -72,14 +88,20 @@ public class PartyCommand {
                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
-                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                        return 0;
+                    }
+
+                    Party party = pm.getPartyObject(p.getUniqueId());
                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                         return 0;
                     }
                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                    pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.disbanded"));
-                    pm.disbandParty(party);
+                    pm.sendPartyMessage(party.getLeader(), sysName, plugin.getLanguageManager().getString("party.disbanded"));
+                    pm.disbandParty(party.getLeader());
                     return 1;
                 }))
 
@@ -96,20 +118,23 @@ public class PartyCommand {
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
-                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
-                                        int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
+                                        PartyProvider provider = plugin.getPartyManager().getProvider();
+                                        if (provider instanceof DefaultPartyProvider pm) {
+                                            Party party = pm.getPartyObject(p.getUniqueId());
+                                            int maxMembers = plugin.getConfigFile().getInt("party.max-members", 4);
 
-                                        if (party != null && party.getMembers().size() >= maxMembers) {
-                                            return builder.buildFuture();
+                                            if (party != null && party.getMembers().size() >= maxMembers) {
+                                                return builder.buildFuture();
+                                            }
+
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .filter(t -> pm.getPartyObject(t.getUniqueId()) == null)
+                                                    .filter(t -> !t.equals(p))
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
                                         }
-
-                                        String remaining = builder.getRemainingLowerCase();
-                                        Bukkit.getOnlinePlayers().stream()
-                                                .filter(t -> pm.getParty(t.getUniqueId()) == null)
-                                                .filter(t -> !t.equals(p))
-                                                .map(Player::getName)
-                                                .filter(name -> name.toLowerCase().startsWith(remaining))
-                                                .forEach(builder::suggest);
                                     }
                                     return builder.buildFuture();
                                 })
@@ -119,7 +144,13 @@ public class PartyCommand {
                                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
-                                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                                        return 0;
+                                    }
+
+                                    Party party = pm.getPartyObject(p.getUniqueId());
                                     boolean isAutoCreated = false;
 
                                     if (party != null && !party.getLeader().equals(p.getUniqueId())) {
@@ -139,7 +170,7 @@ public class PartyCommand {
                                         return 0;
                                     }
 
-                                    if (pm.getParty(target.getUniqueId()) != null) {
+                                    if (pm.getPartyObject(target.getUniqueId()) != null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.target_already_in_party")));
                                         return 0;
                                     }
@@ -153,7 +184,7 @@ public class PartyCommand {
                                     if (party == null) {
                                         party = pm.createParty(p);
                                         if (party == null) {
-                                            party = pm.getParty(p.getUniqueId());
+                                            party = pm.getPartyObject(p.getUniqueId());
                                         } else {
                                             isAutoCreated = true;
                                         }
@@ -169,7 +200,7 @@ public class PartyCommand {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.invite_sent").replace("<player>", target.getName())));
                                         target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.invite_received").replace("<player>", p.getName())));
                                     } else {
-                                        if (isAutoCreated) pm.disbandParty(party);
+                                        if (isAutoCreated) pm.disbandParty(party.getLeader());
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_invited")));
                                     }
                                     return 1;
@@ -190,13 +221,16 @@ public class PartyCommand {
                         .then(Commands.argument("leader", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
-                                        Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
-                                        if (invites != null) {
-                                            String remaining = builder.getRemainingLowerCase();
-                                            invites.keySet().stream()
-                                                    .map(id -> pm.getParty(id) != null ? pm.getParty(id).getMemberName(id) : null)
-                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining))
-                                                    .forEach(builder::suggest);
+                                        PartyProvider provider = plugin.getPartyManager().getProvider();
+                                        if (provider instanceof DefaultPartyProvider pm) {
+                                            Map<UUID, Long> invites = pm.getActiveInvites().get(p.getUniqueId());
+                                            if (invites != null) {
+                                                String remaining = builder.getRemainingLowerCase();
+                                                invites.keySet().stream()
+                                                        .map(id -> pm.getPartyObject(id) != null ? pm.getPartyObject(id).getMemberName(id) : null)
+                                                        .filter(name -> name != null && name.toLowerCase().startsWith(remaining))
+                                                        .forEach(builder::suggest);
+                                            }
                                         }
                                     }
                                     return builder.buildFuture();
@@ -207,8 +241,13 @@ public class PartyCommand {
                                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
+                                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                                        return 0;
+                                    }
 
-                                    if (pm.getParty(p.getUniqueId()) != null) {
+                                    if (pm.getPartyObject(p.getUniqueId()) != null) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.already_in_party")));
                                         return 0;
                                     }
@@ -223,7 +262,7 @@ public class PartyCommand {
                                     UUID leaderId = null;
 
                                     for (UUID id : invites.keySet()) {
-                                        PartyManager.Party pty = pm.getParty(id);
+                                        Party pty = pm.getPartyObject(id);
                                         if (pty != null) {
                                             String name = pty.getMemberName(id);
                                             if (name != null && name.equalsIgnoreCase(leaderName)) {
@@ -239,9 +278,8 @@ public class PartyCommand {
                                     }
 
                                     if (pm.acceptInvite(p, leaderId)) {
-                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
                                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                                        pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_joined").replace("<player>", p.getName()));
+                                        pm.sendPartyMessage(p.getUniqueId(), sysName, plugin.getLanguageManager().getString("party.player_joined").replace("<player>", p.getName()));
                                     } else {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.no_invite")));
                                     }
@@ -256,19 +294,25 @@ public class PartyCommand {
                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
-                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                        return 0;
+                    }
 
+                    Party party = pm.getPartyObject(p.getUniqueId());
                     if (party == null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                         return 0;
                     }
 
+                    UUID leaderToNotify = party.getLeader();
                     pm.quitParty(p.getUniqueId());
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.left")));
 
-                    if (pm.getParty(party.getLeader()) != null) {
+                    if (pm.getPartyObject(leaderToNotify) != null) {
                         String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                        pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_left").replace("<player>", p.getName()));
+                        pm.sendPartyMessage(leaderToNotify, sysName, plugin.getLanguageManager().getString("party.player_left").replace("<player>", p.getName()));
                     }
                     return 1;
                 }))
@@ -286,13 +330,16 @@ public class PartyCommand {
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
-                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
-                                        if (party != null && party.getLeader().equals(p.getUniqueId())) {
-                                            String remaining = builder.getRemainingLowerCase();
-                                            party.getMembers().stream()
-                                                    .map(party::getMemberName)
-                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
-                                                    .forEach(builder::suggest);
+                                        PartyProvider provider = plugin.getPartyManager().getProvider();
+                                        if (provider instanceof DefaultPartyProvider pm) {
+                                            Party party = pm.getPartyObject(p.getUniqueId());
+                                            if (party != null && party.getLeader().equals(p.getUniqueId())) {
+                                                String remaining = builder.getRemainingLowerCase();
+                                                party.getMembers().stream()
+                                                        .map(party::getMemberName)
+                                                        .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
+                                                        .forEach(builder::suggest);
+                                            }
                                         }
                                     }
                                     return builder.buildFuture();
@@ -303,7 +350,13 @@ public class PartyCommand {
                                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
-                                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                                        return 0;
+                                    }
+
+                                    Party party = pm.getPartyObject(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
@@ -350,13 +403,16 @@ public class PartyCommand {
                         .then(Commands.argument("target", StringArgumentType.word())
                                 .suggests((ctx, builder) -> {
                                     if (ctx.getSource().getSender() instanceof Player p) {
-                                        PartyManager.Party party = pm.getParty(p.getUniqueId());
-                                        if (party != null && party.getLeader().equals(p.getUniqueId())) {
-                                            String remaining = builder.getRemainingLowerCase();
-                                            party.getMembers().stream()
-                                                    .map(party::getMemberName)
-                                                    .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
-                                                    .forEach(builder::suggest);
+                                        PartyProvider provider = plugin.getPartyManager().getProvider();
+                                        if (provider instanceof DefaultPartyProvider pm) {
+                                            Party party = pm.getPartyObject(p.getUniqueId());
+                                            if (party != null && party.getLeader().equals(p.getUniqueId())) {
+                                                String remaining = builder.getRemainingLowerCase();
+                                                party.getMembers().stream()
+                                                        .map(party::getMemberName)
+                                                        .filter(name -> name != null && name.toLowerCase().startsWith(remaining) && !name.equalsIgnoreCase(p.getName()))
+                                                        .forEach(builder::suggest);
+                                            }
                                         }
                                     }
                                     return builder.buildFuture();
@@ -367,7 +423,13 @@ public class PartyCommand {
                                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                         return 0;
                                     }
-                                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                                        return 0;
+                                    }
+
+                                    Party party = pm.getPartyObject(p.getUniqueId());
 
                                     if (party == null || !party.getLeader().equals(p.getUniqueId())) {
                                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
@@ -403,7 +465,7 @@ public class PartyCommand {
                                     }
 
                                     String sysName = plugin.getConfigFile().getString("party.system-name", "System");
-                                    pm.sendPartyMessage(party, sysName, plugin.getLanguageManager().getString("party.player_kicked").replace("<player>", targetName));
+                                    pm.sendPartyMessage(party.getLeader(), sysName, plugin.getLanguageManager().getString("party.player_kicked").replace("<player>", targetName));
                                     return 1;
                                 })
                         )
@@ -416,7 +478,13 @@ public class PartyCommand {
                                 sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                                 return 0;
                             }
-                            PartyManager.Party party = pm.getParty(p.getUniqueId());
+                            PartyProvider provider = plugin.getPartyManager().getProvider();
+                            if (!(provider instanceof DefaultPartyProvider pm)) {
+                                sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                                return 0;
+                            }
+
+                            Party party = pm.getPartyObject(p.getUniqueId());
                             if (party == null) {
                                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                                 return 0;
@@ -434,8 +502,13 @@ public class PartyCommand {
                         sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
                         return 0;
                     }
-                    PartyManager.Party party = pm.getParty(p.getUniqueId());
+                    PartyProvider provider = plugin.getPartyManager().getProvider();
+                    if (!(provider instanceof DefaultPartyProvider pm)) {
+                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.custom_party_system", "&cThis server is using a custom Party system. Please use their designated commands!")));
+                        return 0;
+                    }
 
+                    Party party = pm.getPartyObject(p.getUniqueId());
                     if (party == null) {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_in_party")));
                         return 0;

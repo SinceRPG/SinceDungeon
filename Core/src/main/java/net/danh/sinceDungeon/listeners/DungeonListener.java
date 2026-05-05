@@ -6,9 +6,9 @@ import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.LivesManager;
-import net.danh.sinceDungeon.managers.PartyManager.Party;
 import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -29,6 +29,8 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.Inventory;
 
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Handles all core gameplay events occurring within an active Dungeon instance.
@@ -251,9 +253,12 @@ public class DungeonListener implements Listener {
             if (attacker != null && !attacker.equals(trueVictim)) {
                 boolean sameParty = false;
 
-                Party party = plugin.getPartyManager().getParty(trueVictim.getUniqueId());
-                if (party != null && party.getMembers().contains(attacker.getUniqueId())) {
-                    sameParty = true;
+                // Safely checks Party API to ensure friendly fire protection remains active
+                if (plugin.getPartyManager().getProvider().hasParty(trueVictim.getUniqueId())) {
+                    Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(trueVictim.getUniqueId());
+                    if (members != null && members.contains(attacker.getUniqueId())) {
+                        sameParty = true;
+                    }
                 }
 
                 DungeonGame game = plugin.getDungeonManager().getGame(trueVictim.getUniqueId());
@@ -279,7 +284,12 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
-        plugin.getPartyManager().updatePlayerName(p);
+
+        // Updates the player's name across the local node if they are using the default system
+        if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
+            defaultParty.updatePlayerName(p);
+        }
+
         plugin.getLivesManager().loadPlayer(p.getUniqueId());
 
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
@@ -430,14 +440,13 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onAsyncChat(AsyncChatEvent e) {
         Player p = e.getPlayer();
-        if (plugin.getPartyManager().isPartyChatEnabled(p.getUniqueId())) {
-            Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-            if (party != null) {
+        if (plugin.getPartyManager().getProvider().isPartyChatEnabled(p.getUniqueId())) {
+            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())) {
                 e.setCancelled(true);
                 String msg = PlainTextComponentSerializer.plainText().serialize(e.message());
-                plugin.getPartyManager().sendPartyMessage(party, p.getName(), msg);
+                plugin.getPartyManager().getProvider().sendPartyMessage(p.getUniqueId(), p.getName(), msg);
             } else {
-                plugin.getPartyManager().removePlayerFromCache(p.getUniqueId());
+                plugin.getPartyManager().getProvider().handleDisconnect(p);
             }
         }
     }
@@ -462,7 +471,7 @@ public class DungeonListener implements Listener {
             }
         }
 
-        plugin.getPartyManager().handlePlayerDisconnect(p);
+        plugin.getPartyManager().getProvider().handleDisconnect(p);
         plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 

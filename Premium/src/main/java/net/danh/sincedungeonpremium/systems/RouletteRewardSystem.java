@@ -1,11 +1,11 @@
 package net.danh.sincedungeonpremium.systems;
 
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.interfaces.RewardSystem;
 import net.danh.sinceDungeon.guis.reward.RewardGUI;
 import net.danh.sinceDungeon.guis.reward.RewardSession;
 import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonTemplate;
-import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.managers.RouletteManager;
 import org.bukkit.entity.Player;

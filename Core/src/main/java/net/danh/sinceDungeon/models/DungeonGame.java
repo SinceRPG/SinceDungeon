@@ -8,9 +8,7 @@ import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.managers.LivesManager;
-import net.danh.sinceDungeon.managers.PartyManager;
 import net.danh.sinceDungeon.managers.TopManager;
-import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
@@ -224,10 +222,11 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
-        WorldManager.createDungeonWorldAsync(plugin, template.templateWorld(), worldName)
+        // Uses the newly injected InstanceManager strategy
+        plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName)
                 .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
                     if (isStopping) {
-                        WorldManager.unloadAndDeleteWorld(plugin, world);
+                        plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(world);
                         return;
                     }
                     this.dungeonWorld = world;
@@ -742,8 +741,8 @@ public class DungeonGame {
             String awardedTo = plugin.getConfigFile().getString("dungeon.top-awarded-to", "ALL_MEMBERS");
             TopManager topManager = plugin.getTopManager();
 
-            PartyManager.Party topParty = plugin.getPartyManager().getParty(initiatorId);
-            UUID leaderId = topParty != null ? topParty.getLeader() : initiatorId;
+            UUID leaderId = plugin.getPartyManager().getProvider().getLeader(initiatorId);
+            if (leaderId == null) leaderId = initiatorId;
 
             if (participants.size() > 1) {
                 String membersNames = participants.stream()
@@ -753,6 +752,7 @@ public class DungeonGame {
                 topManager.savePartyClearTime(dungeonId, membersNames, finalElapsed);
             }
 
+            final UUID resolvedLeaderId = leaderId;
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 for (Player p : participants) {
                     if (!p.isOnline()) continue;
@@ -766,7 +766,7 @@ public class DungeonGame {
                         });
                     }
 
-                    boolean isLeader = p.getUniqueId().equals(leaderId);
+                    boolean isLeader = p.getUniqueId().equals(resolvedLeaderId);
                     int kills = playerKills.getOrDefault(p.getUniqueId(), 0);
 
                     topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
@@ -821,8 +821,8 @@ public class DungeonGame {
             for (Player p : participants) {
                 if (!p.isOnline() || p.isDead()) continue;
 
-                PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-                UUID currentLeader = party != null ? party.getLeader() : initiatorId;
+                UUID currentLeader = plugin.getPartyManager().getProvider().getLeader(p.getUniqueId());
+                if (currentLeader == null) currentLeader = initiatorId;
 
                 // Enforce Reward Distribution based on Strategy Mode
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
@@ -974,7 +974,7 @@ public class DungeonGame {
             }
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                WorldManager.unloadAndDeleteWorld(plugin, w);
+                plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
                 aggressivelyCleanupMemory();
             }, 40L);
         } else {
@@ -1021,7 +1021,7 @@ public class DungeonGame {
         if (dungeonWorld != null) {
             World w = dungeonWorld;
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                WorldManager.forceUnloadAndDelete(plugin, w);
+                plugin.getInstanceManager().getProvider().forceUnloadAndDeleteInstance(w);
             }, 5L);
         }
         aggressivelyCleanupMemory();

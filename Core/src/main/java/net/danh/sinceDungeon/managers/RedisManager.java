@@ -1,6 +1,8 @@
 package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
 import org.bukkit.Bukkit;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -9,6 +11,10 @@ import redis.clients.jedis.JedisPubSub;
 
 import java.util.UUID;
 
+/**
+ * Manages the Redis Pub/Sub connection for cross-server dungeon matchmaking.
+ * Safely hooks into the DefaultPartyProvider to synchronize party states across proxy nodes.
+ */
 public class RedisManager {
     private final SinceDungeon plugin;
     private final String channelName;
@@ -103,6 +109,12 @@ public class RedisManager {
         publishMessage("SERVER_READY:" + leaderUuid.toString() + ":" + localServerName);
     }
 
+    /**
+     * Parses incoming Pub/Sub messages and delegates internal logic.
+     * Protocol arguments are split by colons (:).
+     *
+     * @param message The raw string payload received from Redis.
+     */
     private void handleMessage(String message) {
         String[] parts = message.split(":");
         if (parts.length < 2) return;
@@ -118,7 +130,9 @@ public class RedisManager {
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     if (!partyDataRaw.isEmpty()) {
                         String[] members = partyDataRaw.split(",");
-                        plugin.getPartyManager().forceCreateCrossServerParty(leaderUuid, members);
+                        if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
+                            defaultParty.forceCreateCrossServerParty(leaderUuid, members);
+                        }
                     }
                     plugin.getDungeonManager().addPendingCrossServerGame(leaderUuid, templateId);
                     replyDungeonReady(leaderUuid);
@@ -134,15 +148,19 @@ public class RedisManager {
         } else if (action.equals("PARTY_DISBAND")) {
             UUID leaderUuid = UUID.fromString(parts[1]);
             Bukkit.getScheduler().runTask(plugin, () -> {
-                PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
-                if (party != null) {
-                    plugin.getPartyManager().silentDisband(party);
+                if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
+                    Party party = defaultParty.getPartyObject(leaderUuid);
+                    if (party != null) {
+                        defaultParty.silentDisband(party);
+                    }
                 }
             });
         } else if (action.equals("PARTY_LEAVE")) {
             UUID targetUuid = UUID.fromString(parts[1]);
             Bukkit.getScheduler().runTask(plugin, () -> {
-                plugin.getPartyManager().silentQuit(targetUuid);
+                if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
+                    defaultParty.silentQuit(targetUuid);
+                }
             });
         }
     }

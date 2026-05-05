@@ -4,144 +4,144 @@
 # =============================================================
 
 # The name of the world folder used as a template
-    template-world: "ForgottenCrypt_Template"
+template-world: "ForgottenCrypt_Template"
 
 # Whether this dungeon is visible in public listings and /dungeon top
-    public: true
+public: true
 
 # =============================================================
 # GENERAL SETTINGS
 # =============================================================
-    settings:
-      # Limits how many players can enter this specific map (Set to 6 for a Raid)
-      max-players: 6
-      # Entry requirement (Lives)
-      required-lives-to-join: 1
-      # Penalty upon death
-      lives-deducted-per-death: 1
-      # Gameplay Rules
-      keep-inventory-on-death: true
-      prevent-item-dropping: true
-      block-ender-pearls: true
-      # Post-game delay before kicking players out (seconds)
-      kick-delay-after-finish: 15
-      # Environment control
-      force-daylight-and-clear-weather: true
-      # If true, players enter naked and get their items back after the run
-      save-and-restore-stats: true
-      # Actions: RESPAWN (at start), FAIL (end dungeon), or SPECTATE (watch others)
-      death-action: "RESPAWN"
-      # Prevents players from farming bones/rotten flesh from mobs
-      clear-mob-drops: true
-      # If true, middle stages (Stage 2 to N-1) will be shuffled every run
-      randomize-stages: false
-      # Cooldown time after completing the dungeon (seconds)
-      cooldown-seconds: 1800
-      # Commands to run at various stages of the dungeon
-      commands:
-        on-start:
-          - "lp user %player% permission set dungeon.in_game true"
-        on-finish:
-          - "lp user %player% permission unset dungeon.in_game"
-        on-first-finish:
-          - "eco give %player% 5000"
+settings:
+  # Limits how many players can enter this specific map (Set to 6 for a Raid)
+  max-players: 6
+  # Entry requirement (Lives)
+  required-lives-to-join: 1
+  # Penalty upon death
+  lives-deducted-per-death: 1
+  # Gameplay Rules
+  keep-inventory-on-death: true
+  prevent-item-dropping: true
+  block-ender-pearls: true
+  # Post-game delay before kicking players out (seconds)
+  kick-delay-after-finish: 15
+  # Environment control
+  force-daylight-and-clear-weather: true
+  # If true, players enter naked and get their items back after the run
+  save-and-restore-stats: true
+  # Actions: RESPAWN (at start), FAIL (end dungeon), or SPECTATE (watch others)
+  death-action: "RESPAWN"
+  # Prevents players from farming bones/rotten flesh from mobs
+  clear-mob-drops: true
+  # If true, middle stages (Stage 2 to N-1) will be shuffled every run
+  randomize-stages: false
+  # Cooldown time after completing the dungeon (seconds)
+  cooldown-seconds: 1800
+  # Commands to run at various stages of the dungeon
+  commands:
+    on-start:
+      - "lp user %player% permission set dungeon.in_game true"
+    on-finish:
+      - "lp user %player% permission unset dungeon.in_game"
+    on-first-finish:
+      - "eco give %player% 5000"
 
 # =============================================================
 # ENTRY CONDITIONS (PlaceholderAPI)
 # =============================================================
-    conditions:
-      level_check:
-        name: "Level Requirement"
-        check: "%player_level%;>=;10"
-        msg: "<red>You must be at least Level 10 to enter this raid!"
+conditions:
+  level_check:
+    name: "Level Requirement"
+    check: "%player_level%;>=;10"
+    msg: "<red>You must be at least Level 10 to enter this raid!"
 
 # =============================================================
 # REWARDS SYSTEM
 # =============================================================
-    rewards:
-      # Tiers for players running the dungeon SOLO (Time in seconds : Amount of Chests)
-      solo-tiers:
-        300: 3   # Gold: Under 5 mins
-        600: 2   # Silver: Under 10 mins
-        1200: 1  # Bronze: Completion
+rewards:
+  # Tiers for players running the dungeon SOLO (Time in seconds : Amount of Chests)
+  solo-tiers:
+    300: 3   # Gold: Under 5 mins
+    600: 2   # Silver: Under 10 mins
+    1200: 1  # Bronze: Completion
 
-      # Tiers for players running the dungeon in a PARTY (Parties are expected to be faster)
-      party-tiers:
-        240: 3   # Gold: Under 4 mins
-        500: 2   # Silver: Under 8 mins
-        1000: 1  # Bronze: Completion
+  # Tiers for players running the dungeon in a PARTY (Parties are expected to be faster)
+  party-tiers:
+    240: 3   # Gold: Under 4 mins
+    500: 2   # Silver: Under 8 mins
+    1000: 1  # Bronze: Completion
 
-      # Items rolled when a chest is opened
-      pool:
-        reward_1:
-          type: "ITEM"
-          value: "DIAMOND:3-8"
-          chance: 50.0
-          name: "<b#fbff00>Shiny Diamonds"
-        reward_2:
-          type: "MMOITEM"
-          value: "SWORD:SILVER_LANCE:1"
-          chance: 10.0
-          name: "<gray>Rare Silver Lance"
-        reward_3:
-          type: "COMMAND"
-          value: "eco give %player% 1000"
-          chance: 100.0
-          name: "<green>$1,000 Cash"
+  # Items rolled when a chest is opened
+  pool:
+    reward_1:
+      type: "ITEM"
+      value: "DIAMOND:3-8"
+      chance: 50.0
+      name: "<b#fbff00>Shiny Diamonds"
+    reward_2:
+      type: "MMOITEM"
+      value: "SWORD:SILVER_LANCE:1"
+      chance: 10.0
+      name: "<gray>Rare Silver Lance"
+    reward_3:
+      type: "COMMAND"
+      value: "eco give %player% 1000"
+      chance: 100.0
+      name: "<green>$1,000 Cash"
 
 # =============================================================
 # DUNGEON STAGES & ACTIONS
 # =============================================================
-    stages:
-      1:
-        chance: 100.0
-        actions:
-          arrival:
-            type: "REACH_LOCATION"
-            target: "10,64,10"
-            radius: 3.0
-            start_message: "<yellow>Welcome to the Crypt. Move to the center to begin."
-      2:
-        chance: 100.0
-        actions:
-          guards:
-            type: "SPAWN_WAVE"
-            mob: "SKELETON"
-            amount: 5
-            scale_with_party: true
-            custom_name: "<red>Crypt Guard"
-            locations:
-              - "15,64,20"
-              - "5,64,20"
-            start_message: "<red>The dead are rising! Eliminate the guards!"
-      3:
-        chance: 100.0
-        actions:
-          find_key:
-            type: "LOOT_CHEST"
-            location: "20,60,-5"
-            items:
-              13: "KEY:gate_key:1"
-              14: "GOLD_INGOT:5"
-            start_message: "<gold>The path forward is sealed. Find the hidden key chest!"
-          open_gate:
-            type: "UNLOCK_DOOR"
-            key_id: "gate_key"
-            trigger: "0,64,-10"
-            corner1: "-2,64,-10"
-            corner2: "2,68,-10"
-            particle: "SOUL_FIRE_FLAME"
-            start_message: "<green>You found the key! Follow the compass to the gate."
-      4:
-        chance: 100.0
-        actions:
-          boss_fight:
-            type: "MYTHIC_WAVE"
-            mob: "LichKing"
-            amount: 1
-            level: 5
-            locations:
-              - "0,64,-50"
-            time_limit: 120
-            time_penalty: 1
-            start_message: "<dark_red><bold>THE LICH KING HAS AWAKENED!"
+stages:
+  1:
+    chance: 100.0
+    actions:
+      arrival:
+        type: "REACH_LOCATION"
+        target: "10,64,10"
+        radius: 3.0
+        start_message: "<yellow>Welcome to the Crypt. Move to the center to begin."
+  2:
+    chance: 100.0
+    actions:
+      guards:
+        type: "SPAWN_WAVE"
+        mob: "SKELETON"
+        amount: 5
+        scale_with_party: true
+        custom_name: "<red>Crypt Guard"
+        locations:
+          - "15,64,20"
+          - "5,64,20"
+        start_message: "<red>The dead are rising! Eliminate the guards!"
+  3:
+    chance: 100.0
+    actions:
+      find_key:
+        type: "LOOT_CHEST"
+        location: "20,60,-5"
+        items:
+          13: "KEY:gate_key:1"
+          14: "GOLD_INGOT:5"
+        start_message: "<gold>The path forward is sealed. Find the hidden key chest!"
+      open_gate:
+        type: "UNLOCK_DOOR"
+        key_id: "gate_key"
+        trigger: "0,64,-10"
+        corner1: "-2,64,-10"
+        corner2: "2,68,-10"
+        particle: "SOUL_FIRE_FLAME"
+        start_message: "<green>You found the key! Follow the compass to the gate."
+  4:
+    chance: 100.0
+    actions:
+      boss_fight:
+        type: "MYTHIC_WAVE"
+        mob: "LichKing"
+        amount: 1
+        level: 5
+        locations:
+          - "0,64,-50"
+        time_limit: 120
+        time_penalty: 1
+        start_message: "<dark_red><bold>THE LICH KING HAS AWAKENED!"

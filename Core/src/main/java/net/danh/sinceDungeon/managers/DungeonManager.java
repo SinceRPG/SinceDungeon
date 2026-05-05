@@ -62,7 +62,7 @@ public class DungeonManager {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (pendingCrossServerGames.containsKey(leader)) {
                 pendingCrossServerGames.remove(leader);
-                plugin.getPartyManager().disbandParty(plugin.getPartyManager().getParty(leader));
+                plugin.getPartyManager().getProvider().disbandParty(leader); // Adjusted API call
 
                 String logMsg = plugin.getLanguageManager().getString("admin.log.cross_server_timeout_cancel");
                 if (logMsg != null) {
@@ -80,13 +80,14 @@ public class DungeonManager {
         Player leader = Bukkit.getPlayer(leaderUuid);
         if (leader == null || !leader.isOnline()) return;
 
-        PartyManager.Party party = plugin.getPartyManager().getParty(leaderUuid);
+        Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(leaderUuid); // Adjusted API call
+
         String foundMsg = plugin.getLanguageManager().getString("cross_server.found");
         if (foundMsg != null)
             leader.sendMessage(ColorUtils.parseWithPrefix(foundMsg.replace("<server>", targetServer)));
 
-        if (party != null) {
-            for (UUID memId : party.getMembers()) {
+        if (members != null && !members.isEmpty()) {
+            for (UUID memId : members) {
                 Player mem = Bukkit.getPlayer(memId);
                 if (mem != null && mem.isOnline()) {
                     BungeeUtils.sendPlayerToServer(mem, targetServer);
@@ -108,8 +109,9 @@ public class DungeonManager {
 
     public void joinDungeon(Player p, String id) {
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
-            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
-            if (party != null && !party.getLeader().equals(p.getUniqueId())) {
+
+            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())
+                    && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                 return;
             }
@@ -126,9 +128,10 @@ public class DungeonManager {
             pendingRequests.put(p.getUniqueId(), System.currentTimeMillis());
 
             String partyDataRaw = p.getUniqueId().toString() + "~" + p.getName();
-            if (party != null) {
-                partyDataRaw = party.getMembers().stream()
-                        .map(uuid -> uuid.toString() + "~" + party.getMemberName(uuid))
+            Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(p.getUniqueId());
+            if (members != null && !members.isEmpty()) {
+                partyDataRaw = members.stream()
+                        .map(uuid -> uuid.toString() + "~" + plugin.getPartyManager().getProvider().getMemberName(uuid))
                         .reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
             }
 
@@ -319,22 +322,21 @@ public class DungeonManager {
 
     private void joinDungeonLocal(Player p, String id) {
         synchronized (joinLock) {
-            PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
             Set<Player> participants = new HashSet<>();
 
             int offlineCount = 0;
             int deadCount = 0;
             int farCount = 0;
 
-            if (party != null) {
-                if (!party.getLeader().equals(p.getUniqueId())) {
+            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())) {
+                if (!plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                     return;
                 }
 
                 double maxDist = plugin.getConfigFile().getDouble("party.max-join-distance", 50.0);
 
-                for (UUID uid : party.getMembers()) {
+                for (UUID uid : plugin.getPartyManager().getProvider().getMembers(p.getUniqueId())) {
                     Player mem = Bukkit.getPlayer(uid);
                     if (mem == null || !mem.isOnline()) {
                         offlineCount++;
@@ -362,7 +364,7 @@ public class DungeonManager {
                     p.sendMessage(ColorUtils.parseWithPrefix(warnMsg.replace("<count>", String.valueOf(farCount))));
                 }
 
-                for (UUID uid : party.getMembers()) {
+                for (UUID uid : plugin.getPartyManager().getProvider().getMembers(p.getUniqueId())) {
                     Player leftBehind = Bukkit.getPlayer(uid);
                     if (leftBehind != null && leftBehind.isOnline() && !participants.contains(leftBehind)) {
                         leftBehind.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.member_failed_condition", "&cYou were left behind because you didn't meet the entry requirements or were too far away!")));

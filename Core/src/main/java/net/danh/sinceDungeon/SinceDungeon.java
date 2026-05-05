@@ -15,6 +15,8 @@ import net.danh.sinceDungeon.listeners.DungeonListener;
 import net.danh.sinceDungeon.listeners.LifeItemListener;
 import net.danh.sinceDungeon.listeners.MythicListener;
 import net.danh.sinceDungeon.managers.*;
+import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
+import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
@@ -30,7 +32,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jspecify.annotations.NonNull;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
@@ -40,7 +43,6 @@ public final class SinceDungeon extends JavaPlugin {
     private LanguageManager languageManager;
 
     private DungeonManager dungeonManager;
-    private PartyManager partyManager;
     private EditorManager editorManager;
     private EditorListener editorListener;
     private DatabaseManager databaseManager;
@@ -48,7 +50,11 @@ public final class SinceDungeon extends JavaPlugin {
     private RedisManager redisManager;
     private LivesManager livesManager;
     private CooldownManager cooldownManager;
+
+    // Strategy Pattern Managers
     private RewardManager rewardManager;
+    private PartySystemManager partySystemManager;
+    private InstanceManager instanceManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -81,8 +87,13 @@ public final class SinceDungeon extends JavaPlugin {
         rewardManager = new RewardManager(this);
         rewardManager.setRewardSystem(new DefaultRewardSystem(this));
 
+        partySystemManager = new PartySystemManager(this);
+        partySystemManager.setProvider(new DefaultPartyProvider(this));
+
+        instanceManager = new InstanceManager(this);
+        instanceManager.setProvider(new DefaultInstanceProvider(this));
+
         dungeonManager = new DungeonManager(this);
-        partyManager = new PartyManager(this);
         editorManager = new EditorManager(this);
         editorListener = new EditorListener(this);
 
@@ -152,6 +163,14 @@ public final class SinceDungeon extends JavaPlugin {
 
         if (rewardManager != null && rewardManager.getRewardSystem() != null) {
             rewardManager.getRewardSystem().cleanup();
+        }
+
+        if (partySystemManager != null && partySystemManager.getProvider() != null) {
+            partySystemManager.getProvider().cleanup();
+        }
+
+        if (instanceManager != null && instanceManager.getProvider() != null) {
+            instanceManager.getProvider().cleanup();
         }
 
         if (livesManager != null) livesManager.forceSaveAll();
@@ -253,8 +272,12 @@ public final class SinceDungeon extends JavaPlugin {
         return editorListener;
     }
 
-    public PartyManager getPartyManager() {
-        return partyManager;
+    public PartySystemManager getPartyManager() {
+        return partySystemManager;
+    }
+
+    public InstanceManager getInstanceManager() {
+        return instanceManager;
     }
 
     public DatabaseManager getDatabaseManager() {

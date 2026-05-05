@@ -46,7 +46,8 @@ public class WebhookListener implements Listener {
                 playersBuilder.append(p.getName()).append(", ");
             }
         }
-        String players = playersBuilder.length() > 0 ? playersBuilder.substring(0, playersBuilder.length() - 2) : "Unknown";
+        String fallback = plugin.getFileManager().getConfig().getString("webhooks.unknown_player", "Unknown");
+        String players = playersBuilder.length() > 0 ? playersBuilder.substring(0, playersBuilder.length() - 2) : fallback;
 
         String title = plugin.getFileManager().getConfig().getString("webhooks.embed-title", "Dungeon Cleared!");
         String color = plugin.getFileManager().getConfig().getString("webhooks.embed-color", "5814783");

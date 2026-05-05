@@ -17,6 +17,15 @@ public class RewardManager {
     }
 
     /**
+     * Retrieves the currently active reward system.
+     *
+     * @return The active RewardSystem instance.
+     */
+    public RewardSystem getRewardSystem() {
+        return activeSystem;
+    }
+
+    /**
      * Dynamically swaps the current reward system.
      * Automatically handles the cleanup of the old system and initialization of the new one.
      *
@@ -31,14 +40,5 @@ public class RewardManager {
 
         String logMsg = plugin.getLanguageManager().getString("admin.log.reward_system_set", "[API] Reward System overwritten by: <system>");
         plugin.getLogger().info(logMsg.replace("<system>", system.getClass().getSimpleName()));
-    }
-
-    /**
-     * Retrieves the currently active reward system.
-     *
-     * @return The active RewardSystem instance.
-     */
-    public RewardSystem getRewardSystem() {
-        return activeSystem;
     }
 }
