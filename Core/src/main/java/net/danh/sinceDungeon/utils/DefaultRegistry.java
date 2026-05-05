@@ -142,7 +142,8 @@ public class DefaultRegistry {
                 int amount = parts.length > 1 ? ItemBuilder.parseRandomAmount(parts[1]) : 1;
                 ItemStack item = new ItemStack(mat, amount);
 
-                if (displayName != null && !displayName.isEmpty()) {
+                String defaultName = plugin.getLanguageManager().getString("editor.words.reward_default_name", "&7Default");
+                if (displayName != null && !displayName.isEmpty() && !displayName.equals(defaultName)) {
                     ItemMeta meta = item.getItemMeta();
                     if (meta != null) {
                         meta.displayName(ColorUtils.parse("<!i>" + displayName));

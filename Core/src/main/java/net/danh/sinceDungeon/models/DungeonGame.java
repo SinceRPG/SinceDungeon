@@ -774,8 +774,13 @@ public class DungeonGame {
 
                     topManager.saveKills(dungeonId, p.getUniqueId(), p.getName(), kills);
 
+                    if (participants.size() == 1) {
+                        if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
+                            topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
+                        }
+                    }
+
                     if (awardedTo.equalsIgnoreCase("ALL_MEMBERS") || isLeader) {
-                        topManager.saveClearTime(dungeonId, p.getUniqueId(), p.getName(), finalElapsed);
                         topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
                     }
 

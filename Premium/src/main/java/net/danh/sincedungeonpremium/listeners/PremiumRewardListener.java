@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.guis.reward.RewardHolder;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -57,21 +58,25 @@ public class PremiumRewardListener implements Listener {
         ItemStack itemStack = ItemBuilder.parseDynamicItem(reward.value());
 
         if (itemStack != null) {
-            ItemMeta meta = itemStack.getItemMeta();
-            String displayName = reward.displayName() != null && !reward.displayName().isEmpty() ? reward.displayName() : ColorUtils.formatEnumName(itemStack.getType().name());
+            String defaultName = SinceDungeon.getPlugin().getLanguageManager().getString("editor.words.reward_default_name", "&7Default");
 
-            // Apply Lore and DisplayName to the ItemStack metadata directly
-            if (meta != null) {
-                meta.displayName(ColorUtils.parse("<!i>" + displayName));
+            // Only apply Lore and DisplayName to the ItemStack metadata directly if it's an ITEM and has a custom name
+            if (reward.type().equalsIgnoreCase("ITEM")) {
+                if (reward.displayName() != null && !reward.displayName().isEmpty() && !reward.displayName().equals(defaultName)) {
+                    ItemMeta meta = itemStack.getItemMeta();
+                    if (meta != null) {
+                        meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
 
-                if (reward.lore() != null && !reward.lore().isEmpty()) {
-                    List<Component> lore = new ArrayList<>();
-                    for (String line : reward.lore()) {
-                        lore.add(ColorUtils.parse("<!i>" + line));
+                        if (reward.lore() != null && !reward.lore().isEmpty()) {
+                            List<Component> lore = new ArrayList<>();
+                            for (String line : reward.lore()) {
+                                lore.add(ColorUtils.parse("<!i>" + line));
+                            }
+                            meta.lore(lore);
+                        }
+                        itemStack.setItemMeta(meta);
                     }
-                    meta.lore(lore);
                 }
-                itemStack.setItemMeta(meta);
             }
 
             Location dropLoc = player.getLocation().add(0, 1, 0);
@@ -88,7 +93,8 @@ public class PremiumRewardListener implements Listener {
             droppedItem.setCanMobPickup(false);
 
             // Render the floating text nametag above the physical item entity
-            Component nameComp = ColorUtils.parse(displayName);
+            String holoName = reward.displayName() != null && !reward.displayName().isEmpty() && !reward.displayName().equals(defaultName) ? reward.displayName() : ColorUtils.formatEnumName(itemStack.getType().name());
+            Component nameComp = ColorUtils.parse(holoName);
             droppedItem.customName(nameComp);
             droppedItem.setCustomNameVisible(true);
 
