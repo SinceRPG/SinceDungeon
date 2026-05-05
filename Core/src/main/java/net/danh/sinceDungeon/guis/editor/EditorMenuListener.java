@@ -28,6 +28,7 @@ import java.util.*;
 /**
  * Captures all inventory click events associated with the Editor GUI.
  * Validates admin permissions and routes data modifications securely.
+ * Automatically adapts GUI input requests based on the YAML variable type.
  */
 public class EditorMenuListener implements Listener {
     private final SinceDungeon plugin;
@@ -739,6 +740,9 @@ public class EditorMenuListener implements Listener {
                 boolean isLocation = key.toLowerCase().contains("location") || key.toLowerCase().contains("loc") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center") || key.equals("levers");
                 boolean isListField = key.equalsIgnoreCase("random_mobs") || key.equalsIgnoreCase("attributes") || key.equalsIgnoreCase("equipment") || key.endsWith("_attributes") || key.endsWith("_equipment") || key.equals("levers") || key.equals("frames") || key.equals("locations") || key.equals("custom_drops") || key.equals("start_message");
 
+                boolean isNumber = key.equals("amount") || key.equals("radius") || key.equals("chance") || key.equals("level") || key.equals("enrage_time") || key.equals("base_health") || key.equals("scale_health_per_player") || key.equals("speed") || key.equals("success_radius") || key.equals("max_health") || key.contains("interval") || key.contains("amount") || key.equals("duration") || key.equals("stage_a") || key.equals("stage_b") || key.equals("target_stage") || key.equals("fail_time_penalty") || key.equals("core_health") || key.equals("damage");
+                boolean isBoolean = key.equals("vip_is_baby") || key.equals("attacker_is_baby") || key.equals("scale_with_party") || key.equals("per_player");
+
                 String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
                 boolean isList = isListField || session.getConfig().isList(fullPath);
 
@@ -747,8 +751,10 @@ public class EditorMenuListener implements Listener {
                     inputType = isList ? EditorSession.InputType.EDIT_LOCATION_LIST : EditorSession.InputType.EDIT_LOCATION;
                 } else if (isList) {
                     inputType = EditorSession.InputType.EDIT_LIST;
-                } else if (key.equals("amount") || key.equals("radius") || key.equals("chance") || key.equals("level") || key.equals("enrage_time") || key.equals("base_health") || key.equals("scale_health_per_player")) {
+                } else if (isNumber) {
                     inputType = EditorSession.InputType.EDIT_NUMBER;
+                } else if (isBoolean) {
+                    inputType = EditorSession.InputType.EDIT_BOOLEAN;
                 } else {
                     inputType = EditorSession.InputType.EDIT_STRING;
                 }

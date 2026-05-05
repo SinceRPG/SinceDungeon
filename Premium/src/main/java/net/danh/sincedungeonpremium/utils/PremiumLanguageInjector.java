@@ -19,7 +19,7 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
-            // Register Missing Item Settings Prompts
+            // Missing Item Settings Prompts
             if (!editorCfg.getConfig().contains("editor.items.setting_req_item")) {
                 editorCfg.set("editor.items.setting_req_item", "&eRequired Entry Item");
                 editorCfg.set("editor.items.setting_req_item_lore", Arrays.asList("&7Current: &f<val>", "&eLeft Click to edit"));
@@ -72,6 +72,16 @@ public class PremiumLanguageInjector {
                 editorCfg.set("editor.input.prompts.edit_action_sound_name", Arrays.asList("&7Enter the sound event name.", "&7Example: &aentity.ender_dragon.growl"));
                 editorCfg.set("editor.input.prompts.edit_action_volume", Arrays.asList("&7Enter the sound volume (float).", "&7Example: &a1.0"));
                 editorCfg.set("editor.input.prompts.edit_action_pitch", Arrays.asList("&7Enter the sound pitch (float).", "&7Example: &a1.0"));
+                editorChanged = true;
+            }
+
+            // Action Generation Defaults (Extracts internal hardcoded logic cleanly)
+            if (!editorCfg.getConfig().contains("editor.defaults.escort.vip_name")) {
+                editorCfg.set("editor.defaults.escort.vip_name", "&aVIP Escort");
+                editorCfg.set("editor.defaults.escort.attacker_name", "&cAssassin");
+                editorCfg.set("editor.defaults.defend_core.core_name", "&b&lSacred Crystal");
+                editorCfg.set("editor.defaults.defend_core.attacker_name", "&cInvader");
+                editorCfg.set("editor.defaults.give_item.message", "&aYou received a mysterious item...");
                 editorChanged = true;
             }
 

@@ -16,6 +16,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -28,6 +30,7 @@ import java.util.UUID;
  * Premium Action: Defend Core
  * Players must protect a stationary entity (e.g., an Ender Crystal or Iron Golem)
  * from waves of enemies for a specific duration.
+ * Now universally supports Non-Living Entities (Crystals) via independent event-based Health Tracking.
  */
 public class DefendCoreAction extends DungeonAction implements Tickable {
 
@@ -47,6 +50,9 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     private UUID coreId = null;
     private Location coreLoc = null;
     private int ticksElapsed = 0;
+    private int unloadedTicks = 0; // Failsafe for chunks unloading
+
+    private double currentCoreHealth; // Independent Tracking Support for Ender Crystals
 
     public DefendCoreAction(String locationStr, String coreTypeStr, String coreName, double coreHealth, int durationTicks, String attackerMob, int attackerAmount, int attackerInterval, String attackerName, boolean attackerIsBaby, List<String> attackerAttributes, List<String> attackerEquipment) {
         this.locationStr = locationStr;
@@ -81,23 +87,19 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
             type = EntityType.IRON_GOLEM;
         }
 
+        this.currentCoreHealth = this.coreHealth;
         Entity entity = game.getWorld().spawnEntity(coreLoc, type);
+
+        entity.setPersistent(true);
+        if (coreName != null && !coreName.isEmpty()) {
+            entity.customName(ColorUtils.parse(coreName));
+            entity.setCustomNameVisible(true);
+        }
+
         if (entity instanceof LivingEntity core) {
             core.setRemoveWhenFarAway(false);
-            core.setPersistent(true);
 
-            if (coreName != null && !coreName.isEmpty()) {
-                core.customName(ColorUtils.parse(coreName));
-                core.setCustomNameVisible(true);
-            }
-
-            AttributeInstance healthAttr = core.getAttribute(Attribute.MAX_HEALTH);
-            if (healthAttr != null) {
-                healthAttr.setBaseValue(coreHealth);
-                core.setHealth(coreHealth);
-            }
-
-            // Immobilize the core
+            // Immobilize the core if it's a living entity
             AttributeInstance speedAttr = core.getAttribute(Attribute.MOVEMENT_SPEED);
             if (speedAttr != null) {
                 speedAttr.setBaseValue(0.0);
@@ -107,13 +109,10 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                 mobCore.setTarget(null);
                 mobCore.setAware(false);
             }
-
-            this.coreId = core.getUniqueId();
-            this.spawnedEntities.add(coreId);
-        } else {
-            entity.remove();
-            forceComplete();
         }
+
+        this.coreId = entity.getUniqueId();
+        this.spawnedEntities.add(coreId);
     }
 
     @Override
@@ -122,16 +121,21 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
 
         Entity entity = Bukkit.getEntity(coreId);
 
+        // Failsafe: Entity might be temporarily unloaded because players moved far away.
+        // Wait 5 seconds (100 ticks) of unloaded state before assuming it was deleted/killed by void.
         if (entity == null) {
-            // Entities might temporarily return null if chunks unload. Don't fail the mission immediately.
+            unloadedTicks++;
+            if (unloadedTicks > 100) {
+                game.broadcastMessage("action.defend_failed");
+                game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                this.forceComplete();
+            }
             return;
         }
+        unloadedTicks = 0;
 
         if (entity.isDead()) {
-            game.broadcastMessage("action.defend_failed");
-            game.stop(true, DungeonEndEvent.EndReason.FAILED);
-            forceComplete();
-            return;
+            return; // Handled by Event Listener
         }
 
         ticksElapsed++;
@@ -154,6 +158,9 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                 Entity e = Bukkit.getEntity(id);
                 if (e instanceof Mob attacker && entity instanceof LivingEntity livingCore) {
                     attacker.setTarget(livingCore);
+                } else if (e instanceof Mob attacker) {
+                    // Try to pathfind to the crystal if it's not a LivingEntity
+                    attacker.getPathfinder().moveTo(entity.getLocation());
                 }
             }
         }
@@ -163,10 +170,31 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     public void onEvent(DungeonGame game, Event event) {
         if (completed || coreId == null) return;
 
-        if (event instanceof EntityDamageByEntityEvent e) {
+        // Guaranteed exact detection if the Core dies (Void/Delete)
+        if (event instanceof EntityDeathEvent e) {
             if (e.getEntity().getUniqueId().equals(coreId)) {
-                if (e.getDamager() instanceof Player) {
-                    e.setCancelled(true); // Players cannot damage the core
+                game.broadcastMessage("action.defend_failed");
+                game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                this.forceComplete();
+            }
+        }
+
+        if (event instanceof EntityDamageEvent e) {
+            if (e.getEntity().getUniqueId().equals(coreId)) {
+                e.setCancelled(true); // Always cancel to prevent knockback and standard death
+
+                // Players cannot damage the core
+                if (e instanceof EntityDamageByEntityEvent edbe && edbe.getDamager() instanceof Player) {
+                    return;
+                }
+
+                currentCoreHealth -= e.getFinalDamage();
+
+                if (currentCoreHealth <= 0) {
+                    e.getEntity().remove();
+                    game.broadcastMessage("action.defend_failed");
+                    game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                    forceComplete();
                 }
             }
         } else if (event instanceof EntityTargetEvent e) {
@@ -214,6 +242,8 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                     Entity core = Bukkit.getEntity(coreId);
                     if (core instanceof LivingEntity livingCore) {
                         attMob.setTarget(livingCore);
+                    } else if (core != null) {
+                        attMob.getPathfinder().moveTo(core.getLocation());
                     }
                     this.spawnedEntities.add(attMob.getUniqueId());
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);

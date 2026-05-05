@@ -17,6 +17,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
@@ -29,6 +30,7 @@ import java.util.UUID;
  * Premium Action: Escort NPC
  * Spawns an NPC that walks to a target location.
  * Attackers will explicitly target the VIP, and players cannot damage the VIP.
+ * Pathfinding range is boosted so the VIP never gets stuck.
  */
 public class EscortAction extends DungeonAction implements Tickable {
 
@@ -55,6 +57,7 @@ public class EscortAction extends DungeonAction implements Tickable {
     private UUID npcId = null;
     private Location targetLocation = null;
     private int tickCounter = 0;
+    private int unloadedTicks = 0; // Failsafe for chunks unloading
 
     public EscortAction(String entityTypeStr, String customName, double maxHealth, String startLocStr, String targetLocStr, double speed, double successRadius, boolean vipIsBaby, List<String> vipAttributes, List<String> vipEquipment, String attackerMob, int attackerAmount, int attackerInterval, String attackerName, boolean attackerIsBaby, List<String> attackerAttributes, List<String> attackerEquipment) {
         this.entityTypeStr = entityTypeStr;
@@ -223,16 +226,21 @@ public class EscortAction extends DungeonAction implements Tickable {
         tickCounter++;
         Entity entity = Bukkit.getEntity(npcId);
 
+        // Failsafe: Entity might be temporarily unloaded because players moved far away.
+        // Wait 5 seconds (100 ticks) of unloaded state before assuming it was deleted/killed by void.
         if (entity == null) {
-            // Entities might temporarily return null if chunks unload. Don't fail the mission immediately.
+            unloadedTicks++;
+            if (unloadedTicks > 100) {
+                game.broadcastMessage("action.escort_failed");
+                game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                this.forceComplete();
+            }
             return;
         }
+        unloadedTicks = 0;
 
         if (!(entity instanceof Mob mob) || mob.isDead()) {
-            game.broadcastMessage("action.escort_failed");
-            game.stop(true, DungeonEndEvent.EndReason.FAILED);
-            this.forceComplete();
-            return;
+            return; // Native Death event handler will take over. Or it despawns.
         }
 
         if (mob.getLocation().distanceSquared(targetLocation) <= (successRadius * successRadius)) {
@@ -268,6 +276,15 @@ public class EscortAction extends DungeonAction implements Tickable {
     @Override
     public void onEvent(DungeonGame game, Event event) {
         if (completed || npcId == null) return;
+
+        // Guaranteed exact detection if the VIP dies
+        if (event instanceof EntityDeathEvent e) {
+            if (e.getEntity().getUniqueId().equals(npcId)) {
+                game.broadcastMessage("action.escort_failed");
+                game.stop(true, DungeonEndEvent.EndReason.FAILED);
+                this.forceComplete();
+            }
+        }
 
         // Prevent players from damaging the VIP
         if (event instanceof EntityDamageByEntityEvent e) {

@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Handles the registration of all Premium custom actions.
  * Extensively utilizes functional parsing to inject configuration defaults and dynamic GUI Prompts.
- * All texts are fetched dynamically from LanguageManager to prevent hardcoding.
+ * All texts and defaults are fetched dynamically from LanguageManager to prevent hardcoding.
  */
 public class PremiumActionRegistry {
 
@@ -89,19 +89,19 @@ public class PremiumActionRegistry {
         // 2. ESCORT NPC ACTION
         Map<String, Object> escortDefaults = new HashMap<>();
         escortDefaults.put("entity_type", "VILLAGER");
-        escortDefaults.put("custom_name", "&aVIP Escort");
+        escortDefaults.put("custom_name", lang.getString("editor.defaults.escort.vip_name", "&aVIP Escort"));
         escortDefaults.put("max_health", 100.0);
         escortDefaults.put("start_loc", "0,64,0");
         escortDefaults.put("target_loc", "20,64,20");
         escortDefaults.put("speed", 1.0);
         escortDefaults.put("success_radius", 4.0);
         escortDefaults.put("vip_is_baby", false);
-        escortDefaults.put("vip_attributes", new ArrayList<>());
+        escortDefaults.put("vip_attributes", new ArrayList<>(List.of("follow_range:128.0"))); // Injected natively
         escortDefaults.put("vip_equipment", new ArrayList<>());
         escortDefaults.put("attacker_mob", "ZOMBIE");
         escortDefaults.put("attacker_amount", 3);
         escortDefaults.put("attacker_interval", 100);
-        escortDefaults.put("attacker_name", "&cAssassin");
+        escortDefaults.put("attacker_name", lang.getString("editor.defaults.escort.attacker_name", "&cAssassin"));
         escortDefaults.put("attacker_is_baby", false);
         escortDefaults.put("attacker_attributes", new ArrayList<>());
         escortDefaults.put("attacker_equipment", new ArrayList<>());
@@ -280,13 +280,13 @@ public class PremiumActionRegistry {
         Map<String, Object> defendDefaults = new HashMap<>();
         defendDefaults.put("location", "0,64,0");
         defendDefaults.put("core_type", "IRON_GOLEM");
-        defendDefaults.put("core_name", "&b&lSacred Crystal");
+        defendDefaults.put("core_name", lang.getString("editor.defaults.defend_core.core_name", "&b&lSacred Crystal"));
         defendDefaults.put("core_health", 1000.0);
         defendDefaults.put("duration", 600); // 30 seconds
         defendDefaults.put("attacker_mob", "ZOMBIE");
         defendDefaults.put("attacker_amount", 5);
         defendDefaults.put("attacker_interval", 100);
-        defendDefaults.put("attacker_name", "&cInvader");
+        defendDefaults.put("attacker_name", lang.getString("editor.defaults.defend_core.attacker_name", "&cInvader"));
         defendDefaults.put("attacker_is_baby", false);
         defendDefaults.put("attacker_attributes", new ArrayList<>());
         defendDefaults.put("attacker_equipment", new ArrayList<>());
@@ -324,7 +324,7 @@ public class PremiumActionRegistry {
         // 11. GIVE ITEM ACTION
         Map<String, Object> giveDefaults = new HashMap<>();
         giveDefaults.put("item_data", "DIAMOND:1");
-        giveDefaults.put("receive_message", "&aYou received a mysterious item...");
+        giveDefaults.put("receive_message", lang.getString("editor.defaults.give_item.message", "&aYou received a mysterious item..."));
 
         Map<String, List<String>> givePrompts = new HashMap<>();
         givePrompts.put("item_data", lang.getStringList("editor.input.prompts.edit_action_item_data"));
