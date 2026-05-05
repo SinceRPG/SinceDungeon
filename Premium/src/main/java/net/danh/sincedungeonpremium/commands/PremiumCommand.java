@@ -24,9 +24,9 @@ import java.util.List;
  * Premium-Exclusive Command: /sdp
  * Responsibilities:
  * - Admin command for reloading Premium configs and Holograms.
- * - In-game utility to dynamically place and remove Holographic Leaderboards.
+ * - In-game utility to dynamically place, move, and remove Holographic Leaderboards.
  * - Insert new stages dynamically between existing stages.
- * - Provides full, dynamic tab-completion for all arguments, integrating with Core's API and config files.
+ * - Provides full, dynamic tab-completion for all arguments.
  */
 public class PremiumCommand {
 
@@ -149,6 +149,31 @@ public class PremiumCommand {
                                                     return 1;
                                                 })
                                         )
+                                )
+                        )
+                        .then(Commands.literal("move")
+                                .then(Commands.argument("hologram_id", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            ConfigurationSection sec = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
+                                            if (sec != null) {
+                                                for (String key : sec.getKeys(false)) {
+                                                    if (key.toLowerCase().startsWith(remaining)) {
+                                                        builder.suggest(key);
+                                                    }
+                                                }
+                                            }
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            if (ctx.getSource().getExecutor() instanceof Player player) {
+                                                String holoId = StringArgumentType.getString(ctx, "hologram_id");
+                                                plugin.getHologramManager().moveHologramInGame(player, holoId);
+                                            } else {
+                                                plugin.getFileManager().sendMessage(null, "admin.invalid_player");
+                                            }
+                                            return 1;
+                                        })
                                 )
                         )
                         .then(Commands.literal("delete")

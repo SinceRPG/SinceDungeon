@@ -2,7 +2,8 @@ package net.danh.sincedungeonpremium.managers;
 
 import eu.decentsoftware.holograms.api.DHAPI;
 import net.danh.sinceDungeon.SinceDungeon;
-import net.danh.sinceDungeon.managers.TopManager;
+import net.danh.sinceDungeon.managers.TopManager.TopCategory;
+import net.danh.sinceDungeon.managers.TopManager.TopEntry;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -19,7 +20,7 @@ import java.util.List;
  * Responsibilities:
  * - Integrates with DecentHolograms API to render 3D top player leaderboards in the world.
  * - Schedules asynchronous updates pulling direct data from the SinceDungeon Core Database.
- * - Handles creation and deletion of physical holograms seamlessly.
+ * - Handles creation, movement, and deletion of physical holograms seamlessly.
  * - Adheres to zero-hardcoding paradigms by pulling template texts from messages.yml.
  */
 public class HologramManager {
@@ -32,8 +33,7 @@ public class HologramManager {
 
     /**
      * Premium Feature: In-Game Hologram Setup
-     * Creates a new hologram at the exact location the player is standing,
-     * automatically writes the coordinates to the config.yml, and forces a refresh.
+     * Creates a new hologram at the exact location the player is standing.
      *
      * @param player   The admin player setting up the hologram.
      * @param mapId    The ID of the dungeon map (e.g., example_dungeon).
@@ -59,11 +59,38 @@ public class HologramManager {
     }
 
     /**
+     * Premium Feature: Move Hologram
+     * Relocates an existing hologram to the player's current location without resetting its settings.
+     *
+     * @param player The admin player moving the hologram.
+     * @param holoId The unique configuration ID of the hologram.
+     */
+    public void moveHologramInGame(Player player, String holoId) {
+        ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
+        if (holos != null && holos.contains(holoId)) {
+            Location loc = player.getLocation();
+            String locStr = loc.getWorld().getName() + "," + loc.getX() + "," + loc.getY() + "," + loc.getZ();
+
+            plugin.getFileManager().getConfig().set("hologram-leaderboard.locations." + holoId + ".location", locStr);
+            try {
+                plugin.getFileManager().getConfig().save(new File(plugin.getDataFolder(), "config.yml"));
+                plugin.getFileManager().sendMessage(player, "admin.holo_moved");
+                updateAllHolograms(); // Force a positional refresh immediately
+            } catch (IOException e) {
+                plugin.getLogger().warning("Failed to save config after moving hologram!");
+                plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
+            }
+        } else {
+            plugin.getFileManager().sendMessage(player, "admin.holo_not_found");
+        }
+    }
+
+    /**
      * Premium Feature: In-Game Hologram Deletion
      * Removes an active hologram from the world and erases its entry from config.yml.
      *
      * @param player The admin player removing the hologram.
-     * @param holoId The unique configuration ID of the hologram to remove.
+     * @param holoId The unique configuration ID of the hologram.
      */
     public void deleteHologramInGame(Player player, String holoId) {
         ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
@@ -95,6 +122,10 @@ public class HologramManager {
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
     }
 
+    /**
+     * Iterates through all saved hologram locations in config and asynchronously fetches
+     * updated leaderboard records from the database, then dispatches rendering tasks.
+     */
     public void updateAllHolograms() {
         ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
         if (holos == null) return;
@@ -106,20 +137,30 @@ public class HologramManager {
 
             if (mapId == null || categoryStr == null || locStr == null) continue;
 
-            TopManager.TopCategory category;
+            TopCategory category;
             try {
-                category = TopManager.TopCategory.valueOf(categoryStr.toUpperCase());
+                category = TopCategory.valueOf(categoryStr.toUpperCase());
             } catch (Exception e) {
                 continue;
             }
 
-            List<TopManager.TopEntry> topEntries = SinceDungeon.getPlugin().getTopManager().getTop(mapId, category, 10);
+            List<TopEntry> topEntries = SinceDungeon.getPlugin().getTopManager().getTop(mapId, category, 10);
 
-            Bukkit.getScheduler().runTask(plugin, () -> renderHologram(key, mapId, locStr, topEntries));
+            Bukkit.getScheduler().runTask(plugin, () -> renderHologram(key, mapId, category, locStr, topEntries));
         }
     }
 
-    private void renderHologram(String holoId, String mapId, String locStr, List<TopManager.TopEntry> topEntries) {
+    /**
+     * Physically renders or updates the lines of a DecentHologram instance in the world.
+     * Incorporates dynamic localized category names retrieved from the Core LanguageManager.
+     *
+     * @param holoId     The unique identifier of the hologram.
+     * @param mapId      The dungeon map ID being displayed.
+     * @param category   The leaderboard category to fetch the localized name.
+     * @param locStr     The serialized location string.
+     * @param topEntries The fetched list of top records.
+     */
+    private void renderHologram(String holoId, String mapId, TopCategory category, String locStr, List<TopEntry> topEntries) {
         String[] parts = locStr.split(",");
         if (parts.length < 4) return;
 
@@ -128,12 +169,26 @@ public class HologramManager {
         List<String> lines = new ArrayList<>();
         lines.add(plugin.getFileManager().getMessageRaw("holograms.header"));
         lines.add(plugin.getFileManager().getMessageRaw("holograms.map_line").replace("<map>", mapId));
+
+        String catName = "";
+        switch (category) {
+            case FASTEST_TIME ->
+                    catName = SinceDungeon.getPlugin().getLanguageManager().getString("top.category_time", "Solo Fastest Clears");
+            case PARTY_FASTEST_TIME ->
+                    catName = SinceDungeon.getPlugin().getLanguageManager().getString("top.category_party_time", "Party Fastest Clears");
+            case MOST_KILLS ->
+                    catName = SinceDungeon.getPlugin().getLanguageManager().getString("top.category_kills", "Most Kills");
+            case MOST_CLEARS ->
+                    catName = SinceDungeon.getPlugin().getLanguageManager().getString("top.category_clears", "Most Clears");
+        }
+
+        lines.add(plugin.getFileManager().getMessageRaw("holograms.category_line").replace("<category>", catName));
         lines.add("");
 
         int rank = 1;
         String format = plugin.getFileManager().getMessageRaw("holograms.format");
 
-        for (TopManager.TopEntry entry : topEntries) {
+        for (TopEntry entry : topEntries) {
             String valueStr = String.valueOf(entry.value());
             lines.add(format.replace("<rank>", String.valueOf(rank))
                     .replace("<player>", entry.playerName())

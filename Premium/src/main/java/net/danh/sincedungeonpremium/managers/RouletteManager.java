@@ -1,6 +1,8 @@
 package net.danh.sincedungeonpremium.managers;
 
+import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.api.events.DungeonRewardClaimEvent;
+import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.guis.reward.RewardSession;
 import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonReward;
@@ -8,6 +10,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -17,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -24,8 +28,8 @@ import java.util.Random;
  * Premium-Exclusive Manager: Interactive Roulette Spin
  * Responsibilities:
  * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
- * - Reads sounds dynamically from config to keep the plugin highly configurable.
- * - Forces fairness rolls identically to the Core implementation but visually impressive.
+ * - Preserves ALL metadata formatting (Names, Lore, NBT) when displaying preview items.
+ * - Securely pushes execution back into Core systems to process the won rewards.
  */
 public class RouletteManager {
 
@@ -117,7 +121,17 @@ public class RouletteManager {
         ItemStack wonDisplay = buildDisplayItem(wonReward);
         inv.setItem(13, wonDisplay);
 
-        Bukkit.getPluginManager().callEvent(new DungeonRewardClaimEvent(player, wonReward));
+        // Crucial fix: Evaluate if the event is cancelled (e.g. by Hologram Drops)
+        // If not, force the Core RewardProcessor to actually give the reward to the player!
+        DungeonRewardClaimEvent claimEvent = new DungeonRewardClaimEvent(player, wonReward);
+        Bukkit.getPluginManager().callEvent(claimEvent);
+
+        if (!claimEvent.isCancelled()) {
+            RewardProcessor processor = SinceDungeonAPI.get().getManager().getRewardProcessor(wonReward.type());
+            if (processor != null) {
+                processor.giveReward(player, wonReward.value(), wonReward.displayName());
+            }
+        }
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
@@ -146,8 +160,17 @@ public class RouletteManager {
         if (item == null) item = new ItemStack(Material.PAPER);
 
         ItemMeta meta = item.getItemMeta();
-        if (meta != null && reward.displayName() != null) {
-            meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
+        if (meta != null) {
+            if (reward.displayName() != null && !reward.displayName().isEmpty()) {
+                meta.displayName(ColorUtils.parse("<!i>" + reward.displayName()));
+            }
+            if (reward.lore() != null && !reward.lore().isEmpty()) {
+                List<Component> lore = new ArrayList<>();
+                for (String line : reward.lore()) {
+                    lore.add(ColorUtils.parse("<!i>" + line));
+                }
+                meta.lore(lore);
+            }
             item.setItemMeta(meta);
         }
         return item;

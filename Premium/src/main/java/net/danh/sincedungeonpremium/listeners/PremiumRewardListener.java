@@ -16,7 +16,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Premium-Exclusive Listener: Advanced Loot & Roulette
@@ -35,6 +39,11 @@ public class PremiumRewardListener implements Listener {
 
     /**
      * Replaces standard inventory injection with cinematic physical holographic drops.
+     * Applies strict ownership mechanics to prevent other players from stealing the loot,
+     * and securely modifies the ItemStack's internal meta so the display name and Lore
+     * are retained when the item is picked up into the inventory.
+     *
+     * @param e The DungeonRewardClaimEvent containing the generated reward data.
      */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRewardClaim(DungeonRewardClaimEvent e) {
@@ -48,6 +57,23 @@ public class PremiumRewardListener implements Listener {
         ItemStack itemStack = ItemBuilder.parseDynamicItem(reward.value());
 
         if (itemStack != null) {
+            ItemMeta meta = itemStack.getItemMeta();
+            String displayName = reward.displayName() != null && !reward.displayName().isEmpty() ? reward.displayName() : itemStack.getType().name();
+
+            // Apply Lore and DisplayName to the ItemStack metadata directly
+            if (meta != null) {
+                meta.displayName(ColorUtils.parse("<!i>" + displayName));
+
+                if (reward.lore() != null && !reward.lore().isEmpty()) {
+                    List<Component> lore = new ArrayList<>();
+                    for (String line : reward.lore()) {
+                        lore.add(ColorUtils.parse("<!i>" + line));
+                    }
+                    meta.lore(lore);
+                }
+                itemStack.setItemMeta(meta);
+            }
+
             Location dropLoc = player.getLocation().add(0, 1, 0);
             Item droppedItem = player.getWorld().dropItem(dropLoc, itemStack);
 
@@ -55,7 +81,13 @@ public class PremiumRewardListener implements Listener {
             droppedItem.setPickupDelay(40);
             droppedItem.setGlowing(true);
 
-            String displayName = reward.displayName() != null ? reward.displayName() : itemStack.getType().name();
+            // Set the owner to strictly restrict pickup permissions to the winning player
+            droppedItem.setOwner(player.getUniqueId());
+
+            // Prevent entity mobs (zombies, foxes) from stealing the reward item
+            droppedItem.setCanMobPickup(false);
+
+            // Render the floating text nametag above the physical item entity
             Component nameComp = ColorUtils.parse(displayName);
             droppedItem.customName(nameComp);
             droppedItem.setCustomNameVisible(true);
