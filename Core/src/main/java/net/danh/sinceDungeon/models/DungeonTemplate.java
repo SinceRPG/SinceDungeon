@@ -24,6 +24,9 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
     public record StageData(double chance, List<String> commands, List<Map<String, Object>> actions) {
     }
 
+    /**
+     * Defines the gameplay settings and restrictions for the dungeon instance.
+     */
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
                            boolean blockEnderPearls, int kickDelayAfterFinish,
                            boolean forceDaylightAndClearWeather, boolean saveAndRestoreStats,
@@ -31,6 +34,7 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                            int requiredLivesToJoin, int livesDeductedPerDeath,
                            boolean randomizeStages, int maxPlayers,
                            int cooldownSeconds, List<String> onStartCmds,
-                           List<String> onFinishCmds, List<String> onFirstFinishCmds) {
+                           List<String> onFinishCmds, List<String> onFirstFinishCmds,
+                           String requiredItem, boolean consumeRequiredItem) {
     }
 }

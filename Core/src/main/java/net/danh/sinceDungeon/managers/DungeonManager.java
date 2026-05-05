@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.DefaultRegistry;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -434,6 +435,28 @@ public class DungeonManager {
                 String msg = plugin.getLanguageManager().getString("error.exceed_max_players", "&cThis dungeon allows a maximum of <max> players! Your party is too large.");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<max>", String.valueOf(maxPlayers))));
                 return;
+            }
+
+            String reqItemStr = tmpl.settings().requiredItem();
+            ItemStack parsedReqItem = null;
+            if (reqItemStr != null && !reqItemStr.equalsIgnoreCase("NONE") && !reqItemStr.isEmpty()) {
+                parsedReqItem = ItemBuilder.parseDynamicItem(reqItemStr);
+                if (parsedReqItem != null) {
+                    for (Player participant : participants) {
+                        if (!participant.getInventory().containsAtLeast(parsedReqItem, parsedReqItem.getAmount())) {
+                            String msg = plugin.getLanguageManager().getString("error.missing_required_item", "&cYou lack the required item to enter: <item>")
+                                    .replace("<item>", reqItemStr);
+                            participant.sendMessage(ColorUtils.parseWithPrefix(msg));
+
+                            if (!participant.equals(p)) {
+                                String leaderMsg = plugin.getLanguageManager().getString("error.party_member_missing_item", "&cMember <player> lacks the required entry item.")
+                                        .replace("<player>", participant.getName());
+                                p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg));
+                            }
+                            return; // Abort join process
+                        }
+                    }
+                }
             }
 
             int reqLives = tmpl.settings().requiredLivesToJoin();

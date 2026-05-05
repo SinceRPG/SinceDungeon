@@ -233,8 +233,9 @@ public class EditorSession {
         COOLDOWN("settings.cooldown-seconds", null, Material.CAMPFIRE, "setting_cooldown", "INT", 0),
         CMD_START("settings.commands.on-start", null, Material.COMMAND_BLOCK, "setting_cmd_start", "LIST", null),
         CMD_FINISH("settings.commands.on-finish", null, Material.REPEATING_COMMAND_BLOCK, "setting_cmd_finish", "LIST", null),
-        CMD_FIRST_FINISH("settings.commands.on-first-finish", null, Material.COMMAND_BLOCK_MINECART, "setting_cmd_first_finish", "LIST", null);
-
+        CMD_FIRST_FINISH("settings.commands.on-first-finish", null, Material.COMMAND_BLOCK_MINECART, "setting_cmd_first_finish", "LIST", null),
+        REQ_ITEM("settings.required-item", null, Material.TRIPWIRE_HOOK, "setting_req_item", "STRING", "NONE"),
+        CONSUME_REQ_ITEM("settings.consume-required-item", null, Material.LAVA_BUCKET, "setting_consume_req_item", "BOOL", true);
         private final String localPath;
         private final String globalFallbackPath;
         private final Material icon;

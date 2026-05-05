@@ -275,6 +275,15 @@ public class EditorMenuListener implements Listener {
                             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                             gui.openSettingsMenu(p, session, page);
                         }
+                        case "STRING" -> {
+                            String prompt = "edit_" + opt.name().toLowerCase();
+                            session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
+                                session.getConfig().set(opt.getLocalPath(), val);
+                                gui.sendMessage(p, "update_val", "<key>", gui.getMsg("items." + opt.getLangKey(), opt.getLangKey()), "<val>", val);
+                                gui.openSettingsMenu(p, session, page);
+                            });
+                            plugin.getEditorListener().startListening(p, session);
+                        }
                         case "INT" -> {
                             String prompt = "edit_" + opt.name().toLowerCase();
                             if (opt == EditorSession.SettingOption.KICK_DELAY) prompt = "edit_kick_delay";

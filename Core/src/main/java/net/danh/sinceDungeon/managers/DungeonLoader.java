@@ -47,14 +47,15 @@ public class DungeonLoader {
         int deductLives = config.getInt("settings.lives-deducted-per-death", 1);
         boolean randomizeStages = config.contains("settings.randomize-stages") ? config.getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
         int maxPlayers = config.getInt("settings.max-players", -1);
-
         int cooldownSeconds = config.getInt("settings.cooldown-seconds", 0);
+        String requiredItem = config.getString("settings.required-item", "NONE");
+        boolean consumeRequiredItem = config.getBoolean("settings.consume-required-item", true);
+
         List<String> onStartCmds = config.getStringList("settings.commands.on-start");
         List<String> onFinishCmds = config.getStringList("settings.commands.on-finish");
         List<String> onFirstFinishCmds = config.getStringList("settings.commands.on-first-finish");
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers, cooldownSeconds, onStartCmds, onFinishCmds, onFirstFinishCmds);
-
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers, cooldownSeconds, onStartCmds, onFinishCmds, onFirstFinishCmds, requiredItem, consumeRequiredItem);
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
         if (condSec != null) {
