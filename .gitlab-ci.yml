@@ -36,7 +36,10 @@ stages:
 notify_start:
   stage: notify_start
   before_script:
-    - apt-get update && apt-get install -y git jq curl
+    - rm -rf /var/lib/apt/lists/*
+    - apt-get clean
+    - apt-get update -y -o Acquire::Retries=3 || true
+    - apt-get install -y --fix-missing git jq curl
   script:
     - COMMIT_MSG=$(git log -1 --pretty=%B)
     - AUTHOR=$(git log -1 --pretty=%an)
@@ -141,7 +144,10 @@ notify_success:
   needs: [ "notify_start", "build_job" ]
   when: on_success
   before_script:
-    - apt-get update && apt-get install -y git jq curl
+    - rm -rf /var/lib/apt/lists/*
+    - apt-get clean
+    - apt-get update -y -o Acquire::Retries=3 || true
+    - apt-get install -y --fix-missing git jq curl
   script:
     - COMMIT_MSG=$(git log -1 --pretty=%B)
     - AUTHOR=$(git log -1 --pretty=%an)
@@ -226,7 +232,10 @@ notify_failure:
   needs: [ "notify_start", "build_job" ]
   when: on_failure
   before_script:
-    - apt-get update && apt-get install -y git jq curl
+    - rm -rf /var/lib/apt/lists/*
+    - apt-get clean
+    - apt-get update -y -o Acquire::Retries=3 || true
+    - apt-get install -y --fix-missing git jq curl
   script:
     - COMMIT_MSG=$(git log -1 --pretty=%B)
     - HASH=$(git log -1 --pretty=%h)
