@@ -5,12 +5,11 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
-import net.danh.sincedungeonpremium.listeners.PremiumRewardListener;
 import net.danh.sincedungeonpremium.listeners.WebhookListener;
 import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
-import net.danh.sincedungeonpremium.managers.RouletteManager;
 import net.danh.sincedungeonpremium.registry.PremiumActionRegistry;
+import net.danh.sincedungeonpremium.systems.RouletteRewardSystem;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -27,7 +26,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
     private static SinceDungeonPremium instance;
     private FileManager fileManager;
     private HologramManager hologramManager;
-    private RouletteManager rouletteManager;
 
     public static SinceDungeonPremium getInstance() {
         return instance;
@@ -39,10 +37,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
 
     public HologramManager getHologramManager() {
         return hologramManager;
-    }
-
-    public RouletteManager getRouletteManager() {
-        return rouletteManager;
     }
 
     @Override
@@ -66,13 +60,13 @@ public final class SinceDungeonPremium extends JavaPlugin {
         hologramManager = new HologramManager(this);
         hologramManager.startUpdater();
 
-        rouletteManager = new RouletteManager(this);
-
         PremiumActionRegistry.registerAll(this);
 
         registerPremiumProcessors();
         registerPremiumListeners();
         registerCommands();
+
+        SinceDungeonAPI.get().getRewardManager().setRewardSystem(new RouletteRewardSystem(this));
 
         getLogger().info(fileManager.getMessageRaw("log.plugin_enabled"));
     }
@@ -112,6 +106,5 @@ public final class SinceDungeonPremium extends JavaPlugin {
     private void registerPremiumListeners() {
         getServer().getPluginManager().registerEvents(new AffixListener(this), this);
         getServer().getPluginManager().registerEvents(new WebhookListener(this), this);
-        getServer().getPluginManager().registerEvents(new PremiumRewardListener(this), this);
     }
 }

@@ -6,9 +6,6 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
-import net.danh.sinceDungeon.guis.reward.RewardGUI;
-import net.danh.sinceDungeon.guis.reward.RewardSession;
-import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.PartyManager;
@@ -820,7 +817,6 @@ public class DungeonGame {
 
         startKickCountdown(plugin, participants, kickDelay, () -> {
             String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
-            RewardGUI rewardHelper = new RewardGUI(plugin);
 
             for (Player p : participants) {
                 if (!p.isOnline() || p.isDead()) continue;
@@ -828,14 +824,14 @@ public class DungeonGame {
                 PartyManager.Party party = plugin.getPartyManager().getParty(p.getUniqueId());
                 UUID currentLeader = party != null ? party.getLeader() : initiatorId;
 
+                // Enforce Reward Distribution based on Strategy Mode
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                    // Logic allows the leader only to be rewarded.
+                    // Leader only mode prevents other players from participating in reward distribution
                 } else if (eventChestCount > 0 && hasRewards) {
-                    RewardSession oldSession = RewardSessionManager.getSession(p);
-                    if (oldSession != null && oldSession.getChestCount() > 0) {
-                        rewardHelper.forceClaimAll(p, oldSession);
-                    }
-                    RewardSessionManager.addSession(p, new RewardSession(eventChestCount, template));
+                    plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
+                    plugin.getRewardManager().getRewardSystem().distributeRewards(p, template, eventChestCount);
+                } else {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward")));
                 }
 
                 if (p.isInsideVehicle()) p.leaveVehicle();
@@ -849,15 +845,6 @@ public class DungeonGame {
                 p.teleportAsync(targetLoc).thenAccept(success -> {
                     if (success && p.isOnline()) {
                         Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
-                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                            if (p.isOnline() && !p.isDead()) {
-                                if (eventChestCount > 0 && hasRewards && (shareMode.equalsIgnoreCase("EQUAL") || p.getUniqueId().equals(currentLeader))) {
-                                    rewardHelper.openRewardGUI(p, eventChestCount, template);
-                                } else {
-                                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward")));
-                                }
-                            }
-                        }, 15L);
                     } else if (p.isOnline()) {
                         Bukkit.getScheduler().runTask(plugin, () -> {
                             p.teleport(targetLoc);
@@ -879,6 +866,8 @@ public class DungeonGame {
      */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
+
+        plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
 
         if (p.isDead()) {
             p.spigot().respawn();

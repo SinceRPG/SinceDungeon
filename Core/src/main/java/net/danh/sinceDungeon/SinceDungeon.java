@@ -8,9 +8,6 @@ import net.danh.sinceDungeon.commands.SinceDungeonCommand;
 import net.danh.sinceDungeon.guis.editor.EditorListener;
 import net.danh.sinceDungeon.guis.editor.EditorManager;
 import net.danh.sinceDungeon.guis.editor.EditorMenuListener;
-import net.danh.sinceDungeon.guis.reward.RewardGUI;
-import net.danh.sinceDungeon.guis.reward.RewardSession;
-import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.guis.top.TopMenuListener;
 import net.danh.sinceDungeon.hooks.LivesExpansion;
 import net.danh.sinceDungeon.listeners.CooldownItemListener;
@@ -18,6 +15,7 @@ import net.danh.sinceDungeon.listeners.DungeonListener;
 import net.danh.sinceDungeon.listeners.LifeItemListener;
 import net.danh.sinceDungeon.listeners.MythicListener;
 import net.danh.sinceDungeon.managers.*;
+import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ConfigUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
@@ -50,6 +48,7 @@ public final class SinceDungeon extends JavaPlugin {
     private RedisManager redisManager;
     private LivesManager livesManager;
     private CooldownManager cooldownManager;
+    private RewardManager rewardManager;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -77,6 +76,10 @@ public final class SinceDungeon extends JavaPlugin {
         if (configFile == null) configFile = new ConfigManager(this);
         if (languageManager == null) setupLanguage();
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
+
+        // Initialize Strategy Pattern Managers
+        rewardManager = new RewardManager(this);
+        rewardManager.setRewardSystem(new DefaultRewardSystem(this));
 
         dungeonManager = new DungeonManager(this);
         partyManager = new PartyManager(this);
@@ -109,12 +112,10 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         SinceDungeonAPI.init(this);
-        RewardSessionManager.startCleanupTask(this);
 
         List<Listener> listeners = new ArrayList<>();
         listeners.add(new DungeonListener(this));
         listeners.add(editorListener);
-        listeners.add(new RewardGUI(this));
         listeners.add(new EditorMenuListener(this));
         listeners.add(new LifeItemListener(this));
         listeners.add(new TopMenuListener(this));
@@ -149,17 +150,9 @@ public final class SinceDungeon extends JavaPlugin {
             dungeonManager.stopAllGames();
         }
 
-        RewardGUI rewardHelper = new RewardGUI(this);
-
-        for (Map.Entry<UUID, RewardSession> entry : new HashMap<>(RewardSessionManager.getSessions()).entrySet()) {
-            Player p = Bukkit.getPlayer(entry.getKey());
-            if (p != null && p.isOnline()) {
-                rewardHelper.forceClaimAll(p, entry.getValue());
-                p.closeInventory();
-            }
+        if (rewardManager != null && rewardManager.getRewardSystem() != null) {
+            rewardManager.getRewardSystem().cleanup();
         }
-
-        RewardSessionManager.clearAll();
 
         if (livesManager != null) livesManager.forceSaveAll();
         if (editorManager != null) editorManager.clearAll();
@@ -282,5 +275,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public CooldownManager getCooldownManager() {
         return cooldownManager;
+    }
+
+    public RewardManager getRewardManager() {
+        return rewardManager;
     }
 }

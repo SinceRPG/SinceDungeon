@@ -26,6 +26,10 @@ public class RewardSessionManager {
      * @param plugin The main plugin instance.
      */
     public static void startCleanupTask(SinceDungeon plugin) {
+        if (cleanupTask != null && !cleanupTask.isCancelled()) {
+            cleanupTask.cancel();
+        }
+
         cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             long now = System.currentTimeMillis();
             RewardGUI gui = new RewardGUI(plugin);

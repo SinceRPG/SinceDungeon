@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.managers.PartyManager;
+import net.danh.sinceDungeon.managers.RewardManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import org.bukkit.Material;
@@ -53,6 +54,16 @@ public class SinceDungeonAPI {
             throw new IllegalStateException("SinceDungeon API has not been initialized!");
         }
         return instance;
+    }
+
+    /**
+     * Retrieves the RewardManager which dictates the current Reward Strategy.
+     * Use this to override the reward GUI with custom mechanics.
+     *
+     * @return The RewardManager.
+     */
+    public RewardManager getRewardManager() {
+        return plugin.getRewardManager();
     }
 
     /**
