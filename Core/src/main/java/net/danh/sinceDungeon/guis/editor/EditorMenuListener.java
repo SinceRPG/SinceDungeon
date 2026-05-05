@@ -757,7 +757,7 @@ public class EditorMenuListener implements Listener {
 
                 if (isLocation) {
                     if (e.getClick() == ClickType.RIGHT) {
-                        String locStr = String.format(java.util.Locale.US, "%.1f,%.1f,%.1f", p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
+                        String locStr = String.format(Locale.US, "%.1f,%.1f,%.1f", p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
                         if (isList) {
                             List<String> list = session.getConfig().getStringList(fullPath);
                             int maxLocs = plugin.getConfigFile().getInt("editor.limits.max-locations", 50);
