@@ -106,6 +106,21 @@ public class PremiumActionRegistry {
         escortDefaults.put("attacker_attributes", new ArrayList<>());
         escortDefaults.put("attacker_equipment", new ArrayList<>());
 
+        Map<String, List<String>> escortPrompts = new HashMap<>();
+        escortPrompts.put("entity_type", lang.getStringList("editor.input.prompts.edit_action_entity_type"));
+        escortPrompts.put("custom_name", lang.getStringList("editor.input.prompts.edit_action_custom_name"));
+        escortPrompts.put("max_health", lang.getStringList("editor.input.prompts.edit_action_max_health"));
+        escortPrompts.put("start_location", lang.getStringList("editor.input.prompts.edit_action_start_location"));
+        escortPrompts.put("target_location", lang.getStringList("editor.input.prompts.edit_action_target_location"));
+        escortPrompts.put("speed", lang.getStringList("editor.input.prompts.edit_action_speed"));
+        escortPrompts.put("success_radius", lang.getStringList("editor.input.prompts.edit_action_success_radius"));
+        escortPrompts.put("vip_is_baby", lang.getStringList("editor.input.prompts.edit_action_vip_is_baby"));
+        escortPrompts.put("attacker_mob", lang.getStringList("editor.input.prompts.edit_action_attacker_mob"));
+        escortPrompts.put("attacker_amount", lang.getStringList("editor.input.prompts.edit_action_attacker_amount"));
+        escortPrompts.put("attacker_interval", lang.getStringList("editor.input.prompts.edit_action_attacker_interval"));
+        escortPrompts.put("attacker_name", lang.getStringList("editor.input.prompts.edit_action_attacker_name"));
+        escortPrompts.put("attacker_is_baby", lang.getStringList("editor.input.prompts.edit_action_attacker_is_baby"));
+
         api.registerCustomAction(
                 "ESCORT_NPC",
                 map -> new EscortAction(
@@ -131,7 +146,7 @@ public class PremiumActionRegistry {
                 Material.EMERALD,
                 lang.getString("editor.actions.escort_npc", "Protect an NPC as they travel to a destination."),
                 escortDefaults,
-                new HashMap<>()
+                escortPrompts
         );
 
         // 3. BRANCHING PATH ACTION
@@ -141,6 +156,13 @@ public class PremiumActionRegistry {
         branchDefaults.put("stage_a", 3);
         branchDefaults.put("stage_b", 4);
         branchDefaults.put("radius", 3.0);
+
+        Map<String, List<String>> branchPrompts = new HashMap<>();
+        branchPrompts.put("path_a_loc", lang.getStringList("editor.input.prompts.edit_action_path_a_loc"));
+        branchPrompts.put("path_b_loc", lang.getStringList("editor.input.prompts.edit_action_path_b_loc"));
+        branchPrompts.put("stage_a", lang.getStringList("editor.input.prompts.edit_action_stage_a"));
+        branchPrompts.put("stage_b", lang.getStringList("editor.input.prompts.edit_action_stage_b"));
+        branchPrompts.put("radius", lang.getStringList("editor.input.prompts.edit_action_radius"));
 
         api.registerCustomAction(
                 "BRANCHING_PATH",
@@ -155,13 +177,16 @@ public class PremiumActionRegistry {
                 Material.OAK_SIGN,
                 lang.getString("editor.actions.branching_path", "Diverges the dungeon into two separate stage paths."),
                 branchDefaults,
-                new HashMap<>()
+                branchPrompts
         );
 
         // 4. LEVER PUZZLE ACTION
         Map<String, Object> puzzleDefaults = new HashMap<>();
         puzzleDefaults.put("levers", new ArrayList<>(List.of("0,64,0", "2,64,0", "4,64,0")));
         puzzleDefaults.put("fail_time_penalty", 5);
+
+        Map<String, List<String>> puzzlePrompts = new HashMap<>();
+        puzzlePrompts.put("fail_time_penalty", lang.getStringList("editor.input.prompts.edit_action_fail_time_penalty"));
 
         api.registerCustomAction(
                 "LEVER_PUZZLE",
@@ -173,7 +198,7 @@ public class PremiumActionRegistry {
                 Material.LEVER,
                 lang.getString("editor.actions.lever_puzzle", "Requires players to hit levers in a specific order."),
                 puzzleDefaults,
-                new HashMap<>()
+                puzzlePrompts
         );
 
         // 5. CHECKPOINT ACTION
@@ -182,6 +207,12 @@ public class PremiumActionRegistry {
         cpDefaults.put("radius", 3.0);
         cpDefaults.put("sound", "entity.player.levelup");
         cpDefaults.put("particle", "TOTEM_OF_UNDYING");
+
+        Map<String, List<String>> cpPrompts = new HashMap<>();
+        cpPrompts.put("location", lang.getStringList("editor.input.prompts.edit_action_location"));
+        cpPrompts.put("radius", lang.getStringList("editor.input.prompts.edit_action_radius"));
+        cpPrompts.put("sound", lang.getStringList("editor.input.prompts.edit_action_sound"));
+        cpPrompts.put("particle", lang.getStringList("editor.input.prompts.edit_action_particle"));
 
         api.registerCustomAction(
                 "CHECKPOINT",
@@ -195,7 +226,7 @@ public class PremiumActionRegistry {
                 Material.RED_BED,
                 lang.getString("editor.actions.save_checkpoint", "Updates the dungeon respawn point when touched."),
                 cpDefaults,
-                new HashMap<>()
+                cpPrompts
         );
 
         // 6. DAMAGE ZONE ACTION
@@ -206,6 +237,14 @@ public class PremiumActionRegistry {
         dmgDefaults.put("interval", 20);
         dmgDefaults.put("duration", 200);
         dmgDefaults.put("particle", "CAMPFIRE_COSY_SMOKE");
+
+        Map<String, List<String>> dmgPrompts = new HashMap<>();
+        dmgPrompts.put("location", lang.getStringList("editor.input.prompts.edit_action_location"));
+        dmgPrompts.put("radius", lang.getStringList("editor.input.prompts.edit_action_radius"));
+        dmgPrompts.put("damage", lang.getStringList("editor.input.prompts.edit_action_damage"));
+        dmgPrompts.put("interval", lang.getStringList("editor.input.prompts.edit_action_interval"));
+        dmgPrompts.put("duration", lang.getStringList("editor.input.prompts.edit_action_duration"));
+        dmgPrompts.put("particle", lang.getStringList("editor.input.prompts.edit_action_particle"));
 
         api.registerCustomAction(
                 "DAMAGE_ZONE",
@@ -221,12 +260,15 @@ public class PremiumActionRegistry {
                 Material.MAGMA_BLOCK,
                 lang.getString("editor.actions.damage_zone", "Creates an AoE hazard that damages players."),
                 dmgDefaults,
-                new HashMap<>()
+                dmgPrompts
         );
 
         // 7. JUMP STAGE ACTION
         Map<String, Object> jumpDefaults = new HashMap<>();
         jumpDefaults.put("target_stage", 5);
+
+        Map<String, List<String>> jumpPrompts = new HashMap<>();
+        jumpPrompts.put("target_stage", lang.getStringList("editor.input.prompts.edit_action_target_stage"));
 
         api.registerCustomAction(
                 "JUMP_STAGE",
@@ -235,12 +277,15 @@ public class PremiumActionRegistry {
                 Material.RABBIT_FOOT,
                 lang.getString("editor.actions.jump_stage", "Forcibly skips execution to a different stage."),
                 jumpDefaults,
-                new HashMap<>()
+                jumpPrompts
         );
 
         // 8. CINEMATIC DIALOGUE ACTION
         Map<String, Object> cineDefaults = new HashMap<>();
         cineDefaults.put("frames", new ArrayList<>(List.of("40;&e&lThe King;&fAh, heroes.;&e[King] Ah, heroes.;entity.villager.trade")));
+
+        Map<String, List<String>> cinePrompts = new HashMap<>();
+        cinePrompts.put("frames", lang.getStringList("editor.input.prompts.edit_action_frames"));
 
         api.registerCustomAction(
                 "CINEMATIC_DIALOGUE",
@@ -249,7 +294,7 @@ public class PremiumActionRegistry {
                 Material.WRITABLE_BOOK,
                 lang.getString("editor.actions.cinematic_dialogue", "Plays a sequence of titles, text, and sounds."),
                 cineDefaults,
-                new HashMap<>()
+                cinePrompts
         );
 
         // 9. PROJECTILE TRAP ACTION
@@ -260,6 +305,14 @@ public class PremiumActionRegistry {
         trapDefaults.put("interval", 20);
         trapDefaults.put("speed", 1.5);
         trapDefaults.put("duration", 200);
+
+        Map<String, List<String>> trapPrompts = new HashMap<>();
+        trapPrompts.put("location", lang.getStringList("editor.input.prompts.edit_action_location"));
+        trapPrompts.put("direction", lang.getStringList("editor.input.prompts.edit_action_direction"));
+        trapPrompts.put("projectile_type", lang.getStringList("editor.input.prompts.edit_action_projectile_type"));
+        trapPrompts.put("interval", lang.getStringList("editor.input.prompts.edit_action_interval"));
+        trapPrompts.put("speed", lang.getStringList("editor.input.prompts.edit_action_speed"));
+        trapPrompts.put("duration", lang.getStringList("editor.input.prompts.edit_action_duration"));
 
         api.registerCustomAction(
                 "PROJECTILE_TRAP",
@@ -275,7 +328,7 @@ public class PremiumActionRegistry {
                 Material.DISPENSER,
                 lang.getString("editor.actions.projectile_trap", "Continuously fires projectiles in a direction."),
                 trapDefaults,
-                new HashMap<>()
+                trapPrompts
         );
 
         // 10. DEFEND CORE ACTION
@@ -294,11 +347,16 @@ public class PremiumActionRegistry {
         defendDefaults.put("attacker_equipment", new ArrayList<>());
 
         Map<String, List<String>> defendPrompts = new HashMap<>();
-        defendPrompts.put("location", lang.getStringList("editor.input.prompts.edit_action_loc_single"));
+        defendPrompts.put("location", lang.getStringList("editor.input.prompts.edit_action_location"));
         defendPrompts.put("core_type", lang.getStringList("editor.input.prompts.edit_action_core_type"));
         defendPrompts.put("core_name", lang.getStringList("editor.input.prompts.edit_action_core_name"));
         defendPrompts.put("core_health", lang.getStringList("editor.input.prompts.edit_action_core_health"));
         defendPrompts.put("duration", lang.getStringList("editor.input.prompts.edit_action_duration"));
+        defendPrompts.put("attacker_mob", lang.getStringList("editor.input.prompts.edit_action_attacker_mob"));
+        defendPrompts.put("attacker_amount", lang.getStringList("editor.input.prompts.edit_action_attacker_amount"));
+        defendPrompts.put("attacker_interval", lang.getStringList("editor.input.prompts.edit_action_attacker_interval"));
+        defendPrompts.put("attacker_name", lang.getStringList("editor.input.prompts.edit_action_attacker_name"));
+        defendPrompts.put("attacker_is_baby", lang.getStringList("editor.input.prompts.edit_action_attacker_is_baby"));
 
         api.registerCustomAction(
                 "DEFEND_CORE",

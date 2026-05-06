@@ -133,9 +133,6 @@ public class EditorMenuListener implements Listener {
         int page = holder.page();
         int slot = e.getRawSlot();
 
-        // -------------------------------------------------------------
-        // Modular Control Flow via Sub-Methods
-        // -------------------------------------------------------------
         if (menuType.equals("MAIN")) {
             handleMainMenu(e, p, gui, page, slot, cur);
             return;
@@ -514,6 +511,7 @@ public class EditorMenuListener implements Listener {
                 case "MMOITEM" -> "LIFE_ITEM";
                 case "LIFE_ITEM" -> "COOLDOWN_RESET";
                 case "COOLDOWN_RESET" -> "COOLDOWN_REDUCE";
+                case "COOLDOWN_REDUCE" -> "MYTHIC_ITEM";
                 default -> "ITEM";
             };
             session.getConfig().set(path + ".type", nextType);

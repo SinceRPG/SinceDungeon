@@ -38,6 +38,7 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            // Core Fallback Fields Update
             if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_radius")) {
                 editorCfg.set("editor.input.prompts.edit_action_radius", Arrays.asList(
                         "&7Enter the radius for the ring/area.",
@@ -46,13 +47,86 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_location")) {
+                editorCfg.set("editor.input.prompts.edit_action_location", Arrays.asList(
+                        "&7Enter coordinates format: &fX,Y,Z",
+                        "&7Tip: Type &ahere &7to use your current location."
+                ));
+                editorChanged = true;
+            }
+
+            // --- Premium Fields & Action Injections ---
+
             if (!editorCfg.getConfig().contains("editor.actions_name.defend_core")) {
+                // Defend Core
                 editorCfg.set("editor.actions_name.defend_core", "&3&lPremium: Defend Core");
                 editorCfg.set("editor.actions.defend_core", "Protect an entity from waves of enemies.");
                 editorCfg.set("editor.input.prompts.edit_action_core_type", Arrays.asList("&7Enter the EntityType of the Core to defend.", "&7Example: &aIRON_GOLEM &7or &aENDER_CRYSTAL"));
                 editorCfg.set("editor.input.prompts.edit_action_core_name", Arrays.asList("&7Enter the Hologram name of the Core.", "&7Example: &b&lSacred Crystal", "&7Tip: Type &cclear &7to remove name."));
                 editorCfg.set("editor.input.prompts.edit_action_core_health", Arrays.asList("&7Enter the total health of the Core.", "&7Example: &a1000.0"));
-                editorCfg.set("editor.input.prompts.edit_action_duration", Arrays.asList("&7Enter the defense duration in ticks (20 ticks = 1 second).", "&7Example: &a600 &7(For 30 seconds)"));
+
+                // Jump Stage
+                editorCfg.set("editor.actions_name.jump_stage", "&c&lPremium: Jump Stage");
+                editorCfg.set("editor.actions.jump_stage", "Forcibly skips execution to a different stage.");
+                editorCfg.set("editor.input.prompts.edit_action_target_stage", Arrays.asList("&7Enter the stage index to jump to."));
+
+                // Damage Zone
+                editorCfg.set("editor.actions_name.damage_zone", "&4&lPremium: Damage Zone");
+                editorCfg.set("editor.actions.damage_zone", "Creates an AoE hazard that damages players.");
+                editorCfg.set("editor.input.prompts.edit_action_damage", Arrays.asList("&7Enter the damage dealt per tick interval."));
+                editorCfg.set("editor.input.prompts.edit_action_interval", Arrays.asList("&7Enter the tick interval (20 ticks = 1s).", "&7Example: &a20"));
+
+                // Checkpoint
+                editorCfg.set("editor.actions_name.save_checkpoint", "&b&lPremium: Save Checkpoint");
+                editorCfg.set("editor.actions.save_checkpoint", "Updates the dungeon respawn point when touched.");
+                editorCfg.set("editor.input.prompts.edit_action_particle", Arrays.asList("&7Enter the Particle type.", "&7Example: &aFLAME"));
+
+                // Lever Puzzle
+                editorCfg.set("editor.actions_name.lever_puzzle", "&6&lPremium: Lever Puzzle");
+                editorCfg.set("editor.actions.lever_puzzle", "Requires players to hit levers in a specific order.");
+                editorCfg.set("editor.input.prompts.edit_action_fail_time_penalty", Arrays.asList("&7Enter the time penalty (seconds) on failure."));
+
+                // Branching Path
+                editorCfg.set("editor.actions_name.branching_path", "&a&lPremium: Branching Path");
+                editorCfg.set("editor.actions.branching_path", "Diverges the dungeon into two separate stage paths.");
+                editorCfg.set("editor.input.prompts.edit_action_path_a_loc", Arrays.asList("&7Enter the coordinates for Path A."));
+                editorCfg.set("editor.input.prompts.edit_action_path_b_loc", Arrays.asList("&7Enter the coordinates for Path B."));
+                editorCfg.set("editor.input.prompts.edit_action_stage_a", Arrays.asList("&7Enter the Stage Index for Path A."));
+                editorCfg.set("editor.input.prompts.edit_action_stage_b", Arrays.asList("&7Enter the Stage Index for Path B."));
+
+                // Projectile Trap
+                editorCfg.set("editor.actions_name.projectile_trap", "&8&lPremium: Projectile Trap");
+                editorCfg.set("editor.actions.projectile_trap", "Continuously fires projectiles in a direction.");
+                editorCfg.set("editor.input.prompts.edit_action_direction", Arrays.asList("&7Enter the Vector direction X,Y,Z.", "&7Example: &a0,-1,0"));
+                editorCfg.set("editor.input.prompts.edit_action_projectile_type", Arrays.asList("&7Enter the Projectile EntityType.", "&7Example: &aARROW"));
+
+                // Cinematic Dialogue
+                editorCfg.set("editor.actions_name.cinematic_dialogue", "&d&lPremium: Cinematic");
+                editorCfg.set("editor.actions.cinematic_dialogue", "Plays a sequence of titles, text, and sounds.");
+                editorCfg.set("editor.input.prompts.edit_action_frames", Arrays.asList("&7Enter Cinematic Frame data.", "&7Format: &adelay;title;subtitle;chat;sound", "&7Tip: Type &cclear &7to empty."));
+
+                // Buff Action
+                editorCfg.set("editor.actions_name.apply_buff", "&b&lPremium: Apply Buff");
+                editorCfg.set("editor.actions.apply_buff", "Applies a potion effect to all participants.");
+                editorCfg.set("editor.input.prompts.edit_action_effect_type", Arrays.asList("&7Enter the Potion Effect type.", "&7Example: &aSPEED"));
+                editorCfg.set("editor.input.prompts.edit_action_duration", Arrays.asList("&7Enter duration in ticks (20 = 1s).", "&7Example: &a200"));
+                editorCfg.set("editor.input.prompts.edit_action_amplifier", Arrays.asList("&7Enter effect amplifier (0 = level 1).", "&7Example: &a1"));
+
+                // Escort NPC
+                editorCfg.set("editor.actions_name.escort_npc", "&e&lPremium: Escort NPC");
+                editorCfg.set("editor.actions.escort_npc", "Protect an NPC as they travel to a destination.");
+                editorCfg.set("editor.input.prompts.edit_action_entity_type", Arrays.asList("&7Enter the EntityType for the VIP.", "&7Example: &aVILLAGER"));
+                editorCfg.set("editor.input.prompts.edit_action_start_location", Arrays.asList("&7Enter the starting coordinates X,Y,Z.", "&7Tip: Type &ahere &7to use your location."));
+                editorCfg.set("editor.input.prompts.edit_action_target_location", Arrays.asList("&7Enter the destination coordinates X,Y,Z."));
+                editorCfg.set("editor.input.prompts.edit_action_speed", Arrays.asList("&7Enter the movement speed multiplier.", "&7Example: &a1.0"));
+                editorCfg.set("editor.input.prompts.edit_action_success_radius", Arrays.asList("&7Enter the completion radius.", "&7Example: &a4.0"));
+                editorCfg.set("editor.input.prompts.edit_action_vip_is_baby", Arrays.asList("&7Is the VIP a baby? &atrue &7or &cfalse"));
+                editorCfg.set("editor.input.prompts.edit_action_attacker_mob", Arrays.asList("&7Enter the EntityType of the attackers.", "&7Example: &aZOMBIE"));
+                editorCfg.set("editor.input.prompts.edit_action_attacker_amount", Arrays.asList("&7Enter the amount of attackers per wave.", "&7Example: &a3"));
+                editorCfg.set("editor.input.prompts.edit_action_attacker_interval", Arrays.asList("&7Enter the interval (ticks) between waves.", "&7Example: &a100"));
+                editorCfg.set("editor.input.prompts.edit_action_attacker_name", Arrays.asList("&7Enter the custom name for attackers.", "&7Tip: Type &cclear &7to reset."));
+                editorCfg.set("editor.input.prompts.edit_action_attacker_is_baby", Arrays.asList("&7Are attackers babies? &atrue &7or &cfalse"));
+
                 editorChanged = true;
             }
 
