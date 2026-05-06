@@ -26,17 +26,14 @@ pipeline {
         stage('Prepare & Build') {
             steps {
                 script {
-                    // 1. Thông báo bắt đầu build lên Discord
-                    sh 'python3 build_dungeon.py || echo "Discord Start Notify Failed"'
+                    // 1. ADDED --start FLAG to save IDs
+                    sh 'python3 build_dungeon.py --start || echo "Discord Start Notify Failed"'
 
                     try {
-                        // 2. Cấp quyền thực thi cho gradlew
                         sh 'chmod +x gradlew'
-
-                        // 3. Chạy Build Gradle
                         sh './gradlew clean build'
                     } catch (Exception e) {
-                        // 4. Nếu Build lỗi, báo Discord ngay
+                        // 2. Added --fail flag for errors
                         sh 'python3 build_dungeon.py --fail'
                         error "Build failed: ${e.message}"
                     }
@@ -47,7 +44,7 @@ pipeline {
         stage('Finalize') {
             steps {
                 script {
-                    // 5. Build thành công, báo Discord và đính kèm file JAR
+                    // 3. No flag here means success/patch mode
                     sh 'python3 build_dungeon.py'
                 }
             }
@@ -56,7 +53,6 @@ pipeline {
 
     post {
         always {
-            // Dọn dẹp workspace sau khi xong để tránh đầy ổ cứng laptop
             cleanWs()
         }
     }
