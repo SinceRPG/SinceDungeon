@@ -62,7 +62,6 @@ def get_gradle_version(module):
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
 
         if result.returncode != 0:
-            print(f"[DEBUG] Gradle fetch failed: {result.stderr}")
             return "Unknown"
 
         for line in result.stdout.splitlines():
@@ -70,8 +69,7 @@ def get_gradle_version(module):
                 version = line.split(":", 1)[1].strip()
                 return version if version and version != "unspecified" else "Unknown"
         return "Unknown"
-    except Exception as e:
-        print(f"[DEBUG] Exception while fetching version: {str(e)}")
+    except Exception:
         return "Unknown"
 
 def parse_changelogs(full_msg, default_text):
@@ -135,6 +133,7 @@ def main():
     is_fail = "--fail" in sys.argv
 
     if is_start:
+        # --- START PHASE: Send and Save IDs ---
         msg_ids = {}
         if "Core:" in msg:
             ver = get_gradle_version("Core")
@@ -144,23 +143,31 @@ def main():
             msg_ids["prem"] = send_initial_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], config["BOT_NAME_PREM"], author, prem_log, f"Premium v{ver} • {commit_hash}", config["COLOR_PENDING_PREM"], config["ICON_URL"], config["THUMB_URL"])
         save_msg_ids(msg_ids)
     else:
+        # --- RESULT PHASE: Load IDs and Patch ---
         msg_ids = load_msg_ids()
         if not msg_ids: return
 
+        # Always fetch versions for the result footer to ensure consistency
+        core_ver = get_gradle_version("Core")
+        prem_ver = get_gradle_version("Premium")
+
         if is_fail:
-            if "core" in msg_ids: patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Failed • {commit_hash}")
-            if "prem" in msg_ids: patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Failed • {commit_hash}")
+            # Handle Failure: Patch with RED color and version info
+            if "core" in msg_ids:
+                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Core v{core_ver} • {commit_hash}")
+            if "prem" in msg_ids:
+                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Premium v{prem_ver} • {commit_hash}")
         else:
-            # Enhanced JAR matching logic based on build logs
+            # Handle Success: Patch with GREEN color, version info and attach JAR
             if "core" in msg_ids:
                 jar = next((f for f in os.listdir("build/libs") if f.startswith("SinceDungeon-") and not f.startswith("SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
                 path = os.path.join("build/libs", jar) if jar else None
-                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Successful! 🚀", core_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon", config["ICON_URL"], config["THUMB_URL"], f"Core • {commit_hash}", path)
+                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Successful! 🚀", core_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon", config["ICON_URL"], config["THUMB_URL"], f"Core v{core_ver} • {commit_hash}", path)
 
             if "prem" in msg_ids:
                 jar = next((f for f in os.listdir("build/libs") if f.startswith("SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
                 path = os.path.join("build/libs", jar) if jar else None
-                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Premium Version Ready! 👑", prem_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon Premium", config["ICON_URL"], config["THUMB_URL"], f"Premium • {commit_hash}", path)
+                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Premium Version Ready! 👑", prem_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon Premium", config["ICON_URL"], config["THUMB_URL"], f"Premium v{prem_ver} • {commit_hash}", path)
 
         # Cleanup temporary storage
         if os.path.exists(ID_STORAGE_FILE):
