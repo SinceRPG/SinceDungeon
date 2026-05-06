@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // --- ALL VARIABLES FROM GITLAB-CI ---
+        // --- ALL VARIABLES REMAIN THE SAME ---
         WEBHOOK_URL_FREE = "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_"
         THREAD_ID_FREE = "1475129559530864852"
         WEBHOOK_URL_PREMIUM = "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX"
@@ -26,14 +26,17 @@ pipeline {
         stage('Prepare & Build') {
             steps {
                 script {
-                    // 1. ADDED --start FLAG to save IDs
+                    // FIX: Execute chmod FIRST to allow Python and Gradle to run gradlew
+                    sh 'chmod +x gradlew'
+
+                    // 1. Notify Discord about build start
                     sh 'python3 build_dungeon.py --start || echo "Discord Start Notify Failed"'
 
                     try {
-                        sh 'chmod +x gradlew'
+                        // 2. Execute Gradle build
                         sh './gradlew clean build'
                     } catch (Exception e) {
-                        // 2. Added --fail flag for errors
+                        // 3. Handle Failure
                         sh 'python3 build_dungeon.py --fail'
                         error "Build failed: ${e.message}"
                     }
@@ -44,7 +47,7 @@ pipeline {
         stage('Finalize') {
             steps {
                 script {
-                    // 3. No flag here means success/patch mode
+                    // 4. Success: Patch the message and attach JARs
                     sh 'python3 build_dungeon.py'
                 }
             }
