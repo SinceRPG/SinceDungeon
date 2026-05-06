@@ -7,7 +7,7 @@ prefix: "&6&lPremium &8» &7"
 log:
   plugin_enabled: "SinceDungeon-PremiumAddon has been successfully enabled and hooked into Core!"
   plugin_disabled: "SinceDungeon-PremiumAddon has been disabled."
-  invalid_exp: "Invalid EXP level value provided: <value>"
+  invalid_exp: "Invalid EXP value provided: <value>"
   core_missing: "SinceDungeon Core is not installed! Disabling Premium Addon."
   mythicmobs_hooked: "MythicMobs API Found! Successfully integrated MYTHIC_ITEM."
 
@@ -21,9 +21,13 @@ admin:
   no_permission: "&cYou don't have permission to do this."
   invalid_player: "&cOnly players can use this command."
   invalid_args: "&cInvalid arguments. Usage: /sdp hologram <create|delete|move>"
+  invalid_map: "&cCannot find the requested Dungeon Map file."
+  stage_inserted: "&aSuccessfully shifted configuration and inserted Stage <pos> into map <map>!"
 
 rewards:
   exp_levels: "&aYou have been rewarded with &e<levels> EXP Levels&a!"
+  exp_points: "&aYou have been rewarded with &e<points> EXP Points&a!"
+  full_heal: "&aYour health and hunger have been completely restored!"
   no_spins_left: "&cYou don't have any spins left!"
 
 holograms:
