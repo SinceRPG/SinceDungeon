@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // --- ALL VARIABLES FROM GITLAB-CI MOVED HERE ---
+        // --- ALL VARIABLES FROM GITLAB-CI ---
         WEBHOOK_URL_FREE = "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_"
         THREAD_ID_FREE = "1475129559530864852"
         WEBHOOK_URL_PREMIUM = "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX"
@@ -22,24 +22,42 @@ pipeline {
         FAIL_DESC_TEXT = "Compilation error occurred. Check Jenkins Console."
     }
 
-    stage('Prepare & Build') {
-        steps {
-            script {
-                // 1. Thông báo bắt đầu build lên Discord
-                sh 'python3 build_dungeon.py || echo "Discord Start Notify Failed"'
+    stages {
+        stage('Prepare & Build') {
+            steps {
+                script {
+                    // 1. Thông báo bắt đầu build lên Discord
+                    sh 'python3 build_dungeon.py || echo "Discord Start Notify Failed"'
 
-                try {
-                    // 2. CẤP QUYỀN THỰC THI (Đây là dòng quan trọng nhất)
-                    sh 'chmod +x gradlew'
+                    try {
+                        // 2. Cấp quyền thực thi cho gradlew
+                        sh 'chmod +x gradlew'
 
-                    // 3. Chạy Build Gradle
-                    sh './gradlew clean build'
-                } catch (Exception e) {
-                    // 4. Nếu Build lỗi, báo Discord ngay
-                    sh 'python3 build_dungeon.py --fail'
-                    error "Build failed: ${e.message}"
+                        // 3. Chạy Build Gradle
+                        sh './gradlew clean build'
+                    } catch (Exception e) {
+                        // 4. Nếu Build lỗi, báo Discord ngay
+                        sh 'python3 build_dungeon.py --fail'
+                        error "Build failed: ${e.message}"
+                    }
                 }
             }
+        }
+
+        stage('Finalize') {
+            steps {
+                script {
+                    // 5. Build thành công, báo Discord và đính kèm file JAR
+                    sh 'python3 build_dungeon.py'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Dọn dẹp workspace sau khi xong để tránh đầy ổ cứng laptop
+            cleanWs()
         }
     }
 }
