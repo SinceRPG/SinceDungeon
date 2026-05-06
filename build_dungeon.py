@@ -63,6 +63,7 @@ def parse_changelogs(full_msg, default_text):
     prem_log = prem_part.group(1).strip() if prem_part and prem_part.group(1).strip() else default_text
     return core_log, prem_log
 
+
 # ==============================================================================
 # DISCORD INTERACTION
 # ==============================================================================
