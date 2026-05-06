@@ -68,6 +68,7 @@ action-defaults:
     time_limit: -1
     time_penalty: 1
     location: "0,64,0"
+    radius: 3.0
     sound: "entity.player.levelup"
     particle: "TOTEM_OF_UNDYING"
 

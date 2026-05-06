@@ -634,7 +634,9 @@ public class DungeonGame {
         String formattedTime = formatTime(finalElapsed);
 
         Map<Integer, Integer> activeTiers = (participants.size() > 1) ? template.partyRewardTiers() : template.soloRewardTiers();
-        int chestCount = 1;
+
+        // FIX: Default to 0. It now correctly identifies if the players completely failed all time-limits.
+        int chestCount = 0;
         for (Map.Entry<Integer, Integer> entry : activeTiers.entrySet()) {
             if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
         }
@@ -728,14 +730,13 @@ public class DungeonGame {
                 UUID currentLeader = plugin.getPartyManager().getProvider().getLeader(p.getUniqueId());
                 if (currentLeader == null) currentLeader = initiatorId;
 
-                // Enforce Reward Distribution based on Strategy Mode
                 if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
                     // Leader only mode prevents other players from participating in reward distribution
                 } else if (eventChestCount > 0 && hasRewards) {
                     plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
                     plugin.getRewardManager().getRewardSystem().distributeRewards(p, template, eventChestCount);
                 } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward")));
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward", "&cUnfortunately, you didn't qualify for any rewards.")));
                 }
 
                 if (p.isInsideVehicle()) p.leaveVehicle();

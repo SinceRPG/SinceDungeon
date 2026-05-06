@@ -2,6 +2,7 @@ package net.danh.sincedungeonpremium.actions;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
+import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.SoundUtils;
@@ -13,17 +14,22 @@ import org.bukkit.util.Vector;
 
 /**
  * Premium Action: Save Checkpoint
- * Updates the dungeon's respawn point so players do not have to walk
- * from the very beginning if they die during later stages.
+ * Generates a physical ring boundary that updates the dungeon's respawn point
+ * when crossed, preventing players from running from the very beginning.
  */
-public class CheckpointAction extends DungeonAction {
+public class CheckpointAction extends DungeonAction implements Tickable {
 
     private final String locationStr;
+    private final double radius;
     private final String soundStr;
     private final String particleStr;
 
-    public CheckpointAction(String locationStr, String soundStr, String particleStr) {
+    private Location centerLoc;
+    private int ticksElapsed = 0;
+
+    public CheckpointAction(String locationStr, double radius, String soundStr, String particleStr) {
         this.locationStr = locationStr;
+        this.radius = radius;
         this.soundStr = soundStr;
         this.particleStr = particleStr;
     }
@@ -34,33 +40,57 @@ public class CheckpointAction extends DungeonAction {
             this.forceComplete();
             return;
         }
-
         Vector vec = DungeonLoader.parseVector(locationStr);
-        Location loc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY() + 1, vec.getBlockZ() + 0.5);
+        this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY() + 1, vec.getBlockZ() + 0.5);
+        game.sendActionMessage(this, "init", "action.checkpoint_start");
+    }
 
-        // Update the world's spawn location so Core's respawn logic automatically uses it
-        game.getWorld().setSpawnLocation(loc);
+    @Override
+    public void onTick(DungeonGame game) {
+        if (completed || centerLoc == null) return;
+        ticksElapsed++;
 
-        // Visual and Audio Feedback
-        Sound sound = SoundUtils.getSound(soundStr);
-        if (sound != null) {
-            for (Player p : game.getParticipants()) {
-                p.playSound(p.getLocation(), sound, 1.0f, 1.0f);
+        // Render the physical ring visually
+        if (ticksElapsed % 5 == 0) {
+            try {
+                Particle pType = Particle.valueOf(particleStr.toUpperCase());
+                double r = Math.max(1.0, radius);
+                for (int i = 0; i < 360; i += 30) {
+                    double angle = i * Math.PI / 180;
+                    double x = r * Math.cos(angle);
+                    double z = r * Math.sin(angle);
+                    centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, 0.5, z), 1, 0, 0, 0, 0);
+                }
+            } catch (IllegalArgumentException ignored) {
             }
         }
 
-        try {
-            Particle particle = Particle.valueOf(particleStr.toUpperCase());
-            game.getWorld().spawnParticle(particle, loc, 50, 0.5, 1, 0.5, 0.1);
-        } catch (IllegalArgumentException ignored) {
-            // Failsafe if particle string is invalid
-        }
+        for (Player p : game.getParticipants()) {
+            if (p.isOnline() && !p.isDead() && p.getLocation().distanceSquared(centerLoc) <= (radius * radius)) {
+                // Set the specific respawn location so Core handles it
+                game.getWorld().setSpawnLocation(centerLoc);
 
-        this.forceComplete();
+                Sound sound = SoundUtils.getSound(soundStr);
+                if (sound != null) {
+                    for (Player participant : game.getParticipants()) {
+                        participant.playSound(participant.getLocation(), sound, 1.0f, 1.0f);
+                    }
+                }
+
+                try {
+                    Particle pType = Particle.valueOf(particleStr.toUpperCase());
+                    game.getWorld().spawnParticle(pType, centerLoc, 50, 0.5, 1, 0.5, 0.1);
+                } catch (IllegalArgumentException ignored) {}
+
+                game.sendActionMessage(this, "complete", "action.checkpoint_complete");
+                this.forceComplete();
+                return;
+            }
+        }
     }
 
     @Override
     public String getObjectiveText() {
-        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.save_checkpoint", "Checkpoint Reached!");
+        return SinceDungeon.getPlugin().getLanguageManager().getString("objective.save_checkpoint", "Reach the Checkpoint!");
     }
 }

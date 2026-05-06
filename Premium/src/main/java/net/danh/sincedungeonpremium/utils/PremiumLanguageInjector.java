@@ -19,7 +19,6 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
-            // Missing Item Settings Prompts
             if (!editorCfg.getConfig().contains("editor.items.setting_req_item")) {
                 editorCfg.set("editor.items.setting_req_item", "&eRequired Entry Item");
                 editorCfg.set("editor.items.setting_req_item_lore", Arrays.asList("&7Current: &f<val>", "&eLeft Click to edit"));
@@ -28,7 +27,6 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
-            // Standardize Prompts
             if (!editorCfg.getConfig().contains("editor.input.prompts.edit_req_item")) {
                 editorCfg.set("editor.input.prompts.edit_req_item", Arrays.asList(
                         "&7Enter the item format required to enter.",
@@ -40,7 +38,14 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
-            // Defend Core
+            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_radius")) {
+                editorCfg.set("editor.input.prompts.edit_action_radius", Arrays.asList(
+                        "&7Enter the radius for the ring/area.",
+                        "&7Example: &a3.0"
+                ));
+                editorChanged = true;
+            }
+
             if (!editorCfg.getConfig().contains("editor.actions_name.defend_core")) {
                 editorCfg.set("editor.actions_name.defend_core", "&3&lPremium: Defend Core");
                 editorCfg.set("editor.actions.defend_core", "Protect an entity from waves of enemies.");
@@ -51,7 +56,6 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
-            // Give Item Action
             if (!editorCfg.getConfig().contains("editor.actions_name.give_item")) {
                 editorCfg.set("editor.actions_name.give_item", "&6&lPremium: Give Item");
                 editorCfg.set("editor.actions.give_item", "Gives a specific item directly to the party.");
@@ -65,7 +69,6 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
-            // Play Sound Action
             if (!editorCfg.getConfig().contains("editor.actions_name.play_sound")) {
                 editorCfg.set("editor.actions_name.play_sound", "&d&lPremium: Play Sound");
                 editorCfg.set("editor.actions.play_sound", "Plays a global sound effect for the party.");
@@ -75,7 +78,6 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
-            // Action Generation Defaults (Extracts internal hardcoded logic cleanly)
             if (!editorCfg.getConfig().contains("editor.defaults.escort.vip_name")) {
                 editorCfg.set("editor.defaults.escort.vip_name", "&aVIP Escort");
                 editorCfg.set("editor.defaults.escort.attacker_name", "&cAssassin");
@@ -94,6 +96,9 @@ public class PremiumLanguageInjector {
             if (!errorCfg.getConfig().contains("error.missing_required_item")) {
                 errorCfg.set("error.missing_required_item", "&cYou lack the required item to enter: <item>");
                 errorCfg.set("error.party_member_missing_item", "&cMember <player> lacks the required entry item.");
+                errorCfg.set("error.target_not_in_dungeon", "&cThat player is not in your dungeon!");
+                errorCfg.set("error.target_not_spectator", "&cThat player is not knocked out!");
+                errorCfg.set("error.no_life_item", "&cYou need a Soul Crystal in your inventory to revive someone!");
                 errorChanged = true;
             }
             if (errorChanged) errorCfg.save();
@@ -102,6 +107,20 @@ public class PremiumLanguageInjector {
         ConfigUtils gameCfg = lang.getConfigUtilsForPath("objective.test");
         if (gameCfg != null) {
             boolean gameChanged = false;
+
+            if (!gameCfg.getConfig().contains("game.revived_target")) {
+                gameCfg.set("game.revived_target", "&aYou have been revived by <player>!");
+                gameCfg.set("game.revived_sender", "&aYou revived <player>!");
+                gameCfg.set("game.revived_broadcast", "&e<sender> revived <target> using a Soul Crystal!");
+                gameChanged = true;
+            }
+
+            if (!gameCfg.getConfig().contains("objective.save_checkpoint")) {
+                gameCfg.set("objective.save_checkpoint", "&bReach the Checkpoint!");
+                gameCfg.set("action.checkpoint_start", "&eA checkpoint ring has appeared. Stand inside it to secure your respawn point!");
+                gameCfg.set("action.checkpoint_complete", "&aCheckpoint secured! You will respawn here if you die.");
+                gameChanged = true;
+            }
 
             if (!gameCfg.getConfig().contains("objective.defend_core")) {
                 gameCfg.set("objective.defend_core", "&bProtect the Core Entity!");

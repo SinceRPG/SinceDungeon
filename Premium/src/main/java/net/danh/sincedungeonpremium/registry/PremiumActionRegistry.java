@@ -179,6 +179,7 @@ public class PremiumActionRegistry {
         // 5. CHECKPOINT ACTION
         Map<String, Object> cpDefaults = new HashMap<>();
         cpDefaults.put("location", "0,64,0");
+        cpDefaults.put("radius", 3.0);
         cpDefaults.put("sound", "entity.player.levelup");
         cpDefaults.put("particle", "TOTEM_OF_UNDYING");
 
@@ -186,12 +187,13 @@ public class PremiumActionRegistry {
                 "CHECKPOINT",
                 map -> new CheckpointAction(
                         String.valueOf(map.getOrDefault("location", cpDefaults.get("location"))),
+                        parseSafeDouble(map.get("radius"), (double) cpDefaults.get("radius")),
                         String.valueOf(map.getOrDefault("sound", cpDefaults.get("sound"))),
                         String.valueOf(map.getOrDefault("particle", cpDefaults.get("particle")))
                 ),
                 lang.getString("editor.actions_name.save_checkpoint", "&b&lPremium: Save Checkpoint"),
                 Material.RED_BED,
-                lang.getString("editor.actions.save_checkpoint", "Updates the dungeon respawn point."),
+                lang.getString("editor.actions.save_checkpoint", "Updates the dungeon respawn point when touched."),
                 cpDefaults,
                 new HashMap<>()
         );

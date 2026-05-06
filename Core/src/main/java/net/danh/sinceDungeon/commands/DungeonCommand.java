@@ -15,6 +15,8 @@ import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -145,6 +147,74 @@ public class DungeonCommand {
                             }
                             return 1;
                         })
+                )
+                .then(Commands.literal("revive")
+                        .then(Commands.argument("target", StringArgumentType.word())
+                                .suggests((ctx, builder) -> {
+                                    if (ctx.getSource().getExecutor() instanceof Player p) {
+                                        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+                                        if (game != null) {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            for (Player member : game.getParticipants()) {
+                                                if (member.getGameMode() == GameMode.SPECTATOR && member.getName().toLowerCase().startsWith(remaining)) {
+                                                    builder.suggest(member.getName());
+                                                }
+                                            }
+                                        }
+                                    }
+                                    return builder.buildFuture();
+                                })
+                                .executes(ctx -> {
+                                    if (ctx.getSource().getExecutor() instanceof Player p) {
+                                        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+                                        if (target == null) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player", "&cPlayer not found.")));
+                                            return 0;
+                                        }
+                                        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+                                        if (game == null || !game.getParticipants().contains(target)) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.target_not_in_dungeon", "&cThat player is not in your dungeon!")));
+                                            return 0;
+                                        }
+                                        if (target.getGameMode() != GameMode.SPECTATOR) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.target_not_spectator", "&cThat player is not knocked out!")));
+                                            return 0;
+                                        }
+
+                                        NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+                                        ItemStack lifeItem = null;
+                                        for (ItemStack item : p.getInventory().getContents()) {
+                                            if (item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(lifeKey, PersistentDataType.INTEGER)) {
+                                                lifeItem = item;
+                                                break;
+                                            }
+                                        }
+
+                                        if (lifeItem == null) {
+                                            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.no_life_item", "&cYou need a Soul Crystal in your inventory to revive someone!")));
+                                            return 0;
+                                        }
+
+                                        lifeItem.setAmount(lifeItem.getAmount() - 1);
+                                        plugin.getLivesManager().setLives(target.getUniqueId(), 1);
+                                        target.setGameMode(GameMode.SURVIVAL);
+                                        target.teleport(p.getLocation());
+
+                                        AttributeInstance attr = target.getAttribute(Attribute.MAX_HEALTH);
+                                        target.setHealth(attr != null ? attr.getValue() : 20.0);
+
+                                        String msgTarget = plugin.getLanguageManager().getString("game.revived_target", "&aYou have been revived by <player>!");
+                                        String msgSender = plugin.getLanguageManager().getString("game.revived_sender", "&aYou revived <player>!");
+                                        target.sendMessage(ColorUtils.parseWithPrefix(msgTarget.replace("<player>", p.getName())));
+                                        p.sendMessage(ColorUtils.parseWithPrefix(msgSender.replace("<player>", target.getName())));
+
+                                        game.broadcastMessage("game.revived_broadcast", "<sender>", p.getName(), "<target>", target.getName());
+                                    } else {
+                                        ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.only_player")));
+                                    }
+                                    return 1;
+                                })
+                        )
                 )
                 .then(Commands.literal("editor")
                         .requires(s -> s.getSender().hasPermission("SinceDungeon.admin"))
