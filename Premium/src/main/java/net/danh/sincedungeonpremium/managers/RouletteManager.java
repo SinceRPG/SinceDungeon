@@ -36,7 +36,7 @@ import java.util.Random;
  * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
  * - Preserves ALL metadata formatting (Names, Lore, NBT) when displaying preview items.
  * - Securely pushes execution back into Core systems to process the won rewards.
- * - Secures rewards in case of early inventory closure.
+ * - Secures rewards in case of early inventory closure while handling GUI transitions.
  */
 public class RouletteManager implements Listener {
 
@@ -138,7 +138,10 @@ public class RouletteManager implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (player.isOnline()) {
                 if (session.getChestCount() > 0) {
+                    // Activate state lock to prevent InventoryCloseEvent from triggering auto-claim
+                    session.setSwitchingPage(true);
                     openRoulette(player, session);
+                    session.setSwitchingPage(false);
                 } else {
                     player.closeInventory();
                 }
@@ -162,6 +165,12 @@ public class RouletteManager implements Listener {
     public void onRouletteClose(InventoryCloseEvent e) {
         if (e.getInventory().getHolder() instanceof RouletteHolder holder) {
             Player p = (Player) e.getPlayer();
+            RewardSession session = holder.getSession();
+
+            // If the plugin is actively transitioning to the next spin, abort processing closure
+            if (session != null && session.isSwitchingPage()) {
+                return;
+            }
 
             // If they closed before the spin finished, give the pending reward immediately!
             if (!holder.isClaimed() && holder.getPendingReward() != null) {
@@ -170,8 +179,8 @@ public class RouletteManager implements Listener {
             }
 
             // Securely force-claim the rest of the chests so no data is lost
-            if (holder.getSession() != null && holder.getSession().getChestCount() > 0) {
-                new RewardGUI(SinceDungeon.getPlugin()).forceClaimAll(p, holder.getSession());
+            if (session != null && session.getChestCount() > 0) {
+                new RewardGUI(SinceDungeon.getPlugin()).forceClaimAll(p, session);
             }
 
             RewardSessionManager.removeSession(p);

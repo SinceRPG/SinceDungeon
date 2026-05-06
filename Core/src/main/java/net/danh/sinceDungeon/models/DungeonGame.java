@@ -635,7 +635,6 @@ public class DungeonGame {
 
         Map<Integer, Integer> activeTiers = (participants.size() > 1) ? template.partyRewardTiers() : template.soloRewardTiers();
 
-        // FIX: Default to 0. It now correctly identifies if the players completely failed all time-limits.
         int chestCount = 0;
         for (Map.Entry<Integer, Integer> entry : activeTiers.entrySet()) {
             if (elapsedSeconds <= entry.getKey()) chestCount = Math.max(chestCount, entry.getValue());
@@ -719,25 +718,33 @@ public class DungeonGame {
             }
         }
 
+        // PUSH REWARD DISTRIBUTION BEFORE TELEPORT COUNTDOWN TO FIX INSTANT CLOSURE
+        String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
+
+        for (Player p : participants) {
+            if (!p.isOnline() || p.isDead()) continue;
+
+            UUID currentLeader = plugin.getPartyManager().getProvider().getLeader(p.getUniqueId());
+            if (currentLeader == null) currentLeader = initiatorId;
+
+            if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
+                // Leader only mode prevents other players from participating
+            } else if (eventChestCount > 0 && hasRewards) {
+                plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
+                plugin.getRewardManager().getRewardSystem().distributeRewards(p, template, eventChestCount);
+            } else {
+                p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward", "&cUnfortunately, you didn't qualify for any rewards.")));
+            }
+        }
+
         int kickDelay = template.settings().kickDelayAfterFinish();
 
         startKickCountdown(plugin, participants, kickDelay, () -> {
-            String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
-
             for (Player p : participants) {
                 if (!p.isOnline() || p.isDead()) continue;
 
-                UUID currentLeader = plugin.getPartyManager().getProvider().getLeader(p.getUniqueId());
-                if (currentLeader == null) currentLeader = initiatorId;
-
-                if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                    // Leader only mode prevents other players from participating in reward distribution
-                } else if (eventChestCount > 0 && hasRewards) {
-                    plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
-                    plugin.getRewardManager().getRewardSystem().distributeRewards(p, template, eventChestCount);
-                } else {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.no_reward", "&cUnfortunately, you didn't qualify for any rewards.")));
-                }
+                // Force claim any remaining spins they didn't use before the teleport
+                plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
 
                 if (p.isInsideVehicle()) p.leaveVehicle();
                 p.setVelocity(new Vector(0, 0, 0));
