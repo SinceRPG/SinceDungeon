@@ -192,9 +192,12 @@ public class EditorGUI {
             EditorSession.SettingOption opt = options[idx];
             String valStr;
 
+            // FIX: Safely retrieve the fallback setting using null-check for the global path.
             switch (opt.getDataType()) {
                 case "BOOL" -> {
-                    boolean val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getBoolean(opt.getLocalPath()) : plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue());
+                    boolean val = session.getConfig().contains(opt.getLocalPath())
+                            ? session.getConfig().getBoolean(opt.getLocalPath())
+                            : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue()) : (Boolean) opt.getDefaultValue());
                     valStr = val ? getWord("true_word", "&aON") : getWord("false_word", "&cOFF");
                 }
                 case "STRING" -> {
@@ -205,7 +208,9 @@ public class EditorGUI {
                     valStr = val > 0 ? String.valueOf(val) : (opt.name().equals("MAX_PLAYERS") ? getWord("unlimited", "Unlimited") : String.valueOf(val));
                 }
                 case "DEATH_ENUM" -> {
-                    valStr = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getString(opt.getLocalPath()) : plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue());
+                    valStr = session.getConfig().contains(opt.getLocalPath())
+                            ? session.getConfig().getString(opt.getLocalPath())
+                            : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue()) : (String) opt.getDefaultValue());
                     if (valStr != null) valStr = valStr.toUpperCase();
                 }
                 case "LIST" -> {

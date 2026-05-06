@@ -262,15 +262,20 @@ public class EditorMenuListener implements Listener {
                         return;
                     }
 
+                    // FIX: Safely retrieve the fallback setting using null-check for the global path.
                     switch (opt.getDataType()) {
                         case "BOOL" -> {
-                            boolean current = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getBoolean(opt.getLocalPath()) : plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue());
+                            boolean current = session.getConfig().contains(opt.getLocalPath())
+                                    ? session.getConfig().getBoolean(opt.getLocalPath())
+                                    : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue()) : (Boolean) opt.getDefaultValue());
                             session.getConfig().set(opt.getLocalPath(), !current);
                             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                             gui.openSettingsMenu(p, session, page);
                         }
                         case "DEATH_ENUM" -> {
-                            String current = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getString(opt.getLocalPath()) : plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue());
+                            String current = session.getConfig().contains(opt.getLocalPath())
+                                    ? session.getConfig().getString(opt.getLocalPath())
+                                    : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue()) : (String) opt.getDefaultValue());
                             String next = (current != null && current.equalsIgnoreCase("RESPAWN")) ? "FAIL" : "RESPAWN";
                             session.getConfig().set(opt.getLocalPath(), next);
                             p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
