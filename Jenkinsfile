@@ -30,14 +30,14 @@ pipeline {
                     sh 'chmod +x gradlew'
 
                     // 1. Notify Discord about build start
-                    sh 'python3 build_dungeon.py --start || echo "Discord Start Notify Failed"'
+                    sh 'python3 build.py --start || echo "Discord Start Notify Failed"'
 
                     try {
                         // 2. Execute Gradle build
                         sh './gradlew clean build'
                     } catch (Exception e) {
                         // 3. Handle Failure
-                        sh 'python3 build_dungeon.py --fail'
+                        sh 'python3 build.py --fail'
                         error "Build failed: ${e.message}"
                     }
                 }
@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     // 4. Success: Patch the message and attach JARs
-                    sh 'python3 build_dungeon.py'
+                    sh 'python3 build.py'
                 }
             }
         }
