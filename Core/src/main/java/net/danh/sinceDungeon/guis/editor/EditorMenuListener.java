@@ -233,12 +233,10 @@ public class EditorMenuListener implements Listener {
             }
 
             case "SETTINGS" -> {
+                // [Note] Removed legacy dead code checking for slots 24, 25, 26 which were completely obsolete.
+                // Command Lists triggers correctly via the SettingOption Enum rendering logic below.
                 if (slot == 18 && cur.getType() == gui.getNavItem()) {
                     gui.openDungeonMenu(p, session);
-                    return;
-                } else if (slot == 24 || slot == 25 || slot == 26) {
-                    String cmdPath = (slot == 24) ? "settings.commands.on-start" : (slot == 25) ? "settings.commands.on-finish" : "settings.commands.on-first-finish";
-                    gui.openStringListEditor(p, session, cmdPath, "SETTINGS", 0);
                     return;
                 }
                 if (slot == 21 && cur.getType() == gui.getNavItem()) {
@@ -262,7 +260,6 @@ public class EditorMenuListener implements Listener {
                         return;
                     }
 
-                    // FIX: Safely retrieve the fallback setting using null-check for the global path.
                     switch (opt.getDataType()) {
                         case "BOOL" -> {
                             boolean current = session.getConfig().contains(opt.getLocalPath())
@@ -291,12 +288,9 @@ public class EditorMenuListener implements Listener {
                             plugin.getEditorListener().startListening(p, session);
                         }
                         case "INT" -> {
+                            // [Note] Removed redundant hardcoded if-else chains. The prompt key is now dynamically generated
+                            // perfectly matching the language mapping keys.
                             String prompt = "edit_" + opt.name().toLowerCase();
-                            if (opt == EditorSession.SettingOption.KICK_DELAY) prompt = "edit_kick_delay";
-                            else if (opt == EditorSession.SettingOption.REQ_LIVES) prompt = "edit_req_lives";
-                            else if (opt == EditorSession.SettingOption.DEDUCT_LIVES) prompt = "edit_deduct_lives";
-                            else if (opt == EditorSession.SettingOption.MAX_PLAYERS) prompt = "edit_max_players";
-                            else if (opt == EditorSession.SettingOption.COOLDOWN) prompt = "edit_cooldown";
 
                             session.awaitInput(EditorSession.InputType.EDIT_NUMBER, prompt, val -> {
                                 try {
@@ -315,6 +309,7 @@ public class EditorMenuListener implements Listener {
                             plugin.getEditorListener().startListening(p, session);
                         }
                         case "LIST" -> {
+                            // [Note] Handles opening the String List Editor directly based on the local path of the setting.
                             gui.openStringListEditor(p, session, opt.getLocalPath(), "SETTINGS", 0);
                         }
                     }
@@ -741,7 +736,6 @@ public class EditorMenuListener implements Listener {
                     return;
                 }
 
-                // Explicitly check known Premium list fields to guarantee the Editor properly recognizes them
                 boolean isLocation = key.toLowerCase().contains("location") || key.toLowerCase().contains("loc") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center") || key.equals("levers");
                 boolean isListField = key.equalsIgnoreCase("random_mobs") || key.equalsIgnoreCase("attributes") || key.equalsIgnoreCase("equipment") || key.endsWith("_attributes") || key.endsWith("_equipment") || key.equals("levers") || key.equals("frames") || key.equals("locations") || key.equals("custom_drops") || key.equals("start_message");
 
