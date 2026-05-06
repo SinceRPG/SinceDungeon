@@ -19,8 +19,12 @@ import java.io.File;
 import java.util.*;
 
 /**
- * Handles the construction and opening of all graphical editor interfaces.
- * Features robust fallbacks to prevent empty lore if the config is missing keys.
+ * Editor Graphical User Interface Manager
+ * <p>
+ * Responsibilities:
+ * - Constructs all Inventory menus dynamically based on YAML configurations.
+ * - Centralizes item generation and lore injection from language files.
+ * - Utilizes Dynamic Field Resolution to eliminate hardcoded configuration types.
  */
 public class EditorGUI {
 
@@ -40,7 +44,7 @@ public class EditorGUI {
         return (res == null || res.isEmpty()) ? def : res;
     }
 
-    private List<String> getLoreList(String path, List<String> defaultLore) {
+    public List<String> getLoreList(String path, List<String> defaultLore) {
         List<String> list = plugin.getLanguageManager().getStringList("editor.items." + path);
         return (list == null || list.isEmpty()) ? defaultLore : list;
     }
@@ -48,14 +52,17 @@ public class EditorGUI {
     public void sendMessage(Player p, String key, String... placeholders) {
         String msg = plugin.getLanguageManager().getString("editor.chat." + key);
         if (msg == null || msg.isEmpty()) {
-            if (key.equals("val_cleared")) msg = "&eData cleared.";
-            else if (key.equals("line_removed")) msg = "&eLast line removed from the list.";
-            else if (key.equals("list_empty")) msg = "&cThe list is currently empty.";
-            else if (key.equals("number_error")) msg = "&cValue must be a valid number!";
-            else if (key.equals("dungeon_deleted")) msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
-            else if (key.equals("stage_inserted"))
-                msg = "&aSuccessfully shifted configuration and inserted Stage <pos>!";
-            else return;
+            switch (key) {
+                case "val_cleared" -> msg = "&eData cleared.";
+                case "line_removed" -> msg = "&eLast line removed from the list.";
+                case "list_empty" -> msg = "&cThe list is currently empty.";
+                case "number_error" -> msg = "&cValue must be a valid number!";
+                case "dungeon_deleted" -> msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
+                case "stage_inserted" -> msg = "&aSuccessfully shifted configuration and inserted Stage <pos>!";
+                default -> {
+                    return;
+                }
+            }
         }
 
         String prefix = plugin.getLanguageManager().getString("prefix", "");
@@ -67,7 +74,7 @@ public class EditorGUI {
         p.sendMessage(ColorUtils.parseWithPrefix(msg));
     }
 
-    private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
+    public ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -192,7 +199,6 @@ public class EditorGUI {
             EditorSession.SettingOption opt = options[idx];
             String valStr;
 
-            // FIX: Safely retrieve the fallback setting using null-check for the global path.
             switch (opt.getDataType()) {
                 case "BOOL" -> {
                     boolean val = session.getConfig().contains(opt.getLocalPath())
@@ -200,9 +206,8 @@ public class EditorGUI {
                             : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getBoolean(opt.getGlobalFallbackPath(), (Boolean) opt.getDefaultValue()) : (Boolean) opt.getDefaultValue());
                     valStr = val ? getWord("true_word", "&aON") : getWord("false_word", "&cOFF");
                 }
-                case "STRING" -> {
-                    valStr = session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue());
-                }
+                case "STRING" ->
+                        valStr = session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue());
                 case "INT" -> {
                     int val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getInt(opt.getLocalPath()) : (Integer) opt.getDefaultValue();
                     valStr = val > 0 ? String.valueOf(val) : (opt.name().equals("MAX_PLAYERS") ? getWord("unlimited", "Unlimited") : String.valueOf(val));
@@ -213,9 +218,7 @@ public class EditorGUI {
                             : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue()) : (String) opt.getDefaultValue());
                     if (valStr != null) valStr = valStr.toUpperCase();
                 }
-                case "LIST" -> {
-                    valStr = String.valueOf(session.getConfig().getStringList(opt.getLocalPath()).size());
-                }
+                case "LIST" -> valStr = String.valueOf(session.getConfig().getStringList(opt.getLocalPath()).size());
                 default -> valStr = getWord("unknown", "Unknown");
             }
 
@@ -520,7 +523,6 @@ public class EditorGUI {
 
             String displayTypeName = (meta != null && meta.displayName() != null) ? meta.displayName() : type;
             Material icon = (meta != null && meta.icon() != null) ? meta.icon() : Material.PAPER;
-
             String desc = (meta != null && meta.description() != null) ? meta.description() : getWord("unknown", "Unknown");
 
             String name = getMsg("items.action_item", "&eAction #<index>").replace("<index>", key);
@@ -561,7 +563,6 @@ public class EditorGUI {
                 }
             }
         }
-
         p.openInventory(inv);
     }
 
@@ -583,7 +584,6 @@ public class EditorGUI {
             DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(type);
             if (meta != null) {
                 boolean changed = false;
-
                 for (Map.Entry<String, Object> entry : meta.defaults().entrySet()) {
                     if (!sec.contains(entry.getKey())) {
                         session.getConfig().set(path + "." + entry.getKey(), entry.getValue());
@@ -596,119 +596,42 @@ public class EditorGUI {
             }
         }
 
-        String hintEdit = getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
-        String hintLocSingle = getMsg("items.action_val_hint_loc_single", "&eLeft: Type | Right: Current Pos | &cShift-Right: Delete");
-        String hintLocList = getMsg("items.action_val_hint_loc_list", "&eLeft: Type | Right: Current Pos | &cShift-Right: Clear list");
-        String hintList = getMsg("items.action_val_hint_list", "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All");
-        String hintItems = getMsg("items.action_val_hint_items", "&eLeft Click: Open GUI | Read YAML config to add Keys");
-        String hintNotif = getMsg("items.action_val_hint_notif", "&7Per-action notification overrides");
         String hintTypeBlocked = getMsg("items.action_type_cant_edit", "&cCannot change action type after creation");
-        String hintPhaseGui = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
 
         int slot = 0;
         for (String key : sec.getKeys(false)) {
             if (slot >= 45) break;
-            String val = String.valueOf(sec.get(key));
-            Material icon = Material.BOOK;
-            String hint;
 
-            boolean isLocation = key.toLowerCase().contains("location") || key.equals("target") || key.equals("trigger") || key.equals("corner1") || key.equals("corner2") || key.equals("pos") || key.equals("center");
-            boolean isList = sec.isList(key);
-            boolean isRandomMobs = key.equalsIgnoreCase("random_mobs");
+            Object rawValue = sec.get(key);
+            String valStr = String.valueOf(rawValue);
 
-            switch (key.toLowerCase()) {
-                case "type":
-                    icon = Material.BARRIER;
-                    hint = hintTypeBlocked;
-                    break;
-                case "amount":
-                    icon = Material.GOLD_NUGGET;
-                    hint = hintEdit;
-                    break;
-                case "mob":
-                    icon = Material.CREEPER_HEAD;
-                    hint = hintEdit;
-                    break;
-                case "start_message":
-                    icon = Material.PAPER;
-                    hint = hintList;
-                    break;
-                case "enrage_message":
-                    icon = Material.PAPER;
-                    hint = hintEdit;
-                    isList = false;
-                    break;
-                case "random_mobs":
-                    icon = Material.TRIAL_SPAWNER;
-                    hint = hintList;
-                    isList = true;
-                    break;
-                case "notifications":
-                    icon = Material.BELL;
-                    hint = hintNotif;
-                    break;
-                case "items":
-                    icon = Material.CHEST;
-                    hint = hintItems;
-                    val = getMsg("items.action_val_click_arrange", "&a[Click to arrange items]");
-                    isList = false;
-                    break;
-                case "phases":
-                    icon = Material.COMMAND_BLOCK;
-                    hint = hintPhaseGui;
-                    val = sec.getConfigurationSection(key) != null ? sec.getConfigurationSection(key).getKeys(false).size() + " phases" : "0 phases";
-                    isList = false;
-                    break;
-                case "equipment":
-                    icon = Material.IRON_CHESTPLATE;
-                    hint = hintList;
-                    isList = true;
-                    break;
-                case "custom_drops":
-                    icon = Material.DIAMOND;
-                    hint = hintList;
-                    isList = true;
-                    break;
-                case "attributes":
-                case "enrage_attributes":
-                    icon = Material.POTION;
-                    hint = hintList;
-                    isList = true;
-                    break;
-                case "base_health":
-                case "scale_health_per_player":
-                    icon = Material.RED_DYE;
-                    hint = hintEdit;
-                    break;
-                case "bar_color":
-                case "bar_style":
-                    icon = Material.PAINTING;
-                    hint = hintEdit;
-                    break;
-                case "enrage_time":
-                    icon = Material.CLOCK;
-                    hint = hintEdit;
-                    break;
-                default:
-                    if (isLocation) {
-                        icon = Material.COMPASS;
-                        hint = isList ? hintLocList : hintLocSingle;
-                    } else if (isList) {
-                        hint = hintList;
-                    } else {
-                        hint = hintEdit;
-                    }
-                    break;
+            // Utilize Dynamic Resolution to establish UI rendering states and Icons
+            FieldProperties props = FieldProperties.resolve(key, rawValue, plugin);
+
+            if (key.equalsIgnoreCase("type")) {
+                props.icon = Material.BARRIER;
+                props.hint = hintTypeBlocked;
+            } else if (key.equalsIgnoreCase("items")) {
+                props.icon = Material.CHEST;
+                props.hint = getMsg("items.action_val_hint_items", "&eLeft Click: Open GUI | Read YAML config to add Keys");
+                valStr = getMsg("items.action_val_click_arrange", "&a[Click to arrange items]");
+            } else if (key.equalsIgnoreCase("notifications")) {
+                props.icon = Material.BELL;
+                props.hint = getMsg("items.action_val_hint_notif", "&7Per-action notification overrides");
+            } else if (key.equalsIgnoreCase("phases")) {
+                props.icon = Material.COMMAND_BLOCK;
+                props.hint = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
+                valStr = sec.getConfigurationSection(key) != null ? sec.getConfigurationSection(key).getKeys(false).size() + " phases" : "0 phases";
             }
 
-            if (isList) {
-                val = sec.getStringList(key).size() + " " + getWord("items", "items");
+            if (props.isList && !key.equalsIgnoreCase("items") && !key.equalsIgnoreCase("phases")) {
+                valStr = sec.getStringList(key).size() + " " + getWord("items", "items");
             }
 
             String keyFmt = getMsg("items.action_key_format", "&6<key>").replace("<key>", key);
-            String valFmt = getMsg("items.action_val_format", "&7Value: &f<val>").replace("<val>", val);
+            String valFmt = getMsg("items.action_val_format", "&7Value: &f<val>").replace("<val>", valStr);
 
-            inv.setItem(slot++, makeItem(icon, keyFmt, Arrays.asList(valFmt, hint)));
+            inv.setItem(slot++, makeItem(props.icon, keyFmt, Arrays.asList(valFmt, props.hint)));
         }
 
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
@@ -838,32 +761,76 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
+    /**
+     * Resolves generic parsing and prevents user-error exceptions.
+     */
     public Object getFinalVal(String val, String key) {
-        int maxAmount = plugin.getConfigFile().getInt("editor.limits.max-mob-amount", 200);
-        double maxRadius = plugin.getConfigFile().getDouble("editor.limits.max-radius", 100.0);
-
-        Object finalVal = val;
-        if (val.equalsIgnoreCase("true")) finalVal = true;
-        else if (val.equalsIgnoreCase("false")) finalVal = false;
-        else {
+        if (val.equalsIgnoreCase("true")) return true;
+        if (val.equalsIgnoreCase("false")) return false;
+        try {
+            return Integer.parseInt(val);
+        } catch (Exception e1) {
             try {
-                int parsed = Integer.parseInt(val);
-                if (key.equalsIgnoreCase("amount")) finalVal = Math.max(0, Math.min(maxAmount, parsed));
-                else if (key.equalsIgnoreCase("level")) finalVal = Math.max(1, parsed);
-                else if (key.equalsIgnoreCase("radius") || key.equalsIgnoreCase("chance"))
-                    finalVal = Math.max(0, parsed);
-                else finalVal = parsed;
-            } catch (Exception e1) {
-                try {
-                    double parsed = Double.parseDouble(val);
-                    if (key.equalsIgnoreCase("radius")) finalVal = Math.max(0.0, Math.min(maxRadius, parsed));
-                    else if (key.equalsIgnoreCase("chance")) finalVal = Math.max(0.0, Math.min(100.0, parsed));
-                    else if (key.equalsIgnoreCase("amount")) finalVal = Math.max(0.0, parsed);
-                    else finalVal = parsed;
-                } catch (Exception ignored) {
-                }
+                return Double.parseDouble(val);
+            } catch (Exception ignored) {
             }
         }
-        return finalVal;
+        return val;
+    }
+
+    /**
+     * Dynamic Type Resolver mapping object schemas directly to UI states.
+     */
+    public static class FieldProperties {
+        public EditorSession.InputType inputType;
+        public Material icon;
+        public boolean isList;
+        public boolean isLocation;
+        public String hint;
+
+        public static FieldProperties resolve(String key, Object rawValue, SinceDungeon plugin) {
+            FieldProperties p = new FieldProperties();
+            p.isList = rawValue instanceof List;
+            String lowerKey = key.toLowerCase(Locale.ROOT);
+            p.isLocation = lowerKey.contains("loc") || lowerKey.contains("pos") || lowerKey.contains("center") || lowerKey.contains("target") || lowerKey.contains("corner") || lowerKey.contains("levers");
+
+            boolean isNumber = rawValue instanceof Number || lowerKey.contains("time") || lowerKey.contains("amount") || lowerKey.contains("radius") || lowerKey.contains("chance") || lowerKey.contains("level") || lowerKey.contains("health") || lowerKey.contains("damage") || lowerKey.contains("speed") || lowerKey.contains("interval") || lowerKey.contains("stage");
+            boolean isBoolean = rawValue instanceof Boolean || lowerKey.contains("is_baby") || lowerKey.contains("scale_with_party") || lowerKey.contains("per_player");
+
+            EditorGUI gui = new EditorGUI(plugin);
+
+            if (p.isLocation) {
+                p.inputType = p.isList ? EditorSession.InputType.EDIT_LOCATION_LIST : EditorSession.InputType.EDIT_LOCATION;
+                p.icon = Material.COMPASS;
+                p.hint = p.isList ? gui.getMsg("items.action_val_hint_loc_list", "&eLeft: Type | Right: Current Pos | &cShift-Right: Clear list") : gui.getMsg("items.action_val_hint_loc_single", "&eLeft: Type | Right: Current Pos | &cShift-Right: Delete");
+            } else if (p.isList) {
+                p.inputType = EditorSession.InputType.EDIT_LIST;
+                p.icon = Material.BOOK;
+                p.hint = gui.getMsg("items.action_val_hint_list", "&eLeft: Add Line | Right: Delete Last | &cShift-Right: Clear All");
+            } else if (isBoolean) {
+                p.inputType = EditorSession.InputType.EDIT_BOOLEAN;
+                p.icon = Material.LEVER;
+                p.hint = gui.getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
+            } else if (isNumber) {
+                p.inputType = EditorSession.InputType.EDIT_NUMBER;
+                p.icon = Material.GOLD_NUGGET;
+                p.hint = gui.getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
+            } else {
+                p.inputType = EditorSession.InputType.EDIT_STRING;
+                p.icon = Material.PAPER;
+                p.hint = gui.getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
+            }
+
+            // Aesthetic overrides based on typical keys
+            if (lowerKey.contains("mob") || lowerKey.contains("core_type")) p.icon = Material.CREEPER_HEAD;
+            if (lowerKey.contains("color") || lowerKey.contains("style")) p.icon = Material.PAINTING;
+            if (lowerKey.contains("message")) p.icon = Material.PAPER;
+            if (lowerKey.contains("attributes")) p.icon = Material.POTION;
+            if (lowerKey.contains("equipment")) p.icon = Material.IRON_CHESTPLATE;
+            if (lowerKey.contains("drops")) p.icon = Material.DIAMOND;
+            if (lowerKey.contains("random_mobs")) p.icon = Material.TRIAL_SPAWNER;
+
+            return p;
+        }
     }
 }

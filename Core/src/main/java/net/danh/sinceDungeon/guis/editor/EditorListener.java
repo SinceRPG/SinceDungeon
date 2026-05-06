@@ -25,6 +25,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Editor Input Listener
+ * <p>
+ * Responsibilities:
+ * - Listens for Chat, Command, and Interaction events from players in Input Mode.
+ * - Resolves chat input dynamically based on the associated Field Meta.
+ * - Manages input cancellations via the 'cancel' keyword.
+ */
 public class EditorListener implements Listener {
     private final SinceDungeon plugin;
     private final Map<UUID, EditorSession> activeInputs = new ConcurrentHashMap<>();
@@ -75,7 +83,7 @@ public class EditorListener implements Listener {
         }
 
         if (prompts == null || prompts.isEmpty()) {
-            String defaultTypeKey = session.getInputType().name().toLowerCase();
+            String defaultTypeKey = session.getInputType().name().toLowerCase(Locale.ROOT);
             prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + defaultTypeKey);
         }
 
@@ -186,9 +194,9 @@ public class EditorListener implements Listener {
         if (activeInputs.containsKey(p.getUniqueId())) {
             e.setCancelled(true);
 
-            String cmd = e.getMessage().toLowerCase().trim();
+            String cmd = e.getMessage().toLowerCase(Locale.ROOT).trim();
 
-            String cancelKwStr = plugin.getLanguageManager().getString("editor.words.cancel", "cancel").toLowerCase().trim();
+            String cancelKwStr = plugin.getLanguageManager().getString("editor.words.cancel", "cancel").toLowerCase(Locale.ROOT).trim();
             String cancelKw = cancelKwStr.startsWith("/") ? cancelKwStr : "/" + cancelKwStr;
 
             if (cmd.equals(cancelKw) || cmd.equals("/cancel") || cmd.startsWith(cancelKw + " ") || cmd.startsWith("/cancel ")) {

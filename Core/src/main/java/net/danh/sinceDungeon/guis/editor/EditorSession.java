@@ -19,8 +19,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Manages the data state of a player currently using the editor.
- * Maintains context variables such as current stage, action, list paths, and configuration settings.
+ * Editor Session State Manager
+ * <p>
+ * Responsibilities:
+ * - Maintains the active state of a player utilizing the Editor GUIs.
+ * - Tracks pagination caching across different menu screens.
+ * - Holds temporary configuration data before flushing to the physical YAML file.
+ * - Handles callback execution when transitioning from Chat Input Mode back to the GUI.
  */
 public class EditorSession {
     private final SinceDungeon plugin;
@@ -37,7 +42,7 @@ public class EditorSession {
 
     private String currentListPath = null;
     private String currentListReturnMenu = null;
-    private String currentTierType = "SOLO"; // Used to toggle between SOLO and PARTY tiers
+    private String currentTierType = "SOLO";
 
     private InputType currentInput = InputType.NONE;
     private String promptKey = null;
@@ -236,6 +241,7 @@ public class EditorSession {
         CMD_FIRST_FINISH("settings.commands.on-first-finish", null, Material.COMMAND_BLOCK_MINECART, "setting_cmd_first_finish", "LIST", null),
         REQ_ITEM("settings.required-item", null, Material.TRIPWIRE_HOOK, "setting_req_item", "STRING", "NONE"),
         CONSUME_REQ_ITEM("settings.consume-required-item", null, Material.LAVA_BUCKET, "setting_consume_req_item", "BOOL", true);
+
         private final String localPath;
         private final String globalFallbackPath;
         private final Material icon;
