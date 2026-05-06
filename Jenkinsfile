@@ -22,30 +22,23 @@ pipeline {
         FAIL_DESC_TEXT = "Compilation error occurred. Check Jenkins Console."
     }
 
-    stages {
-        stage('Prepare & Build') {
-            steps {
-                script {
-                    // 1. Gửi tin nhắn "Building" lên Discord trước
-                    // We run python script without args to signal "start/building"
-                    sh 'python3 build_dungeon.py || echo "Discord Start Notify Failed"'
+    stage('Prepare & Build') {
+        steps {
+            script {
+                // 1. Thông báo bắt đầu build lên Discord
+                sh 'python3 build_dungeon.py || echo "Discord Start Notify Failed"'
 
-                    // 2. Chạy Build Gradle
-                    try {
-                        sh './gradlew clean build'
-                    } catch (Exception e) {
-                        // 3. Nếu Build tạch, báo Discord ngay
-                        sh 'python3 build_dungeon.py --fail'
-                        error "Build failed, check logs."
-                    }
+                try {
+                    // 2. CẤP QUYỀN THỰC THI (Đây là dòng quan trọng nhất)
+                    sh 'chmod +x gradlew'
+
+                    // 3. Chạy Build Gradle
+                    sh './gradlew clean build'
+                } catch (Exception e) {
+                    // 4. Nếu Build lỗi, báo Discord ngay
+                    sh 'python3 build_dungeon.py --fail'
+                    error "Build failed: ${e.message}"
                 }
-            }
-        }
-
-        stage('Finalize') {
-            steps {
-                // 4. Build thành công, báo Discord và đính kèm file JAR
-                sh 'python3 build_dungeon.py'
             }
         }
     }
