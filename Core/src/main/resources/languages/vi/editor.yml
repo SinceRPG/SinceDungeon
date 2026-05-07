@@ -149,6 +149,18 @@ editor:
     setting_clear_drops_lore:
       - "&7Hiện tại: <val>"
       - "&eChuột Trái: Bật/Tắt"
+    setting_req_item: "&eVật Phẩm Yêu Cầu Để Vào"
+    setting_req_item_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Chỉnh sửa"
+    setting_consume_req_item: "&eTiêu Hao Vật Phẩm Yêu Cầu"
+    setting_consume_req_item_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
+    setting_cooldown_on_leave: "&eBắt Đầu Hồi Chiêu Khi Thoát/Thua"
+    setting_cooldown_on_leave_lore:
+      - "&7Hiện tại: <val>"
+      - "&eChuột Trái: Bật/Tắt"
     click_edit: "&eChuột Trái: Chỉnh sửa"
     create_new: "&a&lTạo Dungeon Mới"
     world_template: "&eBản đồ Mẫu (World)"
@@ -260,6 +272,18 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_req_item:
+        - "&7Nhập định dạng vật phẩm yêu cầu để vào."
+        - "&7Vanilla: &aDIAMOND:5"
+        - "&7MMOItems: &aMMOITEMS:SWORD:FIERY:1"
+        - "&7Chìa Khóa: &aKEY:door_1:1"
+        - "&7Mẹo: Gõ &cNONE &7để tắt yêu cầu này."
+      edit_action_radius:
+        - "&7Nhập bán kính cho vòng/khu vực."
+        - "&7Ví dụ: &a3.0"
+      edit_action_location:
+        - "&7Nhập tọa độ định dạng: &fX,Y,Z"
+        - "&7Mẹo: Gõ &ahere &7để dùng vị trí hiện tại của bạn."
       edit_insert_stage:
         - "&7Nhập vị trí Giai đoạn bạn muốn chèn vào."
         - "&7Ví dụ: &a2 &7(Sẽ đẩy màn 2 cũ xuống 3, để trống màn 2 mới)"

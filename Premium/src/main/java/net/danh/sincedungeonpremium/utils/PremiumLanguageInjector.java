@@ -19,48 +19,6 @@ public class PremiumLanguageInjector {
         if (editorCfg != null) {
             boolean editorChanged = false;
 
-            if (!editorCfg.getConfig().contains("editor.items.setting_req_item")) {
-                editorCfg.set("editor.items.setting_req_item", "&eRequired Entry Item");
-                editorCfg.set("editor.items.setting_req_item_lore", Arrays.asList("&7Current: &f<val>", "&eLeft Click to edit"));
-                editorCfg.set("editor.items.setting_consume_req_item", "&eConsume Required Item");
-                editorCfg.set("editor.items.setting_consume_req_item_lore", Arrays.asList("&7Current: <val>", "&eLeft Click to toggle"));
-                editorChanged = true;
-            }
-
-            if (!editorCfg.getConfig().contains("editor.items.setting_cooldown_on_leave")) {
-                editorCfg.set("editor.items.setting_cooldown_on_leave", "&eCooldown On Leave/Fail");
-                editorCfg.set("editor.items.setting_cooldown_on_leave_lore", Arrays.asList("&7Current: <val>", "&eLeft Click to toggle"));
-                editorChanged = true;
-            }
-
-            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_req_item")) {
-                editorCfg.set("editor.input.prompts.edit_req_item", Arrays.asList(
-                        "&7Enter the item format required to enter.",
-                        "&7Vanilla: &aDIAMOND:5",
-                        "&7MMOItems: &aMMOITEMS:SWORD:FIERY:1",
-                        "&7Dungeon Key: &aKEY:door_1:1",
-                        "&7Tip: Type &cNONE &7to disable this requirement."
-                ));
-                editorChanged = true;
-            }
-
-            // Core Fallback Fields Update
-            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_radius")) {
-                editorCfg.set("editor.input.prompts.edit_action_radius", Arrays.asList(
-                        "&7Enter the radius for the ring/area.",
-                        "&7Example: &a3.0"
-                ));
-                editorChanged = true;
-            }
-
-            if (!editorCfg.getConfig().contains("editor.input.prompts.edit_action_location")) {
-                editorCfg.set("editor.input.prompts.edit_action_location", Arrays.asList(
-                        "&7Enter coordinates format: &fX,Y,Z",
-                        "&7Tip: Type &ahere &7to use your current location."
-                ));
-                editorChanged = true;
-            }
-
             // --- Premium Fields & Action Injections ---
 
             if (!editorCfg.getConfig().contains("editor.actions_name.defend_core")) {

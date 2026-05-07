@@ -149,6 +149,18 @@ editor:
     setting_clear_drops_lore:
       - "&7Current: <val>"
       - "&eLeft Click to toggle"
+    setting_req_item: "&eRequired Entry Item"
+    setting_req_item_lore:
+      - "&7Current: &f<val>"
+      - "&eLeft Click to edit"
+    setting_consume_req_item: "&eConsume Required Item"
+    setting_consume_req_item_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
+    setting_cooldown_on_leave: "&eCooldown On Leave/Fail"
+    setting_cooldown_on_leave_lore:
+      - "&7Current: <val>"
+      - "&eLeft Click to toggle"
     click_edit: "&eLeft Click: Edit"
     create_new: "&a&lCreate New Dungeon"
     world_template: "&eWorld Template"
@@ -260,6 +272,18 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_req_item:
+        - "&7Enter the item format required to enter."
+        - "&7Vanilla: &aDIAMOND:5"
+        - "&7MMOItems: &aMMOITEMS:SWORD:FIERY:1"
+        - "&7Dungeon Key: &aKEY:door_1:1"
+        - "&7Tip: Type &cNONE &7to disable this requirement."
+      edit_action_radius:
+        - "&7Enter the radius for the ring/area."
+        - "&7Example: &a3.0"
+      edit_action_location:
+        - "&7Enter coordinates format: &fX,Y,Z"
+        - "&7Tip: Type &ahere &7to use your current location."
       edit_insert_stage:
         - "&7Enter the Stage position you want to insert."
         - "&7Example: &a2 &7(Moves stage 2 to 3, leaving 2 blank)"
