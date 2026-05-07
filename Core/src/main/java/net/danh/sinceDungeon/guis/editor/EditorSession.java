@@ -222,6 +222,10 @@ public class EditorSession {
         NONE, CREATE_FILENAME, EDIT_STRING, EDIT_NUMBER, EDIT_BOOLEAN, EDIT_LOCATION, EDIT_LOCATION_LIST, EDIT_LIST, EDIT_TIER, EDIT_CONDITION_CHECK, EDIT_KICK_DELAY
     }
 
+    /**
+     * Enumerates settings available via the main Editor GUI.
+     * Contains path mapping to local maps and global defaults.
+     */
     public enum SettingOption {
         KEEP_INV("settings.keep-inventory-on-death", "dungeon.gameplay.keep-inventory-on-death", Material.TOTEM_OF_UNDYING, "setting_keep_inv", "BOOL", true),
         PREVENT_DROP("settings.prevent-item-dropping", "dungeon.gameplay.prevent-item-dropping", Material.BARRIER, "setting_prevent_drop", "BOOL", true),
@@ -236,6 +240,7 @@ public class EditorSession {
         RANDOMIZE_STAGES("settings.randomize-stages", "dungeon.gameplay.randomize-stages", Material.ENDER_EYE, "setting_randomize_stages", "BOOL", false),
         MAX_PLAYERS("settings.max-players", null, Material.PLAYER_HEAD, "setting_max_players", "INT", -1),
         COOLDOWN("settings.cooldown-seconds", null, Material.CAMPFIRE, "setting_cooldown", "INT", 0),
+        COOLDOWN_ON_LEAVE("settings.cooldown-on-leave", "dungeon.gameplay.cooldown-on-leave", Material.IRON_DOOR, "setting_cooldown_on_leave", "BOOL", false),
         CMD_START("settings.commands.on-start", null, Material.COMMAND_BLOCK, "setting_cmd_start", "LIST", null),
         CMD_FINISH("settings.commands.on-finish", null, Material.REPEATING_COMMAND_BLOCK, "setting_cmd_finish", "LIST", null),
         CMD_FIRST_FINISH("settings.commands.on-first-finish", null, Material.COMMAND_BLOCK_MINECART, "setting_cmd_first_finish", "LIST", null),

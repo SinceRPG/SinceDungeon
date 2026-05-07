@@ -27,6 +27,12 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            if (!editorCfg.getConfig().contains("editor.items.setting_cooldown_on_leave")) {
+                editorCfg.set("editor.items.setting_cooldown_on_leave", "&eCooldown On Leave/Fail");
+                editorCfg.set("editor.items.setting_cooldown_on_leave_lore", Arrays.asList("&7Current: <val>", "&eLeft Click to toggle"));
+                editorChanged = true;
+            }
+
             if (!editorCfg.getConfig().contains("editor.input.prompts.edit_req_item")) {
                 editorCfg.set("editor.input.prompts.edit_req_item", Arrays.asList(
                         "&7Enter the item format required to enter.",

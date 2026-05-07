@@ -15,11 +15,13 @@ import java.util.Map;
 
 /**
  * Utility class to handle loading of dungeon configurations from files.
+ * Translates structural YML files into active Java Records to ensure Thread Safety.
  */
 public class DungeonLoader {
 
     /**
-     * Loads a DungeonTemplate from a YAML file.
+     * Loads a DungeonTemplate from a YAML file asynchronously or synchronously.
+     * Safely implements fallbacks to default global settings if missing from the specific file.
      *
      * @param plugin The main plugin instance.
      * @param id     The name of the dungeon file (without .yml).
@@ -48,6 +50,7 @@ public class DungeonLoader {
         boolean randomizeStages = config.contains("settings.randomize-stages") ? config.getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
         int maxPlayers = config.getInt("settings.max-players", -1);
         int cooldownSeconds = config.getInt("settings.cooldown-seconds", 0);
+        boolean cooldownOnLeave = config.contains("settings.cooldown-on-leave") ? config.getBoolean("settings.cooldown-on-leave") : plugin.getConfigFile().getBoolean("dungeon.gameplay.cooldown-on-leave", false);
         String requiredItem = config.getString("settings.required-item", "NONE");
         boolean consumeRequiredItem = config.getBoolean("settings.consume-required-item", true);
 
@@ -55,7 +58,14 @@ public class DungeonLoader {
         List<String> onFinishCmds = config.getStringList("settings.commands.on-finish");
         List<String> onFirstFinishCmds = config.getStringList("settings.commands.on-first-finish");
 
-        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(keepInv, preventDrop, blockPearls, kickDelay, forceWeather, saveStats, deathAction, clearMobDrops, reqLives, deductLives, randomizeStages, maxPlayers, cooldownSeconds, onStartCmds, onFinishCmds, onFirstFinishCmds, requiredItem, consumeRequiredItem);
+        DungeonTemplate.Settings settings = new DungeonTemplate.Settings(
+                keepInv, preventDrop, blockPearls, kickDelay, forceWeather,
+                saveStats, deathAction, clearMobDrops, reqLives, deductLives,
+                randomizeStages, maxPlayers, cooldownSeconds, cooldownOnLeave,
+                onStartCmds, onFinishCmds, onFirstFinishCmds, requiredItem,
+                consumeRequiredItem
+        );
+
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();
         ConfigurationSection condSec = config.getConfigurationSection("conditions");
         if (condSec != null) {
@@ -137,7 +147,8 @@ public class DungeonLoader {
     }
 
     /**
-     * Parses a string representation of a vector.
+     * Parses a string representation of a vector consistently.
+     * Prevents system crashes from bad inputs by catching arbitrary formatting.
      *
      * @param s The string to parse.
      * @return The parsed Vector.

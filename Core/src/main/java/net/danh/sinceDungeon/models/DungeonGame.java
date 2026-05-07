@@ -34,7 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
- * Represents an active instance of a Dungeon.
+ * Represents an active instance of a Dungeon game.
  * Manages player lifecycles, active stages, actions, timer ticking,
  * command triggers, and memory cleanup upon termination.
  */
@@ -94,6 +94,10 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
+    /**
+     * Initializes the stage layouts based on the Dungeon Template.
+     * Incorporates Rogue-Like dynamic shuffling if randomized stages are enabled.
+     */
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -138,6 +142,13 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Triggers dynamic commands assigned to stages or finish events.
+     * Evaluates PlaceholderAPI conditionals locally before execution.
+     *
+     * @param commands   List of raw commands
+     * @param stageIndex The current stage relative to the execution context
+     */
     private void executeActionCommands(List<String> commands, int stageIndex) {
         if (commands == null || commands.isEmpty()) return;
         for (Player p : participants) {
@@ -173,6 +184,10 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Commences the pre-game lobby preparation state.
+     * Starts asynchronously copying the physical world instance.
+     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
@@ -241,6 +256,10 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
+    /**
+     * Initializes the player state and teleports them to the active instance.
+     * Fires the first stage and begins the central dungeon tick loop.
+     */
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
@@ -317,6 +336,9 @@ public class DungeonGame {
         startStage(0);
     }
 
+    /**
+     * Executes the primary game loop verifying time limits and action objectives.
+     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -463,6 +485,9 @@ public class DungeonGame {
         startCurrentAction();
     }
 
+    /**
+     * Bridges external Bukkit events to the active objective logic.
+     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -611,6 +636,19 @@ public class DungeonGame {
     }
 
     /**
+     * Applies cooldown rules configured directly onto a given player.
+     * Overwrites any lesser cooldown that might exist.
+     */
+    private void applyCooldown(Player p) {
+        if (template == null) return;
+        int cooldownSeconds = template.settings().cooldownSeconds();
+        if (cooldownSeconds > 0) {
+            long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
+            plugin.getCooldownManager().setCooldown(p.getUniqueId(), template.id(), expireEpoch);
+        }
+    }
+
+    /**
      * Helper method to format elapsed seconds into a clean MM:SS string.
      *
      * @param seconds Total seconds elapsed.
@@ -622,6 +660,10 @@ public class DungeonGame {
         return String.format("%02d:%02d", m, s);
     }
 
+    /**
+     * Transitions the dungeon instance to a cleared state.
+     * Distributes rewards, persists leaderboards, and queues shutdown.
+     */
     private void finishDungeon() {
         this.isCleared = true;
         this.isRunning = false;
@@ -686,11 +728,8 @@ public class DungeonGame {
                         topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
                     }
 
-                    int cooldownSeconds = template.settings().cooldownSeconds();
-                    if (cooldownSeconds > 0) {
-                        long expireEpoch = System.currentTimeMillis() + (cooldownSeconds * 1000L);
-                        plugin.getCooldownManager().setCooldown(p.getUniqueId(), dungeonId, expireEpoch);
-                    }
+                    // Native clear applies standard cooldown rules
+                    applyCooldown(p);
                 }
             });
         }
@@ -776,6 +815,10 @@ public class DungeonGame {
         });
     }
 
+    /**
+     * Resolves unexpected player disconnects during an active session.
+     * Evaluates cooldown configurations and safely transitions their stored statistics.
+     */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
@@ -796,6 +839,11 @@ public class DungeonGame {
 
         restorePlayerState(p);
 
+        // Penalizes early leaving if configured
+        if (!isCleared && template != null && template.settings().cooldownOnLeave()) {
+            applyCooldown(p);
+        }
+
         if (participants != null) participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
 
@@ -813,6 +861,10 @@ public class DungeonGame {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
     }
 
+    /**
+     * Triggers the comprehensive shutdown protocol of a dungeon instance.
+     * Resolves early-termination penalties, clears active memory nodes, and safely unloads the world.
+     */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
@@ -822,6 +874,13 @@ public class DungeonGame {
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
+
+        // Apply early-leave cooldown penalties dynamically across the party for fails/force stops
+        if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
+            for (Player p : participants) {
+                applyCooldown(p);
+            }
+        }
 
         if (participants != null) {
             for (Player p : participants) {

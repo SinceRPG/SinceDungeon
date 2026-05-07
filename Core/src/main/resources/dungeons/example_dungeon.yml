@@ -37,6 +37,8 @@ settings:
   randomize-stages: false
   # Cooldown time after completing the dungeon (seconds)
   cooldown-seconds: 1800
+  # Apply the cooldown even if the player leaves early or fails
+  cooldown-on-leave: true
   # Commands to run at various stages of the dungeon
   commands:
     on-start:

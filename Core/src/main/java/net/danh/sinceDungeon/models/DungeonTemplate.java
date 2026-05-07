@@ -5,6 +5,7 @@ import java.util.Map;
 
 /**
  * Immutable data record that holds the complete parsed structure of a Dungeon.
+ * Provides rapid read access to settings preventing config I/O lag during gameplay.
  */
 public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                               List<Condition> conditions,
@@ -26,6 +27,7 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
 
     /**
      * Defines the gameplay settings and restrictions for the dungeon instance.
+     * Maps perfectly to the internal YAML configurations for dynamic checking.
      */
     public record Settings(boolean keepInventoryOnDeath, boolean preventItemDropping,
                            boolean blockEnderPearls, int kickDelayAfterFinish,
@@ -33,8 +35,9 @@ public record DungeonTemplate(String id, String templateWorld, boolean isPublic,
                            String deathAction, boolean clearMobDrops,
                            int requiredLivesToJoin, int livesDeductedPerDeath,
                            boolean randomizeStages, int maxPlayers,
-                           int cooldownSeconds, List<String> onStartCmds,
-                           List<String> onFinishCmds, List<String> onFirstFinishCmds,
-                           String requiredItem, boolean consumeRequiredItem) {
+                           int cooldownSeconds, boolean cooldownOnLeave,
+                           List<String> onStartCmds, List<String> onFinishCmds,
+                           List<String> onFirstFinishCmds, String requiredItem,
+                           boolean consumeRequiredItem) {
     }
 }

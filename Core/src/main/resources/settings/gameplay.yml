@@ -73,6 +73,8 @@ dungeon:
     block-commands: true
     # Shuffle the middle stages (Rogue-like mode).
     randomize-stages: false
+    # Apply dungeon cooldown even if the player leaves early, disconnects, or fails?
+    cooldown-on-leave: false
     # List of allowed commands inside dungeons.
     allowed-commands:
       - "/party"
