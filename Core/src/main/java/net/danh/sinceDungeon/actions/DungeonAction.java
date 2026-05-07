@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -12,6 +13,7 @@ import java.util.*;
 
 /**
  * Base abstract class for all dungeon actions/objectives.
+ * Handles unified execution states, entity cleanup, and objective UI rendering.
  */
 public abstract class DungeonAction {
     protected final Set<UUID> spawnedEntities = new HashSet<>();
@@ -58,6 +60,27 @@ public abstract class DungeonAction {
             });
         }
         spawnedEntities.clear();
+    }
+
+    /**
+     * Retrieves the set of entity UUIDs currently tracked by this action.
+     *
+     * @return The Set of tracked entity UUIDs.
+     */
+    public Set<UUID> getSpawnedEntities() {
+        return spawnedEntities;
+    }
+
+    /**
+     * Adds a newly spawned child entity (e.g., summoned by a MythicMob spawner) to the tracking list.
+     * Overridden by specific wave actions to update their internal mapping correctly.
+     *
+     * @param uuid         The UUID of the newly spawned child entity.
+     * @param loc          The spawn location.
+     * @param internalName The internal identifier name (if applicable).
+     */
+    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
+        this.spawnedEntities.add(uuid);
     }
 
     /**

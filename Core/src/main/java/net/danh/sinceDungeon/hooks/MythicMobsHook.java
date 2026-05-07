@@ -69,4 +69,22 @@ public class MythicMobsHook {
             return null;
         }
     }
+
+    /**
+     * Identifies if a given UUID was summoned by another MythicMob.
+     * Useful for tracking spawner-type parent mobs recursively.
+     *
+     * @param childUUID The UUID of the presumed child.
+     * @return The UUID of the parent MythicMob, or null if none exist.
+     */
+    public static UUID getParentUUID(UUID childUUID) {
+        try {
+            ActiveMob am = MythicBukkit.inst().getMobManager().getActiveMob(childUUID).orElse(null);
+            if (am != null && am.getParent().isPresent()) {
+                return am.getParent().get().getUniqueId();
+            }
+        } catch (Exception | NoClassDefFoundError ignored) {
+        }
+        return null;
+    }
 }

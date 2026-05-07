@@ -47,12 +47,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
-    private void debug(String message) {
-        if (SinceDungeon.getPlugin().getConfigFile().getBoolean("debug", false)) {
-            SinceDungeon.getPlugin().getLogger().info("[Debug-SpawnWave] " + message);
-        }
-    }
-
     @Override
     public String getObjectiveText() {
         String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.spawn_wave", "<yellow>Eliminate <red><mob> <gray>(Remaining: <remain>)");
@@ -67,48 +61,36 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     }
 
     @Override
+    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
+        super.trackChildEntity(uuid, loc, internalName);
+        spawnedMobs.put(uuid, loc);
+    }
+
+    @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-        List<Location> mobsToRespawn = new ArrayList<>();
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                if (ent.isDead()) return true;
+                if (ent.isDead() || !ent.isValid()) return true;
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
                 entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    mobsToRespawn.add(lastLoc);
-                    return true;
-                } else {
+                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
                     lastLoc.getChunk().load();
                     currentChunks.add(lastLoc.getChunk());
                     return false;
                 }
+                return true; // Gracefully handles removals natively
             }
         });
-
-        for (Location loc : mobsToRespawn) {
-            try {
-                Entity ent = game.getWorld().spawnEntity(loc, type);
-                if (ent instanceof LivingEntity living) {
-                    applyCustomProperties(living);
-                    spawnedMobs.put(ent.getUniqueId(), loc);
-                    this.spawnedEntities.add(ent.getUniqueId());
-                } else if (ent != null) {
-                    ent.remove();
-                }
-            } catch (Exception e) {
-                debug("EXCEPTION caught while respawning entity: " + e.getMessage());
-            }
-        }
 
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {
@@ -131,14 +113,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Enhanced safe spawn logic: Scans both upwards and downwards to ensure
-     * mobs don't suffocate in ceilings or spawn on unreachable roofs.
-     */
     private Location findSafeSpawn(Location original) {
         Location check = original.clone();
-
-        // Check downwards first to snap to the floor
         for (int i = 0; i < 5; i++) {
             if (check.getBlock().getType().isSolid()) {
                 check.add(0, 1, 0);
@@ -146,8 +122,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
             check.subtract(0, 1, 0);
         }
-
-        // Check upwards for head clearance
         for (int i = 0; i < 5; i++) {
             Block block = check.getBlock();
             Block head = check.clone().add(0, 1, 0).getBlock();
@@ -156,7 +130,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
             }
             check.add(0, 1, 0);
         }
-        return original; // Fallback
+        return original;
     }
 
     private void applyCustomProperties(LivingEntity living) {
@@ -208,8 +182,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                             living.setHealth(value);
                         }
                     }
-                } else {
-                    debug("Failed to find Bukkit Attribute mapping for: " + attrName);
                 }
             }
         }
@@ -261,14 +233,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         return attr;
     }
 
-    /**
-     * Initializes the spawning sequence for the configured entity type.
-     * Scans through all provided locations, calculates safe spawn coordinates,
-     * and applies custom entity properties including equipment and attributes.
-     * Registers successfully spawned entities into the tracking map.
-     *
-     * @param game The active dungeon game instance.
-     */
     @Override
     public void start(DungeonGame game) {
         int count = 0;
@@ -323,8 +287,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                     } else if (ent != null) {
                         ent.remove();
                     }
-                } catch (Exception e) {
-                    debug("EXCEPTION caught while spawning entity: " + e.getMessage());
+                } catch (Exception ignored) {
                 }
             }
         }

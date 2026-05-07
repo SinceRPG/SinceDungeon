@@ -35,12 +35,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         this.scaleWithParty = scaleWithParty;
     }
 
-    private void debug(String message) {
-        if (SinceDungeon.getPlugin().getConfigFile().getBoolean("debug", false)) {
-            SinceDungeon.getPlugin().getLogger().info("[Debug-MythicWave] " + message);
-        }
-    }
-
     @Override
     public String getObjectiveText() {
         String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.mythic_wave", "<dark_red>Defeat Boss <red><mob> <gray>(Remaining: <remain>)");
@@ -52,6 +46,12 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         super.cleanup(game);
         unlockChunks();
         spawnedMobs.clear();
+    }
+
+    @Override
+    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
+        super.trackChildEntity(uuid, loc, internalName);
+        spawnedMobs.put(uuid, loc);
     }
 
     private Location findSafeSpawn(Location original) {
@@ -150,7 +150,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             return;
         }
 
-        List<Location> mobsToRespawn = new ArrayList<>();
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
@@ -159,7 +158,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 String name = MythicMobsHook.getActiveMobName(uuid);
                 if (name != null) displayName.set(name);
 
-                if (ent.isDead()) return true;
+                if (ent.isDead() || !ent.isValid()) return true;
 
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
@@ -167,33 +166,14 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    mobsToRespawn.add(lastLoc);
-                    return true;
-                } else {
+                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
                     lastLoc.getChunk().load();
                     currentChunks.add(lastLoc.getChunk());
                     return false;
                 }
+                return true; // Entity was actively removed (Skill suicide/remove). Acknowledge as dead. Do not respawn.
             }
         });
-
-        for (Location loc : mobsToRespawn) {
-            try {
-                Entity bukkitEntity = MythicMobsHook.spawnMythicMob(loc, internalName, this.level);
-                if (bukkitEntity != null) {
-                    if (bukkitEntity instanceof LivingEntity le) {
-                        le.setRemoveWhenFarAway(false);
-                        le.setPersistent(true);
-                    }
-                    spawnedMobs.put(bukkitEntity.getUniqueId(), loc);
-                    this.spawnedEntities.add(bukkitEntity.getUniqueId());
-                    String name = MythicMobsHook.getActiveMobName(bukkitEntity.getUniqueId());
-                    if (name != null) displayName.set(name);
-                }
-            } catch (Exception ignored) {
-            }
-        }
 
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {
@@ -223,7 +203,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
                     if (spawnedMobs.isEmpty()) {
                         this.completed = true;
-
                         String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
                         if (mobName == null) mobName = internalName;
 

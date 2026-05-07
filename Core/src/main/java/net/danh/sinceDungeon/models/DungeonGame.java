@@ -142,13 +142,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Triggers dynamic commands assigned to stages or finish events.
-     * Evaluates PlaceholderAPI conditionals locally before execution.
-     *
-     * @param commands   List of raw commands
-     * @param stageIndex The current stage relative to the execution context
-     */
     private void executeActionCommands(List<String> commands, int stageIndex) {
         if (commands == null || commands.isEmpty()) return;
         for (Player p : participants) {
@@ -184,10 +177,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Commences the pre-game lobby preparation state.
-     * Starts asynchronously copying the physical world instance.
-     */
     public void startLobby() {
         if (isPreparing || isRunning) return;
         isPreparing = true;
@@ -256,10 +245,6 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    /**
-     * Initializes the player state and teleports them to the active instance.
-     * Fires the first stage and begins the central dungeon tick loop.
-     */
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
@@ -336,9 +321,6 @@ public class DungeonGame {
         startStage(0);
     }
 
-    /**
-     * Executes the primary game loop verifying time limits and action objectives.
-     */
     private void runTick() {
         if (stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -485,9 +467,6 @@ public class DungeonGame {
         startCurrentAction();
     }
 
-    /**
-     * Bridges external Bukkit events to the active objective logic.
-     */
     public void onEvent(Event event) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
 
@@ -514,6 +493,22 @@ public class DungeonGame {
             if (killer != null && participants != null && participants.contains(killer)) {
                 playerKills.merge(killer.getUniqueId(), 1, Integer::sum);
             }
+        }
+    }
+
+    /**
+     * Tracks a child entity summoned by a parent entity already in the wave.
+     * Ensures that spawner mobs correctly pass wave requirements to their summons.
+     * Overrides polymorphism across action models.
+     */
+    public void trackChildEntity(UUID parentId, UUID childId, Location loc, String internalName) {
+        if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
+        List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+        if (currentActionIndex >= currentStageActions.size()) return;
+        DungeonAction action = currentStageActions.get(currentActionIndex);
+
+        if (action.getSpawnedEntities().contains(parentId)) {
+            action.trackChildEntity(childId, loc, internalName);
         }
     }
 
@@ -635,10 +630,6 @@ public class DungeonGame {
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    /**
-     * Applies cooldown rules configured directly onto a given player.
-     * Overwrites any lesser cooldown that might exist.
-     */
     private void applyCooldown(Player p) {
         if (template == null) return;
         int cooldownSeconds = template.settings().cooldownSeconds();
@@ -648,22 +639,12 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Helper method to format elapsed seconds into a clean MM:SS string.
-     *
-     * @param seconds Total seconds elapsed.
-     * @return Formatted MM:SS time string.
-     */
     private String formatTime(long seconds) {
         long m = seconds / 60;
         long s = seconds % 60;
         return String.format("%02d:%02d", m, s);
     }
 
-    /**
-     * Transitions the dungeon instance to a cleared state.
-     * Distributes rewards, persists leaderboards, and queues shutdown.
-     */
     private void finishDungeon() {
         this.isCleared = true;
         this.isRunning = false;
@@ -728,7 +709,6 @@ public class DungeonGame {
                         topManager.incrementClears(dungeonId, p.getUniqueId(), p.getName());
                     }
 
-                    // Native clear applies standard cooldown rules
                     applyCooldown(p);
                 }
             });
@@ -757,7 +737,6 @@ public class DungeonGame {
             }
         }
 
-        // PUSH REWARD DISTRIBUTION BEFORE TELEPORT COUNTDOWN TO FIX INSTANT CLOSURE
         String shareMode = plugin.getConfigFile().getString("party.reward-share-mode", "EQUAL");
 
         for (Player p : participants) {
@@ -767,7 +746,7 @@ public class DungeonGame {
             if (currentLeader == null) currentLeader = initiatorId;
 
             if (shareMode.equalsIgnoreCase("LEADER_ONLY") && !p.getUniqueId().equals(currentLeader)) {
-                // Leader only mode prevents other players from participating
+                // Ignore others
             } else if (eventChestCount > 0 && hasRewards) {
                 plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
                 plugin.getRewardManager().getRewardSystem().distributeRewards(p, template, eventChestCount);
@@ -782,7 +761,6 @@ public class DungeonGame {
             for (Player p : participants) {
                 if (!p.isOnline() || p.isDead()) continue;
 
-                // Force claim any remaining spins they didn't use before the teleport
                 plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
 
                 if (p.isInsideVehicle()) p.leaveVehicle();
@@ -815,10 +793,6 @@ public class DungeonGame {
         });
     }
 
-    /**
-     * Resolves unexpected player disconnects during an active session.
-     * Evaluates cooldown configurations and safely transitions their stored statistics.
-     */
     public void handlePlayerDisconnect(Player p) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
@@ -839,7 +813,6 @@ public class DungeonGame {
 
         restorePlayerState(p);
 
-        // Penalizes early leaving if configured
         if (!isCleared && template != null && template.settings().cooldownOnLeave()) {
             applyCooldown(p);
         }
@@ -861,10 +834,6 @@ public class DungeonGame {
         stop(teleport, DungeonEndEvent.EndReason.FORCE_STOPPED);
     }
 
-    /**
-     * Triggers the comprehensive shutdown protocol of a dungeon instance.
-     * Resolves early-termination penalties, clears active memory nodes, and safely unloads the world.
-     */
     public void stop(boolean teleport, DungeonEndEvent.EndReason reason) {
         if (isStopping) return;
         isStopping = true;
@@ -875,7 +844,6 @@ public class DungeonGame {
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
 
-        // Apply early-leave cooldown penalties dynamically across the party for fails/force stops
         if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
             for (Player p : participants) {
                 applyCooldown(p);

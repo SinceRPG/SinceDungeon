@@ -38,6 +38,13 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
+    @Override
+    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
+        super.trackChildEntity(uuid, loc, internalName);
+        spawnedMobs.put(uuid, loc);
+        if (internalName != null) mobDisplayNames.put(uuid, internalName);
+    }
+
     public static List<MobOption> parseMobPool(List<String> raw) {
         List<MobOption> pool = new ArrayList<>();
         for (String entry : raw) {
@@ -54,12 +61,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
         }
         return pool;
-    }
-
-    private void debug(String message) {
-        if (SinceDungeon.getPlugin().getConfigFile().getBoolean("settings.debug", false)) {
-            SinceDungeon.getPlugin().getLogger().info("[Debug-RandomWave] " + message);
-        }
     }
 
     private MobOption pickRandom() {
@@ -92,16 +93,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         return original;
     }
 
-    /**
-     * Executes the internal spawning logic based on the provided MobOption configuration.
-     * Dynamically routes the request to either the Vanilla Bukkit entity spawner or the MythicMobs API hook.
-     * Applies visual particle effects and sound cues upon successful generation.
-     *
-     * @param game The active dungeon game instance.
-     * @param loc  The pre-calculated safe location to spawn the entity.
-     * @param opt  The selected mob configuration containing type, ID, and level data.
-     * @return The UUID of the spawned entity, or null if the spawn process failed.
-     */
     private UUID spawnMob(DungeonGame game, Location loc, MobOption opt) {
         try {
             String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.mob_spawn", "CAMPFIRE_COSY_SMOKE");
@@ -116,14 +107,8 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             Sound sType = SoundUtils.getSound(sName);
 
             if (opt.isMythic()) {
-                if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
-                    debug("MythicMobs not installed. Cannot spawn MYTHIC mob.");
-                    return null;
-                }
-                if (!MythicMobsHook.isValidMythicMob(opt.id())) {
-                    debug("MythicMob ID '" + opt.id() + "' not found.");
-                    return null;
-                }
+                if (!Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) return null;
+                if (!MythicMobsHook.isValidMythicMob(opt.id())) return null;
 
                 Entity e = MythicMobsHook.spawnMythicMob(loc, opt.id(), opt.level());
                 if (e instanceof LivingEntity le) {
@@ -140,7 +125,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 try {
                     type = EntityType.valueOf(opt.id().toUpperCase());
                 } catch (IllegalArgumentException ex) {
-                    debug("Invalid Vanilla EntityType: " + opt.id());
                     return null;
                 }
                 loc.getChunk().load(true);
@@ -157,8 +141,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                     e.remove();
                 }
             }
-        } catch (Exception e) {
-            debug("Exception during spawn: " + e.getMessage());
+        } catch (Exception ignored) {
         }
         return null;
     }
@@ -215,41 +198,27 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         if (completed) return;
 
         Set<Chunk> currentChunks = new HashSet<>();
-        List<Map.Entry<UUID, Location>> toRespawn = new ArrayList<>();
 
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                if (ent.isDead()) return true;
+                if (ent.isDead() || !ent.isValid()) return true;
                 Chunk c = ent.getLocation().getChunk();
                 currentChunks.add(c);
                 entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    toRespawn.add(Map.entry(uuid, lastLoc));
-                    return true;
-                } else {
+                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
                     lastLoc.getChunk().load();
                     currentChunks.add(lastLoc.getChunk());
                     return false;
                 }
+                return true; // Accurately register chunk-loaded removals as completed
             }
         });
-
-        for (Map.Entry<UUID, Location> entry : toRespawn) {
-            MobOption opt = pickRandom();
-            if (opt == null) continue;
-            UUID newUid = spawnMob(game, entry.getValue(), opt);
-            if (newUid != null) {
-                spawnedMobs.put(newUid, entry.getValue());
-                mobDisplayNames.put(newUid, opt.id());
-                this.spawnedEntities.add(newUid);
-            }
-        }
 
         for (Chunk c : currentChunks) {
             if (!lockedChunks.contains(c)) {

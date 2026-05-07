@@ -1,14 +1,21 @@
 package net.danh.sinceDungeon.listeners;
 
 import io.lumine.mythic.bukkit.events.MythicMobDeathEvent;
+import io.lumine.mythic.bukkit.events.MythicMobSpawnEvent;
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+
+import java.util.UUID;
 
 /**
  * Specifically listens to events originating from the MythicMobs plugin.
+ * Handles death events and tracks newly summoned child mobs for Spawner mechanics.
  */
 public class MythicListener implements Listener {
     private final SinceDungeon plugin;
@@ -17,19 +24,37 @@ public class MythicListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Handles the death event of a MythicMob.
-     * Delegates the event to the active dungeon instance to progress wave actions.
-     *
-     * @param e The MythicMob death event.
-     */
-    @EventHandler
+    @EventHandler(priority = EventPriority.NORMAL)
     public void onMMDeath(MythicMobDeathEvent e) {
         if (e.getEntity() != null) {
             World w = e.getEntity().getWorld();
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(w)) {
                     game.onEvent(e);
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Intercepts MythicMobs spawns inside Dungeon instances.
+     * Links child mobs (e.g. summoned Bosses) to their invisible Spawners
+     * seamlessly allowing the HUD objectives to track the actual Boss.
+     */
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onMMSpawn(MythicMobSpawnEvent e) {
+        if (e.getEntity() != null) {
+            World w = e.getEntity().getWorld();
+            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
+                if (game.getWorld() != null && game.getWorld().equals(w)) {
+                    // Delay by 1 tick to ensure parent data is fully initialized within MythicMobs internally
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());
+                        if (parentId != null) {
+                            game.trackChildEntity(parentId, e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
+                        }
+                    }, 1L);
                     break;
                 }
             }
