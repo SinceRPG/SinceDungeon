@@ -38,6 +38,7 @@ objective:
   loot_chest: "&6Mở rương tiếp tế để đi tiếp"
   mythic_wave: "&4Đánh bại Boss &c<mob> &7(Còn: <remain>)"
   reach_location: "&aDi chuyển đến tọa độ mục tiêu"
+  teleport: "&dĐang dịch chuyển..."
   break_wall: "&bTìm và phá vỡ Khối đá phong ấn"
   spawn_wave: "&eTiêu diệt &c<mob> &7(Còn: <remain>)"
   random_wave: "&eTiêu diệt tất cả kẻ địch &7(Còn: <remain>)"

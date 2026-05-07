@@ -217,6 +217,23 @@ public class DefaultRegistry {
                 plugin.getLanguageManager().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
+        // --- NEW ACTION: TELEPORT ---
+        Map<String, Object> tpDefaults = new HashMap<>();
+        tpDefaults.put("location", "0,64,0");
+        tpDefaults.put("sound", "entity.enderman.teleport");
+        tpDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.teleport.start_message"));
+
+        Map<String, List<String>> tpPrompts = new HashMap<>();
+        tpPrompts.put("location", plugin.getLanguageManager().getStringList("editor.input.prompts.edit_action_location"));
+        tpPrompts.put("sound", plugin.getLanguageManager().getStringList("editor.input.prompts.edit_action_sound"));
+
+        manager.registerAction("TELEPORT", map -> new TeleportAction(
+                        String.valueOf(map.getOrDefault("location", tpDefaults.get("location"))),
+                        String.valueOf(map.getOrDefault("sound", tpDefaults.get("sound")))
+                ), plugin.getLanguageManager().getString("editor.actions_name.teleport", "Teleport Players"), Material.ENDER_PEARL,
+                plugin.getLanguageManager().getString("editor.actions.teleport", "Teleports all participants to a specific location."),
+                tpDefaults, tpPrompts);
+
         Map<String, Object> chestDefaults = new HashMap<>();
         chestDefaults.put("location", "0,0,0");
         chestDefaults.put("per_player", false);
@@ -249,7 +266,6 @@ public class DefaultRegistry {
                             }
                         }
                     }
-                    // FIXED: LootChestAction constructor now properly receives 4 arguments (including requiredKey)
                     return new LootChestAction(loc, itemsConfig, perPlayer, requiredKey);
                 }, plugin.getLanguageManager().getString("editor.actions_name.loot_chest", "Loot Treasure Chest"), Material.CHEST,
                 plugin.getLanguageManager().getString("editor.actions.loot_chest", "Loot Chest"),

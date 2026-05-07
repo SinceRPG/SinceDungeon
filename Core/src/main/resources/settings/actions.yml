@@ -23,6 +23,11 @@ action-defaults:
     time_penalty: 1
     start_message:
       - "&eMove to the next checkpoint!"
+  teleport:
+    location: "0,64,0"
+    sound: "entity.enderman.teleport"
+    start_message:
+      - "&dYou have been teleported!"
   mythic_wave:
     mob: "SkeletonKing"
     amount: 1
@@ -102,6 +107,10 @@ action-notifications:
     warning: true
     complete: true
   reach_location:
+    custom_start: true
+    init: true
+    complete: true
+  teleport:
     custom_start: true
     init: true
     complete: true

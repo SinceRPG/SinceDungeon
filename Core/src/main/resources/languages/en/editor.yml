@@ -17,6 +17,7 @@ editor:
   actions_name:
     spawn_wave: "Spawn Vanilla Mob"
     reach_location: "Reach Checkpoint"
+    teleport: "Teleport Players"
     loot_chest: "Loot Treasure Chest"
     break_wall: "Break Wall via Block"
     mythic_wave: "Spawn Mythic Boss"
@@ -27,6 +28,7 @@ editor:
   actions:
     spawn_wave: "Spawn Vanilla monster waves"
     reach_location: "Require player to reach a coordinate"
+    teleport: "Teleports all participants to a specific location."
     loot_chest: "Spawn a lootable treasure chest"
     break_wall: "Destroy wall when trigger block is broken"
     mythic_wave: "Spawn MythicMobs Boss"
@@ -284,6 +286,9 @@ editor:
       edit_action_location:
         - "&7Enter coordinates format: &fX,Y,Z"
         - "&7Tip: Type &ahere &7to use your current location."
+      edit_action_sound:
+        - "&7Enter the sound you want to play."
+        - "&7Example: &aentity.enderman.teleport"
       edit_insert_stage:
         - "&7Enter the Stage position you want to insert."
         - "&7Example: &a2 &7(Moves stage 2 to 3, leaving 2 blank)"

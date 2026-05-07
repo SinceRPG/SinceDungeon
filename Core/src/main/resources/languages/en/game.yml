@@ -37,6 +37,7 @@ objective:
   loot_chest: "&6Loot the supply chest to proceed"
   mythic_wave: "&4Defeat Boss &c<mob> &7(Left: <remain>)"
   reach_location: "&aReach the designated coordinates"
+  teleport: "&dTeleporting..."
   break_wall: "&bFind and break the sealing block"
   spawn_wave: "&eEliminate &c<mob> &7(Left: <remain>)"
   random_wave: "&eEliminate all enemies &7(Left: <remain>)"

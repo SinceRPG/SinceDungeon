@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ConfigUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.List;
 
@@ -110,7 +111,7 @@ public class ConfigManager {
         return route(path).getConfig().getConfigurationSection(path);
     }
 
-    public org.bukkit.configuration.file.FileConfiguration getConfig() {
+    public FileConfiguration getConfig() {
         return mainConfig.getConfig();
     }
 }

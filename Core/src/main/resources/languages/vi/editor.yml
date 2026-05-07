@@ -17,6 +17,7 @@ editor:
   actions_name:
     spawn_wave: "Triệu hồi Quái Vanilla"
     reach_location: "Đến Trạm Kiểm Tra"
+    teleport: "Dịch chuyển nhanh"
     loot_chest: "Tạo Rương Tiếp Tế"
     break_wall: "Phá Tường Bằng Khối"
     mythic_wave: "Triệu hồi Boss Mythic"
@@ -27,6 +28,7 @@ editor:
   actions:
     spawn_wave: "Tạo đợt quái vật Vanilla cơ bản"
     reach_location: "Yêu cầu người chơi di chuyển tới tọa độ chỉ định"
+    teleport: "Dịch chuyển toàn bộ người chơi sang tọa độ khác."
     loot_chest: "Tạo rương kho báu và yêu cầu thu thập"
     break_wall: "Xóa bức tường chắn khi khối kích hoạt bị phá"
     mythic_wave: "Triệu hồi Boss từ hệ thống MythicMobs"
@@ -284,6 +286,9 @@ editor:
       edit_action_location:
         - "&7Nhập tọa độ định dạng: &fX,Y,Z"
         - "&7Mẹo: Gõ &ahere &7để dùng vị trí hiện tại của bạn."
+      edit_action_sound:
+        - "&7Nhập âm thanh muốn phát."
+        - "&7Ví dụ: &aentity.enderman.teleport"
       edit_insert_stage:
         - "&7Nhập vị trí Giai đoạn bạn muốn chèn vào."
         - "&7Ví dụ: &a2 &7(Sẽ đẩy màn 2 cũ xuống 3, để trống màn 2 mới)"
