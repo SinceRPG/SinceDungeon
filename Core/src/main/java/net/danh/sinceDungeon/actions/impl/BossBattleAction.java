@@ -52,6 +52,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private BossBar bossBar = null;
     private long spawnTimeMillis = 0;
     private boolean isEnraged = false;
+    private double lastProgress = -1;
 
     public BossBattleAction(Vector spawnLoc, EntityType mobType, String customName, double baseHealth,
                             double scaleHealthPerPlayer, String barColor, String barStyle,
@@ -161,10 +162,15 @@ public class BossBattleAction extends DungeonAction implements Tickable {
             }
         }
 
+        // JIT Optimization: Packet Flow reduction
         AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
         double maxHealth = healthAttr != null ? healthAttr.getValue() : 100.0;
         double progress = Math.max(0.0, Math.min(1.0, boss.getHealth() / maxHealth));
-        bossBar.setProgress(progress);
+
+        if (Math.abs(progress - lastProgress) > 0.005) {
+            bossBar.setProgress(progress);
+            lastProgress = progress;
+        }
     }
 
     @Override

@@ -32,7 +32,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final List<String> customDrops;
 
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
-    private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations,
                            String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList, boolean scaleWithParty, List<String> customDrops) {
@@ -56,7 +55,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
-        unlockChunks();
         spawnedMobs.clear();
     }
 
@@ -70,41 +68,22 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        Set<Chunk> currentChunks = new HashSet<>();
+        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
                 if (ent.isDead() || !ent.isValid()) return true;
-                Chunk c = ent.getLocation().getChunk();
-                currentChunks.add(c);
                 entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    lastLoc.getChunk().load();
-                    currentChunks.add(lastLoc.getChunk());
-                    return false;
+                if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
+                    return false; // Safely skip unloaded entities
                 }
-                return true; // Gracefully handles removals natively
-            }
-        });
-
-        for (Chunk c : currentChunks) {
-            if (!lockedChunks.contains(c)) {
-                c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                lockedChunks.add(c);
-            }
-        }
-
-        lockedChunks.removeIf(c -> {
-            if (!currentChunks.contains(c)) {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
                 return true;
             }
-            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
@@ -272,10 +251,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                     if (ent instanceof LivingEntity living) {
                         applyCustomProperties(living);
 
-                        Chunk c = finalLoc.getChunk();
-                        c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                        lockedChunks.add(c);
-
                         game.getWorld().spawnParticle(pType, finalLoc.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.05);
                         if (sType != null) {
                             game.getWorld().playSound(finalLoc, sType, 0.5f, 0.5f);
@@ -312,16 +287,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                 }
             }
         }
-    }
-
-    private void unlockChunks() {
-        for (Chunk c : lockedChunks) {
-            try {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {
-            }
-        }
-        lockedChunks.clear();
     }
 
     private void handleCustomDrops(Location loc) {

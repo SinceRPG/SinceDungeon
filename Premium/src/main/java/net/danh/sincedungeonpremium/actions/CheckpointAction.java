@@ -5,12 +5,15 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.MathCache;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
+
+import java.util.Locale;
 
 /**
  * Premium Action: Save Checkpoint
@@ -26,6 +29,7 @@ public class CheckpointAction extends DungeonAction implements Tickable {
 
     private Location centerLoc;
     private int ticksElapsed = 0;
+    private Particle cachedParticle;
 
     public CheckpointAction(String locationStr, double radius, String soundStr, String particleStr) {
         this.locationStr = locationStr;
@@ -42,6 +46,13 @@ public class CheckpointAction extends DungeonAction implements Tickable {
         }
         Vector vec = DungeonLoader.parseVector(locationStr);
         this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY() + 1, vec.getBlockZ() + 0.5);
+
+        try {
+            this.cachedParticle = Particle.valueOf(particleStr.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            this.cachedParticle = Particle.TOTEM_OF_UNDYING;
+        }
+
         game.sendActionMessage(this, "init", "action.checkpoint_start");
     }
 
@@ -50,18 +61,16 @@ public class CheckpointAction extends DungeonAction implements Tickable {
         if (completed || centerLoc == null) return;
         ticksElapsed++;
 
-        // Render the physical ring visually
+        // Render the physical ring visually with pre-calculated Trig and mutable location vectors
         if (ticksElapsed % 5 == 0) {
-            try {
-                Particle pType = Particle.valueOf(particleStr.toUpperCase());
-                double r = Math.max(1.0, radius);
-                for (int i = 0; i < 360; i += 30) {
-                    double angle = i * Math.PI / 180;
-                    double x = r * Math.cos(angle);
-                    double z = r * Math.sin(angle);
-                    centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, 0.5, z), 1, 0, 0, 0, 0);
-                }
-            } catch (IllegalArgumentException ignored) {
+            double r = Math.max(1.0, radius);
+            Location particleLoc = centerLoc.clone();
+
+            for (int i = 0; i < 360; i += 30) {
+                double x = r * MathCache.COS[i];
+                double z = r * MathCache.SIN[i];
+                particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + 0.5, centerLoc.getZ() + z);
+                centerLoc.getWorld().spawnParticle(cachedParticle, particleLoc, 1, 0, 0, 0, 0);
             }
         }
 
@@ -77,11 +86,7 @@ public class CheckpointAction extends DungeonAction implements Tickable {
                     }
                 }
 
-                try {
-                    Particle pType = Particle.valueOf(particleStr.toUpperCase());
-                    game.getWorld().spawnParticle(pType, centerLoc, 50, 0.5, 1, 0.5, 0.1);
-                } catch (IllegalArgumentException ignored) {
-                }
+                game.getWorld().spawnParticle(cachedParticle, centerLoc, 50, 0.5, 1, 0.5, 0.1);
 
                 game.sendActionMessage(this, "complete", "action.checkpoint_complete");
                 this.forceComplete();

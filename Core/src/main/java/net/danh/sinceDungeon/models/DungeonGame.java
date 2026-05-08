@@ -63,6 +63,9 @@ public class DungeonGame {
     private long startTime;
     private int serverTicksActive = 0;
 
+    private String lastActionBarText = "";
+    private Component lastParsedBar = null;
+
     public DungeonGame(SinceDungeon plugin, Player initiator, Set<Player> rawParticipants, DungeonTemplate template) {
         this.plugin = plugin;
         this.initiatorId = initiator.getUniqueId();
@@ -279,15 +282,12 @@ public class DungeonGame {
             p.closeInventory();
             p.setVelocity(new Vector(0, 0, 0));
 
-            // BUG FIX: Unconditionally apply MVI Bypass so Multiverse doesn't wipe
-            // the player's inventory when they transition into the Dungeon World.
             applyMviBypass(p);
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     p.setNoDamageTicks(60);
 
-                    // Only clear inventory inside the dungeon if save-and-restore is explicitly requested
                     if (saveStats) {
                         AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                         p.setHealth(attr != null ? attr.getValue() : 20.0);
@@ -381,11 +381,16 @@ public class DungeonGame {
                     objText += cachedTimeLeftFormat.replace("<time>", String.valueOf(timeLeft));
                 }
 
-                // JIT Optimization: Compile Component once per tick instead of per player
-                Component parsedBar = ColorUtils.parse(cachedObjectivePrefix + objText);
+                // JIT Optimization: Compile Component once per tick if changed
+                String finalBarText = cachedObjectivePrefix + objText;
+                if (!finalBarText.equals(lastActionBarText) || lastParsedBar == null) {
+                    lastActionBarText = finalBarText;
+                    lastParsedBar = ColorUtils.parse(finalBarText);
+                }
+
                 for (Player p : participants) {
                     if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
-                        p.sendActionBar(parsedBar);
+                        p.sendActionBar(lastParsedBar);
                     }
                 }
             } else {
@@ -1011,6 +1016,7 @@ public class DungeonGame {
         this.dungeonWorld = null;
         this.initiatorId = null;
         this.template = null;
+        this.lastParsedBar = null;
     }
 
     public void restorePlayerState(Player p) {

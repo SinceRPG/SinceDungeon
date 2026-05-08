@@ -104,7 +104,7 @@ public class PremiumCommand {
                                                             plugin.getFileManager().sendMessage(p, "admin.stage_inserted", "<pos>", String.valueOf(pos), "<map>", mapId);
                                                         }
                                                     } catch (IOException e) {
-                                                        plugin.getLogger().warning("Failed to save stage shift data!");
+                                                        plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("admin.stage_save_fail"));
                                                     }
 
                                                     return 1;

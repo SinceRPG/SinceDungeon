@@ -7,7 +7,10 @@ import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.SoundUtils;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -26,7 +29,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     private final List<MobOption> mobPool;
     private final boolean scaleWithParty;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
-    private final Set<Chunk> lockedChunks = new HashSet<>();
     private final Map<UUID, String> mobDisplayNames = new HashMap<>();
     private final List<String> customDrops;
 
@@ -177,10 +179,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                     spawnedMobs.put(uid, spawnLoc);
                     mobDisplayNames.put(uid, opt.id());
                     this.spawnedEntities.add(uid);
-
-                    Chunk c = spawnLoc.getChunk();
-                    c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                    lockedChunks.add(c);
                     count++;
                 }
             }
@@ -197,41 +195,22 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        Set<Chunk> currentChunks = new HashSet<>();
-
+        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
                 if (ent.isDead() || !ent.isValid()) return true;
-                Chunk c = ent.getLocation().getChunk();
-                currentChunks.add(c);
                 entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    lastLoc.getChunk().load();
-                    currentChunks.add(lastLoc.getChunk());
-                    return false;
+                if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
+                    return false; // Safely skip unloaded entities
                 }
-                return true; // Accurately register chunk-loaded removals as completed
-            }
-        });
-
-        for (Chunk c : currentChunks) {
-            if (!lockedChunks.contains(c)) {
-                c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                lockedChunks.add(c);
-            }
-        }
-        lockedChunks.removeIf(c -> {
-            if (!currentChunks.contains(c)) {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
                 return true;
             }
-            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
@@ -260,19 +239,8 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
-        unlockChunks();
         spawnedMobs.clear();
         mobDisplayNames.clear();
-    }
-
-    private void unlockChunks() {
-        for (Chunk c : lockedChunks) {
-            try {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {
-            }
-        }
-        lockedChunks.clear();
     }
 
     private void handleCustomDrops(Location loc) {

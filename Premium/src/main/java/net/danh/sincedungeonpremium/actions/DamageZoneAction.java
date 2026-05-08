@@ -5,10 +5,13 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.MathCache;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
+
+import java.util.Locale;
 
 /**
  * Premium Action: Damage Zone
@@ -26,6 +29,7 @@ public class DamageZoneAction extends DungeonAction implements Tickable {
 
     private Location centerLoc;
     private int ticksElapsed = 0;
+    private Particle cachedParticle;
 
     public DamageZoneAction(String locationStr, double radius, double damage, int damageInterval, int durationTicks, String particleStr) {
         this.locationStr = locationStr;
@@ -45,6 +49,12 @@ public class DamageZoneAction extends DungeonAction implements Tickable {
 
         Vector vec = DungeonLoader.parseVector(locationStr);
         this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY(), vec.getBlockZ() + 0.5);
+
+        try {
+            this.cachedParticle = Particle.valueOf(particleStr.toUpperCase(Locale.ROOT));
+        } catch (Exception ignored) {
+            this.cachedParticle = Particle.CAMPFIRE_COSY_SMOKE;
+        }
     }
 
     @Override
@@ -57,21 +67,20 @@ public class DamageZoneAction extends DungeonAction implements Tickable {
             return;
         }
 
-        // Draw the hazard particles constantly
+        // Draw the hazard particles constantly with pre-calculated Trig and mutable location vectors
         if (ticksElapsed % 5 == 0) {
-            try {
-                Particle pType = Particle.valueOf(particleStr.toUpperCase());
-                double r = Math.max(1.0, radius);
-                for (int i = 0; i < 360; i += 30) {
-                    double angle = i * Math.PI / 180;
-                    double x = r * Math.cos(angle);
-                    double z = r * Math.sin(angle);
-                    centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, 0.5, z), 2, 0.2, 0.5, 0.2, 0);
-                }
-                // Fill the center slightly
-                centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(0, 0.5, 0), 10, radius / 2, 0.5, radius / 2, 0);
-            } catch (Exception ignored) {
+            double r = Math.max(1.0, radius);
+            Location particleLoc = centerLoc.clone();
+
+            for (int i = 0; i < 360; i += 30) {
+                double x = r * MathCache.COS[i];
+                double z = r * MathCache.SIN[i];
+                particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + 0.5, centerLoc.getZ() + z);
+                centerLoc.getWorld().spawnParticle(cachedParticle, particleLoc, 2, 0.2, 0.5, 0.2, 0);
             }
+
+            particleLoc.set(centerLoc.getX(), centerLoc.getY() + 0.5, centerLoc.getZ());
+            centerLoc.getWorld().spawnParticle(cachedParticle, particleLoc, 10, radius / 2, 0.5, radius / 2, 0);
         }
 
         // Deal damage on interval

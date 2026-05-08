@@ -6,7 +6,6 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -15,8 +14,10 @@ import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.util.Vector;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
@@ -25,7 +26,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final List<Vector> locations;
     private final boolean scaleWithParty;
     private final Map<UUID, Location> spawnedMobs = new HashMap<>();
-    private final Set<Chunk> lockedChunks = new HashSet<>();
 
     public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty) {
         this.internalName = internalName;
@@ -44,7 +44,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
-        unlockChunks();
         spawnedMobs.clear();
     }
 
@@ -113,9 +112,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                             le.setRemoveWhenFarAway(false);
                             le.setPersistent(true);
                         }
-                        Chunk c = finalLoc.getChunk();
-                        c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                        lockedChunks.add(c);
 
                         spawnedMobs.put(bukkitEntity.getUniqueId(), finalLoc);
                         this.spawnedEntities.add(bukkitEntity.getUniqueId());
@@ -142,57 +138,27 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        Set<Chunk> currentChunks = new HashSet<>();
-        AtomicReference<String> displayName = new AtomicReference<>(internalName);
-
-        if (!MythicMobsHook.isValidMythicMob(internalName)) {
-            this.completed = true;
-            return;
-        }
-
+        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
 
             if (ent != null) {
-                String name = MythicMobsHook.getActiveMobName(uuid);
-                if (name != null) displayName.set(name);
-
                 if (ent.isDead() || !ent.isValid()) return true;
-
-                Chunk c = ent.getLocation().getChunk();
-                currentChunks.add(c);
                 entry.setValue(ent.getLocation());
                 return false;
             } else {
                 Location lastLoc = entry.getValue();
-                if (!lastLoc.getWorld().isChunkLoaded(lastLoc.getBlockX() >> 4, lastLoc.getBlockZ() >> 4)) {
-                    lastLoc.getChunk().load();
-                    currentChunks.add(lastLoc.getChunk());
-                    return false;
+                if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
+                    return false; // Safely skip unloaded entities without deleting them
                 }
-                return true; // Entity was actively removed (Skill suicide/remove). Acknowledge as dead. Do not respawn.
-            }
-        });
-
-        for (Chunk c : currentChunks) {
-            if (!lockedChunks.contains(c)) {
-                c.addPluginChunkTicket(SinceDungeon.getPlugin());
-                lockedChunks.add(c);
-            }
-        }
-
-        lockedChunks.removeIf(c -> {
-            if (!currentChunks.contains(c)) {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
                 return true;
             }
-            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
             this.completed = true;
-            game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", displayName.get());
+            game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", internalName);
         }
     }
 
@@ -216,15 +182,5 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                 }
             }
         }
-    }
-
-    private void unlockChunks() {
-        for (Chunk c : lockedChunks) {
-            try {
-                c.removePluginChunkTicket(SinceDungeon.getPlugin());
-            } catch (Exception ignored) {
-            }
-        }
-        lockedChunks.clear();
     }
 }
