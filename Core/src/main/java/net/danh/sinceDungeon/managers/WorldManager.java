@@ -75,17 +75,6 @@ public class WorldManager {
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
                         world.setAutoSave(false);
-//                        if (ServerVersion.isAtMost(1, 21, 10)) {
-//                            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-//                            world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
-//                            world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-//                            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
-//                        } else {
-//                            world.setGameRule(GameRules.SPAWN_MOBS, false);
-//                            world.setGameRule(GameRules.SHOW_ADVANCEMENT_MESSAGES, false);
-//                            world.setGameRule(GameRules.ADVANCE_WEATHER, false);
-//                            world.setGameRule(GameRules.ADVANCE_TIME, false);
-//                        }
                         world.setTime(6000);
                         world.setStorm(false);
                         world.setThundering(false);
@@ -102,7 +91,8 @@ public class WorldManager {
             });
 
         }).exceptionally(ex -> {
-            plugin.getLogger().severe("[WorldManager] Error generating dungeon world: " + ex.getMessage());
+            String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[WorldManager] Error generating dungeon world: <error>");
+            plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage()));
             ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
 
@@ -138,16 +128,18 @@ public class WorldManager {
 
     private static void performUnload(SinceDungeon plugin, World world, File folder) {
         if (Bukkit.unloadWorld(world, false)) {
-            plugin.getLogger().info("Unloaded dungeon world: " + world.getName());
-
+            String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
+            plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
 
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
-                    plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName() + ". It may be locked by another process.");
+                    String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
+                    plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
                 }
             }, 40L);
         } else {
-            plugin.getLogger().warning("Could not unload world: " + world.getName());
+            String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
+            plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
         }
     }
 
@@ -160,14 +152,16 @@ public class WorldManager {
         }
 
         if (Bukkit.unloadWorld(world, false)) {
-            plugin.getLogger().info("Force unloaded dungeon world: " + world.getName());
+            String logSuccess = plugin.getLanguageManager().getString("admin.log.world_force_unloaded", "Force unloaded dungeon world: <world>");
+            plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
 
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 WorldUtils.deleteWorld(folder);
             }, 40L);
 
         } else {
-            plugin.getLogger().severe("CRITICAL: Failed to force-unload world " + world.getName() + " during shutdown!");
+            String logCritical = plugin.getLanguageManager().getString("admin.log.world_force_unload_fail", "CRITICAL: Failed to force-unload world <world> during shutdown!");
+            plugin.getLogger().severe(logCritical.replace("<world>", world.getName()));
         }
     }
 }

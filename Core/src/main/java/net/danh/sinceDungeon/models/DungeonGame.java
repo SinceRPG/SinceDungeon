@@ -21,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -33,14 +34,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-/**
- * Represents an active instance of a Dungeon game.
- * Manages player lifecycles, active stages, actions, timer ticking,
- * command triggers, and memory cleanup upon termination.
- */
 public class DungeonGame {
     private final SinceDungeon plugin;
     private final Map<UUID, PlayerState> savedStates = new ConcurrentHashMap<>();
+    private final Map<UUID, PermissionAttachment> permAttachments = new ConcurrentHashMap<>();
     private final String worldName;
     private final Map<UUID, Integer> playerKills = new ConcurrentHashMap<>();
     private final String cachedObjectivePrefix;
@@ -94,10 +91,26 @@ public class DungeonGame {
         return state != null ? state.location : null;
     }
 
-    /**
-     * Initializes the stage layouts based on the Dungeon Template.
-     * Incorporates Rogue-Like dynamic shuffling if randomized stages are enabled.
-     */
+    private void applyMviBypass(Player p) {
+        if (p == null || !p.isOnline()) return;
+        if (!permAttachments.containsKey(p.getUniqueId())) {
+            PermissionAttachment attachment = p.addAttachment(plugin);
+            attachment.setPermission("mvinv.bypass.*", true);
+            attachment.setPermission("Multiverse-Inventories.bypass.*", true);
+            permAttachments.put(p.getUniqueId(), attachment);
+        }
+    }
+
+    private void removeMviBypass(Player p) {
+        if (p == null || !p.isOnline()) return;
+        PermissionAttachment attachment = permAttachments.remove(p.getUniqueId());
+        if (attachment != null) {
+            try {
+                p.removeAttachment(attachment);
+            } catch (Exception ignored) {}
+        }
+    }
+
     private void parseStages() {
         List<Integer> keys = new ArrayList<>(template.stages().keySet());
         Collections.sort(keys);
@@ -207,7 +220,8 @@ public class DungeonGame {
                 .exceptionally(ex -> {
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         broadcastMessage("error.create_failed");
-                        plugin.getLogger().severe("Failed to create dungeon world: " + ex.getMessage());
+                        String logFail = plugin.getLanguageManager().getString("admin.log.instance_create_fail", "Failed to create dungeon world: <error>");
+                        plugin.getLogger().severe(logFail.replace("<error>", ex.getMessage()));
                         stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
                     });
                     return null;
@@ -258,7 +272,12 @@ public class DungeonGame {
                 continue;
             }
             if (p.isInsideVehicle()) p.leaveVehicle();
+            p.closeInventory();
             p.setVelocity(new Vector(0, 0, 0));
+
+            if (saveStats) {
+                applyMviBypass(p);
+            }
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
@@ -277,6 +296,7 @@ public class DungeonGame {
                         p.getInventory().setExtraContents(null);
                         p.setLevel(0);
                         p.setExp(0f);
+                        p.updateInventory();
                     }
                     p.setFallDistance(0);
                 }
@@ -287,6 +307,7 @@ public class DungeonGame {
             participants.remove(failed);
             plugin.getDungeonManager().removeGame(failed.getUniqueId());
             savedStates.remove(failed.getUniqueId());
+            removeMviBypass(failed);
         }
 
         if (participants.isEmpty()) {
@@ -342,7 +363,8 @@ public class DungeonGame {
                 try {
                     tickable.onTick(this);
                 } catch (Exception e) {
-                    plugin.getLogger().warning("Tick error in action: " + e.getMessage());
+                    String logWarn = plugin.getLanguageManager().getString("admin.log.action_tick_error", "Tick error in action: <error>");
+                    plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage()));
                 }
             }
 
@@ -370,12 +392,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Handles the time limit penalty when players fail to complete an action in time.
-     * Updated to support the new isQuitting flag.
-     *
-     * @param action The action that ran out of time.
-     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
@@ -418,7 +434,8 @@ public class DungeonGame {
                 try {
                     currentStageActions.get(i).cleanup(this);
                 } catch (Exception ex) {
-                    plugin.getLogger().warning("Cleanup error on timeout: " + ex.getMessage());
+                    String logWarn = plugin.getLanguageManager().getString("admin.log.action_cleanup_error", "Cleanup error on timeout: <error>");
+                    plugin.getLogger().warning(logWarn.replace("<error>", ex.getMessage()));
                 }
             }
             startStage(currentStageIndex);
@@ -458,7 +475,8 @@ public class DungeonGame {
             action.announceStart(this);
             action.start(this);
         } catch (Exception e) {
-            plugin.getLogger().severe("Error starting action: " + e.getMessage());
+            String logWarn = plugin.getLanguageManager().getString("admin.log.action_start_error", "Error starting action: <error>");
+            plugin.getLogger().severe(logWarn.replace("<error>", e.getMessage()));
             action.forceComplete();
         }
 
@@ -485,7 +503,8 @@ public class DungeonGame {
             try {
                 action.onEvent(this, event);
             } catch (Exception e) {
-                plugin.getLogger().warning("Event handling error in action: " + e.getMessage());
+                String logWarn = plugin.getLanguageManager().getString("admin.log.action_event_error", "Event handling error in action: <error>");
+                plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage()));
             }
 
             if (action.isCompleted()) {
@@ -502,11 +521,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Tracks a child entity summoned by a parent entity already in the wave.
-     * Ensures that spawner mobs correctly pass wave requirements to their summons.
-     * Overrides polymorphism across action models.
-     */
     public void trackChildEntity(UUID parentId, UUID childId, Location loc, String internalName) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
         List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
@@ -770,6 +784,7 @@ public class DungeonGame {
                 plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
 
                 if (p.isInsideVehicle()) p.leaveVehicle();
+                p.closeInventory();
                 p.setVelocity(new Vector(0, 0, 0));
 
                 plugin.getDungeonManager().addTransitioning(p.getUniqueId());
@@ -784,11 +799,11 @@ public class DungeonGame {
 
                     p.teleportAsync(targetLoc).thenAccept(success -> {
                         if (success && p.isOnline()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
                         } else if (p.isOnline()) {
                             Bukkit.getScheduler().runTask(plugin, () -> {
                                 p.teleport(targetLoc);
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
                             });
                         }
                     });
@@ -799,13 +814,6 @@ public class DungeonGame {
         });
     }
 
-    /**
-     * Handles the complete disconnection sequence for a player leaving the dungeon.
-     * Restores player state (inventory, health, etc.) and safely manages locations.
-     *
-     * @param p          The player disconnecting.
-     * @param isQuitting If true, prevents teleportation to safely allow BungeeCord/Velocity cross-server transfers.
-     */
     public void handlePlayerDisconnect(Player p, boolean isQuitting) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
@@ -816,6 +824,7 @@ public class DungeonGame {
                 p.spigot().respawn();
             }
             if (p.isInsideVehicle()) p.leaveVehicle();
+            p.closeInventory();
             p.setVelocity(new Vector(0, 0, 0));
 
             PlayerState state = savedStates.get(p.getUniqueId());
@@ -824,9 +833,10 @@ public class DungeonGame {
             if (wasInDungeon) {
                 p.teleport(targetLoc);
             }
+            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+        } else {
+            restorePlayerState(p);
         }
-
-        restorePlayerState(p);
 
         if (!isCleared && template != null && template.settings().cooldownOnLeave()) {
             applyCooldown(p);
@@ -877,6 +887,7 @@ public class DungeonGame {
                         if (p.isDead()) p.spigot().respawn();
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
+                        p.closeInventory();
                         p.setVelocity(new Vector(0, 0, 0));
                         PlayerState state = savedStates.get(p.getUniqueId());
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
@@ -890,11 +901,11 @@ public class DungeonGame {
                         } else {
                             p.teleportAsync(targetLoc).thenAccept(success -> {
                                 if (success) {
-                                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
                                 } else {
                                     Bukkit.getScheduler().runTask(plugin, () -> {
                                         p.teleport(targetLoc);
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 5L);
+                                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
                                     });
                                 }
                             });
@@ -940,6 +951,7 @@ public class DungeonGame {
                     if (p.isDead()) p.spigot().respawn();
 
                     if (p.isInsideVehicle()) p.leaveVehicle();
+                    p.closeInventory();
                     p.setVelocity(new Vector(0, 0, 0));
 
                     PlayerState state = savedStates.get(p.getUniqueId());
@@ -981,12 +993,24 @@ public class DungeonGame {
         if (participants != null) {
             participants.clear();
         }
+        if (permAttachments != null) {
+            permAttachments.values().forEach(att -> {
+                try {
+                    if (att.getPermissible() != null) att.getPermissible().removeAttachment(att);
+                } catch (Exception ignored) {}
+            });
+            permAttachments.clear();
+        }
         this.dungeonWorld = null;
         this.initiatorId = null;
         this.template = null;
     }
 
     public void restorePlayerState(Player p) {
+        if (p == null || !p.isOnline()) return;
+
+        removeMviBypass(p);
+
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
             NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
@@ -1022,6 +1046,7 @@ public class DungeonGame {
                 p.getInventory().setExtraContents(state.extraContents);
                 p.setLevel(state.level);
                 p.setExp(state.exp);
+                p.updateInventory();
             } else {
                 if (p.getGameMode() == GameMode.SPECTATOR) {
                     p.setGameMode(GameMode.SURVIVAL);

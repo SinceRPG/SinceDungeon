@@ -63,7 +63,7 @@ public class DungeonManager {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (pendingCrossServerGames.containsKey(leader)) {
                 pendingCrossServerGames.remove(leader);
-                plugin.getPartyManager().getProvider().disbandParty(leader); // Adjusted API call
+                plugin.getPartyManager().getProvider().disbandParty(leader);
 
                 String logMsg = plugin.getLanguageManager().getString("admin.log.cross_server_timeout_cancel");
                 if (logMsg != null) {
@@ -81,7 +81,7 @@ public class DungeonManager {
         Player leader = Bukkit.getPlayer(leaderUuid);
         if (leader == null || !leader.isOnline()) return;
 
-        Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(leaderUuid); // Adjusted API call
+        Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(leaderUuid);
 
         String foundMsg = plugin.getLanguageManager().getString("cross_server.found");
         if (foundMsg != null)
@@ -270,7 +270,8 @@ public class DungeonManager {
             }
             return action;
         } catch (Exception e) {
-            plugin.getLogger().warning("Failed to create action " + type + ": " + e.getMessage());
+            String logMsg = plugin.getLanguageManager().getString("admin.log.action_create_fail", "Failed to create action <type>: <error>");
+            plugin.getLogger().warning(logMsg.replace("<type>", type).replace("<error>", e.getMessage()));
             e.printStackTrace();
             return null;
         }
@@ -410,7 +411,6 @@ public class DungeonManager {
                 return;
             }
 
-            // --- ENTRY CONDITIONS VERIFICATION ---
             ConditionProcessor conditionProcessor = conditionProcessors.get("PAPI");
             if (conditionProcessor != null && tmpl.conditions() != null && !tmpl.conditions().isEmpty()) {
                 for (Player participant : participants) {
@@ -423,13 +423,12 @@ public class DungeonManager {
                                 String leaderMsg = plugin.getLanguageManager().getString("party.member_failed_condition", "&cMember <player> does not meet the condition. Aborting Dungeon entry.");
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
                             }
-                            return; // Abort join for the entire party
+                            return;
                         }
                     }
                 }
             }
 
-            // --- MAX PLAYERS VERIFICATION ---
             int maxPlayers = tmpl.settings().maxPlayers();
             if (maxPlayers > 0 && participants.size() > maxPlayers) {
                 String msg = plugin.getLanguageManager().getString("error.exceed_max_players", "&cThis dungeon allows a maximum of <max> players! Your party is too large.");
@@ -453,7 +452,7 @@ public class DungeonManager {
                                         .replace("<player>", participant.getName());
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg));
                             }
-                            return; // Abort join process
+                            return;
                         }
                     }
                 }
@@ -477,7 +476,7 @@ public class DungeonManager {
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg.replace("<player>", participant.getName())));
                             }
                         }
-                        return; // Abort join for party
+                        return;
                     }
                 }
             }
@@ -496,7 +495,8 @@ public class DungeonManager {
             try {
                 game.startLobby();
             } catch (Exception e) {
-                plugin.getLogger().severe("Error starting dungeon lobby for " + p.getName());
+                String logErr = plugin.getLanguageManager().getString("admin.log.lobby_error", "Error starting dungeon lobby for <player>");
+                plugin.getLogger().severe(logErr.replace("<player>", p.getName()));
                 e.printStackTrace();
                 for (Player participant : participants) {
                     activeGames.remove(participant.getUniqueId());
@@ -535,19 +535,10 @@ public class DungeonManager {
         activeGames.clear();
     }
 
-    /**
-     * Registers a custom item provider for a specific prefix.
-     *
-     * @param prefix   The prefix used in config (e.g. "MY_PLUGIN").
-     * @param provider The provider logic.
-     */
     public void registerItemProvider(String prefix, CustomItemProvider provider) {
         customItemProviders.put(prefix.toUpperCase(), provider);
     }
 
-    /**
-     * Retrieves the custom item provider for a specific prefix.
-     */
     public CustomItemProvider getItemProvider(String prefix) {
         return customItemProviders.get(prefix.toUpperCase());
     }

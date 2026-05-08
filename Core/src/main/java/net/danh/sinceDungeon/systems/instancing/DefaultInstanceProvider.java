@@ -17,10 +17,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Native Bukkit implementation of the InstanceProvider.
- * Uses standard file I/O to copy and load world directories.
- */
 public class DefaultInstanceProvider implements InstanceProvider {
 
     private final SinceDungeon plugin;
@@ -32,7 +28,6 @@ public class DefaultInstanceProvider implements InstanceProvider {
 
     @Override
     public void initialize() {
-        // No startup listeners needed for native instancing
     }
 
     @Override
@@ -106,7 +101,8 @@ public class DefaultInstanceProvider implements InstanceProvider {
 
             releaseTemplateLock(templateName, templateW);
         })).exceptionally(ex -> {
-            plugin.getLogger().severe("[InstanceProvider] Error generating dungeon world: " + ex.getMessage());
+            String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[InstanceProvider] Error generating dungeon world: <error>");
+            plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage()));
             finalFuture.completeExceptionally(ex);
             Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
             return null;
@@ -141,11 +137,13 @@ public class DefaultInstanceProvider implements InstanceProvider {
         if (Bukkit.unloadWorld(world, false)) {
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
-                    plugin.getLogger().warning("Failed to fully delete world folder: " + folder.getName() + ". It may be locked by another process.");
+                    String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
+                    plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
                 }
             }, 40L);
         } else {
-            plugin.getLogger().warning("Could not unload world: " + world.getName());
+            String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
+            plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
         }
     }
 
@@ -161,7 +159,8 @@ public class DefaultInstanceProvider implements InstanceProvider {
         if (Bukkit.unloadWorld(world, false)) {
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
         } else {
-            plugin.getLogger().severe("CRITICAL: Failed to force-unload world " + world.getName() + " during shutdown!");
+            String logCritical = plugin.getLanguageManager().getString("admin.log.world_force_unload_fail", "CRITICAL: Failed to force-unload world <world> during shutdown!");
+            plugin.getLogger().severe(logCritical.replace("<world>", world.getName()));
         }
     }
 }

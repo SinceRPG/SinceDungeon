@@ -6,11 +6,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.*;
 
-/**
- * Manages dynamically modularized language files.
- * Routes message queries to the correct category file based on the root path node.
- * Ensures all language files are properly structured inside the languages/<locale>/ folder.
- */
 public class LanguageManager {
     private final SinceDungeon plugin;
     private final String locale;
@@ -21,7 +16,6 @@ public class LanguageManager {
     public LanguageManager(SinceDungeon plugin, String locale) {
         this.plugin = plugin;
         this.locale = locale;
-        // Properly structures all locale files inside the languages/<locale>/ directory
         this.basePath = "languages/" + locale + "/";
         initMapping();
         loadConfigs();
