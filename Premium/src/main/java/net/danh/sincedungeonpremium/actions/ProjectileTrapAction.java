@@ -12,10 +12,13 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Projectile;
 import org.bukkit.util.Vector;
 
+import java.util.Locale;
+
 /**
  * Premium Action: Projectile Trap
  * A configurable dungeon hazard that periodically shoots Projectiles (Arrows, Fireballs)
  * from a specific location in a designated direction and speed.
+ * Optimized: Caches the Enum EntityType to avoid Reflection matching during rapid ticks.
  */
 public class ProjectileTrapAction extends DungeonAction implements Tickable {
 
@@ -29,6 +32,7 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
     private Location loc;
     private Vector dir;
     private int ticksElapsed = 0;
+    private EntityType cachedType;
 
     public ProjectileTrapAction(String locationStr, String directionStr, String projectileType, int interval, double speed, int duration) {
         this.locationStr = locationStr;
@@ -50,11 +54,18 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
         loc.getChunk().load(true); // Ensured Chunk is actively generated and simulated prior to physics handling
 
         dir = DungeonLoader.parseVector(directionStr).normalize().multiply(speed);
+
+        try {
+            cachedType = EntityType.valueOf(projectileType.toUpperCase(Locale.ROOT));
+        } catch (Exception e) {
+            SinceDungeonPremium.getInstance().getLogger().warning("Invalid Projectile EntityType: " + projectileType);
+            forceComplete();
+        }
     }
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || loc == null) return;
+        if (completed || loc == null || cachedType == null) return;
         ticksElapsed++;
 
         if (ticksElapsed >= duration) {
@@ -64,17 +75,14 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
 
         if (ticksElapsed % interval == 0) {
             try {
-                EntityType type = EntityType.valueOf(projectileType.toUpperCase());
-                Entity ent = loc.getWorld().spawnEntity(loc, type);
+                Entity ent = loc.getWorld().spawnEntity(loc, cachedType);
                 if (ent instanceof Projectile proj) {
                     proj.setVelocity(dir);
                     spawnedEntities.add(proj.getUniqueId());
                 } else {
                     ent.remove();
                 }
-            } catch (IllegalArgumentException e) {
-                SinceDungeonPremium.getInstance().getLogger().warning("Invalid Projectile EntityType: " + projectileType);
-                forceComplete();
+            } catch (Exception ignored) {
             }
         }
     }

@@ -19,19 +19,38 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Executes dynamic difficulty modifiers (Affixes) across all active Dungeon Maps.
+ * Optimized: Aggressively caches active affixes to memory to prevent massive File I/O YAML spikes on every hit event.
+ */
 public class AffixListener implements Listener {
 
     private final SinceDungeonPremium plugin;
+    private final Map<String, List<String>> affixCache = new ConcurrentHashMap<>();
 
     public AffixListener(SinceDungeonPremium plugin) {
         this.plugin = plugin;
     }
 
+    public void clearCache() {
+        affixCache.clear();
+    }
+
+    /**
+     * Checks if a dungeon game currently has an active affix.
+     * Computes the list into a localized hashmap to preserve ticks during heavy combat.
+     */
     private boolean hasAffix(DungeonGame game, String affix) {
         if (game == null || game.getTemplate() == null) return false;
         String dungeonId = game.getTemplate().id();
-        List<String> activeAffixes = plugin.getFileManager().getConfig().getStringList("affixes." + dungeonId);
+
+        List<String> activeAffixes = affixCache.computeIfAbsent(dungeonId, k ->
+                plugin.getFileManager().getConfig().getStringList("affixes." + k)
+        );
+
         return activeAffixes.contains(affix.toUpperCase());
     }
 
@@ -98,8 +117,6 @@ public class AffixListener implements Listener {
                     for (Player p : deathLoc.getWorld().getPlayers()) {
                         if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {
                             p.damage(damage);
-
-                            // Query message dynamically directly from Core Language System
                             String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.affix_volcanic_hit", "&cYou were burned by a Volcanic explosion!");
                             p.sendMessage(ColorUtils.parseWithPrefix(msg));
                         }

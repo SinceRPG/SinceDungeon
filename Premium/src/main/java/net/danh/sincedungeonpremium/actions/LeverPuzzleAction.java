@@ -25,7 +25,7 @@ import java.util.Random;
  * Handles the Lever Puzzle objective.
  * Physically places levers with random states at defined locations.
  * Requires players to interact with them in the exact order.
- * Applies a time penalty if the sequence is broken.
+ * Optimized: Caches sounds during start() to prevent YAML IO reads during interact events.
  */
 public class LeverPuzzleAction extends DungeonAction {
 
@@ -34,6 +34,9 @@ public class LeverPuzzleAction extends DungeonAction {
     private final List<Location> parsedLevers = new ArrayList<>();
     private final Random random = new Random();
     private int currentIndex = 0;
+
+    private Sound soundSuccess;
+    private Sound soundFail;
 
     public LeverPuzzleAction(List<String> rawLevers, int failTimePenalty) {
         this.rawLevers = rawLevers;
@@ -46,6 +49,12 @@ public class LeverPuzzleAction extends DungeonAction {
             this.forceComplete();
             return;
         }
+
+        // JIT Optimization: Pre-fetch sounds to prevent config lookups mid-combat
+        String s1 = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_success", "block.note_block.chime");
+        soundSuccess = SoundUtils.getSound(s1);
+        String s2 = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_fail", "block.note_block.bass");
+        soundFail = SoundUtils.getSound(s2);
 
         for (String s : rawLevers) {
             Vector vec = DungeonLoader.parseVector(s);
@@ -102,8 +111,6 @@ public class LeverPuzzleAction extends DungeonAction {
                             expectedLoc.getBlockZ() == clickedLoc.getBlockZ()) {
 
                         currentIndex++;
-                        String soundSuccessStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_success", "block.note_block.chime");
-                        Sound soundSuccess = SoundUtils.getSound(soundSuccessStr);
                         if (soundSuccess != null) {
                             e.getPlayer().playSound(clickedLoc, soundSuccess, 1f, 2f);
                         }
@@ -116,8 +123,6 @@ public class LeverPuzzleAction extends DungeonAction {
                         e.setCancelled(true);
                         currentIndex = 0; // Reset progression
 
-                        String soundFailStr = SinceDungeonPremium.getInstance().getFileManager().getConfig().getString("sounds.puzzle_fail", "block.note_block.bass");
-                        Sound soundFail = SoundUtils.getSound(soundFailStr);
                         if (soundFail != null) {
                             e.getPlayer().playSound(clickedLoc, soundFail, 1f, 0.5f);
                         }

@@ -36,7 +36,7 @@ import java.util.Random;
  * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
  * - Preserves ALL metadata formatting (Names, Lore, NBT) when displaying preview items.
  * - Securely pushes execution back into Core systems to process the won rewards.
- * - Secures rewards in case of early inventory closure while handling GUI transitions.
+ * - Optimized: Avoids IO lookups during high-frequency runnable loops.
  */
 public class RouletteManager implements Listener {
 
@@ -77,6 +77,10 @@ public class RouletteManager implements Listener {
     }
 
     private void startSpinAnimation(Player player, Inventory inv, List<DungeonReward> pool, RewardSession session, DungeonReward wonReward) {
+        // JIT Optimization: Pre-fetch sound data to avoid YAML read loops during animation ticks
+        String soundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_tick", "block.note_block.hat");
+        Sound soundTick = SoundUtils.getSound(soundStr);
+
         new BukkitRunnable() {
             int ticks = 0;
             int delay = 1;
@@ -97,8 +101,6 @@ public class RouletteManager implements Listener {
                 ItemStack displayItem = buildDisplayItem(nextReward);
                 inv.setItem(9, displayItem);
 
-                String soundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_tick", "block.note_block.hat");
-                Sound soundTick = SoundUtils.getSound(soundStr);
                 if (soundTick != null) {
                     player.playSound(player.getLocation(), soundTick, 1f, 1f);
                 }
