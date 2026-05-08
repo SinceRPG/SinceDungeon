@@ -50,7 +50,7 @@ public class TopManager {
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to fetch clear count for player.", e);
+            plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_fetch_error", "[TopManager] Failed to fetch clear count for player."), e);
         }
         return 0;
     }
@@ -87,7 +87,7 @@ public class TopManager {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to save clear time.", e);
+                plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_save_error", "[TopManager] Failed to save clear time."), e);
             }
         });
     }
@@ -109,7 +109,7 @@ public class TopManager {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to save party clear time.", e);
+                plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_save_error", "[TopManager] Failed to save party clear time."), e);
             }
         });
     }
@@ -147,7 +147,7 @@ public class TopManager {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to save kill count.", e);
+                plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_save_error", "[TopManager] Failed to save kill count."), e);
             }
         });
     }
@@ -183,7 +183,7 @@ public class TopManager {
                     ps.executeUpdate();
                 }
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to increment clear count.", e);
+                plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_save_error", "[TopManager] Failed to increment clear count."), e);
             }
         });
     }
@@ -251,7 +251,7 @@ public class TopManager {
                 }
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.WARNING, "[TopManager] Failed to query top " + category, e);
+            plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.top_fetch_error", "[TopManager] Failed to query top records."), e);
         }
 
         return results;

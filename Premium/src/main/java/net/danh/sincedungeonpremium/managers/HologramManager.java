@@ -53,7 +53,7 @@ public class HologramManager {
             plugin.getFileManager().sendMessage(player, "admin.holo_created");
             updateAllHolograms(); // Force an immediate visual refresh
         } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save hologram to config!");
+            plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("admin.holo_config_save_error"));
             plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
         }
     }
@@ -77,7 +77,7 @@ public class HologramManager {
                 plugin.getFileManager().sendMessage(player, "admin.holo_moved");
                 updateAllHolograms(); // Force a positional refresh immediately
             } catch (IOException e) {
-                plugin.getLogger().warning("Failed to save config after moving hologram!");
+                plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("admin.holo_config_save_error"));
                 plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
             }
         } else {
@@ -103,7 +103,7 @@ public class HologramManager {
                 }
                 plugin.getFileManager().sendMessage(player, "admin.holo_deleted");
             } catch (IOException e) {
-                plugin.getLogger().warning("Failed to save config after deleting hologram!");
+                plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("admin.holo_config_save_error"));
                 plugin.getFileManager().sendMessage(player, "admin.holo_save_fail");
             }
         } else {
@@ -113,7 +113,7 @@ public class HologramManager {
 
     public void startUpdater() {
         if (!Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) {
-            plugin.getLogger().warning("DecentHolograms not installed. Holographic Leaderboards disabled.");
+            plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("admin.holo_plugin_missing"));
             return;
         }
 

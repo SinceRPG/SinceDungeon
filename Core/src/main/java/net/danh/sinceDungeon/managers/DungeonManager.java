@@ -312,7 +312,8 @@ public class DungeonManager {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
                     if (t != null) bufferMap.put(id, t);
                 } catch (Exception e) {
-                    plugin.getLogger().severe("Error loading template " + id + ": " + e.getMessage());
+                    String msg = plugin.getLanguageManager().getString("admin.log.template_load_error", "Error loading template <id>: <error>");
+                    plugin.getLogger().severe(msg.replace("<id>", id).replace("<error>", e.getMessage()));
                 }
             });
             futures.add(future);

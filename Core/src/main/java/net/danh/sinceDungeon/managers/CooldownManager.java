@@ -45,7 +45,7 @@ public class CooldownManager {
                     }
                 }
             } catch (SQLException e) {
-                plugin.getLogger().log(Level.WARNING, "[CooldownManager] Failed to load cooldowns.", e);
+                plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.cooldown_load_error", "[CooldownManager] Failed to load cooldowns."), e);
             }
         });
     }

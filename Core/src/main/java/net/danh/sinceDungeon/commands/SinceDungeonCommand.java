@@ -9,6 +9,7 @@ import io.papermc.paper.plugin.lifecycle.event.registrar.ReloadableRegistrarEven
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.managers.LivesManager;
+import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
@@ -28,7 +29,7 @@ import java.util.List;
 
 /**
  * Handles the registration and execution of administrative /sincedungeonpremium commands.
- * Now natively supports the 'stage insert' command to manipulate YAML configurations safely.
+ * Natively supports the 'stage insert' command to manipulate YAML configurations safely.
  */
 public class SinceDungeonCommand {
 
