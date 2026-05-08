@@ -75,7 +75,7 @@ public class DefaultPartyProvider implements PartyProvider {
     @Override
     public String getMemberName(UUID memberId) {
         Party party = activeParties.get(memberId);
-        return party != null ? party.getMemberName(memberId) : "Unknown";
+        return party != null ? party.getMemberName(memberId) : plugin.getLanguageManager().getString("party.unknown_player", "Unknown");
     }
 
     @Override
@@ -98,7 +98,9 @@ public class DefaultPartyProvider implements PartyProvider {
         );
 
         String shortId = party.getLeader().toString().substring(0, 6);
-        plugin.getLogger().info("[Party Chat - " + shortId + "] " + ColorUtils.toPlainText(finalComponent));
+
+        String logFormat = plugin.getLanguageManager().getString("admin.log.party_chat_console", "[Party Chat - <id>] <msg>");
+        plugin.getLogger().info(logFormat.replace("<id>", shortId).replace("<msg>", ColorUtils.toPlainText(finalComponent)));
 
         party.getMembers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);

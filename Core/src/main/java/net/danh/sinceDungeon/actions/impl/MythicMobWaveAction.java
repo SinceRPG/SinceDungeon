@@ -205,12 +205,14 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                     if (spawnedMobs.isEmpty() && (targetToKill.equalsIgnoreCase("NONE") || hasTargetSpawned)) {
                         this.completed = true;
                         String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
-                        if (mobName == null) mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
+                        if (mobName == null)
+                            mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
 
                         game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
                     } else if (targetToKill.equalsIgnoreCase("NONE") || hasTargetSpawned) {
                         String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
-                        if (mobName == null) mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
+                        if (mobName == null)
+                            mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
 
                         game.sendActionMessage(this, "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", mobName);
                     }

@@ -141,7 +141,8 @@ public class ItemBuilder {
             }
 
         } catch (Throwable e) {
-            SinceDungeon.getPlugin().getLogger().warning("Error parsing dynamic item data: " + data);
+            String logMsg = SinceDungeon.getPlugin().getLanguageManager().getString("admin.log.item_dynamic_parse_error", "Error parsing dynamic item data: <data>");
+            SinceDungeon.getPlugin().getLogger().warning(logMsg.replace("<data>", data));
         }
         return null;
     }

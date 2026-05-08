@@ -220,12 +220,11 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         }
 
         breakTask = new BukkitRunnable() {
+            // JIT Optimization: Reusing the same Location object pointer to prevent massive GC allocations per tick
+            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
             int currentX = minX;
             int currentY = minY;
             int currentZ = minZ;
-
-            // JIT Optimization: Reusing the same Location object pointer to prevent massive GC allocations per tick
-            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
 
             @Override
             public void run() {

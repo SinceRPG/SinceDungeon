@@ -77,7 +77,7 @@ public class RedisManager {
                     jedis.subscribe(pubSub, channelName);
                 } catch (Exception e) {
                     plugin.getLogger().severe(plugin.getLanguageManager().getString("admin.log.redis_listen_error", "[Redis] Listener error/disconnected: ") + e.getMessage());
-                    plugin.getLogger().info("[Redis] Trying to reconnect after 5 seconds...");
+                    plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_reconnect", "[Redis] Trying to reconnect after 5 seconds..."));
                     try {
                         Thread.sleep(5000);
                     } catch (InterruptedException ie) {

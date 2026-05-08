@@ -128,12 +128,11 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         final Particle finalCrumble = crumbleParticle;
 
         breakTask = new BukkitRunnable() {
+            // JIT Optimization: Caching Location object instead of creating 50 per tick inside the loop.
+            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
             int currentX = minX;
             int currentY = minY;
             int currentZ = minZ;
-
-            // JIT Optimization: Caching Location object instead of creating 50 per tick inside the loop.
-            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
 
             @Override
             public void run() {

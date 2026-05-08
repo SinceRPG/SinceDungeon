@@ -295,7 +295,10 @@ public class PartyManager {
                 Placeholder.parsed("msg", mmMessage)
         );
         String shortId = party.getLeader().toString().substring(0, 6);
-        plugin.getLogger().info("[Party Chat - " + shortId + "] " + ColorUtils.toPlainText(finalComponent));
+
+        String logFormat = plugin.getLanguageManager().getString("admin.log.party_chat_console", "[Party Chat - <id>] <msg>");
+        plugin.getLogger().info(logFormat.replace("<id>", shortId).replace("<msg>", ColorUtils.toPlainText(finalComponent)));
+
         party.getMembers().forEach(uuid -> {
             Player p = Bukkit.getPlayer(uuid);
             if (p != null && p.isOnline()) p.sendMessage(finalComponent);

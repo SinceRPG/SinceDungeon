@@ -20,6 +20,7 @@ admin:
     redis_connected: "[Redis] Đã kết nối tới Redis thành công!"
     redis_disconnected: "[Redis] Đã đóng kết nối Redis."
     redis_listen_error: "[Redis] Lỗi lắng nghe tín hiệu: "
+    redis_reconnect: "[Redis] Đang thử kết nối lại sau 5 giây..."
     redis_publish_error: "[Redis] Không thể gửi tin nhắn: "
     leave_dungeon: " đã rời khỏi Dungeon bằng cách dịch chuyển. Hệ thống tự động hủy tiến trình."
     unauthorized_entry: "Phát hiện kẻ xâm nhập <player> lọt vào <world>. Đã chặn!"
@@ -49,6 +50,7 @@ admin:
     experimental_cross_server: "⚠️ TÍNH NĂNG THỬ NGHIỆM ĐÃ BẬT: CROSS-SERVER (v1.5.5+)"
     lang_loaded: "Đã tải tệp ngôn ngữ cho khu vực: <lang>"
     stage_save_fail: "Lỗi khi lưu dữ liệu chuyển giai đoạn!"
+    template_hot_reload_fail: "Lỗi làm mới dữ liệu tự động cho file cấu hình: <file>"
     world_gen_error: "[WorldManager] Lỗi khi tạo thế giới Dungeon: <error>"
     world_unloaded: "Đã tải xuất (unload) thế giới Dungeon: <world>"
     world_delete_fail: "Không thể xóa hoàn toàn thư mục thế giới: <world>. Có thể nó đang bị khóa bởi tiến trình khác."
@@ -75,6 +77,7 @@ admin:
     holo_config_save_error: "Lỗi khi lưu hologram vào config!"
     holo_plugin_missing: "Chưa cài đặt DecentHolograms. Vô hiệu hóa Bảng xếp hạng Hologram."
     webhook_fail: "Đẩy dữ liệu tới Discord Webhook thất bại với mã: <response>"
+    party_chat_console: "[Kênh Tổ Đội - <id>] <msg>"
   warning:
     vanilla_parse_fail: "Không thể nhận diện vật phẩm Vanilla: <data>"
     mmoitems_parse_fail: "Không thể nhận diện vật phẩm MMOItems: <data>"

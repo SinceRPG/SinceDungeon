@@ -1,4 +1,4 @@
-    package net.danh.sincedungeonpremium.actions;
+package net.danh.sincedungeonpremium.actions;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
@@ -27,13 +27,11 @@ public class DamageZoneAction extends DungeonAction implements Tickable {
     private final int damageInterval;
     private final int durationTicks;
     private final String particleStr;
-
+    // JIT Optimization: Reusable object to avoid allocating 12 objects per tick
+    private final Location pointerLoc = new Location(null, 0, 0, 0);
     private Location centerLoc;
     private int ticksElapsed = 0;
     private Particle cachedParticle;
-
-    // JIT Optimization: Reusable object to avoid allocating 12 objects per tick
-    private final Location pointerLoc = new Location(null, 0, 0, 0);
 
     public DamageZoneAction(String locationStr, double radius, double damage, int damageInterval, int durationTicks, String particleStr) {
         this.locationStr = locationStr;

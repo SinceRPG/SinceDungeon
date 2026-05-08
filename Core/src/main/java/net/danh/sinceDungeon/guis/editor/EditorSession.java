@@ -86,7 +86,8 @@ public class EditorSession {
                             plugin.getDungeonManager().registerTemplate(updatedTemplate);
                         }
                     } catch (Exception ex) {
-                        plugin.getLogger().warning("Failed to hot-reload template after saving: " + file.getName());
+                        String logFail = plugin.getLanguageManager().getString("admin.log.template_hot_reload_fail", "Failed to hot-reload template after saving: <file>");
+                        plugin.getLogger().warning(logFail.replace("<file>", file.getName()));
                     }
                 });
             } catch (IOException e) {

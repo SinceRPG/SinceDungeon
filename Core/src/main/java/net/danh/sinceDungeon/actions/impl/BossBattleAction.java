@@ -79,6 +79,49 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
+    /**
+     * Parses the YAML configuration to build the PhaseData mechanics objects.
+     * Safely handles prefix notations for cross-plugin Entity identification.
+     *
+     * @param sec The configuration section containing phase mappings.
+     * @return Map of Health Threshold -> PhaseData
+     */
+    public static Map<Integer, PhaseData> parsePhases(ConfigurationSection sec) {
+        Map<Integer, PhaseData> phases = new HashMap<>();
+        if (sec == null) return phases;
+
+        for (String key : sec.getKeys(false)) {
+            try {
+                int threshold = Integer.parseInt(key);
+                PhaseData pd = new PhaseData();
+                pd.message = sec.getString(key + ".message", "");
+                pd.attributes = sec.getStringList(key + ".attributes");
+
+                String rMobStr = sec.getString(key + ".reinforcements.mob");
+                if (rMobStr != null) {
+                    if (rMobStr.toUpperCase(Locale.ROOT).startsWith("MYTHIC:")) {
+                        pd.isReinforcementMythic = true;
+                        pd.reinforcementMobId = rMobStr.substring(7);
+                    } else if (rMobStr.toUpperCase(Locale.ROOT).startsWith("VANILLA:")) {
+                        pd.isReinforcementMythic = false;
+                        pd.reinforcementMobId = rMobStr.substring(8);
+                    } else {
+                        pd.isReinforcementMythic = false;
+                        pd.reinforcementMobId = rMobStr;
+                    }
+
+                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
+                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
+                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
+                    pd.reinforcementEquipment = sec.getStringList(key + ".reinforcements.equipment");
+                }
+                phases.put(threshold, pd);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return phases;
+    }
+
     @Override
     public String getObjectiveText() {
         return SinceDungeon.getPlugin().getLanguageManager().getString("objective.boss_battle", "<red>Defeat the Boss!");
@@ -408,48 +451,5 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         public String reinforcementName = "";
         public List<String> reinforcementAttributes = new ArrayList<>();
         public List<String> reinforcementEquipment = new ArrayList<>();
-    }
-
-    /**
-     * Parses the YAML configuration to build the PhaseData mechanics objects.
-     * Safely handles prefix notations for cross-plugin Entity identification.
-     *
-     * @param sec The configuration section containing phase mappings.
-     * @return Map of Health Threshold -> PhaseData
-     */
-    public static Map<Integer, PhaseData> parsePhases(ConfigurationSection sec) {
-        Map<Integer, PhaseData> phases = new HashMap<>();
-        if (sec == null) return phases;
-
-        for (String key : sec.getKeys(false)) {
-            try {
-                int threshold = Integer.parseInt(key);
-                PhaseData pd = new PhaseData();
-                pd.message = sec.getString(key + ".message", "");
-                pd.attributes = sec.getStringList(key + ".attributes");
-
-                String rMobStr = sec.getString(key + ".reinforcements.mob");
-                if (rMobStr != null) {
-                    if (rMobStr.toUpperCase(Locale.ROOT).startsWith("MYTHIC:")) {
-                        pd.isReinforcementMythic = true;
-                        pd.reinforcementMobId = rMobStr.substring(7);
-                    } else if (rMobStr.toUpperCase(Locale.ROOT).startsWith("VANILLA:")) {
-                        pd.isReinforcementMythic = false;
-                        pd.reinforcementMobId = rMobStr.substring(8);
-                    } else {
-                        pd.isReinforcementMythic = false;
-                        pd.reinforcementMobId = rMobStr;
-                    }
-
-                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
-                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
-                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
-                    pd.reinforcementEquipment = sec.getStringList(key + ".reinforcements.equipment");
-                }
-                phases.put(threshold, pd);
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return phases;
     }
 }
