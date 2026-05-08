@@ -513,7 +513,7 @@ editor:
       - "&7Định dạng: notifications:"
       - "&7  init: false"
       - "&7  complete: true"
-      - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"\
+      - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"
     input_cancel: "&cĐã hủy bỏ thao tác."
     input_here: "&aĐã ghi nhận tọa độ: <loc>"
     save_error: "&cLỗi nghiêm trọng khi lưu file: <error>"

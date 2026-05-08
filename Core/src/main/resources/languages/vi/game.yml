@@ -7,7 +7,6 @@ game:
   death: "&c<player> đã tử trận!"
   hud:
     objective_prefix: "&6&lMỤC TIÊU: &r"
-    objective_separator: " &8| "
     time_left: " &c(<time>s)"
   title:
     loading_main: "&e&lĐANG KHỞI TẠO..."
