@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
+import json
 import os
 import re
-import subprocess
-import json
 import requests
+import subprocess
 import sys
 from datetime import datetime, timezone
 
 # Persistence file for message IDs between stages
 ID_STORAGE_FILE = ".discord_msg_ids.json"
+
 
 def get_config():
     """
@@ -32,10 +33,12 @@ def get_config():
         "FAIL_DESC": os.getenv("FAIL_DESC_TEXT", "Compilation error occurred.")
     }
 
+
 def save_msg_ids(ids):
     """Writes message IDs to a temporary JSON file to persist between Jenkins steps."""
     with open(ID_STORAGE_FILE, 'w') as f:
         json.dump(ids, f)
+
 
 def load_msg_ids():
     """Reads message IDs from the temporary JSON file."""
@@ -44,12 +47,14 @@ def load_msg_ids():
             return json.load(f)
     return {}
 
+
 def get_git_info():
     """Extracts commit message, author, and hash from local Git logs."""
     msg = subprocess.check_output(["git", "log", "-1", "--pretty=%B"], text=True).strip()
     author = subprocess.check_output(["git", "log", "-1", "--pretty=%an"], text=True).strip()
     commit_hash = subprocess.check_output(["git", "log", "-1", "--pretty=%h"], text=True).strip()
     return msg, author, commit_hash
+
 
 def get_gradle_version(module):
     """
@@ -72,6 +77,7 @@ def get_gradle_version(module):
     except Exception:
         return "Unknown"
 
+
 def parse_changelogs(full_msg, default_text):
     """Uses Regex to split the commit message into Core and Premium specific logs."""
     core_part = re.search(r'Core:\s*(.*?)(?=Premium:|$)', full_msg, re.S)
@@ -80,6 +86,7 @@ def parse_changelogs(full_msg, default_text):
     core_log = core_part.group(1).strip() if core_part and core_part.group(1).strip() else default_text
     prem_log = prem_part.group(1).strip() if prem_part and prem_part.group(1).strip() else default_text
     return core_log, prem_log
+
 
 def send_initial_message(webhook, thread, bot_name, author, log, footer_text, color, icon, thumb):
     """Sends the initial status message via POST and returns the message ID."""
@@ -99,6 +106,7 @@ def send_initial_message(webhook, thread, bot_name, author, log, footer_text, co
     }
     r = requests.post(url, json=payload)
     return r.json().get("id") if r.status_code in [200, 201] else None
+
 
 def patch_result_message(webhook, thread, msg_id, status_title, log, color, author, icon, thumb, footer, jar_path=None):
     """Updates the existing status message via PATCH and attaches the compiled JAR."""
@@ -124,6 +132,7 @@ def patch_result_message(webhook, thread, msg_id, status_title, log, color, auth
     else:
         requests.patch(url, json=payload)
 
+
 def main():
     config = get_config()
     msg, author, commit_hash = get_git_info()
@@ -137,10 +146,16 @@ def main():
         msg_ids = {}
         if "Core:" in msg:
             ver = get_gradle_version("Core")
-            msg_ids["core"] = send_initial_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], config["BOT_NAME_CORE"], author, core_log, f"Core v{ver} • {commit_hash}", config["COLOR_PENDING_CORE"], config["ICON_URL"], config["THUMB_URL"])
+            msg_ids["core"] = send_initial_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"],
+                                                   config["BOT_NAME_CORE"], author, core_log,
+                                                   f"Core v{ver} • {commit_hash}", config["COLOR_PENDING_CORE"],
+                                                   config["ICON_URL"], config["THUMB_URL"])
         if "Premium:" in msg:
             ver = get_gradle_version("Premium")
-            msg_ids["prem"] = send_initial_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], config["BOT_NAME_PREM"], author, prem_log, f"Premium v{ver} • {commit_hash}", config["COLOR_PENDING_PREM"], config["ICON_URL"], config["THUMB_URL"])
+            msg_ids["prem"] = send_initial_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"],
+                                                   config["BOT_NAME_PREM"], author, prem_log,
+                                                   f"Premium v{ver} • {commit_hash}", config["COLOR_PENDING_PREM"],
+                                                   config["ICON_URL"], config["THUMB_URL"])
         save_msg_ids(msg_ids)
     else:
         # --- RESULT PHASE: Load IDs and Patch ---
@@ -154,24 +169,37 @@ def main():
         if is_fail:
             # Handle Failure: Patch with RED color and version info
             if "core" in msg_ids:
-                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Core v{core_ver} • {commit_hash}")
+                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"],
+                                     "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification",
+                                     config["ICON_URL"], None, f"Core v{core_ver} • {commit_hash}")
             if "prem" in msg_ids:
-                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification", config["ICON_URL"], None, f"Premium v{prem_ver} • {commit_hash}")
+                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"],
+                                     "Build Failed ❌", config["FAIL_DESC"], config["COLOR_FAIL"], "System Notification",
+                                     config["ICON_URL"], None, f"Premium v{prem_ver} • {commit_hash}")
         else:
             # Handle Success: Patch with GREEN color, version info and attach JAR
             if "core" in msg_ids:
-                jar = next((f for f in os.listdir("build/libs") if f.startswith("SinceDungeon-") and not f.startswith("SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
+                jar = next((f for f in os.listdir("build/libs") if f.startswith("SinceDungeon-") and not f.startswith(
+                    "SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
                 path = os.path.join("build/libs", jar) if jar else None
-                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"], "Build Successful! 🚀", core_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon", config["ICON_URL"], config["THUMB_URL"], f"Core v{core_ver} • {commit_hash}", path)
+                patch_result_message(config["WEBHOOK_URL_FREE"], config["THREAD_ID_FREE"], msg_ids["core"],
+                                     "Build Successful! 🚀", core_log, config["COLOR_SUCCESS"],
+                                     f"{author} pushed an update for SinceDungeon", config["ICON_URL"],
+                                     config["THUMB_URL"], f"Core v{core_ver} • {commit_hash}", path)
 
             if "prem" in msg_ids:
-                jar = next((f for f in os.listdir("build/libs") if f.startswith("SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
+                jar = next((f for f in os.listdir("build/libs") if
+                            f.startswith("SinceDungeon-PremiumAddon-") and not f.endswith("-original.jar")), None)
                 path = os.path.join("build/libs", jar) if jar else None
-                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"], "Premium Version Ready! 👑", prem_log, config["COLOR_SUCCESS"], f"{author} pushed an update for SinceDungeon Premium", config["ICON_URL"], config["THUMB_URL"], f"Premium v{prem_ver} • {commit_hash}", path)
+                patch_result_message(config["WEBHOOK_URL_PREM"], config["THREAD_ID_PREM"], msg_ids["prem"],
+                                     "Premium Version Ready! 👑", prem_log, config["COLOR_SUCCESS"],
+                                     f"{author} pushed an update for SinceDungeon Premium", config["ICON_URL"],
+                                     config["THUMB_URL"], f"Premium v{prem_ver} • {commit_hash}", path)
 
         # Cleanup temporary storage
         if os.path.exists(ID_STORAGE_FILE):
             os.remove(ID_STORAGE_FILE)
+
 
 if __name__ == "__main__":
     main()

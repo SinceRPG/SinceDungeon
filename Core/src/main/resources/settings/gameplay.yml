@@ -75,6 +75,9 @@ dungeon:
     randomize-stages: false
     # Apply dungeon cooldown even if the player leaves early, disconnects, or fails?
     cooldown-on-leave: false
+    # Prevent players from using teleport commands like /tp, /warp, /spawn inside the dungeon?
+    # Leave this as false if you are using cross-server plugins (like HuskHomes) so players can warp out securely.
+    block-teleport-commands: false
     # List of allowed commands inside dungeons.
     allowed-commands:
       - "/party"

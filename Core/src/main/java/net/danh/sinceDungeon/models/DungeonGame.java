@@ -370,6 +370,12 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Handles the time limit penalty when players fail to complete an action in time.
+     * Updated to support the new isQuitting flag.
+     *
+     * @param action The action that ran out of time.
+     */
     private void handleTimeLimitPenalty(DungeonAction action) {
         broadcastMessage("game.time_out");
         int penalty = action.getTimeLimitPenalty();
@@ -399,7 +405,7 @@ public class DungeonGame {
                     return;
                 } else {
                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
-                    handlePlayerDisconnect(p);
+                    handlePlayerDisconnect(p, false);
                 }
             }
         }
@@ -793,22 +799,31 @@ public class DungeonGame {
         });
     }
 
-    public void handlePlayerDisconnect(Player p) {
+    /**
+     * Handles the complete disconnection sequence for a player leaving the dungeon.
+     * Restores player state (inventory, health, etc.) and safely manages locations.
+     *
+     * @param p          The player disconnecting.
+     * @param isQuitting If true, prevents teleportation to safely allow BungeeCord/Velocity cross-server transfers.
+     */
+    public void handlePlayerDisconnect(Player p, boolean isQuitting) {
         boolean wasInDungeon = (dungeonWorld != null && p.getWorld().equals(dungeonWorld));
 
         plugin.getRewardManager().getRewardSystem().forceClaimPending(p);
 
-        if (p.isDead()) {
-            p.spigot().respawn();
-        }
-        if (p.isInsideVehicle()) p.leaveVehicle();
-        p.setVelocity(new Vector(0, 0, 0));
+        if (!isQuitting) {
+            if (p.isDead()) {
+                p.spigot().respawn();
+            }
+            if (p.isInsideVehicle()) p.leaveVehicle();
+            p.setVelocity(new Vector(0, 0, 0));
 
-        PlayerState state = savedStates.get(p.getUniqueId());
-        Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+            PlayerState state = savedStates.get(p.getUniqueId());
+            Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-        if (wasInDungeon) {
-            p.teleport(targetLoc);
+            if (wasInDungeon) {
+                p.teleport(targetLoc);
+            }
         }
 
         restorePlayerState(p);

@@ -126,9 +126,7 @@ public class DungeonListener implements Listener {
     public void onEntityDamageDecor(EntityDamageEvent e) {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         if (e.getEntity().getWorld().getName().startsWith(prefix)) {
-            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame ||
-                    e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart ||
-                    e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
+            if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart || e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) return;
@@ -141,8 +139,7 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onInteractEntityDecor(PlayerInteractEntityEvent e) {
         if (plugin.getDungeonManager().getGame(e.getPlayer().getUniqueId()) != null) {
-            if (e.getRightClicked() instanceof ArmorStand || e.getRightClicked() instanceof ItemFrame ||
-                    e.getRightClicked() instanceof Painting || e.getRightClicked() instanceof LeashHitch) {
+            if (e.getRightClicked() instanceof ArmorStand || e.getRightClicked() instanceof ItemFrame || e.getRightClicked() instanceof Painting || e.getRightClicked() instanceof LeashHitch) {
                 e.setCancelled(true);
             }
         }
@@ -455,6 +452,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Intercepts player quit events.
+     * Now correctly flags the disconnect as a "quit" event to avoid BungeeCord teleportation conflicts.
+     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
@@ -464,7 +465,7 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
 
         if (game != null) {
-            game.handlePlayerDisconnect(p);
+            game.handlePlayerDisconnect(p, true);
         }
 
         Inventory topInv = p.getOpenInventory().getTopInventory();
@@ -479,6 +480,10 @@ public class DungeonListener implements Listener {
         plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 
+    /**
+     * Intercepts unauthorized world changes.
+     * Flags local teleports as false for isQuitting, enforcing local logic.
+     */
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
@@ -507,7 +512,7 @@ public class DungeonListener implements Listener {
         if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
             String logLeave = plugin.getLanguageManager().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
             plugin.getLogger().info(p.getName() + logLeave);
-            game.handlePlayerDisconnect(p);
+            game.handlePlayerDisconnect(p, false);
         }
     }
 
@@ -551,10 +556,7 @@ public class DungeonListener implements Listener {
                 int current = livesData != null ? livesData.getCurrentLives() : 0;
                 int max = livesData != null ? livesData.getMaxLives() : 0;
 
-                String lossMsg = plugin.getLanguageManager().getString("lives.deducted")
-                        .replace("<amount>", String.valueOf(deductLives))
-                        .replace("<current>", String.valueOf(current))
-                        .replace("<max>", String.valueOf(max));
+                String lossMsg = plugin.getLanguageManager().getString("lives.deducted").replace("<amount>", String.valueOf(deductLives)).replace("<current>", String.valueOf(current)).replace("<max>", String.valueOf(max));
                 p.sendMessage(ColorUtils.parseWithPrefix(lossMsg));
 
                 if (current <= 0) {
@@ -587,7 +589,7 @@ public class DungeonListener implements Listener {
                         game.stop(true, DungeonEndEvent.EndReason.FAILED);
                     } else {
                         p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
-                        game.handlePlayerDisconnect(p);
+                        game.handlePlayerDisconnect(p, false);
                     }
                 } else if (deathAction.equalsIgnoreCase("FAIL")) {
                     game.stop(true, DungeonEndEvent.EndReason.FAILED);
@@ -603,6 +605,10 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Safely manages teleports within dungeons.
+     * Now supports a configuration toggle allowing cross-server command teleports (like HuskHomes).
+     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
@@ -639,9 +645,9 @@ public class DungeonListener implements Listener {
                 blockPearls = game.getTemplate().settings().blockEnderPearls();
             }
 
-            if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) ||
-                    cause == PlayerTeleportEvent.TeleportCause.COMMAND ||
-                    cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
+            boolean blockCommands = plugin.getConfigFile().getBoolean("dungeon.gameplay.block-teleport-commands", false);
+
+            if ((blockPearls && (cause == PlayerTeleportEvent.TeleportCause.ENDER_PEARL || cause == consumableEffect)) || (blockCommands && cause == PlayerTeleportEvent.TeleportCause.COMMAND) || cause == PlayerTeleportEvent.TeleportCause.SPECTATE) {
 
                 if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
                     return;

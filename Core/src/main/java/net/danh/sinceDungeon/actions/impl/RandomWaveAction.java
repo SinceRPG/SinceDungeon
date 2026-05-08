@@ -38,13 +38,6 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
-    @Override
-    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
-        super.trackChildEntity(uuid, loc, internalName);
-        spawnedMobs.put(uuid, loc);
-        if (internalName != null) mobDisplayNames.put(uuid, internalName);
-    }
-
     public static List<MobOption> parseMobPool(List<String> raw) {
         List<MobOption> pool = new ArrayList<>();
         for (String entry : raw) {
@@ -61,6 +54,13 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
             }
         }
         return pool;
+    }
+
+    @Override
+    public void trackChildEntity(UUID uuid, Location loc, String internalName) {
+        super.trackChildEntity(uuid, loc, internalName);
+        spawnedMobs.put(uuid, loc);
+        if (internalName != null) mobDisplayNames.put(uuid, internalName);
     }
 
     private MobOption pickRandom() {

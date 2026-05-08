@@ -80,7 +80,8 @@ public class CheckpointAction extends DungeonAction implements Tickable {
                 try {
                     Particle pType = Particle.valueOf(particleStr.toUpperCase());
                     game.getWorld().spawnParticle(pType, centerLoc, 50, 0.5, 1, 0.5, 0.1);
-                } catch (IllegalArgumentException ignored) {}
+                } catch (IllegalArgumentException ignored) {
+                }
 
                 game.sendActionMessage(this, "complete", "action.checkpoint_complete");
                 this.forceComplete();

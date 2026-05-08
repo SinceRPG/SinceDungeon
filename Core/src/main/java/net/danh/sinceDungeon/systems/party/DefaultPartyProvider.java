@@ -340,12 +340,17 @@ public class DefaultPartyProvider implements PartyProvider {
         });
     }
 
+    /**
+     * Ejects a player from their active dungeon game cleanly if they leave the party natively.
+     *
+     * @param uuid The UUID of the player to eject.
+     */
     private void ejectFromDungeon(UUID uuid) {
         Player p = Bukkit.getPlayer(uuid);
         if (p != null && p.isOnline()) {
             DungeonGame game = plugin.getDungeonManager().getGame(uuid);
             if (game != null) {
-                game.handlePlayerDisconnect(p);
+                game.handlePlayerDisconnect(p, false);
                 String msg = plugin.getLanguageManager().getString("party.left_dungeon_due_to_party", "&cYou have been removed from the Dungeon because you left the Party!");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg));
             }

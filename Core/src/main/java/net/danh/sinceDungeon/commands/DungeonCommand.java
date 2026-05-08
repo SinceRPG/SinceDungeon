@@ -137,7 +137,7 @@ public class DungeonCommand {
                             if (ctx.getSource().getExecutor() instanceof Player p) {
                                 DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
                                 if (game != null) {
-                                    game.handlePlayerDisconnect(p);
+                                    game.handlePlayerDisconnect(p, false);
                                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.left_dungeon_due_to_party")));
                                 } else {
                                     p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.not_in_dungeon")));
