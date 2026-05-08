@@ -9,7 +9,6 @@ import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -160,7 +159,8 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onCommandPreprocess(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
-        if (plugin.getDungeonManager().getGame(p.getUniqueId()) != null) {
+        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+        if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             boolean blockCommands = plugin.getConfigFile().getBoolean("dungeon.gameplay.block-commands", true);
             if (blockCommands && !p.hasPermission("SinceDungeon.admin")) {
                 String cmd = e.getMessage().split(" ")[0].toLowerCase();
@@ -533,7 +533,7 @@ public class DungeonListener implements Listener {
         }
 
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-        if (game != null && game.isRunning() && !p.getWorld().equals(game.getWorld())) {
+        if (game != null && game.getWorld() != null && !p.getWorld().equals(game.getWorld())) {
             String logLeave = plugin.getLanguageManager().getString("admin.log.leave_dungeon", " left the dungeon. Stopping game.");
             plugin.getLogger().info(p.getName() + logLeave);
             game.handlePlayerDisconnect(p, false);
@@ -657,7 +657,13 @@ public class DungeonListener implements Listener {
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld() != null && game.getWorld().equals(p.getWorld())) {
             PlayerTeleportEvent.TeleportCause cause = e.getCause();
-            PlayerTeleportEvent.TeleportCause consumableEffect = ServerVersion.isAtMost(1, 21, 5) ? PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT : PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT;
+            PlayerTeleportEvent.TeleportCause consumableEffect = null;
+            for (PlayerTeleportEvent.TeleportCause c : PlayerTeleportEvent.TeleportCause.values()) {
+                if (c.name().equals("CONSUMABLE_EFFECT") || c.name().equals("CHORUS_FRUIT")) {
+                    consumableEffect = c;
+                    break;
+                }
+            }
 
             boolean blockPearls = true;
             if (game.getTemplate() != null) {
