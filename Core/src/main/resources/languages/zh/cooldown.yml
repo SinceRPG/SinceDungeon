@@ -1,0 +1,12 @@
+cooldown:
+  check_other: "&e<player> 的 <map> 冷却时间: &c<time>"
+  check_other_ready: "&e<player> 已准备好进入 <map>。"
+  no_active_cooldowns: "&c你没有任何处于冷却中的副本！"
+  item_reset_received: "&a你收到了 冷却重置券 x<amount>！"
+  item_reset_used: "&a你所有的副本冷却时间已被完全重置！"
+  item_reduce_received: "&a你收到了 时间跳跃券 (-<time>秒) x<amount>！"
+  item_reduce_used: "&a你所有的副本冷却时间已减少 <time>秒！"
+  admin_gave_reset: "&a给予 <player> <amount> 张 冷却重置券。"
+  admin_gave_reduce: "&a给予 <player> <amount> 张 时间跳跃券 (-<time>秒)。"
+  admin_reduced: "&a成功将 <player> 的所有副本冷却时间减少 <time> 秒。"
+  admin_reset_all: "&a成功重置 <player> 的 所有 副本冷却时间。"

@@ -1,0 +1,5 @@
+cross_server:
+  searching: "&e正在寻找可用的节点服务器来初始化副本..."
+  found: "&a找到可用服务器 (<server>)。正在传送你的队伍..."
+  timeout: "&c没有找到可用的副本服务器。请稍后再试！"
+  already_searching: "&c系统已经在搜索服务器了，请稍候！"

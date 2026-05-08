@@ -88,7 +88,7 @@ commands:
 # [SYSTEM SETTINGS]
 # =========================================================
 settings:
-  # Language setting (e.g., vi, en). The plugin will automatically load from languages/
+  # Language setting (e.g., vi, en, zh). The plugin will automatically load from languages/
   locale: "en"
 
   # Debug mode: Enable to view detailed logs when an error occurs

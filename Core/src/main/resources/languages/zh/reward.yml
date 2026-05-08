@@ -1,0 +1,24 @@
+reward:
+  gui_title: "&6&l副本奖励"
+  messages:
+    auto_claim: "&a已自动领取剩余的 <count> 个箱子。"
+    claimed_all: "&a你已领取了所有奖励！"
+    received_item: "&7获得: &a<item>"
+    received_custom: "&7奖励: &a<item>"
+    inventory_full: "&c背包已满！物品掉落到地上。"
+    auto_claimed_expired: "&e由于超时，你的副本奖励已被系统自动领取。"
+  settings:
+    gui_size: 27
+    button_slot: 13
+  icons:
+    button:
+      material: CHEST
+      name: "&6&l开启箱子"
+      lore:
+        - "&7点击随机开启一个箱子！"
+        - "&7剩余次数: &e<count>"
+    mystery_chest:
+      material: ENDER_CHEST
+      name: "&d&l神秘宝箱"
+      lore:
+        - "&7里面会有什么呢？"

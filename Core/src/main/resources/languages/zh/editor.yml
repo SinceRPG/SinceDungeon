@@ -1,0 +1,542 @@
+editor:
+  words:
+    not_set: "未设置"
+    true_word: "&a开启"
+    false_word: "&c关闭"
+    default_word: "默认"
+    unknown: "未知"
+    chest_amount: "箱子 (<time>秒)"
+    value: "值"
+    default_condition_msg: "未满足要求"
+    default_condition_name: "条件 <key>"
+    reward_default_name: "&7默认"
+    cancel: "cancel"
+    here: "here"
+    clear: "clear"
+    unlimited: "无限制"
+  actions_name:
+    spawn_wave: "生成原版怪物"
+    reach_location: "到达检查点"
+    teleport: "传送玩家"
+    loot_chest: "拾取宝箱"
+    break_wall: "通过方块破坏墙壁"
+    mythic_wave: "生成 Mythic Boss"
+    random_wave: "随机怪物波"
+    control_zone: "控制区域"
+    unlock_door: "寻找钥匙并开门"
+    boss_battle: "原版 Boss 战"
+  actions:
+    spawn_wave: "生成原版怪物波"
+    reach_location: "要求玩家到达指定坐标"
+    teleport: "将所有参与者传送到特定位置。"
+    loot_chest: "生成一个可拾取的宝箱"
+    break_wall: "当触发方块被破坏时摧毁墙壁"
+    mythic_wave: "生成 MythicMobs Boss"
+    random_wave: "从池中生成原版和 Mythic 怪物的随机组合"
+    control_zone: "占领该区域 X 秒。圆圈可以随时间缩小。"
+    unlock_door: "要求玩家找到钥匙物品来开门。"
+    boss_battle: "生成一个带有血条、随人数缩放血量和多阶段的原版 Boss。"
+  title:
+    phases: "&lBoss 阶段"
+    edit_phase: "&l阶段: <hp>%"
+    edit_reinforcements: "&l增援: <hp>%"
+    main: "&l副本编辑器"
+    dungeon: "&l正在编辑: <name>"
+    conditions: "&l进入条件"
+    rewards_main: "&l奖励菜单"
+    reward_tiers: "&l奖励层级"
+    reward_pool: "&l奖池"
+    edit_reward: "&l编辑奖励 #<index>"
+    stages: "&l阶段配置"
+    actions: "&l阶段 <stage>"
+    select_type: "&l选择动作类型"
+    edit_action: "&l编辑动作 #<index>"
+    settings: "&l高级设置"
+    edit_action_items: "&l箱子编辑器: <index>"
+    string_list: "&l正在编辑列表"
+  items:
+    insert_stage: "&b在此处插入阶段"
+    insert_stage_lore:
+      - "&7将阶段向下移动以腾出空间。"
+      - "&e左键点击: 输入位置"
+    action_val_hint_open_gui: "&e左键点击: 打开界面"
+    phase_item: "&e在 <hp>% HP 触发的阶段"
+    phase_lore:
+      - "&7点击配置阶段"
+      - ""
+      - "&cShift-右键删除"
+    add_phase: "&a添加阶段"
+    phase_message: "&e阶段消息"
+    phase_attributes: "&e阶段属性"
+    phase_reinforcements: "&e增援配置"
+    reinf_mob: "&e怪物类型"
+    reinf_amount: "&e数量"
+    reinf_name: "&e自定义名称"
+    reinf_attributes: "&e属性配置"
+    reinf_equipment: "&e装备配置"
+    action_val_hint_phases: "&7高级阶段设置必须在 YAML 文件中手动编辑。"
+    dungeon_file_name: "&e<name>"
+    dungeon_file_lore:
+      - "&e左键点击: 编辑"
+      - "&cShift-右键: 删除副本"
+    delete_dungeon: "&c&l删除副本"
+    delete_dungeon_lore:
+      - "&7永久删除此副本"
+      - "&7及其排行榜数据。"
+      - ""
+      - "&cShift-右键点击以确认"
+    setting_cmd_first_finish: "&e首次通关命令"
+    setting_cmd_first_finish_lore:
+      - "&7当前: &f<val> 个命令"
+      - "&e左键点击管理列表"
+    setting_cooldown: "&e冷却时间"
+    setting_cooldown_lore:
+      - "&7当前: &f<val>秒"
+      - "&e左键点击编辑"
+    setting_cmd_start: "&e开始时执行的命令"
+    setting_cmd_start_lore:
+      - "&7当前: &f<val> 个命令"
+      - "&e左键点击管理列表"
+    setting_cmd_finish: "&e结束时执行的命令"
+    setting_cmd_finish_lore:
+      - "&7当前: &f<val> 个命令"
+      - "&e左键点击管理列表"
+    setting_cmd_stage: "&e阶段完成时的命令"
+    setting_cmd_stage_lore:
+      - "&7当前: &f<val> 个命令"
+      - "&e左键点击管理列表"
+    list_line_item: "&e第 #<index> 行"
+    list_line_lore:
+      - "&f<val>"
+      - ""
+      - "&cShift-右键删除"
+    add_line: "&a添加新行"
+    setting_max_players: "&e最大允许玩家数"
+    setting_max_players_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击编辑"
+    setting_randomize_stages: "&e随机化中间阶段"
+    setting_randomize_stages_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_req_lives: "&e进入所需生命数"
+    setting_req_lives_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击编辑"
+    setting_deduct_lives: "&e死亡扣除生命数"
+    setting_deduct_lives_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击编辑"
+    setting_keep_inv_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_prevent_drop_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_block_pearls_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_kick_delay_lore:
+      - "&7当前: &f<val>秒"
+      - "&e左键点击编辑"
+    setting_force_weather_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_save_stats_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_death_action_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击切换 (RESPAWN/FAIL)"
+    setting_clear_drops_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_req_item: "&e需要准入物品"
+    setting_req_item_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击编辑"
+    setting_consume_req_item: "&e消耗准入物品"
+    setting_consume_req_item_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    setting_cooldown_on_leave: "&e离开/失败时触发冷却"
+    setting_cooldown_on_leave_lore:
+      - "&7当前: <val>"
+      - "&e左键点击切换"
+    click_edit: "&e左键点击: 编辑"
+    create_new: "&a&l创建新副本"
+    world_template: "&e世界模板名称"
+    world_template_lore:
+      - "&7当前: &f<world>"
+      - "&e左键点击: 输入新地图名称"
+    public_status: "&e公开状态"
+    public_status_lore:
+      - "&7当前: <status>"
+      - "&e左键点击: 切换 开启/关闭"
+    conditions: "&e进入条件"
+    conditions_lore:
+      - "&7编辑进入要求"
+    rewards: "&6副本奖励"
+    rewards_lore:
+      - "&7编辑副本通关奖励"
+    stages: "&c阶段配置"
+    stages_lore:
+      - "&7编辑副本内容流程"
+    settings: "&b游戏玩法设置"
+    settings_lore:
+      - "&7编辑此特定地图的"
+      - "&7自定义游戏规则。"
+    setting_keep_inv: "&e死亡时不掉落物品"
+    setting_prevent_drop: "&e防止玩家丢弃物品"
+    setting_block_pearls: "&e禁用末影珍珠/紫颂果"
+    setting_kick_delay: "&e胜利后踢出延迟"
+    setting_force_weather: "&e强制锁定为白天和晴天"
+    setting_save_stats: "&e保存并恢复玩家状态"
+    setting_death_action: "&e死亡后的动作"
+    setting_clear_drops: "&e清理怪物掉落物"
+    save: "&a&l保存更改"
+    back: "&c返回"
+    condition_item: "&e条件 #<index>"
+    condition_lore:
+      - "&7检查: &f<check>"
+      - "&7错误消息: &f<msg>"
+      - ""
+      - "&e左键点击: 编辑检查"
+      - "&e右键点击: 编辑消息"
+      - "&cShift-右键: 删除"
+    add_condition: "&a添加条件"
+    reward_tiers_item: "&6时间奖励层级"
+    reward_pool_item: "&6物品奖池"
+    tier_item: "&e<time>秒"
+    tier_lore:
+      - "&7奖励箱数量: &f<amount>"
+      - ""
+      - "&e左键点击: 编辑数量"
+      - "&c右键点击: 删除该层级"
+    add_tier: "&a添加层级"
+    pool_item: "&e奖励 #<index>"
+    pool_lore:
+      - "&7类型: &f<type>"
+      - "&7数据: &f<val>"
+      - ""
+      - "&e左键点击: 编辑奖励"
+      - "&cShift-右键: 删除"
+    add_pool_item: "&a添加奖励"
+    reward_type: "&e类型"
+    reward_type_lore:
+      - "&7当前: &f<type>"
+      - "&e左键点击: 更改 (ITEM/COMMAND/MMOITEM)"
+    reward_value: "&e值"
+    reward_value_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击: 在聊天中输入"
+      - "&e右键点击: 获取手持物品"
+    reward_chance: "&e掉落概率"
+    reward_chance_lore:
+      - "&7当前: &f<val>%"
+      - "&e左键点击: 编辑概率"
+    reward_name: "&e显示名称"
+    reward_name_lore:
+      - "&7当前: &f<val>"
+      - "&e左键点击: 编辑名称"
+    stage_item: "&e阶段 <stage>"
+    stage_lore:
+      - "&7生成概率: &a<chance>%"
+      - "&7阶段命令数: &f<cmds>"
+      - ""
+      - "&e左键点击: 编辑动作"
+      - "&c右键点击: 编辑概率"
+      - "&bShift-左键: 编辑命令"
+      - "&cShift-右键: 删除阶段"
+    add_stage: "&a添加阶段"
+    action_item: "&e动作 #<index>"
+    action_lore:
+      - "&7类型: &f<type>"
+      - "&7信息: &f<desc>"
+      - ""
+      - "&e左键点击: 编辑动作"
+      - "&cShift-右键: 删除动作"
+    add_action: "&a添加动作"
+    cancel: "&c取消"
+    action_val_hint_edit: "&e左键点击: 输入新值"
+    action_val_hint_loc_single: "&e左键: 输入 | 右键: 当前位置 | &cShift-右键: 删除"
+    action_val_hint_loc_list: "&e左键: 输入 | 右键: 当前位置 | &cShift-右键: 清空列表"
+    action_val_hint_list: "&e左键: 添加一行 | 右键: 删除最后一行 | &cShift-右键: 全部清空"
+    action_val_hint_items: "&e左键点击: 打开界面 | 读取 YAML 配置添加钥匙"
+    action_type_cant_edit: "&c创建后无法更改动作类型"
+    prev_page: "&e⬅ 上一页"
+    next_page: "&e下一页 ➡"
+  input:
+    title_main: "&6&l输入模式"
+    title_sub: "&f请查看聊天框中的说明！"
+    header: "&e=== 输入模式 ==="
+    footer: "&e====================="
+    right_click_hint: "&b或者 右键点击 任何方块以获取其坐标。"
+    cancel_hint: "&7输入 &ccancel &7中止操作。"
+    prompts:
+      edit_req_item:
+        - "&7输入进入所需物品的格式。"
+        - "&7原版: &aDIAMOND:5"
+        - "&7MMOItems: &aMMOITEMS:SWORD:FIERY:1"
+        - "&7副本钥匙: &aKEY:door_1:1"
+        - "&7提示: 输入 &cNONE &7禁用此要求。"
+      edit_action_radius:
+        - "&7输入圆环/区域的半径。"
+        - "&7示例: &a3.0"
+      edit_action_location:
+        - "&7输入坐标格式: &fX,Y,Z"
+        - "&7提示: 输入 &ahere &7使用你当前的位置。"
+      edit_action_sound:
+        - "&7输入你想要播放的声音音效。"
+        - "&7示例: &aentity.enderman.teleport"
+      edit_insert_stage:
+        - "&7输入你想要插入的阶段位置。"
+        - "&7示例: &a2 &7(将阶段 2 移到 3，使 2 变为空白)"
+      edit_action_per_player:
+        - "&7每个玩家都应该获得自己的独立战利品吗？"
+        - "&7输入 &atrue &7或 &cfalse&7。"
+      edit_reward_value_life_item:
+        - "&7输入要给予的生命值物品数量。"
+        - "&7格式: &a<Amount>"
+        - "&7示例: &f1"
+        - "&7提示: 手持该物品右键点击按钮可自动填充！"
+      edit_reward_value_cooldown_reset:
+        - "&7输入要给予的冷却重置券数量。"
+        - "&7格式: &a<Amount>"
+        - "&7示例: &f1"
+        - "&7提示: 手持该物品右键点击按钮可自动填充！"
+      edit_reward_value_cooldown_reduce:
+        - "&7输入要减少的秒数和物品数量。"
+        - "&7格式: &a<Seconds>:<Amount>"
+        - "&7示例: &f60:1 &7(减少 60 秒，给予 1 张票券)"
+        - "&7提示: 手持该物品右键点击按钮可自动填充！"
+      edit_custom_drops:
+        - "&7输入掉落物品和概率。"
+        - "&7格式: &a<ItemData>;<Chance>"
+        - "&7--- 示例 ---"
+        - "&7原版物品: &fDIAMOND:1;50.0"
+        - "&7MMOItems: &fMMOITEMS:SWORD:FIERY:1;25.5"
+        - "&7副本钥匙: &fKEY:door_1:1;10.0"
+        - "&7生命物品: &fLIFE_ITEM:1;5.0"
+        - "&7CD重置: &fCOOLDOWN_RESET:1;1.0"
+        - "&7CD减少: &fCOOLDOWN_REDUCE:60:1;10.0"
+        - "&7提示: 输入 &cclear &7清空列表。"
+      edit_phase_threshold:
+        - "&7输入生命值百分比阈值 (1-100) 以触发此阶段。"
+        - "&7示例: &a50 &7(在 50% HP 时触发)"
+      edit_reinforcement_mob:
+        - "&7输入增援怪物的原版实体类型 (EntityType)。"
+        - "&7示例: &aSKELETON"
+      edit_reinforcement_amount:
+        - "&7输入要生成的增援数量。"
+        - "&7示例: &a4"
+      edit_reinforcement_name:
+        - "&7为增援输入自定义名称 (支持颜色代码)。"
+        - "&7示例: &c皇家守卫"
+        - "&7提示: 输入 &cclear &7移除名称。"
+      edit_action_enrage_time:
+        - "&7输入 Boss 狂暴前的时间 (秒)。"
+        - "&7输入 &c-1 &7禁用狂暴计时器。"
+        - "&7示例: &a120 &7(2分钟后狂暴)"
+      edit_action_enrage_message:
+        - "&7输入当 Boss 狂暴时广播的消息。"
+        - "&7示例: &c&lBoss 已经进入 狂暴 状态！"
+        - "&7提示: 输入 &cclear &7禁用此消息。"
+      edit_action_enrage_attributes:
+        - "&7设置狂暴时应用的额外属性。"
+        - "&7格式: &a<attribute>:<value>"
+        - "&7示例: &fattack_damage:50"
+        - "&7提示: 输入 &cclear &7清空列表。"
+      edit_cooldown:
+        - "&7输入冷却时间 (秒)。"
+        - "&7示例: &a1800 &7(表示30分钟)"
+      edit_commands:
+        - "&7输入命令 (不要带斜杠 /)。"
+        - "&7变量支持: &a%player%, %dungeon%, %stage%"
+        - "&7条件格式: &e[condition] command"
+        - "&7示例: &a[%vault_eco_balance%;>=;500] eco give %player% 100"
+        - "&7提示: 输入 &cclear &7清空列表。"
+      edit_action_mob_level:
+        - "&7输入 MythicMob 的等级 (默认: 1)。"
+        - "&7示例: &a5"
+      edit_max_players:
+        - "&7输入此副本允许的最大玩家数量。"
+        - "&7输入 &c-1 &7或 &c0 &7表示无限制/仅受队伍人数限制。"
+        - "&7示例: &a6"
+      edit_action_key_id:
+        - "&7输入此钥匙/门的唯一 ID。"
+        - "&7示例: &adoor_1"
+      edit_stage_chance:
+        - "&7输入此阶段的生成概率 (0-100)。"
+        - "&7示例: &a50.5"
+      edit_action_time_limit:
+        - "&7输入此动作的时间限制 (秒)。"
+        - "&7输入 &c-1 &7禁用时间限制。"
+        - "&7示例: &a60"
+      edit_action_time_penalty:
+        - "&7输入达到时间限制时扣除的生命数。"
+        - "&7示例: &a1"
+      edit_action_scale_with_party:
+        - "&7这个阶段应该将生成数量乘以队伍大小吗？"
+        - "&7输入 &atrue &7或 &cfalse&7。"
+      edit_req_lives:
+        - "&7输入进入此副本所需的最小生命数。"
+        - "&7示例: &a1"
+      edit_deduct_lives:
+        - "&7输入玩家在此副本死亡时失去的生命数。"
+        - "&7示例: &a1"
+      create_filename:
+        - "&7为新副本输入一个名称。"
+        - "&7允许字符: &f字母 (a-z), 数字 (0-9), 连字符/下划线。"
+        - "&7示例: &adungeon_map_1"
+      edit_world_name:
+        - "&7输入作为模板的世界文件夹名称。"
+        - "&7示例: &aDungeon_Map_01"
+      edit_condition_check:
+        - "&7输入 PAPI 条件格式: &f%placeholder%;operator;value"
+        - "&7支持的运算符: &f>=, <=, >, <, ==, !="
+        - "&7示例: &a%vault_eco_balance%;>=;500"
+      edit_condition_msg:
+        - "&7输入未满足条件时显示的消息。"
+        - "&7示例: &c你需要 $500 才能进入！"
+      edit_reward_value_item:
+        - "&7输入物品格式: &aMATERIAL:AMOUNT &7或 &aMATERIAL:MIN-MAX"
+        - "&7示例: &fDIAMOND:5 &7或 &fEMERALD:1-3"
+      edit_reward_value_mmoitem:
+        - "&7输入 MMOItems 格式: &aTYPE:ID:AMOUNT &7或 &aTYPE:ID:MIN-MAX"
+        - "&7示例: &fSWORD:FIERY_SWORD:1-5"
+      edit_reward_value_command:
+        - "&7输入要运行的命令 (使用 &a%player% &7代表玩家名称)。"
+        - "&7示例: &feco give %player% 1000"
+      edit_reward_chance:
+        - "&7输入此奖励的掉落百分比概率 (0-100)。"
+        - "&7示例: &f50.5"
+      edit_reward_name:
+        - "&7输入奖励的显示名称或消息。"
+        - "&7支持颜色代码。 示例: &a&l超级宝剑"
+      edit_tier:
+        - "&7输入 时间 (秒) 和 箱子数量，用空格分隔。"
+        - "&7示例: &a300 3 &7(在 300秒 内完成 = 获得 3 个箱子)"
+      edit_kick_delay:
+        - "&7输入玩家胜利后被踢出前的延迟时间 (秒)。"
+        - "&7示例: &a15"
+      edit_action_mob:
+        - "&7输入怪物名称 (MythicMobs 内部名称 或 原版 EntityType)。"
+        - "&7MythicMobs 示例: &aSkeletonKing"
+        - "&7原版示例: &aZOMBIE"
+      edit_action_amount:
+        - "&7输入要生成的怪物数量。"
+        - "&7示例: &a10"
+      edit_action_start_message:
+        - "&7输入此动作的开始消息 (支持颜色代码)。"
+        - "&7提示: 输入 &cclear &7清空消息列表。"
+      edit_action_items:
+        - "&7--- 拾取宝箱 配置 ---"
+        - "&7要添加打开门的钥匙，请直接编辑 YAML 文件。"
+        - "&7副本钥匙语法: &aKEY:<key_id>:<amount>"
+        - "&7示例: &fKEY:door_1:1 &8(掉落 door_1 的钥匙)"
+        - "&7原版物品: &aMATERIAL:AMOUNT"
+        - "&7MMOItems: &aMMOITEMS:TYPE:ID:AMOUNT"
+        - "&7提示: 关闭箱子界面以保存您的普通物品。"
+      edit_location:
+        - "&7输入坐标格式: &fX,Y,Z"
+        - "&7提示: 输入 &ahere &7使用你当前的位置。"
+      edit_location_list:
+        - "&7输入坐标 &fX,Y,Z &7添加到列表中。"
+        - "&7提示: 输入 &ahere &7添加你当前的位置。"
+        - "&7提示: 输入 &cclear &7清空列表。"
+      edit_number:
+        - "&7请输入一个&a数字&7。"
+      edit_boolean:
+        - "&7请输入 &atrue &7或 &cfalse&7。"
+      edit_list:
+        - "&7输入文本/数值以添加到列表中。"
+        - "&7提示: 输入 &cclear &7清空此列表。"
+      edit_random_mobs:
+        - "&7输入一个怪物条目以添加到随机池中。"
+        - "&7--- 格式 ---"
+        - "&7原版: &fVANILLA:<EntityType>:<weight>"
+        - "&7示例: &aVANILLA:ZOMBIE:50"
+        - "&7Mythic:  &fMYTHIC:<MobId>:<weight>[:<level>]"
+        - "&7示例: &aMYTHIC:SkeletonKing:20:2"
+        - "&7权重 (Weight): 值越高 = 越有可能生成。总和不需要等于 100。"
+        - "&7提示: 输入 &cclear &7清空随机池。"
+      edit_string:
+        - "&7请输入文本或新的配置值。"
+      default:
+        - "&7请在聊天框中输入新值。"
+      edit_action_custom_name:
+        - "&7为怪物输入一个自定义名称 (支持颜色代码)。"
+        - "&7示例: &c&l火焰守卫"
+        - "&7提示: 输入 &cclear &7移除名称。"
+      edit_action_is_baby:
+        - "&7这个怪物是幼年形态吗？输入 &atrue &7或 &cfalse&7。"
+      edit_action_attributes:
+        - "&7为怪物设置自定义属性。"
+        - "&7格式: &a<attribute>:<value>"
+        - "&7示例: &fmax_health:500"
+        - "&7示例: &fattack_damage:20"
+        - "&7示例: &fscale:2.5"
+        - "&7提示: 输入 &cclear &7移除所有自定义属性。"
+        - "&7属性参考链接: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/attribute/Attribute.html"
+      edit_action_equipment:
+        - "&7设置怪物的装备。"
+        - "&7格式: &a<slot>:<item_data>"
+        - "&7有效槽位: &fhelmet(头盔), chestplate(胸甲), leggings(护腿), boots(靴子), mainhand(主手), offhand(副手)"
+        - "&7原版示例: &fmainhand:DIAMOND_SWORD:1"
+        - "&7MMOItems 示例: &fmainhand:MMOITEMS:SWORD:FIERY_SWORD:1"
+        - "&7提示: 输入 &cclear &7移除所有装备。"
+      edit_action_start_radius:
+        - "&7输入控制区域的初始半径。"
+        - "&7示例: &a10.0"
+      edit_action_end_radius:
+        - "&7输入区域的最终半径 (如果 < 初始半径，它会随时间缩小)。"
+        - "&7示例: &a3.0"
+      edit_action_required_time:
+        - "&7输入玩家必须坚守该区域的时间 (秒)。"
+        - "&7示例: &a20"
+      edit_action_mob_type:
+        - "&7输入要生成的干扰怪物的 EntityType (输入 NONE 以禁用)。"
+        - "&7示例: &aZOMBIE"
+      edit_action_mob_interval:
+        - "&7输入生成干扰怪物的间隔周期，单位是 ticks (20 ticks = 1秒)。"
+        - "&7示例: &a60"
+      edit_action_key_item:
+        - "&7输入需要的钥匙物品格式。"
+        - "&7原版示例: &aTRIPWIRE_HOOK:1"
+        - "&7MMOItems 示例: &aMMOITEMS:KEY:DUNGEON_KEY:1"
+  chat:
+    stage_inserted: "&a成功在地图 <map> 中将配置向下偏移并插入了阶段 <pos>！"
+    dungeon_deleted: "&a成功删除副本: &e<dungeon>"
+    notifications_hint:
+      - "&7[通知设置] 请手动在副本的 YAML 文件中编辑此字段。"
+      - "&7格式: notifications:"
+      - "&7  init: false"
+      - "&7  complete: true"
+      - "&7可用键值: custom_start, init, progress, complete, warning"
+    input_cancel: "&c输入已取消。"
+    input_here: "&a位置已设置为: <loc>"
+    save_error: "&c保存文件时出错: <error>"
+    saved: "&a文件保存成功！"
+    created: "&a创建了新的副本文件: <file>"
+    template_set: "&a模板地图已设置为: <world>"
+    public_toggled: "&e公开状态: <status>"
+    condition_val_hint_check: "&e输入 PAPI 条件 (例如，%player_level% >= 10)"
+    condition_val_hint_msg: "&e输入错误消息"
+    format_tier_error: "&c无效格式！请使用: <seconds> <amount>"
+    tier_added: "&a已添加层级: <time>秒 -> <amount> 个箱子"
+    update_val: "&a已更新 <key>: <val>"
+    number_error: "&c输入值必须是有效的数字！"
+    reward_added: "&a已添加新奖励！"
+    type_changed: "&a类型已更改为 <type>"
+    item_set_hand: "&a已复制手持物品: <item>"
+    hand_empty: "&c你必须在主手中持有一个物品！"
+    update_loc: "&a已更新位置: <loc>"
+    invalid_filename: "&c无效的文件名！请避免使用特殊字符。"
+    input_error: "&c输入错误: <error>"
+    list_limit_reached: "&c为防止内存问题，已达到列表大小上限 (最大 50 项/坐标)！"
+    transition_processing: "&c系统正在处理数据，请稍后再试！"
+    val_cleared: "&e数据已清除。"
+    line_removed: "&e列表的最后一行已移除。"
+    list_empty: "&c该列表目前为空。"
+    stage_deleted: "&a成功删除阶段 <stage>。"

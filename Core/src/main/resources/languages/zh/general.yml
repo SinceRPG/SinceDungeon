@@ -1,0 +1,6 @@
+prefix: "&6&lSinceDungeon &8» &7"
+
+papi:
+  time_full: "已满"
+  time_never: "从不"
+  cooldown_ready: "就绪"

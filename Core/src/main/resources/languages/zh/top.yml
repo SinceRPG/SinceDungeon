@@ -1,0 +1,25 @@
+top:
+  party_run_name: "队伍通关"
+  category_time: "&b&l单人最快通关"
+  category_party_time: "&d&l队伍最快通关"
+  party_time_lore:
+    - "&7时间: &a<value>"
+    - "&7日期: &f<date>"
+    - "&7成员:"
+    - "&f<members>"
+  gui_title: "&6&l排行榜: &e<map>"
+  loading: "&e正在从数据库加载排行榜数据..."
+  category_kills: "&c&l最高击杀数"
+  category_clears: "&a&l最多通关次数"
+  item_format: "&e#<rank> &f<player>"
+  time_lore:
+    - "&7时间: &a<value>"
+    - "&7日期: &f<date>"
+  kills_lore:
+    - "&7总击杀数: &c<value>"
+    - "&7日期: &f<date>"
+  clears_lore:
+    - "&7总通关数: &a<value>"
+    - "&7日期: &f<date>"
+  click_to_switch:
+    - "&e左键点击查看此类别！"
