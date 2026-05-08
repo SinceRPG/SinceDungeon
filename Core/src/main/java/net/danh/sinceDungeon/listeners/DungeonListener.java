@@ -36,14 +36,20 @@ import java.util.UUID;
  */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
+    private String worldPrefix;
 
     public DungeonListener(SinceDungeon plugin) {
         this.plugin = plugin;
+        updateConfig();
     }
 
-    private String getWorldPrefix() {
+    /**
+     * Updates JIT-cached properties when the plugin is reloaded.
+     * Prevents extremely costly I/O lookups during rapid event execution.
+     */
+    public void updateConfig() {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        return (prefix == null || prefix.trim().isEmpty()) ? "SinceDungeon_" : prefix;
+        this.worldPrefix = (prefix == null || prefix.trim().isEmpty()) ? "SinceDungeon_" : prefix;
     }
 
     private void pass(Player p, Event e) {
@@ -64,35 +70,35 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
-        if (e.getLocation().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getLocation().getWorld().getName().startsWith(worldPrefix)) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockIgnite(BlockIgniteEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
@@ -113,14 +119,14 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart || e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
@@ -151,7 +157,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
-        if (e.getPlayer().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getPlayer().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
@@ -181,21 +187,21 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSlimeSplit(SlimeSplitEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(EntitySpawnEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             if (e.getEntity() instanceof FallingBlock) {
                 e.setCancelled(true);
             }
@@ -204,7 +210,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
         }
     }
@@ -218,7 +224,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) return;
@@ -281,7 +287,7 @@ public class DungeonListener implements Listener {
             plugin.getDungeonManager().checkPendingCrossServerJoin(p);
         }
 
-        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(worldPrefix)) {
             World ghostWorld = p.getLocation().getWorld();
             String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
@@ -313,7 +319,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld().equals(p.getWorld())) {
-            if (e.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
+            if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
                 Material mat = e.getItem().getType();
                 if (mat.name().contains("BOAT") || mat.name().contains("MINECART")) {
                     e.setCancelled(true);
@@ -378,7 +384,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             if (!(e.getEntity() instanceof Player)) {
                 boolean clearDrops = plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
                 DungeonGame targetGame = null;
@@ -433,12 +439,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Highly secured Disconnect event.
-     * Every operation is wrapped in a try-catch block to ensure that an internal error
-     * never interrupts the Bukkit disconnect sequence. This is essential for preventing
-     * teleportation locks during BungeeCord/HuskHomes cross-server transfers.
-     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
@@ -513,7 +513,7 @@ public class DungeonListener implements Listener {
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
 
-        if (p.getWorld().getName().startsWith(getWorldPrefix())) {
+        if (p.getWorld().getName().startsWith(worldPrefix)) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
 
@@ -633,7 +633,7 @@ public class DungeonListener implements Listener {
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
 
-        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(worldPrefix)) {
             DungeonGame targetGame = null;
             for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
                 if (g.getWorld() != null && g.getWorld().equals(e.getTo().getWorld())) {
@@ -703,7 +703,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
+        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
                     game.onEvent(e);

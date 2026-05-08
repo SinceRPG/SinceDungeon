@@ -224,6 +224,9 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
             int currentY = minY;
             int currentZ = minZ;
 
+            // JIT Optimization: Reusing the same Location object pointer to prevent massive GC allocations per tick
+            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
+
             @Override
             public void run() {
                 if (game.getWorld() == null || !game.isRunning()) {
@@ -235,7 +238,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                 while (blocksProcessed < 50) {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
-                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                        particleLoc.set(currentX + 0.5, currentY + 0.5, currentZ + 0.5);
+                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
                         block.setType(Material.AIR, false);
                     }
                     blocksProcessed++;

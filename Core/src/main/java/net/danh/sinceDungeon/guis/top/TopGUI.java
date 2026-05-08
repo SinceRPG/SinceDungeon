@@ -21,11 +21,11 @@ import java.util.*;
 public class TopGUI {
 
     private final SinceDungeon plugin;
-    private final SimpleDateFormat dateFormat;
+    private final String dateFormatString;
 
     public TopGUI(SinceDungeon plugin) {
         this.plugin = plugin;
-        this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        this.dateFormatString = plugin.getConfigFile().getString("leaderboard.date-format", "dd/MM/yyyy HH:mm");
     }
 
     private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
@@ -68,6 +68,8 @@ public class TopGUI {
 
                 int maxPage = Math.max(0, (records.size() - 1) / 36);
                 final int currentPage = Math.max(0, Math.min(maxPage, page));
+
+                SimpleDateFormat dateFormat = new SimpleDateFormat(dateFormatString);
 
                 for (int i = 0; i < 36; i++) {
                     int index = i + (currentPage * 36);

@@ -55,6 +55,8 @@ public final class SinceDungeon extends JavaPlugin {
     private PartySystemManager partySystemManager;
     private InstanceManager instanceManager;
 
+    private DungeonListener dungeonListener;
+
     public static SinceDungeon getPlugin() {
         return plugin;
     }
@@ -121,7 +123,8 @@ public final class SinceDungeon extends JavaPlugin {
         SinceDungeonAPI.init(this);
 
         List<Listener> listeners = new ArrayList<>();
-        listeners.add(new DungeonListener(this));
+        dungeonListener = new DungeonListener(this);
+        listeners.add(dungeonListener);
         listeners.add(editorListener);
         listeners.add(new EditorMenuListener(this));
         listeners.add(new LifeItemListener(this));
@@ -185,6 +188,11 @@ public final class SinceDungeon extends JavaPlugin {
         if (editorListener != null) editorListener.clearAll();
 
         setupLanguage();
+
+        // Update active listeners holding config-cache objects
+        if (dungeonListener != null) {
+            dungeonListener.updateConfig();
+        }
 
         if (dungeonManager != null) {
             dungeonManager.reload().thenRun(() -> {

@@ -94,11 +94,14 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             } catch (Exception ignored) {
             }
 
+            // JIT Optimization: Use a single reusable Location pointer instead of instantiating 24 new objects per tick
+            Location particleLoc = centerLoc.clone();
             for (int i = 0; i < 360; i += 15) {
                 double angle = i * Math.PI / 180;
                 double x = currentRadius * Math.cos(angle);
                 double z = currentRadius * Math.sin(angle);
-                centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, 0.2, z), 1, 0, 0, 0, 0);
+                particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + 0.2, centerLoc.getZ() + z);
+                centerLoc.getWorld().spawnParticle(pType, particleLoc, 1, 0, 0, 0, 0);
             }
         }
 

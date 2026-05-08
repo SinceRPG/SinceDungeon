@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -376,10 +377,11 @@ public class DungeonGame {
                     objText += cachedTimeLeftFormat.replace("<time>", String.valueOf(timeLeft));
                 }
 
-                String finalBar = cachedObjectivePrefix + objText;
+                // JIT Optimization: Compile Component once per tick instead of per player
+                Component parsedBar = ColorUtils.parse(cachedObjectivePrefix + objText);
                 for (Player p : participants) {
                     if (p.isOnline() && p.getWorld().equals(dungeonWorld)) {
-                        p.sendActionBar(ColorUtils.parse(finalBar));
+                        p.sendActionBar(parsedBar);
                     }
                 }
             } else {

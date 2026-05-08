@@ -32,6 +32,7 @@ leaderboard:
   # Maximum number of records retrieved from the database (Limited to prevent lag)
   fetch-limit: 50
   gui-size: 54
+  date-format: "dd/MM/yyyy HH:mm"
   items:
     rank_1: GOLD_BLOCK
     rank_2: IRON_BLOCK

@@ -132,6 +132,9 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             int currentY = minY;
             int currentZ = minZ;
 
+            // JIT Optimization: Caching Location object instead of creating 50 per tick inside the loop.
+            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
+
             @Override
             public void run() {
                 if (game.getWorld() == null || !game.isRunning()) {
@@ -144,10 +147,11 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
                     Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
                     if (block.getType() != Material.AIR) {
                         try {
+                            particleLoc.set(currentX + 0.5, currentY + 0.5, currentZ + 0.5);
                             if (finalCrumble.getDataType() == BlockData.class) {
-                                game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                                game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
                             } else {
-                                game.getWorld().spawnParticle(finalCrumble, block.getLocation().add(0.5, 0.5, 0.5), 5, 0.2, 0.2, 0.2, 0.05);
+                                game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05);
                             }
                         } catch (Exception ignored) {
                         }

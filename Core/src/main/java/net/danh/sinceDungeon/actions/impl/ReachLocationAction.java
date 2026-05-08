@@ -51,11 +51,14 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
             } catch (Exception ignored) {
             }
 
+            // JIT Optimization: Use a single reusable Location pointer instead of instantiating 12 new objects per tick
+            Location particleLoc = centerLoc.clone();
             for (int i = 0; i < 360; i += 30) {
                 double angle = i * Math.PI / 180;
                 double x = r * Math.cos(angle);
                 double z = r * Math.sin(angle);
-                centerLoc.getWorld().spawnParticle(pType, centerLoc.clone().add(x, yOffset, z), 1, 0, 0, 0, 0);
+                particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + yOffset, centerLoc.getZ() + z);
+                centerLoc.getWorld().spawnParticle(pType, particleLoc, 1, 0, 0, 0, 0);
             }
         }
 
