@@ -270,6 +270,8 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_line", "&aAdd New Line"), null));
+        // ADDED: Universal List Clear button
+        inv.setItem(51, makeItem(Material.TNT, getMsg("items.clear_list", "&cClear Entire List"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
@@ -687,7 +689,7 @@ public class EditorGUI {
         List<String> keys = sec != null ? new ArrayList<>(sec.getKeys(false)) : new ArrayList<>();
         keys.sort((a, b) -> {
             try {
-                return Integer.compare(Integer.parseInt(b), Integer.parseInt(a));
+                return Integer.parseInt(b) - Integer.parseInt(a);
             } catch (Exception e) {
                 return 0;
             }

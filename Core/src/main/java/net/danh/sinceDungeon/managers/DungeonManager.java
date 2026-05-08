@@ -286,11 +286,19 @@ public class DungeonManager {
         }
     }
 
+    /**
+     * Completely reloads templates and re-registers the Default Registry
+     * to apply localized prompt updates accurately.
+     */
     public CompletableFuture<Void> reload() {
         stopAllGames();
         return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
             templates.clear();
             templates.putAll(newTemplates);
+
+            // FIX: Re-register actions so their display names update with the new language!
+            DefaultRegistry.registerAll(plugin, this);
+
             plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.dungeon_reloaded"));
         }));
     }

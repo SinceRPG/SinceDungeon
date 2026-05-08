@@ -30,8 +30,8 @@ import java.util.*;
  * <p>
  * Responsibilities:
  * - Listens for all inventory interactions securely, preventing item theft.
- * - Parses and maps inputs back to the YAML configurations dynamically without relying on hardcoded switches.
- * - Strictly avoids legacy Bukkit Location checks to prevent UnsupportedOperationException in 1.21+.
+ * - Parses and maps inputs back to the YAML configurations dynamically.
+ * - Centralizes String List clearing with the new TNT button.
  */
 public class EditorMenuListener implements Listener {
     private final SinceDungeon plugin;
@@ -155,11 +155,6 @@ public class EditorMenuListener implements Listener {
             case "EDIT_STRING_LIST" -> handleStringList(e, p, session, gui, page, slot, cur);
         }
     }
-
-    // Remaining methods (handleMainMenu, etc.) are identical
-    // ...
-    // Note: To preserve token space in this response, assume identical logic for the helper methods.
-    // The critical security and bug fixes are implemented above.
 
     private void handleMainMenu(InventoryClickEvent e, Player p, EditorGUI gui, int page, int slot, ItemStack cur) {
         EditorManager manager = plugin.getEditorManager();
@@ -790,8 +785,10 @@ public class EditorMenuListener implements Listener {
             }
         }
 
+        // Modified: random_mobs no longer bypasses StringListEditor.
+        // It now opens the dynamic StringListEditor perfectly.
         if (e.getClick() == ClickType.LEFT) {
-            if (props.isList && !props.isLocation && !key.equalsIgnoreCase("random_mobs")) {
+            if (props.isList && !props.isLocation) {
                 gui.openStringListEditor(p, session, fullPath, "EDIT_ACTION", 0);
                 return;
             }
@@ -963,6 +960,16 @@ public class EditorMenuListener implements Listener {
             }
             return;
         }
+
+        // ADDED: Logic to cleanly wipe entire list instead of chat 'clear' command
+        if (slot == 51 && cur.getType() == Material.TNT) {
+            session.getConfig().set(session.getCurrentListPath(), new ArrayList<>());
+            p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
+            gui.sendMessage(p, "val_cleared");
+            gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page);
+            return;
+        }
+
         if (slot == 49) {
             String listPath = session.getCurrentListPath();
             String prompt;

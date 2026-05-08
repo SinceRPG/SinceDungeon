@@ -2,7 +2,6 @@ package net.danh.sinceDungeon.guis.editor;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
-import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
@@ -30,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * Responsibilities:
  * - Listens for Chat, Command, and Interaction events from players in Input Mode.
- * - Resolves chat input dynamically based on the associated Field Meta.
+ * - Resolves chat input dynamically based on the associated Field Meta directly from LanguageManager.
  * - Manages input cancellations via the 'cancel' keyword.
  */
 public class EditorListener implements Listener {
@@ -58,28 +57,19 @@ public class EditorListener implements Listener {
         Title title = Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), times);
         p.showTitle(title);
 
-        String prefix = plugin.getLanguageManager().getString("prefix", "");
-        String header = plugin.getLanguageManager().getString("editor.input.header", "<yellow>=== INPUT MODE ===");
-        p.sendMessage(ColorUtils.parse(prefix + header));
+        String header = plugin.getLanguageManager().getString("editor.input.header", "\n&8&m                                                  &r\n&6&l ✎ EDITOR &7| &fInput Required:");
+        p.sendMessage(ColorUtils.parse(header));
 
         List<String> prompts = null;
 
         if (session.getPromptKey() != null && session.getPromptKey().startsWith("edit_action_")) {
-            String fieldName = session.getPromptKey().substring("edit_action_".length());
-
-            if (session.getCurrentActionKey() != null && session.getCurrentStage() != null) {
-                String actionType = session.getConfig().getString("stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".type");
-                if (actionType != null) {
-                    DungeonManager.ActionMeta meta = plugin.getDungeonManager().getActionMeta(actionType);
-                    if (meta != null && meta.customPrompts() != null && meta.customPrompts().containsKey(fieldName)) {
-                        prompts = meta.customPrompts().get(fieldName);
-                    }
-                }
-            }
+            prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + session.getPromptKey());
         }
 
-        if (prompts == null && session.getPromptKey() != null) {
-            prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + session.getPromptKey());
+        if (prompts == null || prompts.isEmpty()) {
+            if (session.getPromptKey() != null) {
+                prompts = plugin.getLanguageManager().getStringList("editor.input.prompts." + session.getPromptKey());
+            }
         }
 
         if (prompts == null || prompts.isEmpty()) {
@@ -96,15 +86,15 @@ public class EditorListener implements Listener {
         }
 
         if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
-            String rightClickHint = plugin.getLanguageManager().getString("editor.input.right_click_hint", "<aqua>or RIGHT-CLICK on any Block to get its coordinates.");
+            String rightClickHint = plugin.getLanguageManager().getString("editor.input.right_click_hint", "&a ✦ Tip: &7RIGHT-CLICK on any Block to get its coordinates.");
             p.sendMessage(ColorUtils.parse(rightClickHint));
         }
 
-        String cancelHint = plugin.getLanguageManager().getString("editor.input.cancel_hint", "<gray>Type <red>cancel <gray>to abort.");
+        String cancelHint = plugin.getLanguageManager().getString("editor.input.cancel_hint", "&c ✦ Abort: &7Type &ccancel &7to exit this mode.");
         p.sendMessage(ColorUtils.parse(cancelHint));
 
-        String footer = plugin.getLanguageManager().getString("editor.input.footer", "<yellow>=====================");
-        p.sendMessage(ColorUtils.parse(prefix + footer));
+        String footer = plugin.getLanguageManager().getString("editor.input.footer", "&8&m                                                  &r\n");
+        p.sendMessage(ColorUtils.parse(footer));
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
