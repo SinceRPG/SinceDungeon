@@ -293,6 +293,7 @@ public class DefaultRegistry {
         mmDefaults.put("level", plugin.getConfigFile().getInt("action-defaults.mythic_wave.level", 1));
         mmDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.mythic_wave.time_limit", -1));
         mmDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.mythic_wave.time_penalty", 1));
+        mmDefaults.put("target_to_kill", plugin.getConfigFile().getString("action-defaults.mythic_wave.target_to_kill", "NONE"));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
         mmDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.mythic_wave.start_message"));
 
@@ -302,8 +303,9 @@ public class DefaultRegistry {
                     int level = getInt(map.get("level"), (int) mmDefaults.get("level"));
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) mmDefaults.get("scale_with_party");
+                    String targetToKill = String.valueOf(map.getOrDefault("target_to_kill", mmDefaults.get("target_to_kill")));
 
-                    return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty);
+                    return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty, targetToKill);
                 }, plugin.getLanguageManager().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getLanguageManager().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());

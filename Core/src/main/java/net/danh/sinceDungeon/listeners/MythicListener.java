@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /**
  * Specifically listens to events originating from the MythicMobs plugin.
- * Handles death events and tracks newly summoned child mobs for Spawner mechanics.
+ * Handles death events and tracks newly summoned child/phased mobs for mechanics.
  */
 public class MythicListener implements Listener {
     private final SinceDungeon plugin;
@@ -42,14 +42,11 @@ public class MythicListener implements Listener {
 
     /**
      * Intercepts MythicMobs spawns inside Dungeon instances.
-     * Links child mobs (e.g. summoned Bosses) to their invisible Spawners
-     * seamlessly allowing the HUD objectives to track the actual Boss.
+     * Links child mobs and multi-phase transformations to their respective stages.
      */
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onMMSpawn(MythicMobSpawnEvent e) {
         if (e.getEntity() != null) {
-            // Ignore utility entities summoned by MythicMobs skills (like ArmorStands, projectiles, and markers).
-            // This prevents the "Remaining: 2" bug where invisible skill entities get tracked as alive mobs blocking wave completion.
             if (!(e.getEntity() instanceof LivingEntity) || e.getEntity() instanceof ArmorStand || e.getEntity() instanceof Player) {
                 return;
             }
@@ -57,12 +54,14 @@ public class MythicListener implements Listener {
             World w = e.getEntity().getWorld();
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(w)) {
-                    // Delay by 1 tick to ensure parent data is fully initialized within MythicMobs internally
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        // Check for direct parent/child summoning skills
                         UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());
                         if (parentId != null) {
                             game.trackChildEntity(parentId, e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
                         }
+                        // Check for phase transitions and target validations
+                        game.checkAndTrackMythicMob(e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
                     }, 1L);
                     break;
                 }

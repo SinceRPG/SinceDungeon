@@ -19,26 +19,35 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Handles the spawning and tracking of MythicMobs.
+ * Now supports Multi-Phase bosses through the 'targetToKill' variable.
+ */
 public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final String internalName;
     private final int amount;
     private final int level;
     private final List<Vector> locations;
     private final boolean scaleWithParty;
-    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private final String targetToKill;
 
-    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty) {
+    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private boolean hasTargetSpawned = false;
+
+    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty, String targetToKill) {
         this.internalName = internalName;
         this.amount = amount;
         this.level = Math.max(1, level);
         this.locations = locations;
         this.scaleWithParty = scaleWithParty;
+        this.targetToKill = (targetToKill != null && !targetToKill.trim().isEmpty()) ? targetToKill : "NONE";
     }
 
     @Override
     public String getObjectiveText() {
+        String displayMob = (targetToKill.equalsIgnoreCase("NONE")) ? internalName : targetToKill;
         String base = SinceDungeon.getPlugin().getLanguageManager().getString("objective.mythic_wave", "<dark_red>Defeat Boss <red><mob> <gray>(Remaining: <remain>)");
-        return base.replace("<mob>", internalName).replace("<remain>", String.valueOf(spawnedMobs.size()));
+        return base.replace("<mob>", displayMob).replace("<remain>", String.valueOf(Math.max(1, spawnedMobs.size())));
     }
 
     @Override
@@ -51,6 +60,18 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void trackChildEntity(UUID uuid, Location loc, String internalName) {
         super.trackChildEntity(uuid, loc, internalName);
         spawnedMobs.put(uuid, loc);
+    }
+
+    /**
+     * Checks if a newly spawned MythicMob is the final phase target we are waiting for.
+     * This is dynamically fired via the DungeonGame checking mechanism triggered by MythicListener.
+     */
+    public void checkAndTrackTarget(UUID uuid, Location loc, String spawnedInternalName) {
+        if (!targetToKill.equalsIgnoreCase("NONE") && targetToKill.equalsIgnoreCase(spawnedInternalName)) {
+            this.hasTargetSpawned = true;
+            this.spawnedMobs.put(uuid, loc);
+            this.spawnedEntities.add(uuid);
+        }
     }
 
     private Location findSafeSpawn(Location original) {
@@ -113,6 +134,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                             le.setPersistent(true);
                         }
 
+                        // Track the initial mob (even if it's an armor stand)
                         spawnedMobs.put(bukkitEntity.getUniqueId(), finalLoc);
                         this.spawnedEntities.add(bukkitEntity.getUniqueId());
                         count++;
@@ -138,7 +160,6 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
         spawnedMobs.entrySet().removeIf(entry -> {
             UUID uuid = entry.getKey();
             Entity ent = Bukkit.getEntity(uuid);
@@ -150,15 +171,23 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             } else {
                 Location lastLoc = entry.getValue();
                 if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
-                    return false; // Safely skip unloaded entities without deleting them
+                    return false;
                 }
                 return true;
             }
         });
 
-        if (spawnedMobs.isEmpty()) {
-            this.completed = true;
-            game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", internalName);
+        // Custom Phase Logic: Wait until the target mob spawns before completing the wave.
+        if (!targetToKill.equalsIgnoreCase("NONE")) {
+            if (hasTargetSpawned && spawnedMobs.isEmpty()) {
+                this.completed = true;
+                game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", targetToKill);
+            }
+        } else {
+            if (spawnedMobs.isEmpty()) {
+                this.completed = true;
+                game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", internalName);
+            }
         }
     }
 
@@ -167,15 +196,21 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (event instanceof EntityDeathEvent e) {
             if (MythicMobsHook.isMythicMob(e.getEntity())) {
                 if (spawnedMobs.remove(e.getEntity().getUniqueId()) != null) {
-                    if (spawnedMobs.isEmpty()) {
+
+                    // Do not broadcast progress if we are waiting for a phase transition
+                    if (!targetToKill.equalsIgnoreCase("NONE") && !hasTargetSpawned) {
+                        return;
+                    }
+
+                    if (spawnedMobs.isEmpty() && (targetToKill.equalsIgnoreCase("NONE") || hasTargetSpawned)) {
                         this.completed = true;
                         String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
-                        if (mobName == null) mobName = internalName;
+                        if (mobName == null) mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
 
                         game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
-                    } else {
+                    } else if (targetToKill.equalsIgnoreCase("NONE") || hasTargetSpawned) {
                         String mobName = MythicMobsHook.getActiveMobName(e.getEntity().getUniqueId());
-                        if (mobName == null) mobName = internalName;
+                        if (mobName == null) mobName = (!targetToKill.equalsIgnoreCase("NONE")) ? targetToKill : internalName;
 
                         game.sendActionMessage(this, "progress", "action.mythic_wave_remain", "<amount>", String.valueOf(spawnedMobs.size()), "<mob>", mobName);
                     }

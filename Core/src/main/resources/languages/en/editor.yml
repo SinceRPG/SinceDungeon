@@ -274,6 +274,11 @@ editor:
     right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
     cancel_hint: "&7Type &ccancel &7to abort."
     prompts:
+      edit_action_target_to_kill:
+        - "&7Enter the final mob internal name required to complete this wave."
+        - "&7Used for Bosses with multiple phases (e.g. Armor Stand to Wither)."
+        - "&7Example: &atoro_wither_terror"
+        - "&7Tip: Type &cNONE &7if the initial spawned mob is the only target."
       edit_req_item:
         - "&7Enter the item format required to enter."
         - "&7Vanilla: &aDIAMOND:5"

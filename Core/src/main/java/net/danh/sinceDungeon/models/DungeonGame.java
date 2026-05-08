@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.models;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
+import net.danh.sinceDungeon.actions.impl.MythicMobWaveAction;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
@@ -529,6 +530,21 @@ public class DungeonGame {
             if (killer != null && participants != null && participants.contains(killer)) {
                 playerKills.merge(killer.getUniqueId(), 1, Integer::sum);
             }
+        }
+    }
+
+    /**
+     * Checks if a newly spawned MythicMob is part of a phased boss fight
+     * and links it to the active objective.
+     */
+    public void checkAndTrackMythicMob(UUID uuid, Location loc, String internalName) {
+        if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
+        List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
+        if (currentActionIndex >= currentStageActions.size()) return;
+
+        DungeonAction action = currentStageActions.get(currentActionIndex);
+        if (action instanceof MythicMobWaveAction mmAction) {
+            mmAction.checkAndTrackTarget(uuid, loc, internalName);
         }
     }
 
