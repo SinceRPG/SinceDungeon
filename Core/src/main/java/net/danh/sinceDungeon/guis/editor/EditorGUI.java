@@ -270,7 +270,6 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_line", "&aAdd New Line"), null));
-        // ADDED: Universal List Clear button
         inv.setItem(51, makeItem(Material.TNT, getMsg("items.clear_list", "&cClear Entire List"), null));
         inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
         setPagination(inv, page, maxPage, 48, 50);
@@ -623,7 +622,8 @@ public class EditorGUI {
             } else if (key.equalsIgnoreCase("phases")) {
                 props.icon = Material.COMMAND_BLOCK;
                 props.hint = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
-                valStr = sec.getConfigurationSection(key) != null ? sec.getConfigurationSection(key).getKeys(false).size() + " phases" : "0 phases";
+                int size = sec.getConfigurationSection(key) != null ? sec.getConfigurationSection(key).getKeys(false).size() : 0;
+                valStr = getMsg("items.action_val_phases_count", "&f<count> phases").replace("<count>", String.valueOf(size));
             }
 
             if (props.isList && !key.equalsIgnoreCase("items") && !key.equalsIgnoreCase("phases")) {
@@ -689,7 +689,7 @@ public class EditorGUI {
         List<String> keys = sec != null ? new ArrayList<>(sec.getKeys(false)) : new ArrayList<>();
         keys.sort((a, b) -> {
             try {
-                return Integer.parseInt(b) - Integer.parseInt(a);
+                return Integer.compare(Integer.parseInt(b), Integer.parseInt(a));
             } catch (Exception e) {
                 return 0;
             }

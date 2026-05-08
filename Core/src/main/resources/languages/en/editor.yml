@@ -14,6 +14,7 @@ editor:
     here: "here"
     clear: "clear"
     unlimited: "Unlimited"
+    items: "items"
   actions_name:
     spawn_wave: "Spawn Vanilla Mob"
     reach_location: "Reach Checkpoint"
@@ -55,6 +56,10 @@ editor:
     edit_action_items: "&lChest Editor: <index>"
     string_list: "&lEditing List"
   items:
+    clear_list: "&cClear Entire List"
+    action_val_click_arrange: "&a[Click to arrange items]"
+    action_val_hint_notif: "&7Per-action notification overrides"
+    action_val_phases_count: "&f<count> phases"
     insert_stage: "&bInsert Stage Here"
     insert_stage_lore:
       - "&7Shifts stages down to make room."
@@ -269,11 +274,25 @@ editor:
   input:
     title_main: "&6&lINPUT MODE"
     title_sub: "&fCheck the chat for instructions!"
-    header: "&e=== INPUT MODE ==="
-    footer: "&e====================="
-    right_click_hint: "&bor RIGHT-CLICK on any Block to get its coordinates."
-    cancel_hint: "&7Type &ccancel &7to abort."
+    header: "\n&8&m                                                  &r\n&6&l ✎ EDITOR &7| &fInput Required:"
+    footer: "&8&m                                                  &r\n"
+    right_click_hint: "&a ✦ Tip: &7RIGHT-CLICK on any Block to get its coordinates."
+    cancel_hint: "&c ✦ Abort: &7Type &ccancel &7to exit this mode."
     prompts:
+      edit_action_base_health:
+        - "&7Enter the base health of the boss."
+        - "&7Example: &a500.0"
+      edit_action_scale_health_per_player:
+        - "&7Enter the amount of extra health per additional player."
+        - "&7Example: &a150.0"
+      edit_action_bar_color:
+        - "&7Enter the BossBar color."
+        - "&7Valid: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW"
+        - "&7Example: &aRED"
+      edit_action_bar_style:
+        - "&7Enter the BossBar style."
+        - "&7Valid: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20"
+        - "&7Example: &aSOLID"
       edit_action_target_to_kill:
         - "&7Enter the final mob internal name required to complete this wave."
         - "&7Used for Bosses with multiple phases (e.g. Armor Stand to Wither)."
@@ -325,7 +344,6 @@ editor:
         - "&7Life Item: &fLIFE_ITEM:1;5.0"
         - "&7CD Reset: &fCOOLDOWN_RESET:1;1.0"
         - "&7CD Reduce: &fCOOLDOWN_REDUCE:60:1;10.0"
-        - "&7Tip: Type &cclear &7to empty the list."
       edit_phase_threshold:
         - "&7Enter the health percentage threshold (1-100) to trigger this phase."
         - "&7Example: &a50 &7(Triggers at 50% HP)"
@@ -351,7 +369,6 @@ editor:
         - "&7Set the bonus attributes applied when enraged."
         - "&7Format: &a<attribute>:<value>"
         - "&7Example: &fattack_damage:50"
-        - "&7Tip: Type &cclear &7to empty the list."
       edit_cooldown:
         - "&7Enter the cooldown time in seconds."
         - "&7Example: &a1800 &7(for 30 minutes)"
@@ -360,7 +377,6 @@ editor:
         - "&7Variables: &a%player%, %dungeon%, %stage%"
         - "&7Condition format: &e[condition] command"
         - "&7Example: &a[%vault_eco_balance%;>=;500] eco give %player% 100"
-        - "&7Tip: Type &cclear &7to empty the list."
       edit_action_mob_level:
         - "&7Enter the level for the MythicMob (Default: 1)."
         - "&7Example: &a5"

@@ -14,6 +14,7 @@ editor:
     here: "here"
     clear: "clear"
     unlimited: "无限制"
+    items: "项"
   actions_name:
     spawn_wave: "生成原版怪物"
     reach_location: "到达检查点"
@@ -55,6 +56,10 @@ editor:
     edit_action_items: "&l箱子编辑器: <index>"
     string_list: "&l正在编辑列表"
   items:
+    clear_list: "&c&l清空整个列表"
+    action_val_click_arrange: "&a[点击以排列物品]"
+    action_val_hint_notif: "&7自定义此任务的通知设置"
+    action_val_phases_count: "&f<count> 个阶段"
     insert_stage: "&b在此处插入阶段"
     insert_stage_lore:
       - "&7将阶段向下移动以腾出空间。"
@@ -269,11 +274,25 @@ editor:
   input:
     title_main: "&6&l输入模式"
     title_sub: "&f请查看聊天框中的说明！"
-    header: "&e=== 输入模式 ==="
-    footer: "&e====================="
-    right_click_hint: "&b或者 右键点击 任何方块以获取其坐标。"
-    cancel_hint: "&7输入 &ccancel &7中止操作。"
+    header: "\n&8&m                                                  &r\n&6&l ✎ 编辑器 &7| &f需要输入:"
+    footer: "&8&m                                                  &r\n"
+    right_click_hint: "&a ✦ 提示: &7右键点击任何方块以获取其坐标。"
+    cancel_hint: "&c ✦ 中止: &7输入 &ccancel &7退出此模式。"
     prompts:
+      edit_action_base_health:
+        - "&7输入 Boss 的基础生命值。"
+        - "&7示例: &a500.0"
+      edit_action_scale_health_per_player:
+        - "&7输入每增加一名玩家时增加的额外生命值。"
+        - "&7示例: &a150.0"
+      edit_action_bar_color:
+        - "&7输入 Boss 血条 (BossBar) 的颜色。"
+        - "&7有效值: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW"
+        - "&7示例: &aRED"
+      edit_action_bar_style:
+        - "&7输入 Boss 血条 (BossBar) 的样式。"
+        - "&7有效值: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20"
+        - "&7示例: &aSOLID"
       edit_action_target_to_kill:
         - "&7输入完成此波所需击杀的最终怪物的内部名称 (internal name)。"
         - "&7用于具有多个阶段的 Boss (例如：从盔甲架变成凋灵)。"

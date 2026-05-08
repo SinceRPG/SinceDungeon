@@ -14,6 +14,7 @@ editor:
     here: "here"
     clear: "clear"
     unlimited: "Không giới hạn"
+    items: "mục"
   actions_name:
     spawn_wave: "Triệu hồi Quái Vanilla"
     reach_location: "Đến Trạm Kiểm Tra"
@@ -55,6 +56,10 @@ editor:
     edit_action_items: "&lSắp xếp Rương: <index>"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
+    clear_list: "&c&lXóa Sạch Danh Sách"
+    action_val_click_arrange: "&a[Nhấn để sắp xếp vật phẩm]"
+    action_val_hint_notif: "&7Tùy chỉnh thông báo cho nhiệm vụ này"
+    action_val_phases_count: "&f<count> giai đoạn"
     insert_stage: "&bChèn Giai Đoạn Vào Đây"
     insert_stage_lore:
       - "&7Đẩy các màn chơi xuống dưới để tạo chỗ trống."
@@ -269,11 +274,25 @@ editor:
   input:
     title_main: "&6&lCHẾ ĐỘ NHẬP LIỆU"
     title_sub: "&fVui lòng xem hướng dẫn dưới khung Chat!"
-    header: "&e=== NHẬP DỮ LIỆU ==="
-    footer: "&e===================="
-    right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
-    cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
+    header: "\n&8&m                                                  &r\n&6&l ✎ CHỈNH SỬA &7| &fYêu Cầu Nhập Liệu:"
+    footer: "&8&m                                                  &r\n"
+    right_click_hint: "&a ✦ Mẹo: &7NHẤP CHUỘT PHẢI vào Block bất kỳ để lấy tọa độ."
+    cancel_hint: "&c ✦ Hủy bỏ: &7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_base_health:
+        - "&7Nhập lượng máu cơ bản của Boss."
+        - "&7Ví dụ: &a500.0"
+      edit_action_scale_health_per_player:
+        - "&7Nhập lượng máu cộng thêm cho mỗi người chơi trong tổ đội."
+        - "&7Ví dụ: &a150.0"
+      edit_action_bar_color:
+        - "&7Nhập màu sắc cho Thanh Máu (BossBar)."
+        - "&7Hợp lệ: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW"
+        - "&7Ví dụ: &aRED"
+      edit_action_bar_style:
+        - "&7Nhập kiểu dáng cho Thanh Máu (BossBar)."
+        - "&7Hợp lệ: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20"
+        - "&7Ví dụ: &aSOLID"
       edit_action_target_to_kill:
         - "&7Nhập tên nội bộ (internal name) của quái vật cuối cùng cần tiêu diệt để qua ải."
         - "&7Dùng cho Boss có nhiều Giai đoạn (VD: Biến từ Armor Stand thành Wither)."
