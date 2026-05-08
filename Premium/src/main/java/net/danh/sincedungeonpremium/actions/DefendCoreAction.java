@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
@@ -30,7 +31,8 @@ import java.util.UUID;
  * Premium Action: Defend Core
  * Players must protect a stationary entity (e.g., an Ender Crystal or Iron Golem)
  * from waves of enemies for a specific duration.
- * Now universally supports Non-Living Entities (Crystals) via independent event-based Health Tracking.
+ * Now universally supports Non-Living Entities (Crystals) via independent event-based Health Tracking,
+ * and seamlessly allows MythicMob attackers.
  */
 public class DefendCoreAction extends DungeonAction implements Tickable {
 
@@ -227,15 +229,41 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         return original;
     }
 
+    /**
+     * Spawns configured attackers dynamically parsing for MythicMobs prefixes.
+     * Overrides internal targeting immediately to force aggression upon the Core entity.
+     *
+     * @param game      The active dungeon instance.
+     * @param centerLoc The target Core location to spawn invaders around.
+     */
     private void spawnAttackers(DungeonGame game, Location centerLoc) {
         try {
-            EntityType type = EntityType.valueOf(attackerMob.toUpperCase(Locale.ROOT));
+            boolean isMythic = attackerMob.toUpperCase(Locale.ROOT).startsWith("MYTHIC:");
+            String actualMobId = attackerMob;
+            if (isMythic) {
+                actualMobId = attackerMob.substring(7);
+            } else if (actualMobId.toUpperCase(Locale.ROOT).startsWith("VANILLA:")) {
+                actualMobId = actualMobId.substring(8);
+            }
+
             for (int i = 0; i < attackerAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 12.0;
                 double offsetZ = (Math.random() - 0.5) * 12.0;
 
                 Location spawnLoc = findSafeSpawn(centerLoc.clone().add(offsetX, 0, offsetZ));
-                Entity attacker = game.getWorld().spawnEntity(spawnLoc, type);
+
+                Entity attacker = null;
+
+                if (isMythic) {
+                    if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                        attacker = MythicMobsHook.spawnMythicMob(spawnLoc, actualMobId, 1);
+                    }
+                } else {
+                    try {
+                        attacker = game.getWorld().spawnEntity(spawnLoc, EntityType.valueOf(actualMobId.toUpperCase(Locale.ROOT)));
+                    } catch (Exception ignored) {
+                    }
+                }
 
                 if (attacker instanceof Mob attMob) {
                     applyCustomProperties(attMob, attackerName, attackerIsBaby, attackerAttributes, attackerEquipment);

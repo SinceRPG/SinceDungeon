@@ -101,7 +101,7 @@ public class SinceDungeonCommand {
                                                             p.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<pos>", String.valueOf(pos)).replace("<map>", mapId)));
                                                         }
                                                     } catch (IOException e) {
-                                                        plugin.getLogger().warning("Failed to save stage shift data!");
+                                                        plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.stage_save_fail", "Failed to save stage shift data!"));
                                                     }
 
                                                     return 1;

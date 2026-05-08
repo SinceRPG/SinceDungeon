@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
@@ -31,6 +32,7 @@ import java.util.UUID;
  * Spawns an NPC that walks to a target location.
  * Attackers will explicitly target the VIP, and players cannot damage the VIP.
  * Pathfinding range is boosted so the VIP never gets stuck.
+ * Now universally supports MythicMob attackers.
  */
 public class EscortAction extends DungeonAction implements Tickable {
 
@@ -327,16 +329,42 @@ public class EscortAction extends DungeonAction implements Tickable {
         return original;
     }
 
+    /**
+     * Spawns configured attackers dynamically parsing for MythicMobs prefixes.
+     * Overrides internal targeting immediately to force aggression upon the VIP entity.
+     *
+     * @param game   The active dungeon instance.
+     * @param npcLoc The target VIP location to spawn assassins around.
+     */
     private void spawnAttackers(DungeonGame game, Location npcLoc) {
         try {
-            EntityType type = EntityType.valueOf(attackerMob.toUpperCase(Locale.ROOT));
+            boolean isMythic = attackerMob.toUpperCase(Locale.ROOT).startsWith("MYTHIC:");
+            String actualMobId = attackerMob;
+            if (isMythic) {
+                actualMobId = attackerMob.substring(7);
+            } else if (actualMobId.toUpperCase(Locale.ROOT).startsWith("VANILLA:")) {
+                actualMobId = actualMobId.substring(8);
+            }
+
             for (int i = 0; i < attackerAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 6.0;
                 double offsetZ = (Math.random() - 0.5) * 6.0;
 
                 Location spawnLoc = findSafeSpawn(npcLoc.clone().add(offsetX, 0, offsetZ));
 
-                Entity attacker = game.getWorld().spawnEntity(spawnLoc, type);
+                Entity attacker = null;
+
+                if (isMythic) {
+                    if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                        attacker = MythicMobsHook.spawnMythicMob(spawnLoc, actualMobId, 1);
+                    }
+                } else {
+                    try {
+                        attacker = game.getWorld().spawnEntity(spawnLoc, EntityType.valueOf(actualMobId.toUpperCase(Locale.ROOT)));
+                    } catch (Exception ignored) {
+                    }
+                }
+
                 if (attacker instanceof Mob attMob) {
                     applyCustomProperties(attMob, attackerName, attackerIsBaby, attackerAttributes, attackerEquipment);
 

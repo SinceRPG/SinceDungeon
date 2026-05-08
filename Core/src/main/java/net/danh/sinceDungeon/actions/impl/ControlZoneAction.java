@@ -155,13 +155,17 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     /**
      * Calculates the exact perimeter of the current control zone circle and generates
      * an interference monster on the edge to disrupt the players.
+     * Uses pre-calculated Trigonometry arrays to eliminate object allocation during generation.
+     *
+     * @param game          The active dungeon instance.
+     * @param currentRadius The active radius of the control zone ring.
      */
     private void spawnInterferenceMob(DungeonGame game, double currentRadius) {
         try {
-            double angle = Math.random() * Math.PI * 2;
+            int angleIdx = (int) (Math.random() * 360);
             double spawnRadius = currentRadius + 1.0;
-            double x = spawnRadius * Math.cos(angle);
-            double z = spawnRadius * Math.sin(angle);
+            double x = spawnRadius * MathCache.COS[angleIdx];
+            double z = spawnRadius * MathCache.SIN[angleIdx];
             Location spawnLoc = centerLoc.clone().add(x, 0, z);
 
             spawnLoc.getChunk().load(true);

@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Native Bukkit world management utility for cloning and loading maps.
+ * Replaced hardcoded Exceptions with dynamic LanguageManager localized formats.
+ */
 public class WorldManager {
 
     private static final Map<String, Integer> templateUsageCount = new ConcurrentHashMap<>();
@@ -52,12 +56,14 @@ public class WorldManager {
             File target = new File(Bukkit.getWorldContainer(), instanceId);
 
             if (!source.exists()) {
-                throw new RuntimeException("Template world folder not found: " + templateName);
+                String errorMsg = plugin.getLanguageManager().getString("error.template_not_found", "Template world folder not found: <template>").replace("<template>", templateName);
+                throw new RuntimeException(errorMsg);
             }
 
             boolean copied = WorldUtils.copyWorld(source, target);
             if (!copied) {
-                throw new RuntimeException("Failed to copy world files using WorldUtils.");
+                String errorMsg = plugin.getLanguageManager().getString("error.world_copy_fail", "Failed to copy world files using WorldUtils.");
+                throw new RuntimeException(errorMsg);
             }
 
             new File(target, "uid.dat").delete();

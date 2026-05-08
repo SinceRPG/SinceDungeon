@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
+import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
@@ -14,6 +15,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -29,6 +31,7 @@ import java.util.*;
 /**
  * Spawns a customizable Boss Entity.
  * Features: Health Scaling, BossBar, Multi-Phases, Enrage Timer, Custom Equipment, and Custom Drops.
+ * Now fully supports MythicMobs integration for Phase Reinforcements.
  */
 public class BossBattleAction extends DungeonAction implements Tickable {
 
@@ -48,6 +51,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final List<String> enrageAttributes;
     private final List<String> customDrops;
     private final Set<Integer> executedPhases = new HashSet<>();
+
     private UUID bossId = null;
     private BossBar bossBar = null;
     private long spawnTimeMillis = 0;
@@ -80,6 +84,12 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         return SinceDungeon.getPlugin().getLanguageManager().getString("objective.boss_battle", "<red>Defeat the Boss!");
     }
 
+    /**
+     * Initializes the Boss Battle objective.
+     * Spawns the boss entity, applies attributes, and hooks the BossBar to all active participants.
+     *
+     * @param game The current Dungeon instance.
+     */
     @Override
     public void start(DungeonGame game) {
         Location loc = new Location(game.getWorld(), spawnLoc.getX() + 0.5, spawnLoc.getY(), spawnLoc.getZ() + 0.5);
@@ -211,6 +221,15 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
     }
 
+    /**
+     * Executes the specific phase threshold mechanics.
+     * Triggers chat broadcasts, attribute modifications, and reinforcement summons.
+     * Integrates MythicMobs hook dynamically if the configured reinforcement is a Mythic entity.
+     *
+     * @param game The current Dungeon instance.
+     * @param boss The active LivingEntity boss.
+     * @param data The configured phase data containing mechanics.
+     */
     private void executePhase(DungeonGame game, LivingEntity boss, PhaseData data) {
         if (data.message != null && !data.message.isEmpty()) {
             for (Player p : game.getParticipants()) {
@@ -220,13 +239,25 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
         applyAttributes(boss, data.attributes);
 
-        if (data.reinforcementMob != null) {
+        if (data.reinforcementMobId != null && !data.reinforcementMobId.equalsIgnoreCase("NONE")) {
             for (int i = 0; i < data.reinforcementAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 4.0;
                 double offsetZ = (Math.random() - 0.5) * 4.0;
                 Location rLoc = boss.getLocation().clone().add(offsetX, 0, offsetZ);
 
-                Entity rEnt = game.getWorld().spawnEntity(rLoc, data.reinforcementMob);
+                Entity rEnt = null;
+
+                if (data.isReinforcementMythic) {
+                    if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
+                        rEnt = MythicMobsHook.spawnMythicMob(rLoc, data.reinforcementMobId, 1);
+                    }
+                } else {
+                    try {
+                        rEnt = game.getWorld().spawnEntity(rLoc, EntityType.valueOf(data.reinforcementMobId.toUpperCase(Locale.ROOT)));
+                    } catch (Exception ignored) {
+                    }
+                }
+
                 if (rEnt instanceof LivingEntity rLive) {
                     this.spawnedEntities.add(rLive.getUniqueId()); // Track reinforcement for cleanup
                     rLive.setRemoveWhenFarAway(false);
@@ -365,13 +396,60 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         return null;
     }
 
+    /**
+     * Data object storing conditions and mechanics applied when the Boss reaches a specific Health Threshold.
+     */
     public static class PhaseData {
         public String message = "";
         public List<String> attributes = new ArrayList<>();
-        public EntityType reinforcementMob = null;
+        public boolean isReinforcementMythic = false;
+        public String reinforcementMobId = null;
         public int reinforcementAmount = 0;
         public String reinforcementName = "";
         public List<String> reinforcementAttributes = new ArrayList<>();
         public List<String> reinforcementEquipment = new ArrayList<>();
+    }
+
+    /**
+     * Parses the YAML configuration to build the PhaseData mechanics objects.
+     * Safely handles prefix notations for cross-plugin Entity identification.
+     *
+     * @param sec The configuration section containing phase mappings.
+     * @return Map of Health Threshold -> PhaseData
+     */
+    public static Map<Integer, PhaseData> parsePhases(ConfigurationSection sec) {
+        Map<Integer, PhaseData> phases = new HashMap<>();
+        if (sec == null) return phases;
+
+        for (String key : sec.getKeys(false)) {
+            try {
+                int threshold = Integer.parseInt(key);
+                PhaseData pd = new PhaseData();
+                pd.message = sec.getString(key + ".message", "");
+                pd.attributes = sec.getStringList(key + ".attributes");
+
+                String rMobStr = sec.getString(key + ".reinforcements.mob");
+                if (rMobStr != null) {
+                    if (rMobStr.toUpperCase(Locale.ROOT).startsWith("MYTHIC:")) {
+                        pd.isReinforcementMythic = true;
+                        pd.reinforcementMobId = rMobStr.substring(7);
+                    } else if (rMobStr.toUpperCase(Locale.ROOT).startsWith("VANILLA:")) {
+                        pd.isReinforcementMythic = false;
+                        pd.reinforcementMobId = rMobStr.substring(8);
+                    } else {
+                        pd.isReinforcementMythic = false;
+                        pd.reinforcementMobId = rMobStr;
+                    }
+
+                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
+                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
+                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
+                    pd.reinforcementEquipment = sec.getStringList(key + ".reinforcements.equipment");
+                }
+                phases.put(threshold, pd);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return phases;
     }
 }

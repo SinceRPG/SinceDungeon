@@ -217,7 +217,6 @@ public class DefaultRegistry {
                 plugin.getLanguageManager().getString("editor.actions.reach_location", "Reach Location"),
                 reachDefaults, new HashMap<>());
 
-        // --- NEW ACTION: TELEPORT ---
         Map<String, Object> tpDefaults = new HashMap<>();
         tpDefaults.put("location", "0,64,0");
         tpDefaults.put("sound", "entity.enderman.teleport");
@@ -452,28 +451,7 @@ public class DefaultRegistry {
                     Map<Integer, BossBattleAction.PhaseData> phases = new HashMap<>();
                     Object phasesObj = map.get("phases");
                     if (phasesObj instanceof ConfigurationSection sec) {
-                        for (String key : sec.getKeys(false)) {
-                            try {
-                                int threshold = Integer.parseInt(key);
-                                BossBattleAction.PhaseData pd = new BossBattleAction.PhaseData();
-                                pd.message = sec.getString(key + ".message", "");
-                                pd.attributes = sec.getStringList(key + ".attributes");
-
-                                String rMobStr = sec.getString(key + ".reinforcements.mob");
-                                if (rMobStr != null) {
-                                    try {
-                                        pd.reinforcementMob = EntityType.valueOf(rMobStr.toUpperCase());
-                                    } catch (Exception ignored) {
-                                    }
-                                    pd.reinforcementAmount = sec.getInt(key + ".reinforcements.amount", 1);
-                                    pd.reinforcementName = sec.getString(key + ".reinforcements.custom_name", "");
-                                    pd.reinforcementAttributes = sec.getStringList(key + ".reinforcements.attributes");
-                                    pd.reinforcementEquipment = sec.getStringList(key + ".reinforcements.equipment");
-                                }
-                                phases.put(threshold, pd);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
+                        phases = BossBattleAction.parsePhases(sec);
                     }
 
                     return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, equipment, phases, enrageTime, enrageMessage, enrageAttrs, customDrops);
