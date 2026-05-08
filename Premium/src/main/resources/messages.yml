@@ -10,6 +10,14 @@ log:
   invalid_exp: "Invalid EXP value provided: <value>"
   core_missing: "SinceDungeon Core is not installed! Disabling Premium Addon."
   mythicmobs_hooked: "MythicMobs API Found! Successfully integrated MYTHIC_ITEM."
+  branch_path_fail: "Failed to execute BranchingPath natively: <error>"
+  invalid_potion: "Failed to apply buff. Invalid PotionEffectType provided: <type>"
+  jump_stage_fail: "Failed to jump stage: <error>"
+  give_item_fail: "Failed to give item in GiveItemAction. Invalid data: <data>"
+  play_sound_fail: "Failed to play sound in PlaySoundAction. Invalid sound name: <sound>"
+  invalid_projectile: "Invalid Projectile EntityType: <type>"
+  webhook_http_fail: "Discord Webhook failed with HTTP code: <code>"
+  webhook_send_fail: "Failed to send Discord Webhook: <error>"
 
 admin:
   reload: "&aPremium configuration and holograms reloaded successfully!"

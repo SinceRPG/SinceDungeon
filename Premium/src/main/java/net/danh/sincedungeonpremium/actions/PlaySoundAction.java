@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.SoundUtils;
+import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
@@ -35,7 +36,8 @@ public class PlaySoundAction extends DungeonAction {
                 }
             }
         } else {
-            SinceDungeon.getPlugin().getLogger().warning("Failed to play sound in PlaySoundAction. Invalid sound name: " + soundName);
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.play_sound_fail");
+            SinceDungeon.getPlugin().getLogger().warning(logMsg.replace("<sound>", soundName));
         }
 
         forceComplete();

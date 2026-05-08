@@ -58,7 +58,8 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
         try {
             cachedType = EntityType.valueOf(projectileType.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-            SinceDungeonPremium.getInstance().getLogger().warning("Invalid Projectile EntityType: " + projectileType);
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.invalid_projectile");
+            SinceDungeonPremium.getInstance().getLogger().warning(logMsg.replace("<type>", projectileType));
             forceComplete();
         }
     }

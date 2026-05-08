@@ -58,8 +58,10 @@ public class EscortAction extends DungeonAction implements Tickable {
 
     private UUID npcId = null;
     private Location targetLocation = null;
+    // JIT Optimization: Pre-calculated destination particle location
+    private Location targetParticleLoc = null;
     private int tickCounter = 0;
-    private int unloadedTicks = 0; // Failsafe for chunks unloading
+    private int unloadedTicks = 0;
 
     public EscortAction(String entityTypeStr, String customName, double maxHealth, String startLocStr, String targetLocStr, double speed, double successRadius, boolean vipIsBaby, List<String> vipAttributes, List<String> vipEquipment, String attackerMob, int attackerAmount, int attackerInterval, String attackerName, boolean attackerIsBaby, List<String> attackerAttributes, List<String> attackerEquipment) {
         this.entityTypeStr = entityTypeStr;
@@ -183,6 +185,7 @@ public class EscortAction extends DungeonAction implements Tickable {
 
         Location startLocation = new Location(game.getWorld(), startVec.getX() + 0.5, startVec.getY(), startVec.getZ() + 0.5);
         this.targetLocation = new Location(game.getWorld(), targetVec.getX() + 0.5, targetVec.getY(), targetVec.getZ() + 0.5);
+        this.targetParticleLoc = this.targetLocation.clone().add(0, 1, 0);
 
         startLocation.getChunk().load(true);
         targetLocation.getChunk().load(true);
@@ -223,7 +226,7 @@ public class EscortAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || npcId == null || targetLocation == null) return;
+        if (completed || npcId == null || targetLocation == null || targetParticleLoc == null) return;
 
         tickCounter++;
         Entity entity = Bukkit.getEntity(npcId);
@@ -251,7 +254,7 @@ public class EscortAction extends DungeonAction implements Tickable {
         }
 
         if (game.getWorld().getTime() % 10 == 0) {
-            game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, targetLocation.clone().add(0, 1, 0), 5, 0.3, 0.3, 0.3, 0);
+            game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, targetParticleLoc, 5, 0.3, 0.3, 0.3, 0);
         }
 
         // Periodically verify the pathfinder is active so the mob doesn't get stuck

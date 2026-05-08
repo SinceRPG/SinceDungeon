@@ -85,11 +85,13 @@ public class WebhookListener implements Listener {
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode < 200 || responseCode >= 300) {
-                    plugin.getLogger().warning("Discord Webhook failed with HTTP code: " + responseCode);
+                    String msg = plugin.getFileManager().getMessageRaw("log.webhook_http_fail").replace("<code>", String.valueOf(responseCode));
+                    plugin.getLogger().warning(msg);
                 }
 
             } catch (Exception e) {
-                plugin.getLogger().warning("Failed to send Discord Webhook: " + e.getMessage());
+                String msg = plugin.getFileManager().getMessageRaw("log.webhook_send_fail").replace("<error>", e.getMessage());
+                plugin.getLogger().warning(msg);
             }
         });
     }

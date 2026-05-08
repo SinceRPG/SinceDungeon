@@ -19,6 +19,7 @@ import java.util.Locale;
  * Premium Action: Save Checkpoint
  * Generates a physical ring boundary that updates the dungeon's respawn point
  * when crossed, preventing players from running from the very beginning.
+ * Optimized: Uses a cached location pointer to eliminate JIT GC pressure.
  */
 public class CheckpointAction extends DungeonAction implements Tickable {
 
@@ -26,7 +27,8 @@ public class CheckpointAction extends DungeonAction implements Tickable {
     private final double radius;
     private final String soundStr;
     private final String particleStr;
-
+    // JIT Optimization: Reusable Location pointer for particle rendering
+    private final Location particleLoc = new Location(null, 0, 0, 0);
     private Location centerLoc;
     private int ticksElapsed = 0;
     private Particle cachedParticle;
@@ -46,6 +48,7 @@ public class CheckpointAction extends DungeonAction implements Tickable {
         }
         Vector vec = DungeonLoader.parseVector(locationStr);
         this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY() + 1, vec.getBlockZ() + 0.5);
+        this.particleLoc.setWorld(game.getWorld());
 
         try {
             this.cachedParticle = Particle.valueOf(particleStr.toUpperCase(Locale.ROOT));
@@ -64,7 +67,6 @@ public class CheckpointAction extends DungeonAction implements Tickable {
         // Render the physical ring visually with pre-calculated Trig and mutable location vectors
         if (ticksElapsed % 5 == 0) {
             double r = Math.max(1.0, radius);
-            Location particleLoc = centerLoc.clone();
 
             for (int i = 0; i < 360; i += 30) {
                 double x = r * MathCache.COS[i];

@@ -11,6 +11,10 @@ import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 
+/**
+ * Premium Action: Branching Path
+ * Diverges the dungeon into two separate stage paths based on player movement.
+ */
 public class BranchingPathAction extends DungeonAction implements Tickable {
 
     private final String pathAStr;
@@ -73,12 +77,11 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
     private void jumpToStage(DungeonGame game, int targetStage) {
         try {
             game.jumpToStage(targetStage);
-
             this.forceComplete();
-
             game.broadcastMessage("action.branch_path_chosen", "<stage>", String.valueOf(targetStage));
         } catch (Exception e) {
-            SinceDungeonPremium.getInstance().getLogger().severe("Failed to execute BranchingPath natively: " + e.getMessage());
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.branch_path_fail");
+            SinceDungeonPremium.getInstance().getLogger().severe(logMsg.replace("<error>", e.getMessage()));
             this.forceComplete();
         }
     }

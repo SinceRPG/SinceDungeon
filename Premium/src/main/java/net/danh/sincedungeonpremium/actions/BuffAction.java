@@ -12,6 +12,10 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.util.Locale;
 
+/**
+ * Premium Action: Apply Buff
+ * Applies a potion effect to all participants in the dungeon.
+ */
 public class BuffAction extends DungeonAction {
 
     private final String effectType;
@@ -36,7 +40,8 @@ public class BuffAction extends DungeonAction {
                 }
             }
         } else {
-            SinceDungeonPremium.getInstance().getLogger().warning("Failed to apply buff. Invalid PotionEffectType provided: " + effectType);
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.invalid_potion");
+            SinceDungeonPremium.getInstance().getLogger().warning(logMsg.replace("<type>", effectType));
         }
 
         this.forceComplete();

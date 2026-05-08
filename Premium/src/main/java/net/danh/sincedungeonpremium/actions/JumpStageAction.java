@@ -24,7 +24,8 @@ public class JumpStageAction extends DungeonAction {
             game.jumpToStage(targetStage);
             this.forceComplete();
         } catch (Exception e) {
-            SinceDungeonPremium.getInstance().getLogger().severe("Failed to jump stage: " + e.getMessage());
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.jump_stage_fail");
+            SinceDungeonPremium.getInstance().getLogger().severe(logMsg.replace("<error>", e.getMessage()));
             this.forceComplete();
         }
     }

@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -46,7 +47,8 @@ public class GiveItemAction extends DungeonAction {
                 }
             }
         } else {
-            SinceDungeon.getPlugin().getLogger().warning("Failed to give item in GiveItemAction. Invalid data: " + itemData);
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.give_item_fail");
+            SinceDungeon.getPlugin().getLogger().warning(logMsg.replace("<data>", itemData));
         }
 
         forceComplete();
