@@ -51,7 +51,6 @@ public final class SinceDungeon extends JavaPlugin {
     private LivesManager livesManager;
     private CooldownManager cooldownManager;
 
-    // Strategy Pattern Managers
     private RewardManager rewardManager;
     private PartySystemManager partySystemManager;
     private InstanceManager instanceManager;
@@ -83,7 +82,6 @@ public final class SinceDungeon extends JavaPlugin {
         if (languageManager == null) setupLanguage();
         new ConfigUtils(this, "dungeons/example_dungeon.yml");
 
-        // Initialize Strategy Pattern Managers
         rewardManager = new RewardManager(this);
         rewardManager.setRewardSystem(new DefaultRewardSystem(this));
 
@@ -106,9 +104,7 @@ public final class SinceDungeon extends JavaPlugin {
         cooldownManager.loadCooldowns();
 
         if (configFile.getBoolean("cross-server.enabled", false)) {
-            getLogger().warning("======================================================");
-            getLogger().warning("⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)");
-            getLogger().warning("======================================================");
+            getLogger().warning(languageManager.getString("admin.log.experimental_cross_server", "⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)"));
             redisManager = new RedisManager(this);
             redisManager.connect();
             String bungeeChannel = configFile.getString("cross-server.bungee-channel", "BungeeCord");
@@ -152,7 +148,7 @@ public final class SinceDungeon extends JavaPlugin {
     private void setupLanguage() {
         String lang = configFile.getString("settings.locale", "en");
         languageManager = new LanguageManager(this, lang);
-        getLogger().info("Loaded modular language files for locale: " + lang);
+        getLogger().info(languageManager.getString("admin.log.lang_loaded", "Loaded modular language files for locale: <lang>").replace("<lang>", lang));
     }
 
     @Override
@@ -160,19 +156,15 @@ public final class SinceDungeon extends JavaPlugin {
         if (dungeonManager != null) {
             dungeonManager.stopAllGames();
         }
-
         if (rewardManager != null && rewardManager.getRewardSystem() != null) {
             rewardManager.getRewardSystem().cleanup();
         }
-
         if (partySystemManager != null && partySystemManager.getProvider() != null) {
             partySystemManager.getProvider().cleanup();
         }
-
         if (instanceManager != null && instanceManager.getProvider() != null) {
             instanceManager.getProvider().cleanup();
         }
-
         if (livesManager != null) livesManager.forceSaveAll();
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
@@ -200,13 +192,13 @@ public final class SinceDungeon extends JavaPlugin {
                 if (sender != null && msg != null) {
                     sender.sendMessage(ColorUtils.parseWithPrefix(msg));
                 }
-                getLogger().info("Configuration, Language, and Dungeons reloaded successfully.");
+                getLogger().info(languageManager.getString("admin.log.full_reloaded", "Configuration, Language, and Dungeons reloaded successfully."));
             });
         } else {
             if (sender != null) {
                 sender.sendMessage(ColorUtils.parseWithPrefix(languageManager.getString("admin.reload")));
             }
-            getLogger().info("Configuration and Language reloaded.");
+            getLogger().info(languageManager.getString("admin.log.config_reloaded", "Configuration and Language reloaded."));
         }
     }
 
@@ -217,6 +209,7 @@ public final class SinceDungeon extends JavaPlugin {
         if (files != null) {
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                 String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+                if (currentPrefix == null || currentPrefix.trim().isEmpty()) currentPrefix = "SinceDungeon_";
                 for (File file : files) {
                     if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
                         Bukkit.getScheduler().runTask(this, () -> {

@@ -43,6 +43,11 @@ admin:
     papi_missing: "PlaceholderAPI not found. Custom placeholders will be disabled."
     cleanup_deleted: "[Cleanup] Deleted leftover generated dungeon world: <world>"
     version_warning: "Warning: Your server version is below required/unsupported! If it has any errors, report to the author."
+    config_reloaded: "Configuration and Language reloaded."
+    full_reloaded: "Configuration, Language, and Dungeons reloaded successfully."
+    experimental_cross_server: "⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)"
+    lang_loaded: "Loaded modular language files for locale: <lang>"
+    stage_save_fail: "Failed to save stage shift data!"
   warning:
     vanilla_parse_fail: "Could not parse Vanilla item: <data>"
     mmoitems_parse_fail: "Could not parse MMOItems: <data>"

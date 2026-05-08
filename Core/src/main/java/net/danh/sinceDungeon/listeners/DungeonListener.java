@@ -12,22 +12,70 @@ import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.*;
+import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Boat;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.LeashHitch;
+import org.bukkit.entity.Minecart;
+import org.bukkit.entity.Painting;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.Tameable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.*;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
+import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.entity.SlimeSplitEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerBucketEmptyEvent;
+import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,13 +83,24 @@ import java.util.UUID;
 /**
  * Handles all core gameplay events occurring within an active Dungeon instance.
  * Protects the dungeon environment from unauthorized destruction, manages player deaths,
- * and intercepts cross-world teleportations.
+ * and intercepts cross-world teleportations securely.
  */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
 
     public DungeonListener(SinceDungeon plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * Safely retrieves the dungeon world prefix.
+     * Prevents catastrophic teleport blockages if the user sets an empty prefix in config.yml.
+     *
+     * @return The valid world prefix.
+     */
+    private String getWorldPrefix() {
+        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
+        return (prefix == null || prefix.trim().isEmpty()) ? "SinceDungeon_" : prefix;
     }
 
     private void pass(Player p, Event e) {
@@ -62,40 +121,35 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getLocation().getWorld().getName().startsWith(prefix)) {
+        if (e.getLocation().getWorld().getName().startsWith(getWorldPrefix())) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockIgnite(BlockIgniteEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getBlock().getWorld().getName().startsWith(prefix)) {
+        if (e.getBlock().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
@@ -116,16 +170,14 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart || e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
@@ -156,8 +208,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getPlayer().getWorld().getName().startsWith(prefix)) {
+        if (e.getPlayer().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
@@ -186,24 +237,21 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSlimeSplit(SlimeSplitEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntitySpawn(EntitySpawnEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             if (e.getEntity() instanceof FallingBlock) {
                 e.setCancelled(true);
             }
@@ -212,8 +260,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             e.setCancelled(true);
         }
     }
@@ -225,14 +272,9 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Resolves and manages combat occurrences within the instance.
-     * Prevents friendly-fire using the configured PartyProvider API implementation.
-     */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) return;
@@ -254,7 +296,6 @@ public class DungeonListener implements Listener {
             if (attacker != null && !attacker.equals(trueVictim)) {
                 boolean sameParty = false;
 
-                // Safely checks Party API to ensure friendly fire protection remains active
                 if (plugin.getPartyManager().getProvider().hasParty(trueVictim.getUniqueId())) {
                     Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(trueVictim.getUniqueId());
                     if (members != null && members.contains(attacker.getUniqueId())) {
@@ -286,7 +327,6 @@ public class DungeonListener implements Listener {
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
 
-        // Updates the player's name across the local node if they are using the default system
         if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
             defaultParty.updatePlayerName(p);
         }
@@ -297,8 +337,7 @@ public class DungeonListener implements Listener {
             plugin.getDungeonManager().checkPendingCrossServerJoin(p);
         }
 
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(prefix)) {
+        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(getWorldPrefix())) {
             World ghostWorld = p.getLocation().getWorld();
             String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
@@ -330,7 +369,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld().equals(p.getWorld())) {
-            if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
+            if (e.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK && e.getItem() != null) {
                 Material mat = e.getItem().getType();
                 if (mat.name().contains("BOAT") || mat.name().contains("MINECART")) {
                     e.setCancelled(true);
@@ -395,9 +434,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             if (!(e.getEntity() instanceof Player)) {
                 boolean clearDrops = plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
                 DungeonGame targetGame = null;
@@ -452,10 +489,6 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Intercepts player quit events.
-     * Now correctly flags the disconnect as a "quit" event to avoid BungeeCord teleportation conflicts.
-     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
@@ -468,8 +501,9 @@ public class DungeonListener implements Listener {
             game.handlePlayerDisconnect(p, true);
         }
 
+        // Safer Virtual Inventory Handling: Removed unsafe #getLocation() validation
         Inventory topInv = p.getOpenInventory().getTopInventory();
-        if (topInv.getLocation() == null && topInv.getHolder() instanceof RewardHolder) {
+        if (topInv.getHolder() instanceof RewardHolder) {
             if (p.getItemOnCursor().getType() != Material.AIR) {
                 p.getInventory().addItem(p.getItemOnCursor());
                 p.setItemOnCursor(null);
@@ -480,16 +514,11 @@ public class DungeonListener implements Listener {
         plugin.getLivesManager().unloadPlayer(p.getUniqueId());
     }
 
-    /**
-     * Intercepts unauthorized world changes.
-     * Flags local teleports as false for isQuitting, enforcing local logic.
-     */
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
-        if (p.getWorld().getName().startsWith(prefix)) {
+        if (p.getWorld().getName().startsWith(getWorldPrefix())) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
 
@@ -605,16 +634,11 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Safely manages teleports within dungeons.
-     * Now supports a configuration toggle allowing cross-server command teleports (like HuskHomes).
-     */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
 
-        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(prefix)) {
+        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(getWorldPrefix())) {
             DungeonGame targetGame = null;
             for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
                 if (g.getWorld() != null && g.getWorld().equals(e.getTo().getWorld())) {
@@ -678,8 +702,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetEvent e) {
-        String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
-        if (e.getEntity().getWorld().getName().startsWith(prefix)) {
+        if (e.getEntity().getWorld().getName().startsWith(getWorldPrefix())) {
             for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
                 if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
                     game.onEvent(e);

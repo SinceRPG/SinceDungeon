@@ -43,6 +43,11 @@ admin:
     papi_missing: "Không tìm thấy PlaceholderAPI. Các placeholder (biến) tùy chỉnh sẽ bị vô hiệu hóa."
     cleanup_deleted: "[Dọn dẹp] Đã xóa thế giới Dungeon được tạo ra còn sót lại (do crash/lỗi): <world>"
     version_warning: "Cảnh báo: Phiên bản server của bạn thấp hơn yêu cầu hoặc không được hỗ trợ chính thức! Nếu có bất kỳ lỗi nào xảy ra, vui lòng báo cáo lại cho tác giả."
+    config_reloaded: "Configuration and Language reloaded."
+    full_reloaded: "Configuration, Language, and Dungeons reloaded successfully."
+    experimental_cross_server: "⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)"
+    lang_loaded: "Loaded modular language files for locale: <lang>"
+    stage_save_fail: "Failed to save stage shift data!"
   warning:
     vanilla_parse_fail: "Không thể nhận diện vật phẩm Vanilla: <data>"
     mmoitems_parse_fail: "Không thể nhận diện vật phẩm MMOItems: <data>"
