@@ -59,3 +59,11 @@ admin:
   target_not_in_dungeon: "&cThat player is not inside any active dungeon."
   top_reset_success: "&aSuccessfully reset all leaderboards for map: &e<map>"
   cooldown_reset_success: "&aSuccessfully reset dungeon cooldown for <player> in map <map>!"
+  debug:
+    quit_triggered: "[Debug] PlayerQuitEvent triggered for <player>"
+    quit_cancel_request: "[Debug] Cancelled pending requests for <player>"
+    quit_dungeon_handled: "[Debug] Handled Dungeon disconnect for <player>"
+    quit_inventory_handled: "[Debug] Handled Virtual Inventory for <player>"
+    quit_party_handled: "[Debug] Handled Party disconnect for <player>"
+    quit_lives_handled: "[Debug] Handled Lives unload for <player>"
+    quit_error: "[Debug] Exception in <task>: <error>"

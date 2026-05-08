@@ -59,3 +59,11 @@ admin:
   target_not_in_dungeon: "&cNgoài chơi đó hiện không ở trong Hầm ngục nào."
   top_reset_success: "&aĐã làm mới (xóa toàn bộ) Bảng Xếp Hạng của bản đồ: &e<map>"
   cooldown_reset_success: "&aĐã xóa thời gian chờ Hầm ngục <map> cho người chơi <player>!"
+  debug:
+    quit_triggered: "[Debug] Sự kiện PlayerQuitEvent đã kích hoạt cho <player>"
+    quit_cancel_request: "[Debug] Đã hủy các yêu cầu đang chờ cho <player>"
+    quit_dungeon_handled: "[Debug] Đã xử lý ngắt kết nối Hầm ngục cho <player>"
+    quit_inventory_handled: "[Debug] Đã xử lý Túi đồ Ảo cho <player>"
+    quit_party_handled: "[Debug] Đã xử lý ngắt kết nối Tổ đội cho <player>"
+    quit_lives_handled: "[Debug] Đã gỡ dữ liệu Mạng sống (Lives) cho <player>"
+    quit_error: "[Debug] Lỗi ngoại lệ trong <task>: <error>"

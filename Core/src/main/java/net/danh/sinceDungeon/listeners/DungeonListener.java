@@ -83,7 +83,7 @@ import java.util.UUID;
 /**
  * Handles all core gameplay events occurring within an active Dungeon instance.
  * Protects the dungeon environment from unauthorized destruction, manages player deaths,
- * and intercepts cross-world teleportations securely.
+ * and safely intercepts cross-world teleportations to prevent transfer lockups.
  */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
@@ -92,12 +92,6 @@ public class DungeonListener implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Safely retrieves the dungeon world prefix.
-     * Prevents catastrophic teleport blockages if the user sets an empty prefix in config.yml.
-     *
-     * @return The valid world prefix.
-     */
     private String getWorldPrefix() {
         String prefix = plugin.getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
         return (prefix == null || prefix.trim().isEmpty()) ? "SinceDungeon_" : prefix;
@@ -489,29 +483,102 @@ public class DungeonListener implements Listener {
         }
     }
 
+    /**
+     * Highly secured Disconnect event.
+     * Every operation is wrapped in a try-catch block to ensure that an internal error
+     * never interrupts the Bukkit disconnect sequence. This is essential for preventing
+     * teleportation locks during BungeeCord/HuskHomes cross-server transfers.
+     */
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
+        boolean debug = plugin.getConfigFile().getBoolean("settings.debug", false);
 
-        plugin.getDungeonManager().cancelPendingRequest(p.getUniqueId());
-
-        DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
-
-        if (game != null) {
-            game.handlePlayerDisconnect(p, true);
+        if (debug) {
+            String msg = plugin.getLanguageManager().getString("admin.debug.quit_triggered", "[Debug] PlayerQuitEvent triggered for <player>");
+            plugin.getLogger().info(msg.replace("<player>", p.getName()));
         }
 
-        // Safer Virtual Inventory Handling: Removed unsafe #getLocation() validation
-        Inventory topInv = p.getOpenInventory().getTopInventory();
-        if (topInv.getHolder() instanceof RewardHolder) {
-            if (p.getItemOnCursor().getType() != Material.AIR) {
-                p.getInventory().addItem(p.getItemOnCursor());
-                p.setItemOnCursor(null);
+        try {
+            plugin.getDungeonManager().cancelPendingRequest(p.getUniqueId());
+            if (debug) {
+                String logMsg = plugin.getLanguageManager().getString("admin.debug.quit_cancel_request", "[Debug] Cancelled pending requests for <player>");
+                plugin.getLogger().info(logMsg.replace("<player>", p.getName()));
             }
+        } catch (Exception ex) {
+            String errorMsg = plugin.getLanguageManager().getString("admin.debug.quit_error", "[Debug] Exception in <task>: <error>")
+                    .replace("<task>", "cancelPendingRequest")
+                    .replace("<error>", ex.getMessage());
+            plugin.getLogger().severe(errorMsg);
+            ex.printStackTrace();
         }
 
-        plugin.getPartyManager().getProvider().handleDisconnect(p);
-        plugin.getLivesManager().unloadPlayer(p.getUniqueId());
+        try {
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null) {
+                game.handlePlayerDisconnect(p, true);
+                if (debug) {
+                    String logMsg = plugin.getLanguageManager().getString("admin.debug.quit_dungeon_handled", "[Debug] Handled Dungeon disconnect for <player>");
+                    plugin.getLogger().info(logMsg.replace("<player>", p.getName()));
+                }
+            }
+        } catch (Exception ex) {
+            String errorMsg = plugin.getLanguageManager().getString("admin.debug.quit_error", "[Debug] Exception in <task>: <error>")
+                    .replace("<task>", "handlePlayerDisconnect")
+                    .replace("<error>", ex.getMessage());
+            plugin.getLogger().severe(errorMsg);
+            ex.printStackTrace();
+        }
+
+        try {
+            if (p.getOpenInventory() != null && p.getOpenInventory().getTopInventory() != null) {
+                Inventory topInv = p.getOpenInventory().getTopInventory();
+                if (topInv.getHolder() instanceof RewardHolder) {
+                    if (p.getItemOnCursor() != null && p.getItemOnCursor().getType() != Material.AIR) {
+                        p.getInventory().addItem(p.getItemOnCursor());
+                        p.setItemOnCursor(null);
+                    }
+                }
+            }
+            if (debug) {
+                String logMsg = plugin.getLanguageManager().getString("admin.debug.quit_inventory_handled", "[Debug] Handled Virtual Inventory for <player>");
+                plugin.getLogger().info(logMsg.replace("<player>", p.getName()));
+            }
+        } catch (Exception ex) {
+            String errorMsg = plugin.getLanguageManager().getString("admin.debug.quit_error", "[Debug] Exception in <task>: <error>")
+                    .replace("<task>", "VirtualInventory")
+                    .replace("<error>", ex.getMessage());
+            plugin.getLogger().severe(errorMsg);
+            ex.printStackTrace();
+        }
+
+        try {
+            plugin.getPartyManager().getProvider().handleDisconnect(p);
+            if (debug) {
+                String logMsg = plugin.getLanguageManager().getString("admin.debug.quit_party_handled", "[Debug] Handled Party disconnect for <player>");
+                plugin.getLogger().info(logMsg.replace("<player>", p.getName()));
+            }
+        } catch (Exception ex) {
+            String errorMsg = plugin.getLanguageManager().getString("admin.debug.quit_error", "[Debug] Exception in <task>: <error>")
+                    .replace("<task>", "PartyManager")
+                    .replace("<error>", ex.getMessage());
+            plugin.getLogger().severe(errorMsg);
+            ex.printStackTrace();
+        }
+
+        try {
+            plugin.getLivesManager().unloadPlayer(p.getUniqueId());
+            if (debug) {
+                String logMsg = plugin.getLanguageManager().getString("admin.debug.quit_lives_handled", "[Debug] Handled Lives unload for <player>");
+                plugin.getLogger().info(logMsg.replace("<player>", p.getName()));
+            }
+        } catch (Exception ex) {
+            String errorMsg = plugin.getLanguageManager().getString("admin.debug.quit_error", "[Debug] Exception in <task>: <error>")
+                    .replace("<task>", "LivesManager")
+                    .replace("<error>", ex.getMessage());
+            plugin.getLogger().severe(errorMsg);
+            ex.printStackTrace();
+        }
     }
 
     @EventHandler
