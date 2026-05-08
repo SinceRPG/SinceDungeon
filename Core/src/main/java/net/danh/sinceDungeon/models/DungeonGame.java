@@ -279,14 +279,15 @@ public class DungeonGame {
             p.closeInventory();
             p.setVelocity(new Vector(0, 0, 0));
 
-            if (saveStats) {
-                applyMviBypass(p);
-            }
+            // BUG FIX: Unconditionally apply MVI Bypass so Multiverse doesn't wipe
+            // the player's inventory when they transition into the Dungeon World.
+            applyMviBypass(p);
 
             p.teleportAsync(spawnLoc).thenAccept(success -> {
                 if (success && p.isOnline()) {
                     p.setNoDamageTicks(60);
 
+                    // Only clear inventory inside the dungeon if save-and-restore is explicitly requested
                     if (saveStats) {
                         AttributeInstance attr = p.getAttribute(Attribute.MAX_HEALTH);
                         p.setHealth(attr != null ? attr.getValue() : 20.0);
