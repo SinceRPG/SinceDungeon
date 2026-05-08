@@ -274,6 +274,11 @@ editor:
     right_click_hint: "&bHoặc NHẤP CHUỘT PHẢI vào một Block bất kỳ để lấy tọa độ."
     cancel_hint: "&7Nhập &ccancel &7để thoát chế độ này."
     prompts:
+      edit_action_target_to_kill:
+        - "&7Nhập tên nội bộ (internal name) của quái vật cuối cùng cần tiêu diệt để qua ải."
+        - "&7Dùng cho Boss có nhiều Giai đoạn (VD: Biến từ Armor Stand thành Wither)."
+        - "&7Ví dụ: &atoro_wither_terror"
+        - "&7Mẹo: Nhập &cNONE &7nếu quái vật sinh ra ban đầu chính là mục tiêu duy nhất."
       edit_req_item:
         - "&7Nhập định dạng vật phẩm yêu cầu để vào."
         - "&7Vanilla: &aDIAMOND:5"

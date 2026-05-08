@@ -274,6 +274,11 @@ editor:
     right_click_hint: "&b或者 右键点击 任何方块以获取其坐标。"
     cancel_hint: "&7输入 &ccancel &7中止操作。"
     prompts:
+      edit_action_target_to_kill:
+        - "&7输入完成此波所需击杀的最终怪物的内部名称 (internal name)。"
+        - "&7用于具有多个阶段的 Boss (例如：从盔甲架变成凋灵)。"
+        - "&7示例: &atoro_wither_terror"
+        - "&7提示: 如果最初生成的怪物就是唯一目标，请键入 &cNONE &7。"
       edit_req_item:
         - "&7输入进入所需物品的格式。"
         - "&7原版: &aDIAMOND:5"
