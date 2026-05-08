@@ -98,6 +98,7 @@ public class DungeonGame {
             PermissionAttachment attachment = p.addAttachment(plugin);
             attachment.setPermission("mvinv.bypass.*", true);
             attachment.setPermission("Multiverse-Inventories.bypass.*", true);
+            p.recalculatePermissions();
             permAttachments.put(p.getUniqueId(), attachment);
         }
     }
@@ -108,7 +109,9 @@ public class DungeonGame {
         if (attachment != null) {
             try {
                 p.removeAttachment(attachment);
-            } catch (Exception ignored) {}
+                p.recalculatePermissions();
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -999,7 +1002,8 @@ public class DungeonGame {
             permAttachments.values().forEach(att -> {
                 try {
                     if (att.getPermissible() != null) att.getPermissible().removeAttachment(att);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             });
             permAttachments.clear();
         }
@@ -1010,8 +1014,6 @@ public class DungeonGame {
 
     public void restorePlayerState(Player p) {
         if (p == null || !p.isOnline()) return;
-
-        removeMviBypass(p);
 
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
@@ -1059,6 +1061,11 @@ public class DungeonGame {
 
             savedStates.remove(p.getUniqueId());
         }
+
+        // MVI BugFix: Only remove the MVI bypass at the very end of stat restoration.
+        // This guarantees MVI does not overwrite the carefully restored inventory.
+        removeMviBypass(p);
+
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }
 

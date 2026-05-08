@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.MathCache;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -41,6 +42,9 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     private int tickCounter = 0;
     private Location centerLoc;
 
+    private Particle borderParticle;
+    private Particle completeParticle;
+
     public ControlZoneAction(Vector center, double startRadius, double endRadius, int requiredSeconds,
                              String mob, int mobInterval, int mobLevel, String customName, boolean isBaby,
                              List<String> attributesList, List<String> equipmentList) {
@@ -70,6 +74,22 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         if (game.getWorld() == null) return;
         this.centerLoc = new Location(game.getWorld(), center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5);
         this.lastTickTime = System.currentTimeMillis();
+
+        // JIT Optimization: Cache particle types to avoid parsing strings every tick
+        String borderPName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_border", "FLAME");
+        try {
+            this.borderParticle = Particle.valueOf(borderPName.toUpperCase(Locale.ROOT));
+        } catch (Exception ignored) {
+            this.borderParticle = Particle.FLAME;
+        }
+
+        String completePName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_complete", "TOTEM_OF_UNDYING");
+        try {
+            this.completeParticle = Particle.valueOf(completePName.toUpperCase(Locale.ROOT));
+        } catch (Exception ignored) {
+            this.completeParticle = Particle.TOTEM_OF_UNDYING;
+        }
+
         game.sendActionMessage(this, "init", "action.zone_start");
     }
 
@@ -87,21 +107,13 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         if (currentRadius <= 0) currentRadius = 1.0;
 
         if (tickCounter % 5 == 0) {
-            String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_border", "FLAME");
-            Particle pType = Particle.FLAME;
-            try {
-                pType = Particle.valueOf(pName.toUpperCase(Locale.ROOT));
-            } catch (Exception ignored) {
-            }
-
-            // JIT Optimization: Use a single reusable Location pointer instead of instantiating 24 new objects per tick
+            // JIT Optimization: Reusable Location pointer and cached Trig values
             Location particleLoc = centerLoc.clone();
             for (int i = 0; i < 360; i += 15) {
-                double angle = i * Math.PI / 180;
-                double x = currentRadius * Math.cos(angle);
-                double z = currentRadius * Math.sin(angle);
+                double x = currentRadius * MathCache.COS[i];
+                double z = currentRadius * MathCache.SIN[i];
                 particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + 0.2, centerLoc.getZ() + z);
-                centerLoc.getWorld().spawnParticle(pType, particleLoc, 1, 0, 0, 0, 0);
+                centerLoc.getWorld().spawnParticle(borderParticle, particleLoc, 1, 0, 0, 0, 0);
             }
         }
 
@@ -131,12 +143,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
             if (accumulatedMillis >= requiredMillis) {
                 this.completed = true;
                 game.sendActionMessage(this, "complete", "action.zone_complete");
-
-                String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.zone_complete", "TOTEM_OF_UNDYING");
-                try {
-                    centerLoc.getWorld().spawnParticle(Particle.valueOf(pName.toUpperCase(Locale.ROOT)), centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
-                } catch (Exception ignored) {
-                }
+                centerLoc.getWorld().spawnParticle(completeParticle, centerLoc.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
             }
         } else {
             if (tickCounter % 40 == 0) {

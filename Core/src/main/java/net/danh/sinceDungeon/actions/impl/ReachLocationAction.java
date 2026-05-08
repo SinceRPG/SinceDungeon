@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.MathCache;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -20,6 +21,9 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     private Location centerLoc;
     private int ticks = 0;
 
+    private Particle idleParticle;
+    private Particle completeParticle;
+
     public ReachLocationAction(Vector target, double radius) {
         this.target = target;
         this.radiusSq = radius * radius;
@@ -33,6 +37,22 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         this.centerLoc = new Location(game.getWorld(), target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5);
+
+        // JIT Optimization: Cache particle config lookup
+        String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_idle", "HAPPY_VILLAGER");
+        try {
+            this.idleParticle = Particle.valueOf(pName.toUpperCase());
+        } catch (Exception ignored) {
+            this.idleParticle = Particle.HAPPY_VILLAGER;
+        }
+
+        String pComplete = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_complete", "TOTEM_OF_UNDYING");
+        try {
+            this.completeParticle = Particle.valueOf(pComplete.toUpperCase());
+        } catch (Exception ignored) {
+            this.completeParticle = Particle.TOTEM_OF_UNDYING;
+        }
+
         game.sendActionMessage(this, "init", "action.reach_start", "<x>", String.valueOf(target.getBlockX()), "<z>", String.valueOf(target.getBlockZ()), "<y>", String.valueOf(target.getBlockY()));
     }
 
@@ -44,21 +64,14 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
         if (centerLoc != null && ticks % 5 == 0) {
             double r = Math.sqrt(radiusSq) > 0 ? Math.sqrt(radiusSq) : 1.5;
             double yOffset = Math.sin(ticks * 0.1) * 0.3;
-            String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_idle", "HAPPY_VILLAGER");
-            Particle pType = Particle.HAPPY_VILLAGER;
-            try {
-                pType = Particle.valueOf(pName.toUpperCase());
-            } catch (Exception ignored) {
-            }
 
-            // JIT Optimization: Use a single reusable Location pointer instead of instantiating 12 new objects per tick
+            // JIT Optimization: Reusable Location pointer and cached Trig values
             Location particleLoc = centerLoc.clone();
             for (int i = 0; i < 360; i += 30) {
-                double angle = i * Math.PI / 180;
-                double x = r * Math.cos(angle);
-                double z = r * Math.sin(angle);
+                double x = r * MathCache.COS[i];
+                double z = r * MathCache.SIN[i];
                 particleLoc.set(centerLoc.getX() + x, centerLoc.getY() + yOffset, centerLoc.getZ() + z);
-                centerLoc.getWorld().spawnParticle(pType, particleLoc, 1, 0, 0, 0, 0);
+                centerLoc.getWorld().spawnParticle(idleParticle, particleLoc, 1, 0, 0, 0, 0);
             }
         }
 
@@ -71,12 +84,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
                 if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.reach_complete");
-
-                    String pComplete = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_complete", "TOTEM_OF_UNDYING");
-                    try {
-                        game.getWorld().spawnParticle(Particle.valueOf(pComplete.toUpperCase()), centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
-                    } catch (Exception ignored) {
-                    }
+                    game.getWorld().spawnParticle(completeParticle, centerLoc.clone().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
                     break;
                 }
             }

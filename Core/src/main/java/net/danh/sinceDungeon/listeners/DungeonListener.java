@@ -24,6 +24,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.permissions.PermissionAttachment;
 
 import java.util.List;
 import java.util.Set;
@@ -287,10 +288,19 @@ public class DungeonListener implements Listener {
             plugin.getDungeonManager().checkPendingCrossServerJoin(p);
         }
 
+        // MVI FIX: Ghost Rescue Bypass. If a player logged off inside the dungeon,
+        // they lost their MVI bypass. When they log back in, they are in the dungeon world,
+        // but SinceDungeon forces them back to Lobby. MVI sees this as a World Change and wipes their inventory.
+        // Granting the bypass right before the rescue teleport safely prevents MVI interference.
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(worldPrefix)) {
             World ghostWorld = p.getLocation().getWorld();
             String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
+
+            PermissionAttachment attachment = p.addAttachment(plugin);
+            attachment.setPermission("mvinv.bypass.*", true);
+            attachment.setPermission("Multiverse-Inventories.bypass.*", true);
+            p.recalculatePermissions();
 
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
@@ -298,6 +308,12 @@ public class DungeonListener implements Listener {
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        try {
+                            p.removeAttachment(attachment);
+                            p.recalculatePermissions();
+                        } catch (Exception ignored) {
+                        }
+
                         if (ghostWorld.getPlayers().isEmpty()) {
                             String delLog = plugin.getLanguageManager().getString("admin.log.deleting_ghost_world", "Ghost World <world> is now empty. Deleting permanently...");
                             plugin.getLogger().info(delLog.replace("<world>", ghostWorld.getName()));
