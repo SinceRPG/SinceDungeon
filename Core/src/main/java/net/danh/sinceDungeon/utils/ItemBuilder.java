@@ -236,7 +236,7 @@ public class ItemBuilder {
                     meta.setCustomModelData(cmdSec.getInt("value"));
                 }
 
-                if (ServerVersion.isAtLeast(1, 21, 4)) {
+                if (ServerVersion.isAtLeast(1, 21, 5)) {
                     try {
                         CustomModelDataComponent cmdc = meta.getCustomModelDataComponent();
                         if (cmdSec.contains("floats")) {

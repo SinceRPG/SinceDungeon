@@ -53,12 +53,12 @@ public class FileManager {
 
     /**
      * Compares the current file with the default resource inside the jar and injects missing keys.
-     *
-     * @param currentConfig The loaded FileConfiguration.
-     * @param file          The physical file to save to.
-     * @param resourceName  The exact name of the file inside the resources folder.
+     * Aborts immediately if the specific file contains 'auto-update: false'.
      */
     private void autoUpdate(FileConfiguration currentConfig, File file, String resourceName) {
+        // Feature: Per-file Auto Update Toggle
+        if (!currentConfig.getBoolean("auto-update", true)) return;
+
         InputStream defaultStream = plugin.getResource(resourceName);
         if (defaultStream == null) return;
 

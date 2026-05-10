@@ -15,6 +15,7 @@ import java.util.List;
 /**
  * Utility wrapper for simplified YAML Configuration operations.
  * Integrated with Auto-Updater to sync missing keys from plugin jar.
+ * Now supports per-file auto-update toggling.
  */
 public class ConfigUtils {
     private final SinceDungeon plugin;
@@ -22,12 +23,6 @@ public class ConfigUtils {
     private File file;
     private FileConfiguration config;
 
-    /**
-     * Generates or fetches a configuration file handle.
-     *
-     * @param plugin The parent plugin.
-     * @param name   The path and name of the internal plugin resource.
-     */
     public ConfigUtils(SinceDungeon plugin, String name) {
         this.plugin = plugin;
         this.name = name;
@@ -54,11 +49,12 @@ public class ConfigUtils {
 
     /**
      * Compares the current file with the original file inside the .jar to automatically update it.
-     *
-     * @param removeObsolete If set to true, the plugin will DELETE keys that exist in the external file
-     *                       but not in the .jar (Use with caution as this risks losing user's custom data).
+     * Aborts immediately if the specific file contains 'auto-update: false'.
      */
     private void autoUpdateConfig(boolean removeObsolete) {
+        // Feature: Per-file Auto Update Toggle
+        if (!config.getBoolean("auto-update", true)) return;
+
         InputStream defaultStream = plugin.getResource(name);
         if (defaultStream == null) return;
         YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStream, StandardCharsets.UTF_8));
