@@ -35,12 +35,21 @@ public class DefaultInstanceProvider implements InstanceProvider {
         templateUsageCount.clear();
     }
 
+    /**
+     * Implements the API-driven strategy to generate dungeon worlds safely.
+     * Validates input parameters to stop malicious injections prior to I/O tasks.
+     *
+     * @param templateName The name of the source template directory.
+     * @param instanceId   The newly assigned session ID for the clone.
+     * @return CompletableFuture yielding the loaded Bukkit World.
+     */
     @Override
     public CompletableFuture<World> createInstance(String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
 
         if (templateName == null || templateName.contains("/") || templateName.contains("\\") || templateName.contains(".")) {
-            finalFuture.completeExceptionally(new IllegalArgumentException("Path Traversal attack detected in World Name: " + templateName));
+            String errorMsg = plugin.getLanguageManager().getString("error.path_traversal", "Path Traversal attack detected in World Name: <world>");
+            finalFuture.completeExceptionally(new IllegalArgumentException(errorMsg.replace("<world>", templateName)));
             return finalFuture;
         }
 

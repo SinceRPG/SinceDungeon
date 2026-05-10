@@ -40,6 +40,13 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
+    /**
+     * Parses the raw string configurations of the Mob Pool into structured data.
+     * Extracts dynamic hardcodes into the localized LanguageManager to maintain multi-language support.
+     *
+     * @param raw The raw string list from the YAML configuration.
+     * @return A compiled list of MobOption records utilized for spawn weighting.
+     */
     public static List<MobOption> parseMobPool(List<String> raw) {
         List<MobOption> pool = new ArrayList<>();
         for (String entry : raw) {
@@ -52,7 +59,11 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 int level = parts.length >= 4 ? Integer.parseInt(parts[3]) : 1;
                 if (weight > 0) pool.add(new MobOption(isMythic, id, level, weight));
             } catch (Exception ignored) {
-                SinceDungeon.getPlugin().getLogger().warning("[RandomWave] Failed to parse mob pool entry: " + entry + " — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]");
+                String warnMsg = SinceDungeon.getPlugin().getLanguageManager().getString(
+                        "admin.log.random_wave_parse_error",
+                        "[RandomWave] Failed to parse mob pool entry: <entry> — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]"
+                );
+                SinceDungeon.getPlugin().getLogger().warning(warnMsg.replace("<entry>", entry));
             }
         }
         return pool;

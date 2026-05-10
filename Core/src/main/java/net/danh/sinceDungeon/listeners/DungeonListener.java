@@ -339,11 +339,6 @@ public class DungeonListener implements Listener {
     }
 
     @EventHandler
-    public void onMove(PlayerMoveEvent e) {
-        pass(e.getPlayer(), e);
-    }
-
-    @EventHandler
     public void onInteract(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
@@ -357,11 +352,6 @@ public class DungeonListener implements Listener {
             }
         }
         pass(p, e);
-    }
-
-    @EventHandler
-    public void onInteractEntity(PlayerInteractEntityEvent e) {
-        pass(e.getPlayer(), e);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -436,16 +426,6 @@ public class DungeonListener implements Listener {
                 game.onEvent(e);
             }
         }
-    }
-
-    @EventHandler
-    public void onProjectileLaunch(ProjectileLaunchEvent e) {
-        if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
-    }
-
-    @EventHandler
-    public void onProjectileHit(ProjectileHitEvent e) {
-        if (e.getEntity().getShooter() instanceof Player p) pass(p, e);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

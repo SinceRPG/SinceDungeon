@@ -529,6 +529,14 @@ public class DungeonManager {
         worldGames.remove(worldName);
     }
 
+    /**
+     * Resolves the corresponding DungeonGame instance associated with the provided world name.
+     * This operation executes in O(1) constant time, eliminating the massive CPU overhead of
+     * iterating through all active games during high-frequency server events.
+     *
+     * @param worldName The exact name of the world instance.
+     * @return The DungeonGame object, or null if no match is found.
+     */
     public DungeonGame getGameByWorld(String worldName) {
         return worldGames.get(worldName);
     }

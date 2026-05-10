@@ -24,11 +24,21 @@ public class WorldManager {
 
     private static final Map<String, Integer> templateUsageCount = new ConcurrentHashMap<>();
 
+    /**
+     * Asynchronously duplicates the template world folder to generate a unique dungeon instance.
+     * Integrates strict security checks to prevent arbitrary file path traversal attacks.
+     *
+     * @param plugin       The main plugin instance.
+     * @param templateName The name of the source template directory.
+     * @param instanceId   The generated unique identifier for the new instance.
+     * @return A CompletableFuture mapping to the successfully created Bukkit World.
+     */
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
 
         if (templateName == null || templateName.contains("/") || templateName.contains("\\") || templateName.contains(".")) {
-            finalFuture.completeExceptionally(new IllegalArgumentException("Path Traversal attack detected in World Name: " + templateName));
+            String errorMsg = plugin.getLanguageManager().getString("error.path_traversal", "Path Traversal attack detected in World Name: <world>");
+            finalFuture.completeExceptionally(new IllegalArgumentException(errorMsg.replace("<world>", templateName)));
             return finalFuture;
         }
 
