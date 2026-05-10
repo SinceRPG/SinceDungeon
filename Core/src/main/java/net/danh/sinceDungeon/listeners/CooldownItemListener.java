@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.listeners;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.NamespacedKey;
@@ -21,6 +22,7 @@ import java.util.Locale;
 /**
  * Listens for interactions with specialized Cooldown manipulation items.
  * Processes reductions and full resets globally across all dungeon maps.
+ * Enforces usage prevention inside active dungeons.
  */
 public class CooldownItemListener implements Listener {
     private final SinceDungeon plugin;
@@ -49,6 +51,18 @@ public class CooldownItemListener implements Listener {
         // Handle Cooldown RESET Item
         if (meta.getPersistentDataContainer().has(resetKey, PersistentDataType.BYTE)) {
             e.setCancelled(true);
+
+            // Restrict item usage inside the dungeon
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null) {
+                boolean allowInDungeon = plugin.getConfigFile().getBoolean("items.cooldown_reset.allow-use-in-dungeon", false);
+                if (!allowInDungeon) {
+                    String msg = plugin.getLanguageManager().getString("cooldown.cannot_use_in_dungeon", "&cYou cannot use Cooldown Tickets while inside an active dungeon!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    return;
+                }
+            }
+
             p.setCooldown(item.getType(), 10);
 
             if (!plugin.getCooldownManager().hasAnyCooldown(p.getUniqueId())) {
@@ -69,6 +83,18 @@ public class CooldownItemListener implements Listener {
         // Handle Cooldown REDUCE Item
         if (meta.getPersistentDataContainer().has(reduceKey, PersistentDataType.INTEGER)) {
             e.setCancelled(true);
+
+            // Restrict item usage inside the dungeon
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null) {
+                boolean allowInDungeon = plugin.getConfigFile().getBoolean("items.cooldown_reduce.allow-use-in-dungeon", false);
+                if (!allowInDungeon) {
+                    String msg = plugin.getLanguageManager().getString("cooldown.cannot_use_in_dungeon", "&cYou cannot use Cooldown Tickets while inside an active dungeon!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    return;
+                }
+            }
+
             p.setCooldown(item.getType(), 10);
 
             if (!plugin.getCooldownManager().hasAnyCooldown(p.getUniqueId())) {

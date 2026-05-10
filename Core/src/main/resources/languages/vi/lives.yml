@@ -13,6 +13,7 @@ lives:
   max_reached: "&aMạng của bạn đã đầy."
   item_received: "&aBạn nhận được Vật phẩm Hồi Sinh (+<amount> Mạng)!"
   item_used: "&aBạn đã sử dụng Vật phẩm Hồi Sinh (+<amount> Mạng). Hiện có: <current>/<max>."
+  cannot_use_in_dungeon: "&cBạn không thể sử dụng Vật phẩm Hồi Sinh khi đang chiến đấu trong Hầm ngục!"
   admin_set: "&aĐã đặt số mạng của <player> thành <amount>."
   admin_add: "&aĐã cộng <amount> mạng cho <player>."
   admin_addmax: "&aĐã cộng <amount> giới hạn mạng tối đa cho <player>."

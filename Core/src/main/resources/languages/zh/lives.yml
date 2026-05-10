@@ -13,6 +13,7 @@ lives:
   max_reached: "&a你的生命已达到最大容量。"
   item_received: "&a你收到了一个 生命水晶 (+<amount> 生命周期)！"
   item_used: "&a你消耗了一个 生命水晶！(+<amount> 生命)。当前: <current>/<max>。"
+  cannot_use_in_dungeon: "&c你不能在正在进行的副本中使用生命水晶！"
   admin_set: "&a成功将 <player> 的生命设置为 <amount>。"
   admin_add: "&a成功为 <player> 添加了 <amount> 条生命。"
   admin_addmax: "&a成功为 <player> 的最大生命上限添加了 <amount>。"

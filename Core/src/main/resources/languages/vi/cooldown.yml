@@ -6,6 +6,7 @@ cooldown:
   item_reset_used: "&aToàn bộ thời gian chờ Hầm ngục của bạn đã được xóa bỏ!"
   item_reduce_received: "&aBạn nhận được Vé Tua Nhanh Thời Gian (-<time>s) x<amount>!"
   item_reduce_used: "&aToàn bộ thời gian chờ Hầm ngục của bạn đã được giảm <time> giây!"
+  cannot_use_in_dungeon: "&cBạn không thể sử dụng Vé Hồi Chiêu khi đang chiến đấu trong Hầm ngục!"
   admin_gave_reset: "&aĐã tặng <amount> Vé Xóa Hồi Chiêu cho <player>."
   admin_gave_reduce: "&aĐã tặng <amount> Vé Tua Nhanh Thời Gian (-<time>s) cho <player>."
   admin_reduced: "&aĐã giảm <time> giây hồi chiêu cho toàn bộ Hầm ngục của <player>."

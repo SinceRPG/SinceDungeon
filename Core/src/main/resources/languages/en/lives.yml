@@ -13,6 +13,7 @@ lives:
   max_reached: "&aYour lives are already at maximum capacity."
   item_received: "&aYou received a Life Item (+<amount> Lives)!"
   item_used: "&aYou consumed a Life Item! (+<amount> Lives). Current: <current>/<max>."
+  cannot_use_in_dungeon: "&cYou cannot use Soul Crystals while inside an active dungeon!"
   admin_set: "&aSuccessfully set <player>'s lives to <amount>."
   admin_add: "&aSuccessfully added <amount> lives to <player>."
   admin_addmax: "&aSuccessfully added <amount> to <player>'s MAX lives."

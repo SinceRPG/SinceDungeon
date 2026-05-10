@@ -34,6 +34,7 @@ items:
   cooldown_reset:
     material: "PAPER"
     name: "&e&l✦ Cooldown Reset Ticket ✦"
+    allow-use-in-dungeon: false
     lore:
       - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       - "&7A magical ticket that completely"
@@ -50,6 +51,7 @@ items:
   cooldown_reduce:
     material: "CLOCK"
     name: "&a&l✦ Time Skip Ticket ✦ &8| &e-<time>s"
+    allow-use-in-dungeon: false
     lore:
       - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       - "&7Manipulate the flow of time to"
@@ -68,6 +70,7 @@ items:
   life_crystal:
     material: "NETHER_STAR"
     name: "&d&l✦ Soul Crystal ✦ &8| &a+<amount> Lives"
+    allow-use-in-dungeon: false
     lore:
       - "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       - "&7A mythical crystal pulsating with"

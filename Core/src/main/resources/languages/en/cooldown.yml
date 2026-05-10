@@ -6,6 +6,7 @@ cooldown:
   item_reset_used: "&aAll your dungeon cooldowns have been fully reset!"
   item_reduce_received: "&aYou received a Time Skip Ticket (-<time>s) x<amount>!"
   item_reduce_used: "&aAll your dungeon cooldowns have been reduced by <time>s!"
+  cannot_use_in_dungeon: "&cYou cannot use Cooldown Tickets while inside an active dungeon!"
   admin_gave_reset: "&aGave <amount> Cooldown Reset Ticket(s) to <player>."
   admin_gave_reduce: "&aGave <amount> Time Skip Ticket(s) (-<time>s) to <player>."
   admin_reduced: "&aSuccessfully reduced all cooldowns for <player> by <time> seconds."

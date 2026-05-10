@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.listeners;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.LivesManager;
+import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.NamespacedKey;
@@ -22,6 +23,7 @@ import java.util.Locale;
 /**
  * Listens for interactions with Life Items.
  * Consumes the item and grants the player additional dungeon lives.
+ * Includes restrictions to prevent usage inside active dungeons based on config.
  */
 public class LifeItemListener implements Listener {
     private final SinceDungeon plugin;
@@ -35,6 +37,7 @@ public class LifeItemListener implements Listener {
     /**
      * Handles the interaction event when a player consumes a Life Item.
      * Applies cooldowns to prevent macro abuse and safely updates the player's life count.
+     * Checks if the player is in a dungeon and blocks usage if configured to do so.
      *
      * @param e The player interact event.
      */
@@ -53,6 +56,18 @@ public class LifeItemListener implements Listener {
         if (meta.getPersistentDataContainer().has(lifeKey, PersistentDataType.INTEGER)) {
             int amount = meta.getPersistentDataContainer().getOrDefault(lifeKey, PersistentDataType.INTEGER, 0);
             if (amount <= 0) return;
+
+            // Restrict item usage inside the dungeon if disabled in configuration
+            DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (game != null) {
+                boolean allowInDungeon = plugin.getConfigFile().getBoolean("items.life_crystal.allow-use-in-dungeon", false);
+                if (!allowInDungeon) {
+                    e.setCancelled(true);
+                    String msg = plugin.getLanguageManager().getString("lives.cannot_use_in_dungeon", "&cYou cannot use Soul Crystals while inside an active dungeon!");
+                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    return;
+                }
+            }
 
             e.setCancelled(true);
             p.setCooldown(item.getType(), 10);

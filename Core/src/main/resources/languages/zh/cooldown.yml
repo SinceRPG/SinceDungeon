@@ -6,6 +6,7 @@ cooldown:
   item_reset_used: "&a你所有的副本冷却时间已被完全重置！"
   item_reduce_received: "&a你收到了 时间跳跃券 (-<time>秒) x<amount>！"
   item_reduce_used: "&a你所有的副本冷却时间已减少 <time>秒！"
+  cannot_use_in_dungeon: "&c你不能在正在进行的副本中使用冷却券！"
   admin_gave_reset: "&a给予 <player> <amount> 张 冷却重置券。"
   admin_gave_reduce: "&a给予 <player> <amount> 张 时间跳跃券 (-<time>秒)。"
   admin_reduced: "&a成功将 <player> 的所有副本冷却时间减少 <time> 秒。"
