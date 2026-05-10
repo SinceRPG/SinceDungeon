@@ -31,7 +31,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     private final boolean scaleWithParty;
     private final List<String> customDrops;
 
-    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private final Map<UUID, Entity> spawnedMobs = new HashMap<>();
 
     public SpawnWaveAction(EntityType type, int amount, List<Vector> locations,
                            String customName, boolean isBaby, List<String> attributesList, List<String> equipmentList, boolean scaleWithParty, List<String> customDrops) {
@@ -61,29 +61,27 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
     @Override
     public void trackChildEntity(UUID uuid, Location loc, String internalName) {
         super.trackChildEntity(uuid, loc, internalName);
-        spawnedMobs.put(uuid, loc);
+        Entity ent = Bukkit.getEntity(uuid);
+        if (ent != null) spawnedMobs.put(uuid, ent);
     }
 
     @Override
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
+        // [Performance Fix] Uses directly mapped Entity reference to avoid Bukkit global entity array lookup
         spawnedMobs.entrySet().removeIf(entry -> {
-            UUID uuid = entry.getKey();
-            Entity ent = Bukkit.getEntity(uuid);
+            Entity ent = entry.getValue();
 
-            if (ent != null) {
-                if (ent.isDead() || !ent.isValid()) return true;
-                entry.setValue(ent.getLocation());
-                return false;
-            } else {
-                Location lastLoc = entry.getValue();
+            if (ent.isDead()) return true;
+            if (!ent.isValid()) {
+                Location lastLoc = ent.getLocation();
                 if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
                     return false; // Safely skip unloaded entities
                 }
                 return true;
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {
@@ -256,7 +254,8 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                             game.getWorld().playSound(finalLoc, sType, 0.5f, 0.5f);
                         }
 
-                        spawnedMobs.put(ent.getUniqueId(), finalLoc);
+                        // [Performance Fix] Caching entity
+                        spawnedMobs.put(ent.getUniqueId(), ent);
                         this.spawnedEntities.add(ent.getUniqueId());
                         count++;
                     } else if (ent != null) {

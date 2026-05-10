@@ -230,6 +230,8 @@ public class DungeonGame {
                         return;
                     }
                     this.dungeonWorld = world;
+                    plugin.getDungeonManager().registerWorldGame(world.getName(), this);
+
                     dungeonWorld.setAutoSave(false);
 
                     if (template.settings().forceDaylightAndClearWeather()) {
@@ -1017,6 +1019,10 @@ public class DungeonGame {
     }
 
     private void aggressivelyCleanupMemory() {
+        if (this.dungeonWorld != null) {
+            plugin.getDungeonManager().unregisterWorldGame(this.dungeonWorld.getName());
+        }
+
         if (savedStates != null) savedStates.clear();
         if (stages != null) {
             for (List<DungeonAction> list : stages) {

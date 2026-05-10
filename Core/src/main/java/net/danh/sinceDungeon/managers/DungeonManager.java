@@ -42,6 +42,7 @@ public class DungeonManager {
     private final Map<UUID, String> pendingCrossServerGames = new ConcurrentHashMap<>();
     private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
     private final Map<String, CustomItemProvider> customItemProviders = new ConcurrentHashMap<>();
+    private final Map<String, DungeonGame> worldGames = new ConcurrentHashMap<>();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -517,6 +518,19 @@ public class DungeonManager {
 
     public void quitDungeon(Player p) {
         if (activeGames.containsKey(p.getUniqueId())) activeGames.get(p.getUniqueId()).stop(true);
+    }
+
+
+    public void registerWorldGame(String worldName, DungeonGame game) {
+        worldGames.put(worldName, game);
+    }
+
+    public void unregisterWorldGame(String worldName) {
+        worldGames.remove(worldName);
+    }
+
+    public DungeonGame getGameByWorld(String worldName) {
+        return worldGames.get(worldName);
     }
 
     public void cancelPendingRequest(UUID uuid) {

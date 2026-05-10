@@ -416,14 +416,9 @@ public class DungeonListener implements Listener {
         if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             if (!(e.getEntity() instanceof Player)) {
                 boolean clearDrops = plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
-                DungeonGame targetGame = null;
 
-                for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
-                    if (g.getWorld() != null && g.getWorld().equals(e.getEntity().getWorld())) {
-                        targetGame = g;
-                        break;
-                    }
-                }
+                // [Performance Fix] O(1) Fast lookup instead of iterating activeGames
+                DungeonGame targetGame = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
 
                 if (targetGame != null && targetGame.getTemplate() != null) {
                     clearDrops = targetGame.getTemplate().settings().clearMobDrops();
@@ -435,11 +430,10 @@ public class DungeonListener implements Listener {
                 }
             }
 
-            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
-                if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
-                    game.onEvent(e);
-                    break;
-                }
+            // [Performance Fix] O(1) Fast lookup
+            DungeonGame game = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
+            if (game != null) {
+                game.onEvent(e);
             }
         }
     }
@@ -663,13 +657,8 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
 
         if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(worldPrefix)) {
-            DungeonGame targetGame = null;
-            for (DungeonGame g : plugin.getDungeonManager().getActiveGames().values()) {
-                if (g.getWorld() != null && g.getWorld().equals(e.getTo().getWorld())) {
-                    targetGame = g;
-                    break;
-                }
-            }
+            // [Performance Fix] O(1) Fast lookup
+            DungeonGame targetGame = plugin.getDungeonManager().getGameByWorld(e.getTo().getWorld().getName());
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
                 if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
@@ -733,11 +722,10 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetEvent e) {
         if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
-            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
-                if (game.getWorld() != null && game.getWorld().equals(e.getEntity().getWorld())) {
-                    game.onEvent(e);
-                    break;
-                }
+            // [Performance Fix] O(1) Fast lookup instead of massive loops on high frequency events
+            DungeonGame game = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
+            if (game != null) {
+                game.onEvent(e);
             }
         }
     }

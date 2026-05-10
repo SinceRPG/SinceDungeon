@@ -31,7 +31,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final boolean scaleWithParty;
     private final String targetToKill;
 
-    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private final Map<UUID, Entity> spawnedMobs = new HashMap<>();
     private boolean hasTargetSpawned = false;
 
     public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty, String targetToKill) {
@@ -59,7 +59,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     @Override
     public void trackChildEntity(UUID uuid, Location loc, String internalName) {
         super.trackChildEntity(uuid, loc, internalName);
-        spawnedMobs.put(uuid, loc);
+        Entity ent = Bukkit.getEntity(uuid);
+        if (ent != null) spawnedMobs.put(uuid, ent);
     }
 
     /**
@@ -69,7 +70,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void checkAndTrackTarget(UUID uuid, Location loc, String spawnedInternalName) {
         if (!targetToKill.equalsIgnoreCase("NONE") && targetToKill.equalsIgnoreCase(spawnedInternalName)) {
             this.hasTargetSpawned = true;
-            this.spawnedMobs.put(uuid, loc);
+            Entity ent = Bukkit.getEntity(uuid);
+            if (ent != null) this.spawnedMobs.put(uuid, ent);
             this.spawnedEntities.add(uuid);
         }
     }
@@ -134,8 +136,8 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                             le.setPersistent(true);
                         }
 
-                        // Track the initial mob (even if it's an armor stand)
-                        spawnedMobs.put(bukkitEntity.getUniqueId(), finalLoc);
+                        // [Performance Fix] Caching entity directly
+                        spawnedMobs.put(bukkitEntity.getUniqueId(), bukkitEntity);
                         this.spawnedEntities.add(bukkitEntity.getUniqueId());
                         count++;
 
@@ -160,21 +162,19 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
+        // [Performance Fix] Eliminated Bukkit.getEntity
         spawnedMobs.entrySet().removeIf(entry -> {
-            UUID uuid = entry.getKey();
-            Entity ent = Bukkit.getEntity(uuid);
+            Entity ent = entry.getValue();
 
-            if (ent != null) {
-                if (ent.isDead() || !ent.isValid()) return true;
-                entry.setValue(ent.getLocation());
-                return false;
-            } else {
-                Location lastLoc = entry.getValue();
+            if (ent.isDead()) return true;
+            if (!ent.isValid()) {
+                Location lastLoc = ent.getLocation();
                 if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
                     return false;
                 }
                 return true;
             }
+            return false;
         });
 
         // Custom Phase Logic: Wait until the target mob spawns before completing the wave.

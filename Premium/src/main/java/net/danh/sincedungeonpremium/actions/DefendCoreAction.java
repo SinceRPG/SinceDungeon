@@ -23,9 +23,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Premium Action: Defend Core
@@ -48,7 +46,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     private final boolean attackerIsBaby;
     private final List<String> attackerAttributes;
     private final List<String> attackerEquipment;
-
+    private final Map<UUID, Entity> attackerEntities = new HashMap<>();
     private UUID coreId = null;
     private Location coreLoc = null;
     private int ticksElapsed = 0;
@@ -121,10 +119,8 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed || coreId == null) return;
 
-        Entity entity = Bukkit.getEntity(coreId);
+        Entity entity = Bukkit.getEntity(coreId); // Only 1 lookup (the Core)
 
-        // Failsafe: Entity might be temporarily unloaded because players moved far away.
-        // Wait 5 seconds (100 ticks) of unloaded state before assuming it was deleted/killed by void.
         if (entity == null) {
             unloadedTicks++;
             if (unloadedTicks > 100) {
@@ -153,15 +149,13 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
             }
         }
 
-        // Force attackers to target the core
+        // [Performance Fix] Loop direct Entity tracker to force AI targeting
         if (ticksElapsed % 20 == 0) {
-            for (UUID id : spawnedEntities) {
-                if (id.equals(coreId)) continue;
-                Entity e = Bukkit.getEntity(id);
+            attackerEntities.values().removeIf(e -> e.isDead() || !e.isValid());
+            for (Entity e : attackerEntities.values()) {
                 if (e instanceof Mob attacker && entity instanceof LivingEntity livingCore) {
                     attacker.setTarget(livingCore);
                 } else if (e instanceof Mob attacker) {
-                    // Try to pathfind to the crystal if it's not a LivingEntity
                     attacker.getPathfinder().moveTo(entity.getLocation());
                 }
             }
@@ -274,6 +268,8 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                         attMob.getPathfinder().moveTo(core.getLocation());
                     }
                     this.spawnedEntities.add(attMob.getUniqueId());
+                    // [Performance Fix] Put in custom tracker map
+                    this.attackerEntities.put(attMob.getUniqueId(), attMob);
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
             }

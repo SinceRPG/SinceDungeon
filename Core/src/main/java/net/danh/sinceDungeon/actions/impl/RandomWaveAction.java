@@ -28,7 +28,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     private final List<Vector> locations;
     private final List<MobOption> mobPool;
     private final boolean scaleWithParty;
-    private final Map<UUID, Location> spawnedMobs = new HashMap<>();
+    private final Map<UUID, Entity> spawnedMobs = new HashMap<>();
     private final Map<UUID, String> mobDisplayNames = new HashMap<>();
     private final List<String> customDrops;
 
@@ -61,7 +61,8 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     @Override
     public void trackChildEntity(UUID uuid, Location loc, String internalName) {
         super.trackChildEntity(uuid, loc, internalName);
-        spawnedMobs.put(uuid, loc);
+        Entity ent = Bukkit.getEntity(uuid);
+        if (ent != null) spawnedMobs.put(uuid, ent);
         if (internalName != null) mobDisplayNames.put(uuid, internalName);
     }
 
@@ -95,7 +96,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
         return original;
     }
 
-    private UUID spawnMob(DungeonGame game, Location loc, MobOption opt) {
+    private Entity spawnMob(DungeonGame game, Location loc, MobOption opt) {
         try {
             String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.mob_spawn", "CAMPFIRE_COSY_SMOKE");
             Particle pType;
@@ -120,7 +121,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                     game.getWorld().spawnParticle(pType, loc.clone().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
                     if (sType != null) game.getWorld().playSound(loc, sType, 0.5f, 0.8f);
 
-                    return e.getUniqueId();
+                    return e;
                 }
             } else {
                 EntityType type;
@@ -138,7 +139,7 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                     game.getWorld().spawnParticle(pType, loc.clone().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
                     if (sType != null) game.getWorld().playSound(loc, sType, 0.5f, 0.8f);
 
-                    return e.getUniqueId();
+                    return e;
                 } else if (e != null) {
                     e.remove();
                 }
@@ -174,9 +175,11 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location spawnLoc = findSafeSpawn(new Location(game.getWorld(), vec.getX() + 0.5 + offsetX, vec.getY(), vec.getZ() + 0.5 + offsetZ));
 
-                UUID uid = spawnMob(game, spawnLoc, opt);
-                if (uid != null) {
-                    spawnedMobs.put(uid, spawnLoc);
+                // [Performance Fix] Receive entity directly
+                Entity ent = spawnMob(game, spawnLoc, opt);
+                if (ent != null) {
+                    UUID uid = ent.getUniqueId();
+                    spawnedMobs.put(uid, ent);
                     mobDisplayNames.put(uid, opt.id());
                     this.spawnedEntities.add(uid);
                     count++;
@@ -195,22 +198,19 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
     public void onTick(DungeonGame game) {
         if (completed) return;
 
-        // JIT Optimization: Removed massive Ticket/Chunk Memory Leak.
+        // [Performance Fix] Eliminated Bukkit.getEntity array lookup completely!
         spawnedMobs.entrySet().removeIf(entry -> {
-            UUID uuid = entry.getKey();
-            Entity ent = Bukkit.getEntity(uuid);
+            Entity ent = entry.getValue();
 
-            if (ent != null) {
-                if (ent.isDead() || !ent.isValid()) return true;
-                entry.setValue(ent.getLocation());
-                return false;
-            } else {
-                Location lastLoc = entry.getValue();
+            if (ent.isDead()) return true;
+            if (!ent.isValid()) {
+                Location lastLoc = ent.getLocation();
                 if (lastLoc.getWorld() != null && !lastLoc.isChunkLoaded()) {
                     return false; // Safely skip unloaded entities
                 }
                 return true;
             }
+            return false;
         });
 
         if (spawnedMobs.isEmpty()) {

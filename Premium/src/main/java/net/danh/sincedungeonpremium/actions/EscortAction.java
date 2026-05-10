@@ -23,9 +23,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Premium Action: Escort NPC
@@ -55,7 +53,7 @@ public class EscortAction extends DungeonAction implements Tickable {
     private final boolean attackerIsBaby;
     private final List<String> attackerAttributes;
     private final List<String> attackerEquipment;
-
+    private final Map<UUID, Entity> attackerEntities = new HashMap<>();
     private UUID npcId = null;
     private Location targetLocation = null;
     // JIT Optimization: Pre-calculated destination particle location
@@ -231,8 +229,6 @@ public class EscortAction extends DungeonAction implements Tickable {
         tickCounter++;
         Entity entity = Bukkit.getEntity(npcId);
 
-        // Failsafe: Entity might be temporarily unloaded because players moved far away.
-        // Wait 5 seconds (100 ticks) of unloaded state before assuming it was deleted/killed by void.
         if (entity == null) {
             unloadedTicks++;
             if (unloadedTicks > 100) {
@@ -245,7 +241,7 @@ public class EscortAction extends DungeonAction implements Tickable {
         unloadedTicks = 0;
 
         if (!(entity instanceof Mob mob) || mob.isDead()) {
-            return; // Native Death event handler will take over. Or it despawns.
+            return;
         }
 
         if (mob.getLocation().distanceSquared(targetLocation) <= (successRadius * successRadius)) {
@@ -257,7 +253,6 @@ public class EscortAction extends DungeonAction implements Tickable {
             game.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, targetParticleLoc, 5, 0.3, 0.3, 0.3, 0);
         }
 
-        // Periodically verify the pathfinder is active so the mob doesn't get stuck
         if (tickCounter % 20 == 0) {
             forcePathfind(mob);
         }
@@ -266,11 +261,10 @@ public class EscortAction extends DungeonAction implements Tickable {
             if (tickCounter % attackerInterval == 0) spawnAttackers(game, mob.getLocation());
         }
 
-        // Force AI to constantly target the VIP
+        // [Performance Fix] Loop direct Entity tracker to force AI targeting
         if (tickCounter % 20 == 0) {
-            for (UUID id : this.spawnedEntities) {
-                if (id.equals(npcId)) continue;
-                Entity e = Bukkit.getEntity(id);
+            attackerEntities.values().removeIf(e -> e.isDead() || !e.isValid());
+            for (Entity e : attackerEntities.values()) {
                 if (e instanceof Mob attackerMobInstance) {
                     attackerMobInstance.setTarget(mob);
                 }
@@ -377,6 +371,8 @@ public class EscortAction extends DungeonAction implements Tickable {
                     }
 
                     this.spawnedEntities.add(attMob.getUniqueId());
+                    // [Performance Fix] Put in custom tracker map
+                    this.attackerEntities.put(attMob.getUniqueId(), attMob);
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
             }

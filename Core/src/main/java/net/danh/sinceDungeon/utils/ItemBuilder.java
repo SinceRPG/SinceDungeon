@@ -94,7 +94,8 @@ public class ItemBuilder {
         if (parts.length > 1) {
             try {
                 builder.customModelData(Integer.parseInt(parts[1]));
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
         return builder;
     }
@@ -147,7 +148,8 @@ public class ItemBuilder {
                         amount = parseRandomAmount(subParts[0]);
                         try {
                             cmd = Integer.parseInt(subParts[1]);
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
 
@@ -251,12 +253,14 @@ public class ItemBuilder {
                             for (String hex : cmdSec.getStringList("colors")) {
                                 try {
                                     colors.add(Color.fromRGB(Integer.parseInt(hex.replace("#", ""), 16)));
-                                } catch (Exception ignored) {}
+                                } catch (Exception ignored) {
+                                }
                             }
                             cmdc.setColors(colors);
                         }
                         meta.setCustomModelDataComponent(cmdc);
-                    } catch (Throwable ignored) {}
+                    } catch (Throwable ignored) {
+                    }
                 }
             } else {
                 meta.setCustomModelData(cfg.getInt("custom-model-data"));

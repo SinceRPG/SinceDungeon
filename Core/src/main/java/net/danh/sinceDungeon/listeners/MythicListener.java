@@ -31,11 +31,10 @@ public class MythicListener implements Listener {
     public void onMMDeath(MythicMobDeathEvent e) {
         if (e.getEntity() != null) {
             World w = e.getEntity().getWorld();
-            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
-                if (game.getWorld() != null && game.getWorld().equals(w)) {
-                    game.onEvent(e);
-                    break;
-                }
+            // [Performance Fix] O(1) Fast lookup
+            DungeonGame game = plugin.getDungeonManager().getGameByWorld(w.getName());
+            if (game != null) {
+                game.onEvent(e);
             }
         }
     }
@@ -52,19 +51,16 @@ public class MythicListener implements Listener {
             }
 
             World w = e.getEntity().getWorld();
-            for (DungeonGame game : plugin.getDungeonManager().getActiveGames().values()) {
-                if (game.getWorld() != null && game.getWorld().equals(w)) {
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        // Check for direct parent/child summoning skills
-                        UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());
-                        if (parentId != null) {
-                            game.trackChildEntity(parentId, e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
-                        }
-                        // Check for phase transitions and target validations
-                        game.checkAndTrackMythicMob(e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
-                    }, 1L);
-                    break;
-                }
+            // [Performance Fix] O(1) Fast lookup
+            DungeonGame game = plugin.getDungeonManager().getGameByWorld(w.getName());
+            if (game != null) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());
+                    if (parentId != null) {
+                        game.trackChildEntity(parentId, e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
+                    }
+                    game.checkAndTrackMythicMob(e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());
+                }, 1L);
             }
         }
     }

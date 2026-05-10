@@ -75,7 +75,10 @@ public class RewardGUI implements Listener {
             if (name != null) meta.displayName(ColorUtils.parse("<!i>" + name));
 
             if (parts.length > 1) {
-                try { meta.setCustomModelData(Integer.parseInt(parts[1])); } catch (Exception ignored) {}
+                try {
+                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                } catch (Exception ignored) {
+                }
             }
             if (getConfig().contains(path + ".custom-model-data")) {
                 meta.setCustomModelData(getConfig().getInt(path + ".custom-model-data"));
@@ -107,7 +110,8 @@ public class RewardGUI implements Listener {
             if (parts.length > 1) {
                 try {
                     meta.setCustomModelData(Integer.parseInt(parts[1]));
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                }
             }
 
             item.setItemMeta(meta);
