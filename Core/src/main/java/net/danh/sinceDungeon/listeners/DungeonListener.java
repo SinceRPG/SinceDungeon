@@ -26,6 +26,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.permissions.PermissionAttachment;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -288,19 +289,29 @@ public class DungeonListener implements Listener {
             plugin.getDungeonManager().checkPendingCrossServerJoin(p);
         }
 
-        // MVI FIX: Ghost Rescue Bypass. If a player logged off inside the dungeon,
-        // they lost their MVI bypass. When they log back in, they are in the dungeon world,
-        // but SinceDungeon forces them back to Lobby. MVI sees this as a World Change and wipes their inventory.
-        // Granting the bypass right before the rescue teleport safely prevents MVI interference.
+        // MVI FIX: Ghost Rescue Bypass conditionally verifies Multi-Verse implementation before overriding configurations.
         if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(worldPrefix)) {
             World ghostWorld = p.getLocation().getWorld();
             String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
 
-            PermissionAttachment attachment = p.addAttachment(plugin);
-            attachment.setPermission("mvinv.bypass.*", true);
-            attachment.setPermission("Multiverse-Inventories.bypass.*", true);
-            p.recalculatePermissions();
+            boolean mviEnabled = Bukkit.getPluginManager().isPluginEnabled("Multiverse-Inventories")
+                    || Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core");
+
+            PermissionAttachment attachment = null;
+            if (mviEnabled) {
+                attachment = p.addAttachment(plugin);
+                List<String> bypassPerms = plugin.getConfigFile().getStringList("settings.mvi-bypass-permissions");
+                if (bypassPerms == null || bypassPerms.isEmpty()) {
+                    bypassPerms = Arrays.asList("mvinv.bypass.*", "Multiverse-Inventories.bypass.*");
+                }
+                for (String perm : bypassPerms) {
+                    attachment.setPermission(perm, true);
+                }
+                p.recalculatePermissions();
+            }
+
+            final PermissionAttachment finalAttachment = attachment;
 
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation()).thenAccept(success -> {
                 if (success) {
@@ -309,8 +320,10 @@ public class DungeonListener implements Listener {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         try {
-                            p.removeAttachment(attachment);
-                            p.recalculatePermissions();
+                            if (finalAttachment != null) {
+                                p.removeAttachment(finalAttachment);
+                                p.recalculatePermissions();
+                            }
                         } catch (Exception ignored) {
                         }
 

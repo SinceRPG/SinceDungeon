@@ -75,14 +75,6 @@ public class ItemBuilder {
         }
     }
 
-    /**
-     * Instantiates a new ItemBuilder dynamically reading the material from the config.
-     *
-     * @param plugin           The plugin instance.
-     * @param configPath       The path to check for the material.
-     * @param fallbackMaterial The default material if the config path is missing/invalid.
-     * @return A new ItemBuilder instance.
-     */
     public static ItemBuilder fromConfig(SinceDungeon plugin, String configPath, String fallbackMaterial) {
         String matStr = plugin.getConfigFile().getString(configPath + ".material", fallbackMaterial);
         Material mat = Material.matchMaterial(matStr.toUpperCase());
@@ -90,17 +82,11 @@ public class ItemBuilder {
         return new ItemBuilder(plugin, mat);
     }
 
-    /**
-     * Checks if an ItemStack contains a specific NBT Tag securely.
-     */
     public static boolean hasTag(ItemStack item, NamespacedKey key, PersistentDataType<?, ?> type) {
         if (item == null || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer().has(key, type);
     }
 
-    /**
-     * Retrieves the value of a specific NBT Tag from an ItemStack.
-     */
     public static <T, Z> Z getTag(ItemStack item, NamespacedKey key, PersistentDataType<T, Z> type) {
         if (item == null || !item.hasItemMeta()) return null;
         return item.getItemMeta().getPersistentDataContainer().get(key, type);
@@ -108,8 +94,7 @@ public class ItemBuilder {
 
     /**
      * Parses dynamic item configurations utilizing the internal CustomItemProvider registry.
-     * Falls back to standard Vanilla parsing if no custom provider matches the prefix.
-     * Accessible globally for Actions, Custom Drops, and Loot Chests.
+     * Supports standard Vanilla Item Parsing format: MATERIAL:AMOUNT:CMD
      *
      * @param data The configuration string (e.g., "PREFIX:DATA:AMOUNT")
      * @return The constructed ItemStack or null if parsing fails.
@@ -123,21 +108,37 @@ public class ItemBuilder {
             String prefix = parts[0].toUpperCase();
 
             // 1. Check if a custom provider is registered for this prefix
-            CustomItemProvider provider =
-                    SinceDungeon.getPlugin().getDungeonManager().getItemProvider(prefix);
+            CustomItemProvider provider = SinceDungeon.getPlugin().getDungeonManager().getItemProvider(prefix);
 
             if (provider != null) {
                 return provider.parseItem(cleanData);
             }
 
-            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT or MATERIAL:MIN-MAX)
+            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT or MATERIAL:MIN-MAX or MATERIAL:AMOUNT:CMD)
             Material mat = Material.matchMaterial(prefix);
             if (mat != null) {
                 int amount = 1;
+                int cmd = -1;
                 if (parts.length > 1) {
-                    amount = parseRandomAmount(parts[1]);
+                    String[] subParts = parts[1].split(":");
+                    amount = parseRandomAmount(subParts[0]);
+                    if (subParts.length > 1) {
+                        try {
+                            cmd = Integer.parseInt(subParts[1]);
+                        } catch (Exception ignored) {
+                        }
+                    }
                 }
-                return new ItemStack(mat, amount);
+
+                ItemStack is = new ItemStack(mat, amount);
+                if (cmd != -1) {
+                    ItemMeta itemMeta = is.getItemMeta();
+                    if (itemMeta != null) {
+                        itemMeta.setCustomModelData(cmd);
+                        is.setItemMeta(itemMeta);
+                    }
+                }
+                return is;
             }
 
         } catch (Throwable e) {
@@ -147,19 +148,11 @@ public class ItemBuilder {
         return null;
     }
 
-    /**
-     * Sets the stack amount.
-     */
     public ItemBuilder amount(int amount) {
         this.item.setAmount(amount);
         return this;
     }
 
-    // --- Static Utilities for Reading Tags ---
-
-    /**
-     * Applies a persistent NBT tag to the item.
-     */
     public <T, Z> ItemBuilder setTag(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
         if (meta != null) {
             meta.getPersistentDataContainer().set(key, type, value);
@@ -167,15 +160,6 @@ public class ItemBuilder {
         return this;
     }
 
-    /**
-     * Parses and applies a wide range of metadata from a ConfigurationSection.
-     * Supports legacy 1.20 tags and advanced 1.21+ components (Tooltips, Models, etc.).
-     *
-     * @param cfg          The config section to read from.
-     * @param defName      Default name if none is provided in the config.
-     * @param replacements Key-Value pairs for replacing placeholders.
-     * @return The ItemBuilder instance for chaining.
-     */
     public ItemBuilder applyConfig(ConfigurationSection cfg, String defName, String... replacements) {
         if (meta == null) return this;
 
@@ -184,12 +168,10 @@ public class ItemBuilder {
             return this;
         }
 
-        // 1. Display Name
         String name = cfg.getString("name", defName);
         for (int i = 0; i < replacements.length; i += 2) name = name.replace(replacements[i], replacements[i + 1]);
         meta.displayName(ColorUtils.parse(name).decoration(TextDecoration.ITALIC, false));
 
-        // 2. Item Name (1.21+)
         if (cfg.contains("item-name")) {
             try {
                 String itemName = cfg.getString("item-name");
@@ -200,7 +182,6 @@ public class ItemBuilder {
             }
         }
 
-        // 3. Lore
         if (cfg.contains("lore")) {
             List<String> rawLore = cfg.getStringList("lore");
             List<Component> compLore = new ArrayList<>();
@@ -212,7 +193,6 @@ public class ItemBuilder {
             meta.lore(compLore);
         }
 
-        // 4. Custom Model Data
         if (cfg.contains("custom-model-data")) {
             if (cfg.isConfigurationSection("custom-model-data")) {
                 ConfigurationSection cmdSec = cfg.getConfigurationSection("custom-model-data");
@@ -258,7 +238,6 @@ public class ItemBuilder {
             }
         }
 
-        // 5. Item Model (1.21+)
         if (cfg.contains("item-model")) {
             try {
                 NamespacedKey key = NamespacedKey.fromString(cfg.getString("item-model"));
@@ -267,7 +246,6 @@ public class ItemBuilder {
             }
         }
 
-        // 6. Tooltip Style (1.21+)
         if (cfg.contains("tooltip-style")) {
             try {
                 NamespacedKey key = NamespacedKey.fromString(cfg.getString("tooltip-style"));
@@ -276,7 +254,6 @@ public class ItemBuilder {
             }
         }
 
-        // 7. Max Stack Size (1.21+)
         if (cfg.contains("max-stack-size")) {
             try {
                 meta.setMaxStackSize(Math.max(1, Math.min(99, cfg.getInt("max-stack-size"))));
@@ -284,7 +261,6 @@ public class ItemBuilder {
             }
         }
 
-        // 8. Rarity
         if (cfg.contains("rarity")) {
             try {
                 meta.setRarity(ItemRarity.valueOf(cfg.getString("rarity").toUpperCase()));
@@ -292,7 +268,6 @@ public class ItemBuilder {
             }
         }
 
-        // 9. Hide Tooltip
         if (cfg.contains("hide-tooltip")) {
             try {
                 meta.setHideTooltip(cfg.getBoolean("hide-tooltip"));
@@ -300,7 +275,6 @@ public class ItemBuilder {
             }
         }
 
-        // 10. Glint Override (Glowing)
         if (cfg.contains("glowing") || cfg.contains("glint-override")) {
             try {
                 meta.setEnchantmentGlintOverride(cfg.getBoolean("glowing", cfg.getBoolean("glint-override")));
@@ -312,7 +286,6 @@ public class ItemBuilder {
             }
         }
 
-        // 11. Glider (Elytra behavior)
         if (cfg.contains("glider")) {
             try {
                 meta.setGlider(cfg.getBoolean("glider"));
@@ -320,7 +293,6 @@ public class ItemBuilder {
             }
         }
 
-        // 12. Enchantable
         if (cfg.contains("enchantable")) {
             try {
                 meta.setEnchantable(cfg.getInt("enchantable"));
@@ -328,10 +300,8 @@ public class ItemBuilder {
             }
         }
 
-        // 13. Unbreakable
         if (cfg.contains("unbreakable")) meta.setUnbreakable(cfg.getBoolean("unbreakable"));
 
-        // 14. Item Flags
         if (cfg.contains("flags")) {
             for (String flag : cfg.getStringList("flags")) {
                 try {
@@ -341,7 +311,6 @@ public class ItemBuilder {
             }
         }
 
-        // 15. Vanilla Enchantments
         if (cfg.contains("enchants")) {
             ConfigurationSection enchSec = cfg.getConfigurationSection("enchants");
             if (enchSec != null) {
@@ -355,7 +324,6 @@ public class ItemBuilder {
             }
         }
 
-        // 16. Attribute Modifiers
         if (cfg.contains("attributes")) {
             ConfigurationSection attrSec = cfg.getConfigurationSection("attributes");
             if (attrSec != null) {
@@ -384,7 +352,6 @@ public class ItemBuilder {
             }
         }
 
-        // 17. Damage
         if (cfg.contains("damage") && meta instanceof Damageable dmgMeta) {
             dmgMeta.setDamage(cfg.getInt("damage"));
         }
@@ -392,9 +359,6 @@ public class ItemBuilder {
         return this;
     }
 
-    /**
-     * Finalizes the item creation process.
-     */
     public ItemStack build() {
         if (meta != null) {
             item.setItemMeta(meta);

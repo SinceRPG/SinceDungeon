@@ -68,27 +68,44 @@ public class RewardGUI implements Listener {
 
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
-        String name = getConfig().getString(path + ".name");
-        if (name != null) meta.displayName(ColorUtils.parse("<!i>" + name));
+        if (meta != null) {
+            String name = getConfig().getString(path + ".name");
+            if (name != null) meta.displayName(ColorUtils.parse("<!i>" + name));
 
-        List<String> loreRaw = getConfig().getStringList(path + ".lore");
-        List<Component> lore = new ArrayList<>();
-        for (String line : loreRaw)
-            lore.add(ColorUtils.parse("<!i>" + line.replace("<count>", String.valueOf(chestCount))));
+            if (getConfig().contains(path + ".custom-model-data")) {
+                meta.setCustomModelData(getConfig().getInt(path + ".custom-model-data"));
+            }
 
-        meta.lore(lore);
-        item.setItemMeta(meta);
+            List<String> loreRaw = getConfig().getStringList(path + ".lore");
+            List<Component> lore = new ArrayList<>();
+            for (String line : loreRaw)
+                lore.add(ColorUtils.parse("<!i>" + line.replace("<count>", String.valueOf(chestCount))));
+
+            meta.lore(lore);
+            item.setItemMeta(meta);
+        }
         return item;
     }
 
-    private ItemStack makeNavItem(String nameRaw) {
+    private ItemStack makeNavItem(String pathKey, String defaultName) {
         String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
-        Material mat = Material.matchMaterial(navItemStr);
+        String[] parts = navItemStr.split(":");
+        Material mat = Material.matchMaterial(parts[0]);
         if (mat == null) mat = Material.ARROW;
+
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
-        if (meta != null && nameRaw != null) {
-            meta.displayName(ColorUtils.parse("<!i>" + nameRaw));
+        if (meta != null) {
+            String nameRaw = getConfig().getString(pathKey, defaultName);
+            if (nameRaw != null) meta.displayName(ColorUtils.parse("<!i>" + nameRaw));
+
+            if (parts.length > 1) {
+                try {
+                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                } catch (Exception ignored) {
+                }
+            }
+
             item.setItemMeta(meta);
         }
         return item;
@@ -151,10 +168,10 @@ public class RewardGUI implements Listener {
 
         if (totalPages > 1) {
             if (page > 0) {
-                inv.setItem(prevSlot, makeNavItem(getConfig().getString("editor.items.prev_page", "<yellow>⬅ Previous")));
+                inv.setItem(prevSlot, makeNavItem("editor.items.prev_page", "<yellow>⬅ Previous"));
             }
             if (page < totalPages - 1) {
-                inv.setItem(nextSlot, makeNavItem(getConfig().getString("editor.items.next_page", "<yellow>Next ➡")));
+                inv.setItem(nextSlot, makeNavItem("editor.items.next_page", "<yellow>Next ➡"));
             }
         }
     }

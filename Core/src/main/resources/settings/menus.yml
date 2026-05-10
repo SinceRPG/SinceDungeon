@@ -2,8 +2,8 @@
 # [GUI & MENU SETTINGS]
 # =========================================================
 editor:
-  # Item used for navigation in the Editor GUI
-  nav-item: ARROW
+  # Item used for navigation in the Editor GUI (Can be modified with Custom Model Data -> ARROW:123)
+  nav-item: "ARROW"
   limits:
     max-locations: 50
     max-mob-amount: 200

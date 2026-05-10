@@ -98,10 +98,24 @@ public class DungeonGame {
 
     private void applyMviBypass(Player p) {
         if (p == null || !p.isOnline()) return;
+
+        // Dynamically verifies if the server even uses MVI, resolving the reported hardcode flaw.
+        boolean mviEnabled = Bukkit.getPluginManager().isPluginEnabled("Multiverse-Inventories")
+                || Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core");
+        if (!mviEnabled) return;
+
         if (!permAttachments.containsKey(p.getUniqueId())) {
             PermissionAttachment attachment = p.addAttachment(plugin);
-            attachment.setPermission("mvinv.bypass.*", true);
-            attachment.setPermission("Multiverse-Inventories.bypass.*", true);
+
+            List<String> bypassPerms = plugin.getConfigFile().getStringList("settings.mvi-bypass-permissions");
+            if (bypassPerms == null || bypassPerms.isEmpty()) {
+                bypassPerms = Arrays.asList("mvinv.bypass.*", "Multiverse-Inventories.bypass.*");
+            }
+
+            for (String perm : bypassPerms) {
+                attachment.setPermission(perm, true);
+            }
+
             p.recalculatePermissions();
             permAttachments.put(p.getUniqueId(), attachment);
         }
@@ -369,8 +383,10 @@ public class DungeonGame {
                 try {
                     tickable.onTick(this);
                 } catch (Exception e) {
-                    String logWarn = plugin.getLanguageManager().getString("admin.log.action_tick_error", "Tick error in action: <error>");
-                    plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage()));
+                    if (serverTicksActive % 100 == 0) { // Throttles structural log spam to once every 5 seconds
+                        String logWarn = plugin.getLanguageManager().getString("admin.log.action_tick_error", "Tick error in action: <error>");
+                        plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage() != null ? e.getMessage() : "Unknown Exception"));
+                    }
                 }
             }
 
@@ -382,7 +398,6 @@ public class DungeonGame {
                     objText += cachedTimeLeftFormat.replace("<time>", String.valueOf(timeLeft));
                 }
 
-                // JIT Optimization: Compile Component once per tick if changed
                 String finalBarText = cachedObjectivePrefix + objText;
                 if (!finalBarText.equals(lastActionBarText) || lastParsedBar == null) {
                     lastActionBarText = finalBarText;
@@ -515,8 +530,10 @@ public class DungeonGame {
             try {
                 action.onEvent(this, event);
             } catch (Exception e) {
-                String logWarn = plugin.getLanguageManager().getString("admin.log.action_event_error", "Event handling error in action: <error>");
-                plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage()));
+                if (System.currentTimeMillis() % 5000 < 50) { // Limit log spam
+                    String logWarn = plugin.getLanguageManager().getString("admin.log.action_event_error", "Event handling error in action: <error>");
+                    plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage() != null ? e.getMessage() : "Unknown exception"));
+                }
             }
 
             if (action.isCompleted()) {
@@ -533,10 +550,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Checks if a newly spawned MythicMob is part of a phased boss fight
-     * and links it to the active objective.
-     */
     public void checkAndTrackMythicMob(UUID uuid, Location loc, String internalName) {
         if (!isRunning || stageCompleting || currentStageIndex >= stages.size()) return;
         List<DungeonAction> currentStageActions = stages.get(currentStageIndex);
@@ -1205,7 +1218,7 @@ public class DungeonGame {
             if (original == null) return new ItemStack[0];
             ItemStack[] copy = new ItemStack[original.length];
             for (int i = 0; i < original.length; i++) {
-                copy[i] = (original[i] != null && original[i].getType() != Material.AIR) ? original[i].clone() : null;
+                copy[i] = (original[i] != null && !original[i].getType().isAir()) ? original[i].clone() : null;
             }
             return copy;
         }

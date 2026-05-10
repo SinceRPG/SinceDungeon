@@ -95,12 +95,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         }
     }
 
-    /**
-     * Executes the asynchronous block removal process to simulate a wall crumbling.
-     * Modifies blocks in chunks of 50 per tick to prevent main-thread lag spikes.
-     *
-     * @param game The active dungeon instance handling the task.
-     */
     private void removeWall(DungeonGame game) {
         int minX = Math.min(c1.getBlockX(), c2.getBlockX());
         int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
@@ -114,6 +108,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         if (volume > 50000) {
             String msg = SinceDungeon.getPlugin().getLanguageManager().getString("admin.warning.wall_too_large", "Wall volume too large (<volume> blocks). Cancelled to prevent crash!");
             SinceDungeon.getPlugin().getLogger().severe(msg.replace("<volume>", String.valueOf(volume)));
+            this.completed = true; // Permanently break out of the tick-loop spam condition!
             return;
         }
 
@@ -128,7 +123,6 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         final Particle finalCrumble = crumbleParticle;
 
         breakTask = new BukkitRunnable() {
-            // JIT Optimization: Caching Location object instead of creating 50 per tick inside the loop.
             final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
             int currentX = minX;
             int currentY = minY;

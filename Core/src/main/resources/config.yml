@@ -96,3 +96,9 @@ settings:
 
   # Whether to delete all living mobs spawned by an action once that action is completed
   clear-remaining-mobs-on-action-complete: true
+
+  # Permissions granted to the player to bypass inventory clearing glitches from Multiverse
+  # when the Dungeon World deletes itself while the player is inside it.
+  mvi-bypass-permissions:
+    - "mvinv.bypass.*"
+    - "Multiverse-Inventories.bypass.*"

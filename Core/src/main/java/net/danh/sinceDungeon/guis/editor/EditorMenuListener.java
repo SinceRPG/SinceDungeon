@@ -32,7 +32,9 @@ import java.util.*;
  * - Listens for all inventory interactions securely, preventing item theft.
  * - Parses and maps inputs back to the YAML configurations dynamically.
  * - Centralizes String List clearing with the new TNT button.
+ * - Employs Java 21 Record Patterns and strict Null-Safety checks.
  */
+@SuppressWarnings("SpellCheckingInspection")
 public class EditorMenuListener implements Listener {
     private final SinceDungeon plugin;
 
@@ -40,7 +42,12 @@ public class EditorMenuListener implements Listener {
         this.plugin = plugin;
     }
 
+    /**
+     * Safely deletes a dungeon file and terminates any active games using it.
+     */
     private void deleteDungeonSafely(Player p, String dungeonId, EditorGUI gui) {
+        if (dungeonId == null) return;
+
         for (DungeonGame activeGame : plugin.getDungeonManager().getActiveGames().values()) {
             if (activeGame.getTemplate() != null && activeGame.getTemplate().id().equals(dungeonId)) {
                 activeGame.stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
@@ -48,7 +55,11 @@ public class EditorMenuListener implements Listener {
         }
 
         File file = new File(plugin.getDataFolder(), "dungeons/" + dungeonId + ".yml");
-        if (file.exists()) file.delete();
+        if (file.exists()) {
+            if (!file.delete()) {
+                plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.file_delete_fail", "Failed to delete file: <file>").replace("<file>", file.getName()));
+            }
+        }
 
         plugin.getDungeonManager().unregisterTemplate(dungeonId);
 
@@ -60,10 +71,28 @@ public class EditorMenuListener implements Listener {
         gui.sendMessage(p, "dungeon_deleted", "<dungeon>", dungeonId);
     }
 
+    /**
+     * Determines the correct prompt translation key based on the list configuration path.
+     */
+    private String determinePrompt(String listPath) {
+        if (listPath == null) return "default";
+        if (listPath.endsWith("custom_drops") || listPath.contains("custom_drops")) return "edit_custom_drops";
+        if (listPath.endsWith("commands") || listPath.contains("commands")) return "edit_commands";
+        if (listPath.contains(".actions.")) {
+            String[] pathParts = listPath.split("\\.");
+            if (pathParts.length > 0) {
+                return "edit_action_" + pathParts[pathParts.length - 1];
+            }
+        }
+        return "default";
+    }
+
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
-        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder) {
-            if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) return;
+        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder(
+                EditorSession session, String menuType, int page
+        )) {
+            if (menuType != null && menuType.equals("EDIT_ACTION_ITEMS")) return;
 
             if (!e.getWhoClicked().hasPermission("SinceDungeon.admin")) {
                 e.setCancelled(true);
@@ -83,7 +112,11 @@ public class EditorMenuListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder holder)) return;
+
+        // Java 21 Record Pattern Deconstruction
+        if (!(e.getView().getTopInventory().getHolder() instanceof EditorHolder(
+                EditorSession session, String menuType, int page
+        ))) return;
 
         if (!p.hasPermission("SinceDungeon.admin")) {
             e.setCancelled(true);
@@ -91,17 +124,21 @@ public class EditorMenuListener implements Listener {
             return;
         }
 
-        if (holder.menuType() != null && holder.menuType().equals("EDIT_ACTION_ITEMS")) {
+        if (menuType != null && menuType.equals("EDIT_ACTION_ITEMS")) {
             e.setCancelled(true);
             if (e.getClickedInventory() == e.getView().getBottomInventory()) {
-                if (e.getCurrentItem() != null && e.getCurrentItem().getType() != Material.AIR) {
+                if (e.getCurrentItem() != null && !e.getCurrentItem().getType().isAir()) {
                     p.setItemOnCursor(e.getCurrentItem().clone());
                 }
             } else if (e.getClickedInventory() == e.getView().getTopInventory()) {
-                if (e.getCursor() != null && e.getCursor().getType() != Material.AIR) {
-                    e.getClickedInventory().setItem(e.getRawSlot(), e.getCursor().clone());
+                if (!e.getCursor().getType().isAir()) {
+                    if (e.getClickedInventory() != null) {
+                        e.getClickedInventory().setItem(e.getRawSlot(), e.getCursor().clone());
+                    }
                 } else {
-                    e.getClickedInventory().setItem(e.getRawSlot(), new ItemStack(Material.AIR));
+                    if (e.getClickedInventory() != null) {
+                        e.getClickedInventory().setItem(e.getRawSlot(), new ItemStack(Material.AIR));
+                    }
                 }
             }
             return;
@@ -125,10 +162,9 @@ public class EditorMenuListener implements Listener {
         if (cur == null || cur.getType() == Material.AIR) return;
 
         EditorGUI gui = new EditorGUI(plugin);
-        EditorSession session = holder.session();
-        String menuType = holder.menuType();
-        int page = holder.page();
         int slot = e.getRawSlot();
+
+        if (menuType == null) return;
 
         if (menuType.equals("MAIN")) {
             handleMainMenu(e, p, gui, page, slot, cur);
@@ -138,11 +174,11 @@ public class EditorMenuListener implements Listener {
         if (session == null) return;
 
         switch (menuType) {
-            case "SELECT_TYPE" -> handleSelectType(e, p, session, gui, page, slot, cur);
+            case "SELECT_TYPE" -> handleSelectType(p, session, gui, page, slot, cur);
             case "DUNGEON" -> handleDungeonMenu(e, p, session, gui, slot, cur);
-            case "SETTINGS" -> handleSettingsMenu(e, p, session, gui, page, slot, cur);
+            case "SETTINGS" -> handleSettingsMenu(p, session, gui, page, slot, cur);
             case "CONDITIONS" -> handleConditionsMenu(e, p, session, gui, page, slot, cur);
-            case "REWARDS_MAIN" -> handleRewardsMain(e, p, session, gui, slot);
+            case "REWARDS_MAIN" -> handleRewardsMain(p, session, gui, slot);
             case "REWARD_TIERS" -> handleRewardTiers(e, p, session, gui, page, slot, cur);
             case "REWARD_POOL" -> handleRewardPool(e, p, session, gui, page, slot, cur);
             case "EDIT_REWARD" -> handleEditReward(e, p, session, gui, slot);
@@ -158,11 +194,11 @@ public class EditorMenuListener implements Listener {
 
     private void handleMainMenu(InventoryClickEvent e, Player p, EditorGUI gui, int page, int slot, ItemStack cur) {
         EditorManager manager = plugin.getEditorManager();
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openMainMenu(p, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openMainMenu(p, page + 1);
             return;
         }
@@ -172,6 +208,7 @@ public class EditorMenuListener implements Listener {
             ItemMeta meta = cur.getItemMeta();
             if (meta != null && meta.getPersistentDataContainer().has(key, PersistentDataType.STRING)) {
                 String dungeonId = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+                if (dungeonId == null) return;
 
                 if (e.getClick() == ClickType.SHIFT_RIGHT) {
                     deleteDungeonSafely(p, dungeonId, gui);
@@ -188,12 +225,12 @@ public class EditorMenuListener implements Listener {
         }
     }
 
-    private void handleSelectType(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+    private void handleSelectType(Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openActionTypeSelector(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openActionTypeSelector(p, session, page + 1);
             return;
         }
@@ -207,6 +244,8 @@ public class EditorMenuListener implements Listener {
             ItemMeta meta = cur.getItemMeta();
             if (meta != null && meta.getPersistentDataContainer().has(key, PersistentDataType.STRING)) {
                 String type = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+                if (type == null) return;
+
                 DungeonManager.ActionMeta actMeta = plugin.getDungeonManager().getActionMeta(type);
                 if (actMeta != null) {
                     String newKey = type.toLowerCase(Locale.ROOT) + "_" + System.currentTimeMillis();
@@ -237,13 +276,19 @@ public class EditorMenuListener implements Listener {
             session.getConfig().set("public", !current);
             gui.sendMessage(p, "public_toggled", "<status>", String.valueOf(!current));
             gui.openDungeonMenu(p, session);
-        } else if (slot == 12) gui.openConditionList(p, session, session.getPage("CONDITIONS"));
-        else if (slot == 13) gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
-        else if (slot == 14) gui.openRewardMenu(p, session);
-        else if (slot == 16) gui.openStageList(p, session, session.getPage("STAGES"));
-        else if (slot == 22) session.save();
-        else if (slot == 18) gui.openMainMenu(p, 0);
-        else if (slot == 26 && cur.getType() == Material.BARRIER) {
+        } else if (slot == 12) {
+            gui.openConditionList(p, session, session.getPage("CONDITIONS"));
+        } else if (slot == 13) {
+            gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
+        } else if (slot == 14) {
+            gui.openRewardMenu(p, session);
+        } else if (slot == 16) {
+            gui.openStageList(p, session, session.getPage("STAGES"));
+        } else if (slot == 22) {
+            session.save();
+        } else if (slot == 18) {
+            gui.openMainMenu(p, 0);
+        } else if (slot == 26 && cur.getType() == Material.BARRIER) {
             if (e.getClick() == ClickType.SHIFT_RIGHT) {
                 String dungeonId = session.getFile().getName().replace(".yml", "");
                 deleteDungeonSafely(p, dungeonId, gui);
@@ -252,16 +297,16 @@ public class EditorMenuListener implements Listener {
         }
     }
 
-    private void handleSettingsMenu(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 18 && cur.getType() == gui.getNavItem()) {
+    private void handleSettingsMenu(Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
+        if (slot == 18 && cur.getType() == gui.getNavMaterial()) {
             gui.openDungeonMenu(p, session);
             return;
         }
-        if (slot == 21 && cur.getType() == gui.getNavItem()) {
+        if (slot == 21 && cur.getType() == gui.getNavMaterial()) {
             gui.openSettingsMenu(p, session, page - 1);
             return;
         }
-        if (slot == 23 && cur.getType() == gui.getNavItem()) {
+        if (slot == 23 && cur.getType() == gui.getNavMaterial()) {
             gui.openSettingsMenu(p, session, page + 1);
             return;
         }
@@ -321,19 +366,17 @@ public class EditorMenuListener implements Listener {
                     });
                     plugin.getEditorListener().startListening(p, session);
                 }
-                case "LIST" -> {
-                    gui.openStringListEditor(p, session, opt.getLocalPath(), "SETTINGS", 0);
-                }
+                case "LIST" -> gui.openStringListEditor(p, session, opt.getLocalPath(), "SETTINGS", 0);
             }
         }
     }
 
     private void handleConditionsMenu(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openConditionList(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openConditionList(p, session, page + 1);
             return;
         }
@@ -355,7 +398,7 @@ public class EditorMenuListener implements Listener {
                 List<String> keys = new ArrayList<>(sec.getKeys(false));
                 int actualIdx = slot + page * 45;
                 if (actualIdx < keys.size()) {
-                    String key = keys.get(actualIdx);
+                    final String key = keys.get(actualIdx);
                     if (e.getClick() == ClickType.SHIFT_RIGHT) {
                         session.getConfig().set("conditions." + key, null);
                         gui.openConditionList(p, session, page);
@@ -377,7 +420,7 @@ public class EditorMenuListener implements Listener {
         }
     }
 
-    private void handleRewardsMain(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int slot) {
+    private void handleRewardsMain(Player p, EditorSession session, EditorGUI gui, int slot) {
         if (slot == 11) {
             session.setCurrentTierType("SOLO");
             gui.openRewardTiers(p, session, session.getPage("REWARD_TIERS"));
@@ -392,22 +435,22 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handleRewardTiers(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openRewardTiers(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openRewardTiers(p, session, page + 1);
             return;
         }
 
-        String pathPrefix = session.getCurrentTierType().equalsIgnoreCase("PARTY") ? "rewards.party-tiers" : "rewards.solo-tiers";
+        final String pathPrefix = session.getCurrentTierType().equalsIgnoreCase("PARTY") ? "rewards.party-tiers" : "rewards.solo-tiers";
 
         if (slot == 49) {
             session.awaitInput(EditorSession.InputType.EDIT_TIER, "edit_tier", val -> {
                 try {
                     String[] parts = val.split(" ");
-                    if (parts.length < 2) throw new Exception();
+                    if (parts.length < 2) throw new IllegalArgumentException();
                     int time = Math.max(1, Integer.parseInt(parts[0]));
                     int amt = Math.max(1, Integer.parseInt(parts[1]));
                     session.getConfig().set(pathPrefix + "." + time, amt);
@@ -429,7 +472,7 @@ public class EditorMenuListener implements Listener {
                 int actualIdx = slot + page * 45;
 
                 if (actualIdx < keys.size()) {
-                    String timeStr = keys.get(actualIdx);
+                    final String timeStr = keys.get(actualIdx);
                     if (e.getClick() == ClickType.RIGHT) {
                         session.getConfig().set(pathPrefix + "." + timeStr, null);
                         p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
@@ -454,11 +497,11 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handleRewardPool(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openRewardPool(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openRewardPool(p, session, page + 1);
             return;
         }
@@ -498,7 +541,7 @@ public class EditorMenuListener implements Listener {
         }
 
         String currentKey = session.getCurrentRewardKey();
-        String path = "rewards.pool." + currentKey;
+        final String path = "rewards.pool." + currentKey;
         String currentType = session.getConfig().getString(path + ".type", "ITEM");
 
         if (slot == 10 && e.getClick() == ClickType.LEFT) {
@@ -517,7 +560,7 @@ public class EditorMenuListener implements Listener {
         } else if (slot == 12) {
             if (e.getClick() == ClickType.RIGHT) {
                 ItemStack hand = p.getInventory().getItemInMainHand();
-                if (hand.getType() != Material.AIR) {
+                if (!hand.getType().isAir()) {
                     String val;
                     NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
                     NamespacedKey resetKey = new NamespacedKey(plugin, "cooldown_reset");
@@ -541,7 +584,11 @@ public class EditorMenuListener implements Listener {
                     } else if (Bukkit.getPluginManager().isPluginEnabled("MMOItems") && MMOItemsHook.getMMOItemString(hand) != null) {
                         String mmoStr = MMOItemsHook.getMMOItemString(hand);
                         String[] mmoParts = mmoStr.split(":");
-                        val = mmoParts[1] + ":" + mmoParts[2] + ":" + mmoParts[3];
+                        if (mmoParts.length >= 4) {
+                            val = mmoParts[1] + ":" + mmoParts[2] + ":" + mmoParts[3];
+                        } else {
+                            val = hand.getType().name() + ":" + hand.getAmount();
+                        }
                         session.getConfig().set(path + ".type", "MMOITEM");
                     } else {
                         val = hand.getType().name() + ":" + hand.getAmount();
@@ -551,7 +598,9 @@ public class EditorMenuListener implements Listener {
                     session.getConfig().set(path + ".value", val);
                     gui.sendMessage(p, "item_set_hand", "<item>", val);
                     gui.openRewardEditor(p, session);
-                } else gui.sendMessage(p, "hand_empty");
+                } else {
+                    gui.sendMessage(p, "hand_empty");
+                }
             } else if (e.getClick() == ClickType.LEFT) {
                 session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reward_value_" + currentType.toLowerCase(Locale.ROOT), val -> {
                     session.getConfig().set(path + ".value", val);
@@ -563,7 +612,7 @@ public class EditorMenuListener implements Listener {
         } else if (slot == 14 && e.getClick() == ClickType.LEFT) {
             session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_reward_chance", val -> {
                 try {
-                    double chance = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
+                    double chance = Math.clamp(Double.parseDouble(val), 0.0, 100.0);
                     session.getConfig().set(path + ".chance", chance);
                     gui.openRewardEditor(p, session);
                 } catch (Exception ex) {
@@ -582,11 +631,11 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handleStagesMenu(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openStageList(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openStageList(p, session, page + 1);
             return;
         }
@@ -656,7 +705,7 @@ public class EditorMenuListener implements Listener {
                 }));
                 int actualIdx = slot + page * 45;
                 if (actualIdx < keys.size()) {
-                    String stage = keys.get(actualIdx);
+                    final String stage = keys.get(actualIdx);
                     if (e.getClick() == ClickType.SHIFT_RIGHT) {
                         session.getConfig().set("stages." + stage, null);
                         gui.openStageList(p, session, page);
@@ -670,7 +719,7 @@ public class EditorMenuListener implements Listener {
                     } else if (e.getClick() == ClickType.RIGHT) {
                         session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_stage_chance", val -> {
                             try {
-                                double c = Math.max(0.0, Math.min(100.0, Double.parseDouble(val)));
+                                double c = Math.clamp(Double.parseDouble(val), 0.0, 100.0);
                                 session.getConfig().set("stages." + stage + ".chance", c);
                                 gui.openStageList(p, session, page);
                             } catch (Exception ex) {
@@ -689,11 +738,11 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handleActionsMenu(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openActionList(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openActionList(p, session, page + 1);
             return;
         }
@@ -728,8 +777,14 @@ public class EditorMenuListener implements Listener {
         }
         if (cur.getType() == Material.BARRIER) return;
 
-        String key = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
-        if (key.equalsIgnoreCase("type")) return;
+        final String key;
+        if (cur.getItemMeta() != null && cur.getItemMeta().hasDisplayName()) {
+            key = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
+        } else {
+            key = "";
+        }
+
+        if (key.isEmpty() || key.equalsIgnoreCase("type")) return;
 
         if (key.equalsIgnoreCase("items")) {
             gui.openActionChestEditor(p, session);
@@ -748,7 +803,7 @@ public class EditorMenuListener implements Listener {
             return;
         }
 
-        String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
+        final String fullPath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + "." + key;
         Object rawValue = session.getConfig().get(fullPath);
 
         EditorGUI.FieldProperties props = EditorGUI.FieldProperties.resolve(key, rawValue, plugin);
@@ -785,8 +840,6 @@ public class EditorMenuListener implements Listener {
             }
         }
 
-        // Modified: random_mobs no longer bypasses StringListEditor.
-        // It now opens the dynamic StringListEditor perfectly.
         if (e.getClick() == ClickType.LEFT) {
             if (props.isList && !props.isLocation) {
                 gui.openStringListEditor(p, session, fullPath, "EDIT_ACTION", 0);
@@ -834,11 +887,11 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handlePhaseList(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openPhaseList(p, session, page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openPhaseList(p, session, page + 1);
             return;
         }
@@ -849,7 +902,7 @@ public class EditorMenuListener implements Listener {
         if (slot == 49) {
             session.awaitInput(EditorSession.InputType.EDIT_NUMBER, "edit_phase_threshold", val -> {
                 try {
-                    int threshold = Math.max(1, Math.min(100, Integer.parseInt(val)));
+                    int threshold = Math.clamp(Integer.parseInt(val), 1, 100);
                     String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + threshold;
                     if (!session.getConfig().contains(path)) {
                         session.getConfig().set(path + ".message", "");
@@ -864,7 +917,8 @@ public class EditorMenuListener implements Listener {
             });
             plugin.getEditorListener().startListening(p, session);
         } else if (slot < 45 && cur.getType() == Material.COMMAND_BLOCK) {
-            String threshold = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName()).replaceAll("[^0-9]", "");
+            if (cur.getItemMeta() == null || !cur.getItemMeta().hasDisplayName()) return;
+            final String threshold = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName()).replaceAll("[^0-9]", "");
             if (e.getClick() == ClickType.SHIFT_RIGHT) {
                 session.getConfig().set("stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + threshold, null);
                 gui.openPhaseList(p, session, page);
@@ -880,13 +934,13 @@ public class EditorMenuListener implements Listener {
             gui.openPhaseList(p, session, session.getPage("PHASE_LIST"));
             return;
         }
-        String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
+        final String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold();
 
         if (slot == 11 && e.getClick() == ClickType.LEFT) {
             session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_phase_message", val -> {
                 String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
-                if (val.equalsIgnoreCase(clearKw)) val = "";
-                session.getConfig().set(basePath + ".message", val);
+                String finalVal = val.equalsIgnoreCase(clearKw) ? "" : val;
+                session.getConfig().set(basePath + ".message", finalVal);
                 gui.openPhaseEditor(p, session);
             });
             plugin.getEditorListener().startListening(p, session);
@@ -902,7 +956,7 @@ public class EditorMenuListener implements Listener {
             gui.openPhaseEditor(p, session);
             return;
         }
-        String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold() + ".reinforcements";
+        final String basePath = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".phases." + session.getCurrentPhaseThreshold() + ".reinforcements";
 
         if (slot == 10 && e.getClick() == ClickType.LEFT) {
             session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reinforcement_mob", val -> {
@@ -925,8 +979,8 @@ public class EditorMenuListener implements Listener {
         } else if (slot == 13 && e.getClick() == ClickType.LEFT) {
             session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_reinforcement_name", val -> {
                 String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
-                if (val.equalsIgnoreCase(clearKw)) val = "";
-                session.getConfig().set(basePath + ".custom_name", val);
+                String finalVal = val.equalsIgnoreCase(clearKw) ? "" : val;
+                session.getConfig().set(basePath + ".custom_name", finalVal);
                 gui.openReinforcementEditor(p, session);
             });
             plugin.getEditorListener().startListening(p, session);
@@ -938,30 +992,25 @@ public class EditorMenuListener implements Listener {
     }
 
     private void handleStringList(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
-        if (slot == 48 && cur.getType() == gui.getNavItem()) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
             gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page - 1);
             return;
         }
-        if (slot == 50 && cur.getType() == gui.getNavItem()) {
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
             gui.openStringListEditor(p, session, session.getCurrentListPath(), session.getCurrentListReturnMenu(), page + 1);
             return;
         }
         if (slot == 45) {
-            if ("SETTINGS".equals(session.getCurrentListReturnMenu())) {
-                gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
-            } else if ("EDIT_ACTION".equals(session.getCurrentListReturnMenu())) {
-                gui.openActionEditor(p, session);
-            } else if ("EDIT_PHASE".equals(session.getCurrentListReturnMenu())) {
-                gui.openPhaseEditor(p, session);
-            } else if ("EDIT_REINFORCEMENTS".equals(session.getCurrentListReturnMenu())) {
-                gui.openReinforcementEditor(p, session);
-            } else {
-                gui.openDungeonMenu(p, session);
+            switch (session.getCurrentListReturnMenu()) {
+                case "SETTINGS" -> gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
+                case "EDIT_ACTION" -> gui.openActionEditor(p, session);
+                case "EDIT_PHASE" -> gui.openPhaseEditor(p, session);
+                case "EDIT_REINFORCEMENTS" -> gui.openReinforcementEditor(p, session);
+                default -> gui.openDungeonMenu(p, session);
             }
             return;
         }
 
-        // ADDED: Logic to cleanly wipe entire list instead of chat 'clear' command
         if (slot == 51 && cur.getType() == Material.TNT) {
             session.getConfig().set(session.getCurrentListPath(), new ArrayList<>());
             p.playSound(p.getLocation(), Sound.BLOCK_ANVIL_USE, 1f, 1f);
@@ -971,20 +1020,7 @@ public class EditorMenuListener implements Listener {
         }
 
         if (slot == 49) {
-            String listPath = session.getCurrentListPath();
-            String prompt;
-
-            if (listPath.endsWith("custom_drops") || listPath.contains("custom_drops")) {
-                prompt = "edit_custom_drops";
-            } else if (listPath.endsWith("commands") || listPath.contains("commands")) {
-                prompt = "edit_commands";
-            } else if (listPath.contains(".actions.")) {
-                String[] pathParts = listPath.split("\\.");
-                String fieldName = pathParts[pathParts.length - 1];
-                prompt = "edit_action_" + fieldName;
-            } else {
-                prompt = "default";
-            }
+            String prompt = determinePrompt(session.getCurrentListPath());
 
             session.awaitInput(EditorSession.InputType.EDIT_LIST, prompt, val -> {
                 List<String> list = session.getConfig().getStringList(session.getCurrentListPath());
@@ -995,6 +1031,7 @@ public class EditorMenuListener implements Listener {
             plugin.getEditorListener().startListening(p, session);
             return;
         }
+
         if (slot < 45 && cur.getType() == Material.PAPER) {
             if (e.getClick() == ClickType.SHIFT_RIGHT) {
                 int idx = slot + page * 45;
@@ -1012,9 +1049,10 @@ public class EditorMenuListener implements Listener {
 
     @EventHandler
     public void onClose(InventoryCloseEvent e) {
-        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder holder && e.getPlayer() instanceof Player p) {
-            EditorSession session = holder.session();
-            if (session != null && "EDIT_ACTION_ITEMS".equals(holder.menuType())) {
+        if (e.getView().getTopInventory().getHolder() instanceof EditorHolder(
+                EditorSession session, String menuType, int page
+        ) && e.getPlayer() instanceof Player p) {
+            if (session != null && "EDIT_ACTION_ITEMS".equals(menuType)) {
                 String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".items";
                 session.getConfig().set(path, null);
 
@@ -1027,7 +1065,7 @@ public class EditorMenuListener implements Listener {
 
                 for (int i = 0; i < inv.getSize(); i++) {
                     ItemStack item = inv.getItem(i);
-                    if (item != null && item.getType() != Material.AIR) {
+                    if (item != null && !item.getType().isAir()) {
                         String itemStr = null;
 
                         if (ItemBuilder.hasTag(item, keyTag, PersistentDataType.STRING)) {

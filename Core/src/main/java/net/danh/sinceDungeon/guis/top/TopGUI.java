@@ -28,8 +28,28 @@ public class TopGUI {
         this.dateFormatString = plugin.getConfigFile().getString("leaderboard.date-format", "dd/MM/yyyy HH:mm");
     }
 
-    private ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
+    private ItemStack getLeaderboardIcon(String path, String defaultMat) {
+        String val = plugin.getConfigFile().getString(path, defaultMat);
+        String[] parts = val.split(":");
+        Material mat = Material.matchMaterial(parts[0]);
+        if (mat == null) mat = Material.matchMaterial(defaultMat.split(":")[0]);
+        if (mat == null) mat = Material.STONE;
+
         ItemStack item = new ItemStack(mat);
+        if (parts.length > 1) {
+            try {
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                    item.setItemMeta(meta);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return item;
+    }
+
+    private ItemStack applyMeta(ItemStack item, String nameRaw, List<String> loreRaw) {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             if (nameRaw != null) meta.displayName(ColorUtils.parse("<!i>" + nameRaw));
@@ -78,17 +98,15 @@ public class TopGUI {
                     TopManager.TopEntry entry = records.get(index);
                     int rank = index + 1;
 
-                    Material mat;
+                    ItemStack baseItem;
                     if (rank == 1)
-                        mat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.rank_1", "GOLD_BLOCK"));
+                        baseItem = getLeaderboardIcon("leaderboard.items.rank_1", "GOLD_BLOCK");
                     else if (rank == 2)
-                        mat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.rank_2", "IRON_BLOCK"));
+                        baseItem = getLeaderboardIcon("leaderboard.items.rank_2", "IRON_BLOCK");
                     else if (rank == 3)
-                        mat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.rank_3", "COPPER_BLOCK"));
+                        baseItem = getLeaderboardIcon("leaderboard.items.rank_3", "COPPER_BLOCK");
                     else
-                        mat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.rank_other", "COAL_BLOCK"));
-
-                    if (mat == null) mat = Material.PLAYER_HEAD;
+                        baseItem = getLeaderboardIcon("leaderboard.items.rank_other", "COAL_BLOCK");
 
                     String nameRaw = plugin.getLanguageManager().getString("top.item_format", "&e#<rank> &f<player>")
                             .replace("<rank>", String.valueOf(rank))
@@ -132,37 +150,42 @@ public class TopGUI {
                         }
                     }
 
-                    inv.setItem(i, makeItem(mat, nameRaw, loreRaw));
+                    inv.setItem(i, applyMeta(baseItem, nameRaw, loreRaw));
                 }
 
-                Material timeMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_time", "CLOCK"));
-                Material partyTimeMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_party_time", "GOLDEN_APPLE"));
-                Material killsMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_kills", "DIAMOND_SWORD"));
-                Material clearsMat = Material.matchMaterial(plugin.getConfigFile().getString("leaderboard.items.category_clears", "NETHER_STAR"));
-
-                if (timeMat == null) timeMat = Material.CLOCK;
-                if (partyTimeMat == null) partyTimeMat = Material.GOLDEN_APPLE;
-                if (killsMat == null) killsMat = Material.DIAMOND_SWORD;
-                if (clearsMat == null) clearsMat = Material.NETHER_STAR;
+                ItemStack timeItem = getLeaderboardIcon("leaderboard.items.category_time", "CLOCK");
+                ItemStack partyTimeItem = getLeaderboardIcon("leaderboard.items.category_party_time", "GOLDEN_APPLE");
+                ItemStack killsItem = getLeaderboardIcon("leaderboard.items.category_kills", "DIAMOND_SWORD");
+                ItemStack clearsItem = getLeaderboardIcon("leaderboard.items.category_clears", "NETHER_STAR");
 
                 List<String> switchLore = plugin.getLanguageManager().getStringList("top.click_to_switch");
                 if (switchLore == null || switchLore.isEmpty())
                     switchLore = Collections.singletonList("&eLeft Click to view this category!");
 
-                inv.setItem(guiSize - 8, makeItem(timeMat, plugin.getLanguageManager().getString("top.category_time", "&b&lSolo Fastest Clears"), switchLore));
-                inv.setItem(guiSize - 6, makeItem(partyTimeMat, plugin.getLanguageManager().getString("top.category_party_time", "&d&lParty Fastest Clears"), switchLore));
-                inv.setItem(guiSize - 4, makeItem(killsMat, plugin.getLanguageManager().getString("top.category_kills", "&c&lMost Kills"), switchLore));
-                inv.setItem(guiSize - 2, makeItem(clearsMat, plugin.getLanguageManager().getString("top.category_clears", "&a&lMost Clears"), switchLore));
+                inv.setItem(guiSize - 8, applyMeta(timeItem, plugin.getLanguageManager().getString("top.category_time", "&b&lSolo Fastest Clears"), switchLore));
+                inv.setItem(guiSize - 6, applyMeta(partyTimeItem, plugin.getLanguageManager().getString("top.category_party_time", "&d&lParty Fastest Clears"), switchLore));
+                inv.setItem(guiSize - 4, applyMeta(killsItem, plugin.getLanguageManager().getString("top.category_kills", "&c&lMost Kills"), switchLore));
+                inv.setItem(guiSize - 2, applyMeta(clearsItem, plugin.getLanguageManager().getString("top.category_clears", "&a&lMost Clears"), switchLore));
 
                 String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
-                Material navMat = Material.matchMaterial(navItemStr);
+                String[] parts = navItemStr.split(":");
+                Material navMat = Material.matchMaterial(parts[0]);
                 if (navMat == null) navMat = Material.ARROW;
+                ItemStack navItemBase = new ItemStack(navMat);
+                if (parts.length > 1) {
+                    try {
+                        ItemMeta m = navItemBase.getItemMeta();
+                        m.setCustomModelData(Integer.parseInt(parts[1]));
+                        navItemBase.setItemMeta(m);
+                    } catch (Exception ignored) {
+                    }
+                }
 
                 if (currentPage > 0) {
-                    inv.setItem(guiSize - 9, makeItem(navMat, plugin.getLanguageManager().getString("editor.items.prev_page", "&e⬅ Previous Page"), null));
+                    inv.setItem(guiSize - 9, applyMeta(navItemBase.clone(), plugin.getLanguageManager().getString("editor.items.prev_page", "&e⬅ Previous Page"), null));
                 }
                 if (currentPage < maxPage) {
-                    inv.setItem(guiSize - 1, makeItem(navMat, plugin.getLanguageManager().getString("editor.items.next_page", "&eNext Page ➡"), null));
+                    inv.setItem(guiSize - 1, applyMeta(navItemBase.clone(), plugin.getLanguageManager().getString("editor.items.next_page", "&eNext Page ➡"), null));
                 }
 
                 p.openInventory(inv);

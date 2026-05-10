@@ -74,7 +74,10 @@ public class EditorGUI {
         p.sendMessage(ColorUtils.parseWithPrefix(msg));
     }
 
-    public ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
+    /**
+     * Builds an item applying optional Custom Model Data logic.
+     */
+    public ItemStack makeItem(Material mat, int cmd, String nameRaw, List<String> loreRaw) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -86,23 +89,45 @@ public class EditorGUI {
                 }
             }
             meta.lore(lore);
+            if (cmd != -1) meta.setCustomModelData(cmd);
             item.setItemMeta(meta);
         }
         return item;
     }
 
-    public Material getNavItem() {
+    public ItemStack makeItem(Material mat, String nameRaw, List<String> loreRaw) {
+        return makeItem(mat, -1, nameRaw, loreRaw);
+    }
+
+    public Material getNavMaterial() {
         String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
-        Material mat = Material.matchMaterial(navItemStr);
+        String[] parts = navItemStr.split(":");
+        Material mat = Material.matchMaterial(parts[0]);
         return mat != null ? mat : Material.ARROW;
+    }
+
+    public int getNavCmd() {
+        String navItemStr = plugin.getConfigFile().getString("editor.nav-item", "ARROW");
+        String[] parts = navItemStr.split(":");
+        if (parts.length > 1) {
+            try {
+                return Integer.parseInt(parts[1]);
+            } catch (Exception ignored) {
+            }
+        }
+        return -1;
+    }
+
+    public ItemStack getNavItemStack(String nameRaw) {
+        return makeItem(getNavMaterial(), getNavCmd(), nameRaw, null);
     }
 
     private void setPagination(Inventory inv, int page, int maxPage, int prevSlot, int nextSlot) {
         if (page > 0) {
-            inv.setItem(prevSlot, makeItem(getNavItem(), getMsg("items.prev_page", "&e⬅ Previous Page"), null));
+            inv.setItem(prevSlot, getNavItemStack(getMsg("items.prev_page", "&e⬅ Previous Page")));
         }
         if (page < maxPage) {
-            inv.setItem(nextSlot, makeItem(getNavItem(), getMsg("items.next_page", "&eNext Page ➡"), null));
+            inv.setItem(nextSlot, getNavItemStack(getMsg("items.next_page", "&eNext Page ➡")));
         }
     }
 
@@ -173,7 +198,7 @@ public class EditorGUI {
         inv.setItem(13, makeItem(Material.COMPARATOR, getMsg("items.settings", "&bGameplay Settings"), getLoreList("settings_lore", Arrays.asList("&7Edit custom game rules", "&7for this specific map."))));
 
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save", "&a&lSave Changes"), null));
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
 
         List<String> deleteLore = getLoreList("delete_dungeon_lore", Arrays.asList("&7Permanently delete this", "&7dungeon and its leaderboard.", "", "&cShift-Right Click to confirm"));
         inv.setItem(26, makeItem(Material.BARRIER, getMsg("items.delete_dungeon", "&c&lDelete Dungeon"), deleteLore));
@@ -236,7 +261,7 @@ public class EditorGUI {
             inv.setItem(i, item);
         }
 
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 21, 23);
         p.openInventory(inv);
     }
@@ -271,7 +296,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_line", "&aAdd New Line"), null));
         inv.setItem(51, makeItem(Material.TNT, getMsg("items.clear_list", "&cClear Entire List"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -307,7 +332,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_condition", "&aAdd Condition"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -320,7 +345,7 @@ public class EditorGUI {
         inv.setItem(12, makeItem(Material.GOLD_BLOCK, getMsg("items.reward_party_tiers", "&6Party Time Tiers"), null));
         inv.setItem(15, makeItem(Material.CHEST, getMsg("items.reward_pool_item", "&6Item Pool"), null));
 
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
     }
 
@@ -358,7 +383,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_tier", "&aAdd Tier"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -391,7 +416,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_pool_item", "&aAdd Reward"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -433,7 +458,7 @@ public class EditorGUI {
             nLore.add(s.replace("<val>", displayName));
         inv.setItem(16, makeItem(Material.NAME_TAG, getMsg("items.reward_name", "&eDisplay Name"), nLore));
 
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
     }
 
@@ -486,7 +511,7 @@ public class EditorGUI {
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_stage", "&aAdd Stage"), null));
         inv.setItem(51, makeItem(Material.PISTON, getMsg("items.insert_stage", "&bInsert Stage Here"), getLoreList("insert_stage_lore", Arrays.asList("&7Shifts stages down to make room.", "&eLeft Click: Enter position"))));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
 
         p.openInventory(inv);
@@ -536,7 +561,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_action", "&aAdd Action"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -606,7 +631,6 @@ public class EditorGUI {
             Object rawValue = sec.get(key);
             String valStr = String.valueOf(rawValue);
 
-            // Utilize Dynamic Resolution to establish UI rendering states and Icons
             FieldProperties props = FieldProperties.resolve(key, rawValue, plugin);
 
             if (key.equalsIgnoreCase("type")) {
@@ -636,7 +660,7 @@ public class EditorGUI {
             inv.setItem(slot++, makeItem(props.icon, keyFmt, Arrays.asList(valFmt, props.hint)));
         }
 
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
     }
 
@@ -675,7 +699,7 @@ public class EditorGUI {
             inv.setItem(i, item);
         }
 
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.cancel", "&cCancel"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.cancel", "&cCancel")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -712,7 +736,7 @@ public class EditorGUI {
         }
 
         inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_phase", "&aAdd Phase"), null));
-        inv.setItem(45, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
     }
@@ -734,7 +758,7 @@ public class EditorGUI {
         inv.setItem(13, makeItem(Material.POTION, getMsg("items.phase_attributes", "&ePhase Attributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
         inv.setItem(15, makeItem(Material.ZOMBIE_HEAD, getMsg("items.phase_reinforcements", "&eReinforcements"), Arrays.asList("&7Configure backup mobs", hintGui)));
 
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
     }
 
@@ -759,13 +783,10 @@ public class EditorGUI {
         inv.setItem(14, makeItem(Material.POTION, getMsg("items.reinf_attributes", "&eAttributes"), Arrays.asList("&7Current: &f" + attrCount + " attributes", hintList)));
         inv.setItem(16, makeItem(Material.IRON_CHESTPLATE, getMsg("items.reinf_equipment", "&eEquipment"), Arrays.asList("&7Current: &f" + equipCount + " items", hintList)));
 
-        inv.setItem(18, makeItem(getNavItem(), getMsg("items.back", "&cGo Back"), null));
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
     }
 
-    /**
-     * Resolves generic parsing and prevents user-error exceptions.
-     */
     public Object getFinalVal(String val, String key) {
         if (val.equalsIgnoreCase("true")) return true;
         if (val.equalsIgnoreCase("false")) return false;
@@ -780,9 +801,6 @@ public class EditorGUI {
         return val;
     }
 
-    /**
-     * Dynamic Type Resolver mapping object schemas directly to UI states.
-     */
     public static class FieldProperties {
         public EditorSession.InputType inputType;
         public Material icon;
@@ -823,7 +841,6 @@ public class EditorGUI {
                 p.hint = gui.getMsg("items.action_val_hint_edit", "&eLeft Click: Enter new value");
             }
 
-            // Aesthetic overrides based on typical keys
             if (lowerKey.contains("mob") || lowerKey.contains("core_type")) p.icon = Material.CREEPER_HEAD;
             if (lowerKey.contains("color") || lowerKey.contains("style")) p.icon = Material.PAINTING;
             if (lowerKey.contains("message")) p.icon = Material.PAPER;
