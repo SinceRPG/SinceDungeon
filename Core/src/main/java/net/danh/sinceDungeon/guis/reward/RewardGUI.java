@@ -63,7 +63,9 @@ public class RewardGUI implements Listener {
 
     private ItemStack createIcon(String key, int chestCount) {
         String path = "reward.icons." + key;
-        Material mat = Material.matchMaterial(getConfig().getString(path + ".material", "STONE"));
+        String matStr = getConfig().getString(path + ".material", "STONE");
+        String[] parts = matStr.split(":");
+        Material mat = Material.matchMaterial(parts[0]);
         if (mat == null) mat = Material.STONE;
 
         ItemStack item = new ItemStack(mat);
@@ -72,6 +74,9 @@ public class RewardGUI implements Listener {
             String name = getConfig().getString(path + ".name");
             if (name != null) meta.displayName(ColorUtils.parse("<!i>" + name));
 
+            if (parts.length > 1) {
+                try { meta.setCustomModelData(Integer.parseInt(parts[1])); } catch (Exception ignored) {}
+            }
             if (getConfig().contains(path + ".custom-model-data")) {
                 meta.setCustomModelData(getConfig().getInt(path + ".custom-model-data"));
             }
@@ -102,8 +107,7 @@ public class RewardGUI implements Listener {
             if (parts.length > 1) {
                 try {
                     meta.setCustomModelData(Integer.parseInt(parts[1]));
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
             }
 
             item.setItemMeta(meta);
@@ -283,7 +287,7 @@ public class RewardGUI implements Listener {
             int page = holder.page();
             ItemStack clicked = e.getCurrentItem();
 
-            if (clicked == null || clicked.getType() == Material.AIR) return;
+            if (clicked == null || clicked.getType().isAir()) return;
 
             if (!session.isRevealed()) {
                 if (slot == getButtonSlot()) {
@@ -320,7 +324,8 @@ public class RewardGUI implements Listener {
                 }
 
                 String mysteryMatName = getConfig().getString("reward.icons.mystery_chest.material", "ENDER_CHEST");
-                if (clicked.getType().name().equals(mysteryMatName)) {
+                String[] mParts = mysteryMatName.split(":");
+                if (clicked.getType().name().equals(mParts[0].toUpperCase())) {
                     if (session.claimChest(page, slot)) {
                         e.getInventory().setItem(slot, new ItemStack(Material.AIR));
                         playSound(p, "claim");

@@ -75,11 +75,28 @@ public class ItemBuilder {
         }
     }
 
+    /**
+     * Instantiates a new ItemBuilder dynamically reading the material from the config.
+     * Supports parsing embedded Custom Model Data natively (e.g. PAPER:10606).
+     *
+     * @param plugin           The plugin instance.
+     * @param configPath       The path to check for the material.
+     * @param fallbackMaterial The default material if the config path is missing/invalid.
+     * @return A new ItemBuilder instance.
+     */
     public static ItemBuilder fromConfig(SinceDungeon plugin, String configPath, String fallbackMaterial) {
         String matStr = plugin.getConfigFile().getString(configPath + ".material", fallbackMaterial);
-        Material mat = Material.matchMaterial(matStr.toUpperCase());
-        if (mat == null) mat = Material.valueOf(fallbackMaterial.toUpperCase());
-        return new ItemBuilder(plugin, mat);
+        String[] parts = matStr.split(":");
+        Material mat = Material.matchMaterial(parts[0].toUpperCase());
+        if (mat == null) mat = Material.valueOf(fallbackMaterial.split(":")[0].toUpperCase());
+
+        ItemBuilder builder = new ItemBuilder(plugin, mat);
+        if (parts.length > 1) {
+            try {
+                builder.customModelData(Integer.parseInt(parts[1]));
+            } catch (Exception ignored) {}
+        }
+        return builder;
     }
 
     public static boolean hasTag(ItemStack item, NamespacedKey key, PersistentDataType<?, ?> type) {
@@ -94,7 +111,8 @@ public class ItemBuilder {
 
     /**
      * Parses dynamic item configurations utilizing the internal CustomItemProvider registry.
-     * Supports standard Vanilla Item Parsing format: MATERIAL:AMOUNT:CMD
+     * Supports standard Vanilla Item Parsing format: MATERIAL:AMOUNT or MATERIAL:AMOUNT:CMD
+     * Intelligently detects if MATERIAL:CMD is passed (e.g. PAPER:10606) by checking if value > 64.
      *
      * @param data The configuration string (e.g., "PREFIX:DATA:AMOUNT")
      * @return The constructed ItemStack or null if parsing fails.
@@ -107,26 +125,29 @@ public class ItemBuilder {
 
             String prefix = parts[0].toUpperCase();
 
-            // 1. Check if a custom provider is registered for this prefix
             CustomItemProvider provider = SinceDungeon.getPlugin().getDungeonManager().getItemProvider(prefix);
-
             if (provider != null) {
                 return provider.parseItem(cleanData);
             }
 
-            // 2. Fallback to standard Vanilla Item Parsing (MATERIAL:AMOUNT or MATERIAL:MIN-MAX or MATERIAL:AMOUNT:CMD)
             Material mat = Material.matchMaterial(prefix);
             if (mat != null) {
                 int amount = 1;
                 int cmd = -1;
                 if (parts.length > 1) {
                     String[] subParts = parts[1].split(":");
-                    amount = parseRandomAmount(subParts[0]);
-                    if (subParts.length > 1) {
+                    if (subParts.length == 1) {
+                        int val = parseRandomAmount(subParts[0]);
+                        if (val > 64) {
+                            cmd = val; // It is clearly a CMD index, not a drop amount
+                        } else {
+                            amount = val;
+                        }
+                    } else if (subParts.length >= 2) {
+                        amount = parseRandomAmount(subParts[0]);
                         try {
                             cmd = Integer.parseInt(subParts[1]);
-                        } catch (Exception ignored) {
-                        }
+                        } catch (Exception ignored) {}
                     }
                 }
 
@@ -153,6 +174,11 @@ public class ItemBuilder {
         return this;
     }
 
+    public ItemBuilder customModelData(int cmd) {
+        if (meta != null) meta.setCustomModelData(cmd);
+        return this;
+    }
+
     public <T, Z> ItemBuilder setTag(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
         if (meta != null) {
             meta.getPersistentDataContainer().set(key, type, value);
@@ -160,6 +186,15 @@ public class ItemBuilder {
         return this;
     }
 
+    /**
+     * Parses and applies a wide range of metadata from a ConfigurationSection.
+     * Supports legacy 1.20 tags and safely injects 1.21+ components.
+     *
+     * @param cfg          The config section to read from.
+     * @param defName      Default name if none is provided in the config.
+     * @param replacements Key-Value pairs for replacing placeholders.
+     * @return The ItemBuilder instance for chaining.
+     */
     public ItemBuilder applyConfig(ConfigurationSection cfg, String defName, String... replacements) {
         if (meta == null) return this;
 
@@ -193,16 +228,21 @@ public class ItemBuilder {
             meta.lore(compLore);
         }
 
+        // Extremely robust Custom Model Data parser adapting dynamically to the server's version.
         if (cfg.contains("custom-model-data")) {
             if (cfg.isConfigurationSection("custom-model-data")) {
                 ConfigurationSection cmdSec = cfg.getConfigurationSection("custom-model-data");
-                if (ServerVersion.isAtLeast(1, 21, 5)) {
+                if (cmdSec.contains("value")) {
+                    meta.setCustomModelData(cmdSec.getInt("value"));
+                }
+
+                if (ServerVersion.isAtLeast(1, 21, 4)) {
                     try {
                         CustomModelDataComponent cmdc = meta.getCustomModelDataComponent();
                         if (cmdSec.contains("floats")) {
                             List<Float> floats = new ArrayList<>();
                             for (Double d : cmdSec.getDoubleList("floats")) floats.add(d.floatValue());
-                            cmdc.setFloats(floats);
+                            if (!floats.isEmpty()) cmdc.setFloats(floats);
                         }
                         if (cmdSec.contains("strings")) cmdc.setStrings(cmdSec.getStringList("strings"));
                         if (cmdSec.contains("flags")) cmdc.setFlags(cmdSec.getBooleanList("flags"));
@@ -211,30 +251,15 @@ public class ItemBuilder {
                             for (String hex : cmdSec.getStringList("colors")) {
                                 try {
                                     colors.add(Color.fromRGB(Integer.parseInt(hex.replace("#", ""), 16)));
-                                } catch (Exception ignored) {
-                                }
+                                } catch (Exception ignored) {}
                             }
                             cmdc.setColors(colors);
                         }
                         meta.setCustomModelDataComponent(cmdc);
-                    } catch (Throwable t) {
-                        if (cmdSec.contains("value")) meta.setCustomModelData(cmdSec.getInt("value"));
-                    }
-                } else {
-                    if (cmdSec.contains("value")) meta.setCustomModelData(cmdSec.getInt("value"));
+                    } catch (Throwable ignored) {}
                 }
             } else {
-                if (ServerVersion.isAtLeast(1, 21, 5)) {
-                    try {
-                        CustomModelDataComponent cmdc = meta.getCustomModelDataComponent();
-                        cmdc.setFloats(List.of((float) cfg.getInt("custom-model-data")));
-                        meta.setCustomModelDataComponent(cmdc);
-                    } catch (Throwable t) {
-                        meta.setCustomModelData(cfg.getInt("custom-model-data"));
-                    }
-                } else {
-                    meta.setCustomModelData(cfg.getInt("custom-model-data"));
-                }
+                meta.setCustomModelData(cfg.getInt("custom-model-data"));
             }
         }
 
@@ -256,7 +281,7 @@ public class ItemBuilder {
 
         if (cfg.contains("max-stack-size")) {
             try {
-                meta.setMaxStackSize(Math.max(1, Math.min(99, cfg.getInt("max-stack-size"))));
+                meta.setMaxStackSize(Math.clamp(cfg.getInt("max-stack-size"), 1, 99));
             } catch (Throwable ignored) {
             }
         }

@@ -86,8 +86,7 @@ items:
       - "HIDE_ENCHANTS"
       - "HIDE_ATTRIBUTES"
       - "HIDE_UNBREAKABLE"
-    custom-model-data:
-      value: 1001
+    custom-model-data: 1001
 
     consume-sound:
       enabled: true
