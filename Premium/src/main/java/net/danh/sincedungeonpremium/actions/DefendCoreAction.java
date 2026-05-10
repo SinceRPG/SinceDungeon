@@ -48,6 +48,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     private final List<String> attackerEquipment;
     private final Map<UUID, Entity> attackerEntities = new HashMap<>();
     private UUID coreId = null;
+    private Entity cachedCore = null;
     private Location coreLoc = null;
     private int ticksElapsed = 0;
     private int unloadedTicks = 0; // Failsafe for chunks unloading
@@ -112,29 +113,25 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         }
 
         this.coreId = entity.getUniqueId();
+        this.cachedCore = entity;
         this.spawnedEntities.add(coreId);
         this.activeEntities.add(entity); // OPTIMIZATION: Cache physical entity
     }
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || coreId == null) return;
+        if (completed || coreId == null || cachedCore == null) return;
 
-        Entity entity = Bukkit.getEntity(coreId); // Only 1 lookup (the Core)
-
-        if (entity == null) {
-            unloadedTicks++;
-            if (unloadedTicks > 100) {
-                game.broadcastMessage("action.defend_failed");
-                game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                this.forceComplete();
-            }
-            return;
-        }
-        unloadedTicks = 0;
-
-        if (entity.isDead()) {
+        if (cachedCore.isDead()) {
             return; // Handled by Event Listener
+        }
+
+        if (!cachedCore.isValid()) {
+            if (cachedCore.getLocation().getWorld() != null && !cachedCore.getLocation().isChunkLoaded()) return;
+            game.broadcastMessage("action.defend_failed");
+            game.stop(true, DungeonEndEvent.EndReason.FAILED);
+            this.forceComplete();
+            return;
         }
 
         ticksElapsed++;
@@ -146,7 +143,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
 
         if (attackerMob != null && !attackerMob.equalsIgnoreCase("NONE") && attackerInterval > 0) {
             if (ticksElapsed % attackerInterval == 0) {
-                spawnAttackers(game, entity.getLocation());
+                spawnAttackers(game, cachedCore.getLocation());
             }
         }
 
@@ -154,10 +151,10 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         if (ticksElapsed % 20 == 0) {
             attackerEntities.values().removeIf(e -> e.isDead() || !e.isValid());
             for (Entity e : attackerEntities.values()) {
-                if (e instanceof Mob attacker && entity instanceof LivingEntity livingCore) {
+                if (e instanceof Mob attacker && cachedCore instanceof LivingEntity livingCore) {
                     attacker.setTarget(livingCore);
                 } else if (e instanceof Mob attacker) {
-                    attacker.getPathfinder().moveTo(entity.getLocation());
+                    attacker.getPathfinder().moveTo(cachedCore.getLocation());
                 }
             }
         }
@@ -165,11 +162,11 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        if (completed || coreId == null) return;
+        if (completed || coreId == null || cachedCore == null) return;
 
         // Guaranteed exact detection if the Core dies (Void/Delete)
         if (event instanceof EntityDeathEvent e) {
-            if (e.getEntity().getUniqueId().equals(coreId)) {
+            if (e.getEntity().getUniqueId().equals(cachedCore.getUniqueId())) {
                 game.broadcastMessage("action.defend_failed");
                 game.stop(true, DungeonEndEvent.EndReason.FAILED);
                 this.forceComplete();
@@ -177,7 +174,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         }
 
         if (event instanceof EntityDamageEvent e) {
-            if (e.getEntity().getUniqueId().equals(coreId)) {
+            if (e.getEntity().getUniqueId().equals(cachedCore.getUniqueId())) {
                 e.setCancelled(true); // Always cancel to prevent knockback and standard death
 
                 // Players cannot damage the core
@@ -195,11 +192,10 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                 }
             }
         } else if (event instanceof EntityTargetEvent e) {
-            if (spawnedEntities.contains(e.getEntity().getUniqueId()) && !e.getEntity().getUniqueId().equals(coreId)) {
+            if (spawnedEntities.contains(e.getEntity().getUniqueId()) && !e.getEntity().getUniqueId().equals(cachedCore.getUniqueId())) {
                 if (e.getTarget() instanceof Player) {
-                    Entity core = Bukkit.getEntity(coreId);
-                    if (core instanceof LivingEntity livingCore) {
-                        e.setTarget(livingCore); // Lock onto core
+                    if (cachedCore instanceof LivingEntity livingCore) {
+                        e.setTarget(livingCore); // Lock onto core without UUID lookup
                     }
                 }
             }
@@ -262,11 +258,11 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
 
                 if (attacker instanceof Mob attMob) {
                     applyCustomProperties(attMob, attackerName, attackerIsBaby, attackerAttributes, attackerEquipment);
-                    Entity core = Bukkit.getEntity(coreId);
-                    if (core instanceof LivingEntity livingCore) {
+
+                    if (cachedCore instanceof LivingEntity livingCore) {
                         attMob.setTarget(livingCore);
-                    } else if (core != null) {
-                        attMob.getPathfinder().moveTo(core.getLocation());
+                    } else if (cachedCore != null) {
+                        attMob.getPathfinder().moveTo(cachedCore.getLocation());
                     }
                     this.spawnedEntities.add(attMob.getUniqueId());
                     this.activeEntities.add(attMob); // OPTIMIZATION: Cache physical entity

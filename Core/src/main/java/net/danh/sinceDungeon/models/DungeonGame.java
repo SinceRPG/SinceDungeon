@@ -18,7 +18,6 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -99,9 +98,7 @@ public class DungeonGame {
     private void applyMviBypass(Player p) {
         if (p == null || !p.isOnline()) return;
 
-        // Dynamically verifies if the server even uses MVI, resolving the reported hardcode flaw.
-        boolean mviEnabled = Bukkit.getPluginManager().isPluginEnabled("Multiverse-Inventories")
-                || Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core");
+        boolean mviEnabled = Bukkit.getPluginManager().isPluginEnabled("Multiverse-Inventories") || Bukkit.getPluginManager().isPluginEnabled("Multiverse-Core");
         if (!mviEnabled) return;
 
         if (!permAttachments.containsKey(p.getUniqueId())) {
@@ -198,13 +195,7 @@ public class DungeonGame {
                 }
             }
 
-            String parsed = cmd.replace("<player>", p.getName())
-                    .replace("%player%", p.getName())
-                    .replace("{player}", p.getName())
-                    .replace("<dungeon>", template.id())
-                    .replace("%dungeon%", template.id())
-                    .replace("<stage>", String.valueOf(stageIndex + 1))
-                    .replace("%stage%", String.valueOf(stageIndex + 1));
+            String parsed = cmd.replace("<player>", p.getName()).replace("%player%", p.getName()).replace("{player}", p.getName()).replace("<dungeon>", template.id()).replace("%dungeon%", template.id()).replace("<stage>", String.valueOf(stageIndex + 1)).replace("%stage%", String.valueOf(stageIndex + 1));
 
             parsed = PAPIHook.setPlaceholders(p, parsed);
             if (parsed.startsWith("/")) parsed = parsed.substring(1);
@@ -223,33 +214,31 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
-        plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName)
-                .thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (isStopping) {
-                        plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(world);
-                        return;
-                    }
-                    this.dungeonWorld = world;
-                    plugin.getDungeonManager().registerWorldGame(world.getName(), this);
+        plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (isStopping) {
+                plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(world);
+                return;
+            }
+            this.dungeonWorld = world;
+            plugin.getDungeonManager().registerWorldGame(world.getName(), this);
 
-                    dungeonWorld.setAutoSave(false);
+            dungeonWorld.setAutoSave(false);
 
-                    if (template.settings().forceDaylightAndClearWeather()) {
-                        dungeonWorld.setTime(6000);
-                        dungeonWorld.setStorm(false);
-                        dungeonWorld.setThundering(false);
-                    }
-                    startCountdown();
-                }))
-                .exceptionally(ex -> {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
-                        broadcastMessage("error.create_failed");
-                        String logFail = plugin.getLanguageManager().getString("admin.log.instance_create_fail", "Failed to create dungeon world: <error>");
-                        plugin.getLogger().severe(logFail.replace("<error>", ex.getMessage()));
-                        stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
-                    });
-                    return null;
-                });
+            if (template.settings().forceDaylightAndClearWeather()) {
+                dungeonWorld.setTime(6000);
+                dungeonWorld.setStorm(false);
+                dungeonWorld.setThundering(false);
+            }
+            startCountdown();
+        })).exceptionally(ex -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                broadcastMessage("error.create_failed");
+                String logFail = plugin.getLanguageManager().getString("admin.log.instance_create_fail", "Failed to create dungeon world: <error>");
+                plugin.getLogger().severe(logFail.replace("<error>", ex.getMessage()));
+                stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
+            });
+            return null;
+        });
     }
 
     private void startCountdown() {
@@ -385,7 +374,7 @@ public class DungeonGame {
                 try {
                     tickable.onTick(this);
                 } catch (Exception e) {
-                    if (serverTicksActive % 100 == 0) { // Throttles structural log spam to once every 5 seconds
+                    if (serverTicksActive % 100 == 0) {
                         String logWarn = plugin.getLanguageManager().getString("admin.log.action_tick_error", "Tick error in action: <error>");
                         plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage() != null ? e.getMessage() : "Unknown Exception"));
                     }
@@ -433,9 +422,7 @@ public class DungeonGame {
             LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
             int current = livesData != null ? livesData.getCurrentLives() : 0;
 
-            String lossMsg = plugin.getLanguageManager().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>")
-                    .replace("<amount>", String.valueOf(penalty))
-                    .replace("<current>", String.valueOf(current));
+            String lossMsg = plugin.getLanguageManager().getString("lives.time_out_penalty", "&cYou lost <amount> lives due to time limit! Current: <current>").replace("<amount>", String.valueOf(penalty)).replace("<current>", String.valueOf(current));
             p.sendMessage(ColorUtils.parseWithPrefix(lossMsg));
 
             if (current <= 0) {
@@ -532,7 +519,7 @@ public class DungeonGame {
             try {
                 action.onEvent(this, event);
             } catch (Exception e) {
-                if (System.currentTimeMillis() % 5000 < 50) { // Limit log spam
+                if (System.currentTimeMillis() % 5000 < 50) {
                     String logWarn = plugin.getLanguageManager().getString("admin.log.action_event_error", "Event handling error in action: <error>");
                     plugin.getLogger().warning(logWarn.replace("<error>", e.getMessage() != null ? e.getMessage() : "Unknown exception"));
                 }
@@ -664,16 +651,8 @@ public class DungeonGame {
                             String titleMain = plugin.getLanguageManager().getString("game.kick_countdown.title.main", "&c<time>");
                             String titleSub = plugin.getLanguageManager().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
 
-                            Title.Times times = Title.Times.times(
-                                    Duration.ZERO,
-                                    Duration.ofSeconds(2),
-                                    Duration.ZERO
-                            );
-                            Title title = Title.title(
-                                    ColorUtils.parse(titleMain.replace("<time>", String.valueOf(timeLeft))),
-                                    ColorUtils.parse(titleSub.replace("<time>", String.valueOf(timeLeft))),
-                                    times
-                            );
+                            Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ZERO);
+                            Title title = Title.title(ColorUtils.parse(titleMain.replace("<time>", String.valueOf(timeLeft))), ColorUtils.parse(titleSub.replace("<time>", String.valueOf(timeLeft))), times);
                             p.showTitle(title);
                             break;
 
@@ -735,10 +714,7 @@ public class DungeonGame {
             if (leaderId == null) leaderId = initiatorId;
 
             if (participants.size() > 1) {
-                String membersNames = participants.stream()
-                        .filter(Player::isOnline)
-                        .map(Player::getName)
-                        .collect(Collectors.joining(", "));
+                String membersNames = participants.stream().filter(Player::isOnline).map(Player::getName).collect(Collectors.joining(", "));
                 topManager.savePartyClearTime(dungeonId, membersNames, finalElapsed);
             }
 
@@ -963,10 +939,7 @@ public class DungeonGame {
 
         if (dungeonWorld != null) {
             World w = dungeonWorld;
-            for (Entity entity : w.getEntities()) {
-                if (!(entity instanceof Player)) entity.remove();
-            }
-
+            // OPTIMIZATION: Bypassed massive w.getEntities() iteration here which spikes GC loads. Folder is securely wiped.
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
                 aggressivelyCleanupMemory();
@@ -1104,8 +1077,6 @@ public class DungeonGame {
             savedStates.remove(p.getUniqueId());
         }
 
-        // MVI BugFix: Only remove the MVI bypass at the very end of stat restoration.
-        // This guarantees MVI does not overwrite the carefully restored inventory.
         removeMviBypass(p);
 
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());

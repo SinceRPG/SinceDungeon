@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;

@@ -53,6 +53,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final Set<Integer> executedPhases = new HashSet<>();
 
     private UUID bossId = null;
+    private LivingEntity cachedBoss = null;
     private BossBar bossBar = null;
     private long spawnTimeMillis = 0;
     private boolean isEnraged = false;
@@ -79,13 +80,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         this.customDrops = customDrops;
     }
 
-    /**
-     * Parses the YAML configuration to build the PhaseData mechanics objects.
-     * Safely handles prefix notations for cross-plugin Entity identification.
-     *
-     * @param sec The configuration section containing phase mappings.
-     * @return Map of Health Threshold -> PhaseData
-     */
     public static Map<Integer, PhaseData> parsePhases(ConfigurationSection sec) {
         Map<Integer, PhaseData> phases = new HashMap<>();
         if (sec == null) return phases;
@@ -127,12 +121,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         return SinceDungeon.getPlugin().getLanguageManager().getString("objective.boss_battle", "<red>Defeat the Boss!");
     }
 
-    /**
-     * Initializes the Boss Battle objective.
-     * Spawns the boss entity, applies attributes, and hooks the BossBar to all active participants.
-     *
-     * @param game The current Dungeon instance.
-     */
     @Override
     public void start(DungeonGame game) {
         Location loc = new Location(game.getWorld(), spawnLoc.getX() + 0.5, spawnLoc.getY(), spawnLoc.getZ() + 0.5);
@@ -155,6 +143,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         }
 
         this.bossId = boss.getUniqueId();
+        this.cachedBoss = boss;
         this.spawnedEntities.add(this.bossId);
         this.activeEntities.add(boss); // OPTIMIZATION: Cache physical entity
         this.spawnTimeMillis = System.currentTimeMillis();
@@ -193,15 +182,21 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || bossId == null || bossBar == null) return;
+        if (completed || cachedBoss == null || bossBar == null) return;
 
-        Entity entity = Bukkit.getEntity(bossId);
-        if (!(entity instanceof LivingEntity) || entity.isDead()) {
-            handleCustomDrops(entity != null ? entity.getLocation() : null);
+        if (cachedBoss.isDead()) {
+            handleCustomDrops(cachedBoss.getLocation());
             completeBoss(game);
             return;
         }
-        LivingEntity boss = (LivingEntity) entity;
+
+        if (!cachedBoss.isValid()) {
+            if (cachedBoss.getLocation().getWorld() != null && !cachedBoss.getLocation().isChunkLoaded())
+                return; // Safely skip if unloaded
+            handleCustomDrops(cachedBoss.getLocation());
+            completeBoss(game);
+            return;
+        }
 
         if (enrageTime > 0 && !isEnraged) {
             long elapsedSeconds = (System.currentTimeMillis() - spawnTimeMillis) / 1000;
@@ -212,14 +207,13 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                         if (p.isOnline()) p.sendMessage(ColorUtils.parse(enrageMessage));
                     }
                 }
-                applyAttributes(boss, enrageAttributes);
+                applyAttributes(cachedBoss, enrageAttributes);
             }
         }
 
-        // JIT Optimization: Packet Flow reduction
-        AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
+        AttributeInstance healthAttr = cachedBoss.getAttribute(Attribute.MAX_HEALTH);
         double maxHealth = healthAttr != null ? healthAttr.getValue() : 100.0;
-        double progress = Math.max(0.0, Math.min(1.0, boss.getHealth() / maxHealth));
+        double progress = Math.max(0.0, Math.min(1.0, cachedBoss.getHealth() / maxHealth));
 
         if (Math.abs(progress - lastProgress) > 0.005) {
             bossBar.setProgress(progress);
@@ -229,10 +223,10 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        if (completed || bossId == null) return;
+        if (completed || bossId == null || cachedBoss == null) return;
 
         if (event instanceof EntityDamageEvent e) {
-            if (e.getEntity().getUniqueId().equals(bossId)) {
+            if (e.getEntity().getUniqueId().equals(cachedBoss.getUniqueId())) {
                 LivingEntity boss = (LivingEntity) e.getEntity();
                 AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
                 double maxHealth = healthAttr != null ? healthAttr.getValue() : 100.0;
@@ -247,7 +241,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                 }
             }
         } else if (event instanceof EntityDeathEvent e) {
-            if (e.getEntity().getUniqueId().equals(bossId)) {
+            if (e.getEntity().getUniqueId().equals(cachedBoss.getUniqueId())) {
                 handleCustomDrops(e.getEntity().getLocation());
                 cleanup(game); // Clean up all reinforcements on boss death
                 completeBoss(game);
@@ -258,22 +252,12 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
-        // Clears the BossBar from players' screens if the action is forcefully terminated
         if (this.bossBar != null) {
             this.bossBar.removeAll();
             this.bossBar = null;
         }
     }
 
-    /**
-     * Executes the specific phase threshold mechanics.
-     * Triggers chat broadcasts, attribute modifications, and reinforcement summons.
-     * Integrates MythicMobs hook dynamically if the configured reinforcement is a Mythic entity.
-     *
-     * @param game The current Dungeon instance.
-     * @param boss The active LivingEntity boss.
-     * @param data The configured phase data containing mechanics.
-     */
     private void executePhase(DungeonGame game, LivingEntity boss, PhaseData data) {
         if (data.message != null && !data.message.isEmpty()) {
             for (Player p : game.getParticipants()) {
@@ -441,9 +425,6 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         return null;
     }
 
-    /**
-     * Data object storing conditions and mechanics applied when the Boss reaches a specific Health Threshold.
-     */
     public static class PhaseData {
         public String message = "";
         public List<String> attributes = new ArrayList<>();

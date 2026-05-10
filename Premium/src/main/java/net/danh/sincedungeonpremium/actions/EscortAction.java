@@ -55,11 +55,11 @@ public class EscortAction extends DungeonAction implements Tickable {
     private final List<String> attackerEquipment;
     private final Map<UUID, Entity> attackerEntities = new HashMap<>();
     private UUID npcId = null;
+    private Mob cachedVip = null;
     private Location targetLocation = null;
     // JIT Optimization: Pre-calculated destination particle location
     private Location targetParticleLoc = null;
     private int tickCounter = 0;
-    private int unloadedTicks = 0;
 
     public EscortAction(String entityTypeStr, String customName, double maxHealth, String startLocStr, String targetLocStr, double speed, double successRadius, boolean vipIsBaby, List<String> vipAttributes, List<String> vipEquipment, String attackerMob, int attackerAmount, int attackerInterval, String attackerName, boolean attackerIsBaby, List<String> attackerAttributes, List<String> attackerEquipment) {
         this.entityTypeStr = entityTypeStr;
@@ -217,34 +217,32 @@ public class EscortAction extends DungeonAction implements Tickable {
 
         mob.setTarget(null);
         this.npcId = mob.getUniqueId();
+        this.cachedVip = mob;
         this.spawnedEntities.add(npcId);
+        this.activeEntities.add(mob); // OPTIMIZATION: Cache physical entity
 
         forcePathfind(mob);
     }
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || npcId == null || targetLocation == null || targetParticleLoc == null) return;
+        if (completed || npcId == null || cachedVip == null || targetLocation == null || targetParticleLoc == null) return;
 
         tickCounter++;
-        Entity entity = Bukkit.getEntity(npcId);
 
-        if (entity == null) {
-            unloadedTicks++;
-            if (unloadedTicks > 100) {
-                game.broadcastMessage("action.escort_failed");
-                game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                this.forceComplete();
-            }
-            return;
-        }
-        unloadedTicks = 0;
-
-        if (!(entity instanceof Mob mob) || mob.isDead()) {
+        if (cachedVip.isDead()) {
             return;
         }
 
-        if (mob.getLocation().distanceSquared(targetLocation) <= (successRadius * successRadius)) {
+        if (!cachedVip.isValid()) {
+            if (cachedVip.getLocation().getWorld() != null && !cachedVip.getLocation().isChunkLoaded()) return;
+            game.broadcastMessage("action.escort_failed");
+            game.stop(true, DungeonEndEvent.EndReason.FAILED);
+            this.forceComplete();
+            return;
+        }
+
+        if (cachedVip.getLocation().distanceSquared(targetLocation) <= (successRadius * successRadius)) {
             this.forceComplete();
             return;
         }
@@ -254,11 +252,11 @@ public class EscortAction extends DungeonAction implements Tickable {
         }
 
         if (tickCounter % 20 == 0) {
-            forcePathfind(mob);
+            forcePathfind(cachedVip);
         }
 
         if (attackerMob != null && !attackerMob.equalsIgnoreCase("NONE") && attackerInterval > 0) {
-            if (tickCounter % attackerInterval == 0) spawnAttackers(game, mob.getLocation());
+            if (tickCounter % attackerInterval == 0) spawnAttackers(game, cachedVip.getLocation());
         }
 
         // [Performance Fix] Loop direct Entity tracker to force AI targeting
@@ -266,7 +264,7 @@ public class EscortAction extends DungeonAction implements Tickable {
             attackerEntities.values().removeIf(e -> e.isDead() || !e.isValid());
             for (Entity e : attackerEntities.values()) {
                 if (e instanceof Mob attackerMobInstance) {
-                    attackerMobInstance.setTarget(mob);
+                    attackerMobInstance.setTarget(cachedVip);
                 }
             }
         }
@@ -274,11 +272,11 @@ public class EscortAction extends DungeonAction implements Tickable {
 
     @Override
     public void onEvent(DungeonGame game, Event event) {
-        if (completed || npcId == null) return;
+        if (completed || npcId == null || cachedVip == null) return;
 
         // Guaranteed exact detection if the VIP dies
         if (event instanceof EntityDeathEvent e) {
-            if (e.getEntity().getUniqueId().equals(npcId)) {
+            if (e.getEntity().getUniqueId().equals(cachedVip.getUniqueId())) {
                 game.broadcastMessage("action.escort_failed");
                 game.stop(true, DungeonEndEvent.EndReason.FAILED);
                 this.forceComplete();
@@ -287,7 +285,7 @@ public class EscortAction extends DungeonAction implements Tickable {
 
         // Prevent players from damaging the VIP
         if (event instanceof EntityDamageByEntityEvent e) {
-            if (e.getEntity().getUniqueId().equals(npcId)) {
+            if (e.getEntity().getUniqueId().equals(cachedVip.getUniqueId())) {
                 if (e.getDamager() instanceof Player || (e.getDamager() instanceof Projectile proj && proj.getShooter() instanceof Player)) {
                     e.setCancelled(true);
                 }
@@ -295,12 +293,9 @@ public class EscortAction extends DungeonAction implements Tickable {
         }
         // Prevent attackers from switching targets to players
         else if (event instanceof EntityTargetEvent e) {
-            if (spawnedEntities.contains(e.getEntity().getUniqueId()) && !e.getEntity().getUniqueId().equals(npcId)) {
+            if (spawnedEntities.contains(e.getEntity().getUniqueId()) && !e.getEntity().getUniqueId().equals(cachedVip.getUniqueId())) {
                 if (e.getTarget() instanceof Player) {
-                    Entity vip = Bukkit.getEntity(npcId);
-                    if (vip instanceof LivingEntity livingVip) {
-                        e.setTarget(livingVip);
-                    }
+                    e.setTarget(cachedVip);
                 }
             }
         }
@@ -365,13 +360,10 @@ public class EscortAction extends DungeonAction implements Tickable {
                 if (attacker instanceof Mob attMob) {
                     applyCustomProperties(attMob, attackerName, attackerIsBaby, attackerAttributes, attackerEquipment);
 
-                    Entity vip = Bukkit.getEntity(npcId);
-                    if (vip instanceof Mob vipMob) {
-                        attMob.setTarget(vipMob);
-                    }
+                    attMob.setTarget(cachedVip);
 
                     this.spawnedEntities.add(attMob.getUniqueId());
-                    // [Performance Fix] Put in custom tracker map
+                    this.activeEntities.add(attMob); // OPTIMIZATION: Cache physical entity
                     this.attackerEntities.put(attMob.getUniqueId(), attMob);
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }
