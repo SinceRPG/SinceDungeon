@@ -71,7 +71,10 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (!targetToKill.equalsIgnoreCase("NONE") && targetToKill.equalsIgnoreCase(spawnedInternalName)) {
             this.hasTargetSpawned = true;
             Entity ent = Bukkit.getEntity(uuid);
-            if (ent != null) this.spawnedMobs.put(uuid, ent);
+            if (ent != null) {
+                this.spawnedMobs.put(uuid, ent);
+                this.activeEntities.add(ent); // OPTIMIZATION: Cache physical entity
+            }
             this.spawnedEntities.add(uuid);
         }
     }
@@ -136,9 +139,9 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
                             le.setPersistent(true);
                         }
 
-                        // [Performance Fix] Caching entity directly
                         spawnedMobs.put(bukkitEntity.getUniqueId(), bukkitEntity);
                         this.spawnedEntities.add(bukkitEntity.getUniqueId());
+                        this.activeEntities.add(bukkitEntity); // OPTIMIZATION: Cache physical entity
                         count++;
 
                         String activeName = MythicMobsHook.getActiveMobName(bukkitEntity.getUniqueId());

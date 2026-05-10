@@ -80,6 +80,7 @@ public class ProjectileTrapAction extends DungeonAction implements Tickable {
                 if (ent instanceof Projectile proj) {
                     proj.setVelocity(dir);
                     spawnedEntities.add(proj.getUniqueId());
+                    activeEntities.add(proj); // OPTIMIZATION: Cache physical entity
                 } else {
                     ent.remove();
                 }

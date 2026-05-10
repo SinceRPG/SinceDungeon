@@ -195,6 +195,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                         le.setPersistent(true);
                         game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                         this.spawnedEntities.add(le.getUniqueId());
+                        this.activeEntities.add(le); // OPTIMIZATION: Cache physical entity
                     }
                 }
             } else {
@@ -204,6 +205,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                     applyCustomProperties(living);
                     game.getWorld().spawnParticle(pType, spawnLoc.clone().add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                     this.spawnedEntities.add(living.getUniqueId());
+                    this.activeEntities.add(living); // OPTIMIZATION: Cache physical entity
                 }
             }
         } catch (Exception ignored) {

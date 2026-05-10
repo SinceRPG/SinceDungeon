@@ -17,7 +17,8 @@ public class BungeeUtils {
             out.writeUTF(serverName);
             player.sendPluginMessage(SinceDungeon.getPlugin(), channel, b.toByteArray());
         } catch (IOException e) {
-            SinceDungeon.getPlugin().getLogger().warning("Error when switching players " + player.getName() + " to server " + serverName);
+            String logMsg = SinceDungeon.getPlugin().getLanguageManager().getString("admin.log.bungee_error", "Error when switching players <player> to server <server>");
+            SinceDungeon.getPlugin().getLogger().warning(logMsg.replace("<player>", player.getName()).replace("<server>", serverName));
         }
     }
 }

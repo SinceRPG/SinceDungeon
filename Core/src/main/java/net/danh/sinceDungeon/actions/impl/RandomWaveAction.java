@@ -186,13 +186,13 @@ public class RandomWaveAction extends DungeonAction implements Tickable {
                 double offsetZ = (Math.random() - 0.5) * 1.5;
                 Location spawnLoc = findSafeSpawn(new Location(game.getWorld(), vec.getX() + 0.5 + offsetX, vec.getY(), vec.getZ() + 0.5 + offsetZ));
 
-                // [Performance Fix] Receive entity directly
                 Entity ent = spawnMob(game, spawnLoc, opt);
                 if (ent != null) {
                     UUID uid = ent.getUniqueId();
                     spawnedMobs.put(uid, ent);
                     mobDisplayNames.put(uid, opt.id());
                     this.spawnedEntities.add(uid);
+                    this.activeEntities.add(ent); // OPTIMIZATION: Cache physical entity
                     count++;
                 }
             }

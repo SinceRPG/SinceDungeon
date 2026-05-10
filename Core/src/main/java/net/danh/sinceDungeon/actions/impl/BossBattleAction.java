@@ -156,6 +156,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
         this.bossId = boss.getUniqueId();
         this.spawnedEntities.add(this.bossId);
+        this.activeEntities.add(boss); // OPTIMIZATION: Cache physical entity
         this.spawnTimeMillis = System.currentTimeMillis();
 
         double totalHealth = baseHealth + (scaleHealthPerPlayer * Math.max(0, game.getParticipants().size() - 1));
@@ -302,7 +303,8 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                 }
 
                 if (rEnt instanceof LivingEntity rLive) {
-                    this.spawnedEntities.add(rLive.getUniqueId()); // Track reinforcement for cleanup
+                    this.spawnedEntities.add(rLive.getUniqueId());
+                    this.activeEntities.add(rLive); // OPTIMIZATION: Cache physical entity
                     rLive.setRemoveWhenFarAway(false);
                     if (data.reinforcementName != null && !data.reinforcementName.isEmpty()) {
                         rLive.customName(ColorUtils.parse(data.reinforcementName));

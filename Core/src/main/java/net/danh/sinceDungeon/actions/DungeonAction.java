@@ -17,6 +17,7 @@ import java.util.*;
  */
 public abstract class DungeonAction {
     protected final Set<UUID> spawnedEntities = new HashSet<>();
+    protected final Set<Entity> activeEntities = new HashSet<>();
     public boolean completed = false;
     private List<String> startMessages = new ArrayList<>();
     private Map<String, Boolean> notifications = new HashMap<>();
@@ -44,21 +45,23 @@ public abstract class DungeonAction {
 
     /**
      * Cleans up entities spawned during this action.
-     * Logic is controlled by the 'settings.clear-remaining-mobs-on-action-complete' config option.
+     * OPTIMIZATION: Bypasses expensive Bukkit.getEntity(UUID) scans by utilizing direct memory references.
      *
      * @param game The current active dungeon game instance.
      */
     public void cleanup(DungeonGame game) {
         boolean autoClear = SinceDungeon.getPlugin().getConfigFile().getBoolean("settings.clear-remaining-mobs-on-action-complete", true);
 
-        if (autoClear && !spawnedEntities.isEmpty()) {
-            spawnedEntities.forEach(uuid -> {
-                Entity entity = Bukkit.getEntity(uuid);
-                if (entity != null && !entity.isDead()) {
+        if (autoClear && !activeEntities.isEmpty()) {
+            for (Entity entity : activeEntities) {
+                if (entity != null && entity.isValid() && !entity.isDead()) {
                     entity.remove();
                 }
-            });
+            }
         }
+
+        // Clear memory references to allow Garbage Collection
+        activeEntities.clear();
         spawnedEntities.clear();
     }
 
@@ -72,8 +75,7 @@ public abstract class DungeonAction {
     }
 
     /**
-     * Adds a newly spawned child entity (e.g., summoned by a MythicMob spawner) to the tracking list.
-     * Overridden by specific wave actions to update their internal mapping correctly.
+     * Adds a newly spawned child entity to the tracking list.
      *
      * @param uuid         The UUID of the newly spawned child entity.
      * @param loc          The spawn location.
@@ -81,6 +83,10 @@ public abstract class DungeonAction {
      */
     public void trackChildEntity(UUID uuid, Location loc, String internalName) {
         this.spawnedEntities.add(uuid);
+        Entity e = Bukkit.getEntity(uuid);
+        if (e != null) {
+            this.activeEntities.add(e);
+        }
     }
 
     /**

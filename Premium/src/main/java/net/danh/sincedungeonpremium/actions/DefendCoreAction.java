@@ -113,6 +113,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
 
         this.coreId = entity.getUniqueId();
         this.spawnedEntities.add(coreId);
+        this.activeEntities.add(entity); // OPTIMIZATION: Cache physical entity
     }
 
     @Override
@@ -268,7 +269,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                         attMob.getPathfinder().moveTo(core.getLocation());
                     }
                     this.spawnedEntities.add(attMob.getUniqueId());
-                    // [Performance Fix] Put in custom tracker map
+                    this.activeEntities.add(attMob); // OPTIMIZATION: Cache physical entity
                     this.attackerEntities.put(attMob.getUniqueId(), attMob);
                     game.getWorld().spawnParticle(Particle.CAMPFIRE_COSY_SMOKE, spawnLoc.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.05);
                 }

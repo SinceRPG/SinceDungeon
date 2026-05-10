@@ -254,9 +254,9 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                             game.getWorld().playSound(finalLoc, sType, 0.5f, 0.5f);
                         }
 
-                        // [Performance Fix] Caching entity
                         spawnedMobs.put(ent.getUniqueId(), ent);
                         this.spawnedEntities.add(ent.getUniqueId());
+                        this.activeEntities.add(ent); // OPTIMIZATION: Cache physical entity
                         count++;
                     } else if (ent != null) {
                         ent.remove();
