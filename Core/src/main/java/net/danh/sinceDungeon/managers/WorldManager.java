@@ -5,7 +5,6 @@ import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -86,15 +85,11 @@ public class WorldManager {
                     WorldCreator creator = new WorldCreator(id);
                     creator.generatorSettings("");
                     creator.generateStructures(false);
-
                     if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
 
                     World world = Bukkit.createWorld(creator);
                     if (world != null) {
                         world.setAutoSave(false);
-                        world.setTime(6000);
-                        world.setStorm(false);
-                        world.setThundering(false);
 
                         finalFuture.complete(world);
                     } else {
@@ -110,9 +105,7 @@ public class WorldManager {
         }).exceptionally(ex -> {
             String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[WorldManager] Error generating dungeon world: <error>");
             plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage()));
-            ex.printStackTrace();
             finalFuture.completeExceptionally(ex);
-
             Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
             return null;
         });

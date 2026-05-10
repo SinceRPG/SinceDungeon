@@ -2,6 +2,7 @@ package net.danh.sincedungeonpremium.listeners;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
@@ -23,8 +24,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Executes dynamic difficulty modifiers (Affixes) across all active Dungeon Maps.
- * Optimized: Aggressively caches active affixes to memory to prevent massive File I/O YAML spikes on every hit event.
+ * Handles Mythic+ style Dungeon Affixes.
+ * OPTIMIZATION: Implements Cache-Cleaning to prevent long-term memory leaks.
  */
 public class AffixListener implements Listener {
 
@@ -35,14 +36,17 @@ public class AffixListener implements Listener {
         this.plugin = plugin;
     }
 
-    public void clearCache() {
-        affixCache.clear();
+    /**
+     * CLEANUP: Listens for Dungeon End events to purge the memory cache.
+     * Prevents the RAM usage from growing indefinitely.
+     */
+    @EventHandler
+    public void onDungeonEnd(DungeonEndEvent e) {
+        if (e.getGame().getTemplate() != null) {
+            affixCache.remove(e.getGame().getTemplate().id());
+        }
     }
 
-    /**
-     * Checks if a dungeon game currently has an active affix.
-     * Computes the list into a localized hashmap to preserve ticks during heavy combat.
-     */
     private boolean hasAffix(DungeonGame game, String affix) {
         if (game == null || game.getTemplate() == null) return false;
         String dungeonId = game.getTemplate().id();
@@ -52,17 +56,6 @@ public class AffixListener implements Listener {
         );
 
         return activeAffixes.contains(affix.toUpperCase());
-    }
-
-    private Particle getParticle(String path, Particle fallback) {
-        try {
-            String pStr = plugin.getFileManager().getConfig().getString(path);
-            if (pStr != null) {
-                return Particle.valueOf(pStr.toUpperCase());
-            }
-        } catch (IllegalArgumentException ignored) {
-        }
-        return fallback;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -75,11 +68,16 @@ public class AffixListener implements Listener {
             double healPercentage = plugin.getFileManager().getConfig().getDouble("affixes-settings.vampiric.heal-percentage", 0.5);
             double healAmount = e.getFinalDamage() * healPercentage;
 
-            double maxHealth = damager.getAttribute(Attribute.MAX_HEALTH).getValue();
-            damager.setHealth(Math.min(maxHealth, damager.getHealth() + healAmount));
+            if (damager.getAttribute(Attribute.MAX_HEALTH) != null) {
+                double maxHealth = damager.getAttribute(Attribute.MAX_HEALTH).getValue();
+                damager.setHealth(Math.min(maxHealth, damager.getHealth() + healAmount));
+            }
 
-            Particle particle = getParticle("particles.affix_vampiric", Particle.HEART);
-            damager.getWorld().spawnParticle(particle, damager.getLocation().add(0, 1, 0), 3, 0.5, 0.5, 0.5, 0);
+            try {
+                String pStr = plugin.getFileManager().getConfig().getString("particles.affix_vampiric", "HEART");
+                damager.getWorld().spawnParticle(Particle.valueOf(pStr.toUpperCase()), damager.getLocation().add(0, 1, 0), 3, 0.5, 0.5, 0.5, 0);
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -88,7 +86,6 @@ public class AffixListener implements Listener {
         LivingEntity entity = e.getEntity();
         if (entity instanceof Player) return;
 
-        // [Performance Fix] O(1) Fast lookup via API Manager
         DungeonGame game = SinceDungeonAPI.get().getManager().getGameByWorld(entity.getWorld().getName());
 
         if (game != null && hasAffix(game, "VOLCANIC")) {
@@ -97,17 +94,24 @@ public class AffixListener implements Listener {
             final double radius = plugin.getFileManager().getConfig().getDouble("affixes-settings.volcanic.radius", 3.0);
             final int delayTicks = plugin.getFileManager().getConfig().getInt("affixes-settings.volcanic.delay-ticks", 40);
 
-            Particle warnParticle = getParticle("particles.affix_volcanic_warn", Particle.FLAME);
-            entity.getWorld().spawnParticle(warnParticle, deathLoc, 10, 0.5, 0.1, 0.5, 0.05);
+            try {
+                String warnP = plugin.getFileManager().getConfig().getString("particles.affix_volcanic_warn", "FLAME");
+                entity.getWorld().spawnParticle(Particle.valueOf(warnP.toUpperCase()), deathLoc, 10, 0.5, 0.1, 0.5, 0.05);
+            } catch (Exception ignored) {
+            }
 
             new BukkitRunnable() {
                 @Override
                 public void run() {
-                    if (deathLoc.getWorld() == null) return;
+                    // CRITICAL FIX: Ensure world still exists before processing explosion
+                    if (deathLoc.getWorld() == null || !deathLoc.getChunk().isLoaded()) return;
 
-                    Particle boomParticle = getParticle("particles.affix_volcanic_boom", Particle.EXPLOSION);
-                    deathLoc.getWorld().spawnParticle(boomParticle, deathLoc, 2);
-                    deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+                    try {
+                        String boomP = plugin.getFileManager().getConfig().getString("particles.affix_volcanic_boom", "EXPLOSION");
+                        deathLoc.getWorld().spawnParticle(Particle.valueOf(boomP.toUpperCase()), deathLoc, 2);
+                        deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+                    } catch (Exception ignored) {
+                    }
 
                     for (Player p : deathLoc.getWorld().getPlayers()) {
                         if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {

@@ -226,7 +226,8 @@ public class EscortAction extends DungeonAction implements Tickable {
 
     @Override
     public void onTick(DungeonGame game) {
-        if (completed || npcId == null || cachedVip == null || targetLocation == null || targetParticleLoc == null) return;
+        if (completed || npcId == null || cachedVip == null || targetLocation == null || targetParticleLoc == null)
+            return;
 
         tickCounter++;
 
