@@ -18,21 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Native Bukkit world management utility for cloning and loading maps.
- * Replaced hardcoded Exceptions with dynamic LanguageManager localized formats.
+ * Now features a Recursive Retry Mechanism to prevent RAM-Leak Hostage States.
  */
 public class WorldManager {
 
     private static final Map<String, Integer> templateUsageCount = new ConcurrentHashMap<>();
 
-    /**
-     * Asynchronously duplicates the template world folder to generate a unique dungeon instance.
-     * Integrates strict security checks to prevent arbitrary file path traversal attacks.
-     *
-     * @param plugin       The main plugin instance.
-     * @param templateName The name of the source template directory.
-     * @param instanceId   The generated unique identifier for the new instance.
-     * @return A CompletableFuture mapping to the successfully created Bukkit World.
-     */
     public static CompletableFuture<World> createDungeonWorldAsync(SinceDungeon plugin, String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
 
@@ -130,13 +121,18 @@ public class WorldManager {
             for (Player p : players) {
                 p.teleport(safeLoc);
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder), 1L);
+            // Add a slight delay before triggering the unload to allow the teleport to fully process
+            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder, 5), 10L);
         } else {
-            performUnload(plugin, world, folder);
+            performUnload(plugin, world, folder, 5);
         }
     }
 
-    private static void performUnload(SinceDungeon plugin, World world, File folder) {
+    /**
+     * Recursive Retry Unloader - Resolves the Orphaned World Memory Leak.
+     * Safely bypasses transient chunk loading/saving states holding the world in RAM.
+     */
+    private static void performUnload(SinceDungeon plugin, World world, File folder, int retries) {
         if (Bukkit.unloadWorld(world, false)) {
             String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
             plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
@@ -147,9 +143,16 @@ public class WorldManager {
                     plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
                 }
             }, 40L);
+        } else if (retries > 0) {
+            // Memory Leak Saftey net - Re-queue if it failed
+            String logRetry = plugin.getLanguageManager().getString("admin.log.world_unload_retry", "Retrying unload for world: <world> in 5 seconds...");
+            if (logRetry != null) {
+                plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
+            }
+            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder, retries - 1), 100L);
         } else {
             String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
-            plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
+            plugin.getLogger().severe(logWarn.replace("<world>", world.getName()));
         }
     }
 

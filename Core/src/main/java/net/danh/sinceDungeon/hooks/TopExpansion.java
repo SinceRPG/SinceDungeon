@@ -6,32 +6,32 @@ import net.danh.sinceDungeon.managers.TopManager.TopCategory;
 import net.danh.sinceDungeon.managers.TopManager.TopEntry;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * PlaceholderAPI Expansion for SinceDungeon leaderboards.
- * Uses an asynchronous caching system to prevent database query lag on scoreboard updates.
- */
 public class TopExpansion extends PlaceholderExpansion {
 
     private final SinceDungeon plugin;
     private final Map<String, List<TopEntry>> cache = new ConcurrentHashMap<>();
+
+    // Track the async caching task statically to kill it upon any /papi reload triggers.
+    private static BukkitTask activeCacheTask = null;
 
     public TopExpansion(SinceDungeon plugin) {
         this.plugin = plugin;
         startCacheTask();
     }
 
-    /**
-     * Starts an asynchronous repeating task to refresh leaderboard caches.
-     * Updates data every 5 minutes (6000 ticks) to maintain peak server performance.
-     */
     private void startCacheTask() {
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
+            activeCacheTask.cancel();
+        }
+
+        activeCacheTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             for (String mapId : plugin.getDungeonManager().getTemplates().keySet()) {
                 for (TopCategory category : TopCategory.values()) {
                     String cacheKey = mapId + "_" + category.name();
@@ -59,14 +59,9 @@ public class TopExpansion extends PlaceholderExpansion {
 
     @Override
     public boolean persist() {
-        return true; // Allows Expansion to persist across PAPI reloads
+        return true;
     }
 
-    /**
-     * Handles the placeholder parsing logic based on memory-cached database results.
-     * Format: %sincedungeontop_<category>_<map>_<rank>_<type>%
-     * Example: %sincedungeontop_fastest_zombie_crypt_1_name%
-     */
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String params) {
         String[] args = params.split("_");
@@ -76,7 +71,7 @@ public class TopExpansion extends PlaceholderExpansion {
         TopCategory category = parseCategory(catStr);
         if (category == null) return null;
 
-        String type = args[args.length - 1].toLowerCase(); // name or value
+        String type = args[args.length - 1].toLowerCase();
         int rank;
         try {
             rank = Integer.parseInt(args[args.length - 2]);
@@ -84,7 +79,6 @@ public class TopExpansion extends PlaceholderExpansion {
             return null;
         }
 
-        // Safely reconstruct the map ID in case the ID contains underscores
         StringBuilder mapIdBuilder = new StringBuilder();
         for (int i = 1; i < args.length - 2; i++) {
             mapIdBuilder.append(args[i]);
@@ -117,9 +111,6 @@ public class TopExpansion extends PlaceholderExpansion {
         return null;
     }
 
-    /**
-     * Converts a string identifier into the corresponding database TopCategory.
-     */
     private TopCategory parseCategory(String s) {
         return switch (s) {
             case "fastest" -> TopCategory.FASTEST_TIME;
@@ -130,9 +121,6 @@ public class TopExpansion extends PlaceholderExpansion {
         };
     }
 
-    /**
-     * Formats integer seconds into a clean MM:SS string representation.
-     */
     private String formatTime(int totalSeconds) {
         int mins = totalSeconds / 60;
         int secs = totalSeconds % 60;

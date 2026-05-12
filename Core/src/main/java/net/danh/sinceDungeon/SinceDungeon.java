@@ -169,7 +169,9 @@ public final class SinceDungeon extends JavaPlugin {
         if (instanceManager != null && instanceManager.getProvider() != null) {
             instanceManager.getProvider().cleanup();
         }
-        if (livesManager != null) livesManager.forceSaveAll();
+        if (livesManager != null) {
+            livesManager.cleanup(); // FIXED: Safely kills the asynchronous cache memory loops
+        }
         if (editorManager != null) editorManager.clearAll();
         if (editorListener != null) editorListener.clearAll();
         if (configFile != null) configFile.save();

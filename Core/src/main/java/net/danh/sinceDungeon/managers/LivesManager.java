@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,11 +17,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LivesManager {
     private final SinceDungeon plugin;
     private final Map<UUID, PlayerLives> cache = new ConcurrentHashMap<>();
+    private final BukkitTask syncTask; // Track task for proper memory cleanup
 
     public LivesManager(SinceDungeon plugin) {
         this.plugin = plugin;
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             for (PlayerLives lives : cache.values()) {
                 if (lives.isModified()) {
                     saveToDatabase(lives);
@@ -28,6 +30,14 @@ public class LivesManager {
                 }
             }
         }, 6000L, 6000L);
+    }
+
+    public void cleanup() {
+        if (syncTask != null && !syncTask.isCancelled()) {
+            syncTask.cancel();
+        }
+        forceSaveAll();
+        cache.clear();
     }
 
     public void loadPlayer(UUID uuid) {

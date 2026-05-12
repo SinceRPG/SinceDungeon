@@ -35,14 +35,6 @@ public class DefaultInstanceProvider implements InstanceProvider {
         templateUsageCount.clear();
     }
 
-    /**
-     * Implements the API-driven strategy to generate dungeon worlds safely.
-     * Validates input parameters to stop malicious injections prior to I/O tasks.
-     *
-     * @param templateName The name of the source template directory.
-     * @param instanceId   The newly assigned session ID for the clone.
-     * @return CompletableFuture yielding the loaded Bukkit World.
-     */
     @Override
     public CompletableFuture<World> createInstance(String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
@@ -136,13 +128,13 @@ public class DefaultInstanceProvider implements InstanceProvider {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) p.teleport(safeLoc);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder), 1L);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, 5), 10L);
         } else {
-            performUnload(world, folder);
+            performUnload(world, folder, 5);
         }
     }
 
-    private void performUnload(World world, File folder) {
+    private void performUnload(World world, File folder, int retries) {
         if (Bukkit.unloadWorld(world, false)) {
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
@@ -150,6 +142,12 @@ public class DefaultInstanceProvider implements InstanceProvider {
                     plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
                 }
             }, 40L);
+        } else if (retries > 0) {
+            String logRetry = plugin.getLanguageManager().getString("admin.log.world_unload_retry", "Retrying unload for world: <world> in 5 seconds...");
+            if (logRetry != null) {
+                plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
+            }
+            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
         } else {
             String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
             plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));

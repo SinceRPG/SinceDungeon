@@ -15,7 +15,11 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
-import org.bukkit.*;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -30,7 +34,15 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -60,6 +72,7 @@ public class DungeonGame {
 
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
+    private BukkitTask kickTask; // FIXED: Proper tracking of the kick countdown task to prevent memory leaks
     private long startTime;
     private int serverTicksActive = 0;
 
@@ -622,14 +635,27 @@ public class DungeonGame {
         }
     }
 
+    /**
+     * Initializes the kick countdown phase.
+     * FIXED: Tracks the BukkitTask securely to abort it if the server forces a shutdown prematurely.
+     */
     public void startKickCountdown(SinceDungeon plugin, Collection<Player> players, int delaySeconds, Runnable onComplete) {
         String displayType = plugin.getConfigFile().getString("dungeon.gameplay.kick-countdown.display-type", "ACTIONBAR").toUpperCase();
 
-        new BukkitRunnable() {
+        if (this.kickTask != null && !this.kickTask.isCancelled()) {
+            this.kickTask.cancel();
+        }
+
+        this.kickTask = new BukkitRunnable() {
             int timeLeft = delaySeconds;
 
             @Override
             public void run() {
+                if (isStopping) { // Safe guard to cancel if the game forces stop early
+                    this.cancel();
+                    return;
+                }
+
                 if (timeLeft <= 0) {
                     if (onComplete != null) {
                         onComplete.run();
@@ -886,6 +912,7 @@ public class DungeonGame {
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
+        if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel();
 
         if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
             for (Player p : participants) {
@@ -939,7 +966,6 @@ public class DungeonGame {
 
         if (dungeonWorld != null) {
             World w = dungeonWorld;
-            // OPTIMIZATION: Bypassed massive w.getEntities() iteration here which spikes GC loads. Folder is securely wiped.
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
                 aggressivelyCleanupMemory();
@@ -958,6 +984,7 @@ public class DungeonGame {
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
+        if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel(); // Ensures no player ghosts during a hard reload
 
         if (participants != null) {
             for (Player p : participants) {
@@ -991,6 +1018,10 @@ public class DungeonGame {
         aggressivelyCleanupMemory();
     }
 
+    /**
+     * Severely aggressively drops all internal references preventing Garbage Collection.
+     * Required to ensure the DungeonWorld unloads fully.
+     */
     private void aggressivelyCleanupMemory() {
         if (this.dungeonWorld != null) {
             plugin.getDungeonManager().unregisterWorldGame(this.dungeonWorld.getName());
@@ -1021,6 +1052,11 @@ public class DungeonGame {
             });
             permAttachments.clear();
         }
+        if (kickTask != null && !kickTask.isCancelled()) {
+            kickTask.cancel();
+            kickTask = null;
+        }
+
         this.dungeonWorld = null;
         this.initiatorId = null;
         this.template = null;
