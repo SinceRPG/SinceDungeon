@@ -178,12 +178,20 @@ public class DungeonManager {
         rewardProcessors.put(type.toUpperCase(), processor);
     }
 
+    public void unregisterRewardProcessor(String type) {
+        if (type != null) rewardProcessors.remove(type.toUpperCase());
+    }
+
     public RewardProcessor getRewardProcessor(String type) {
         return rewardProcessors.get(type.toUpperCase());
     }
 
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         conditionProcessors.put(type.toUpperCase(), processor);
+    }
+
+    public void unregisterConditionProcessor(String type) {
+        if (type != null) conditionProcessors.remove(type.toUpperCase());
     }
 
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
@@ -219,6 +227,13 @@ public class DungeonManager {
         String key = type.toUpperCase();
         actionParsers.put(key, parser);
         actionMeta.put(key, new ActionMeta(displayName, icon, description, defaults, customPrompts != null ? customPrompts : new HashMap<>()));
+    }
+
+    public void unregisterAction(String type) {
+        if (type == null) return;
+        String key = type.toUpperCase();
+        actionParsers.remove(key);
+        actionMeta.remove(key);
     }
 
     public Set<String> getRegisteredActions() {
@@ -317,7 +332,8 @@ public class DungeonManager {
         Map<String, DungeonTemplate> bufferMap = new ConcurrentHashMap<>();
 
         for (File f : files) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
@@ -325,6 +341,8 @@ public class DungeonManager {
                 } catch (Exception e) {
                     String msg = plugin.getLanguageManager().getString("admin.log.template_load_error", "Error loading template <id>: <error>");
                     plugin.getLogger().severe(msg.replace("<id>", id).replace("<error>", e.getMessage()));
+                } finally {
+                    future.complete(null);
                 }
             });
             futures.add(future);
@@ -624,6 +642,10 @@ public class DungeonManager {
 
     public void registerItemProvider(String prefix, CustomItemProvider provider) {
         customItemProviders.put(prefix.toUpperCase(), provider);
+    }
+
+    public void unregisterItemProvider(String prefix) {
+        if (prefix != null) customItemProviders.remove(prefix.toUpperCase());
     }
 
     public CustomItemProvider getItemProvider(String prefix) {

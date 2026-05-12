@@ -1039,15 +1039,22 @@ public class DungeonGame {
                 }
             }
         } catch (Exception ignored) { } finally {
-            if (dungeonWorld != null) {
-                World w = dungeonWorld;
-                String instanceId = worldName;
-                InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    provider.forceReleaseInstance(instanceId, w);
-                }, 5L);
-            }
+            World w = dungeonWorld;
+            String instanceId = worldName;
+            InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
+
             aggressivelyCleanupMemory();
+
+            if (w != null && provider != null) {
+                Runnable releaseTask = () -> {
+                    provider.forceReleaseInstance(instanceId, w);
+                };
+                if (Bukkit.isPrimaryThread()) {
+                    releaseTask.run();
+                } else {
+                    Bukkit.getScheduler().runTask(plugin, releaseTask);
+                }
+            }
         }
     }
 

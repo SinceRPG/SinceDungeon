@@ -11,6 +11,8 @@ import net.danh.sincedungeonpremium.listeners.WebhookListener;
 import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
 import net.danh.sincedungeonpremium.registry.PremiumActionRegistry;
+import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
+import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sincedungeonpremium.systems.RouletteRewardSystem;
 import net.danh.sincedungeonpremium.systems.instancing.SchematicInstanceProvider;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
@@ -83,11 +85,16 @@ public final class SinceDungeonPremium extends JavaPlugin {
     @Override
     public void onDisable() {
         if (hologramManager != null) {
-            hologramManager.clearAllHolograms();
+            hologramManager.cleanup();
         }
+
+        restoreCoreSystems();
+        unregisterPremiumExtensions();
+
         if (fileManager != null) {
             getLogger().info(fileManager.getMessageRaw("log.plugin_disabled"));
         }
+        instance = null;
     }
 
     private void registerCommands() {
@@ -142,5 +149,52 @@ public final class SinceDungeonPremium extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AffixListener(this), this);
         getServer().getPluginManager().registerEvents(new WebhookListener(this), this);
         getServer().getPluginManager().registerEvents(new PremiumRewardListener(this), this);
+    }
+
+    private void restoreCoreSystems() {
+        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null || SinceDungeon.getPlugin() == null) return;
+
+        SinceDungeon core = SinceDungeon.getPlugin();
+        if (!core.isEnabled()) return;
+
+        if (core.getDungeonManager() != null) {
+            core.getDungeonManager().stopAllGames();
+        }
+
+        if (core.getInstanceManager() != null && core.getInstanceManager().getProvider() instanceof SchematicInstanceProvider) {
+            core.getInstanceManager().setProvider(new DefaultInstanceProvider(core));
+        }
+
+        if (core.getRewardManager() != null && core.getRewardManager().getRewardSystem() instanceof RouletteRewardSystem) {
+            core.getRewardManager().setRewardSystem(new DefaultRewardSystem(core));
+        }
+    }
+
+    private void unregisterPremiumExtensions() {
+        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null) return;
+        if (SinceDungeon.getPlugin() == null || !SinceDungeon.getPlugin().isEnabled()) return;
+
+        SinceDungeonAPI api;
+        try {
+            api = SinceDungeonAPI.get();
+        } catch (IllegalStateException ignored) {
+            return;
+        }
+
+        String[] actions = {
+                "BUFF", "ESCORT_NPC", "BRANCHING_PATH", "LEVER_PUZZLE",
+                "CHECKPOINT", "DAMAGE_ZONE", "JUMP_STAGE", "CINEMATIC_DIALOGUE",
+                "PROJECTILE_TRAP", "DEFEND_CORE", "GIVE_ITEM", "PLAY_SOUND", "NPC_INTERACTION"
+        };
+        for (String action : actions) {
+            api.unregisterCustomAction(action);
+        }
+
+        api.unregisterRewardProcessor("EXP_LEVELS");
+        api.unregisterRewardProcessor("EXP_POINTS");
+        api.unregisterRewardProcessor("FULL_HEAL");
+        api.unregisterRewardProcessor("MYTHIC_ITEM");
+        api.unregisterConditionProcessor("HAS_PERMISSION");
+        api.unregisterItemProvider("MYTHIC_ITEM");
     }
 }

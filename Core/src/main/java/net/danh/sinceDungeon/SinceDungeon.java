@@ -169,6 +169,7 @@ public final class SinceDungeon extends JavaPlugin {
         if (instanceManager != null && instanceManager.getProvider() != null) {
             instanceManager.getProvider().cleanup();
         }
+        WorldManager.cleanupTemplateLocks();
         if (livesManager != null) {
             livesManager.cleanup(); // FIXED: Safely kills the asynchronous cache memory loops
         }
@@ -179,6 +180,11 @@ public final class SinceDungeon extends JavaPlugin {
         if (redisManager != null) {
             redisManager.disconnect();
         }
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            PAPIHook.unregister();
+        }
+        SinceDungeonAPI.shutdown();
+        plugin = null;
     }
 
     public void reloadFiles(CommandSender sender) {

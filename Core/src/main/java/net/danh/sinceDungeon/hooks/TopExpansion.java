@@ -42,6 +42,17 @@ public class TopExpansion extends PlaceholderExpansion {
         }, 0L, 6000L); // 5 minutes
     }
 
+    public void cleanup() {
+        cache.clear();
+    }
+
+    public static void cancelCacheTask() {
+        if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
+            activeCacheTask.cancel();
+        }
+        activeCacheTask = null;
+    }
+
     @Override
     public @NotNull String getIdentifier() {
         return "sincedungeontop";

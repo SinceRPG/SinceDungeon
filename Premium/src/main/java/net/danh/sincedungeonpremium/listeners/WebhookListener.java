@@ -12,7 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Premium-Exclusive Listener: Discord Webhooks
@@ -61,11 +60,13 @@ public class WebhookListener implements Listener {
     }
 
     private void sendWebhookAsync(String urlString, String title, String description, String colorDec) {
-        CompletableFuture.runAsync(() -> {
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 // Replaces deprecated new URL(String) from Java 20
                 URL url = URI.create(urlString).toURL();
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setConnectTimeout(plugin.getFileManager().getConfig().getInt("webhooks.connect-timeout-ms", 5000));
+                connection.setReadTimeout(plugin.getFileManager().getConfig().getInt("webhooks.read-timeout-ms", 5000));
                 connection.setRequestMethod("POST");
                 connection.setRequestProperty("Content-Type", "application/json; utf-8");
                 connection.setRequestProperty("User-Agent", "SinceDungeonPremium");

@@ -53,53 +53,51 @@ public class WorldManager {
     }
 
     private static void executeAsyncCopyAndLoad(SinceDungeon plugin, String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW) {
-        CompletableFuture.supplyAsync(() -> {
-            File source = new File(Bukkit.getWorldContainer(), templateName);
-            File target = new File(Bukkit.getWorldContainer(), instanceId);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                File source = new File(Bukkit.getWorldContainer(), templateName);
+                File target = new File(Bukkit.getWorldContainer(), instanceId);
 
-            if (!source.exists()) {
-                String errorMsg = plugin.getLanguageManager().getString("error.template_not_found", "Template world folder not found: <template>").replace("<template>", templateName);
-                throw new RuntimeException(errorMsg);
-            }
-
-            boolean copied = WorldUtils.copyWorld(source, target);
-            if (!copied) {
-                String errorMsg = plugin.getLanguageManager().getString("error.world_copy_fail", "Failed to copy world files using WorldUtils.");
-                throw new RuntimeException(errorMsg);
-            }
-
-            new File(target, "uid.dat").delete();
-            return instanceId;
-
-        }).thenAccept(id -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                try {
-                    WorldCreator creator = new WorldCreator(id);
-                    creator.generatorSettings("");
-                    creator.generateStructures(false);
-                    if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
-
-                    World world = Bukkit.createWorld(creator);
-                    if (world != null) {
-                        world.setAutoSave(false);
-
-                        finalFuture.complete(world);
-                    } else {
-                        finalFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
-                    }
-                } catch (Exception e) {
-                    finalFuture.completeExceptionally(e);
+                if (!source.exists()) {
+                    String errorMsg = plugin.getLanguageManager().getString("error.template_not_found", "Template world folder not found: <template>").replace("<template>", templateName);
+                    throw new RuntimeException(errorMsg);
                 }
 
-                releaseTemplateLock(templateName, templateW);
-            });
+                boolean copied = WorldUtils.copyWorld(source, target);
+                if (!copied) {
+                    String errorMsg = plugin.getLanguageManager().getString("error.world_copy_fail", "Failed to copy world files using WorldUtils.");
+                    throw new RuntimeException(errorMsg);
+                }
 
-        }).exceptionally(ex -> {
-            String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[WorldManager] Error generating dungeon world: <error>");
-            plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage()));
-            finalFuture.completeExceptionally(ex);
-            Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
-            return null;
+                new File(target, "uid.dat").delete();
+
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    try {
+                        WorldCreator creator = new WorldCreator(instanceId);
+                        creator.generatorSettings("");
+                        creator.generateStructures(false);
+                        if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
+
+                        World world = Bukkit.createWorld(creator);
+                        if (world != null) {
+                            world.setAutoSave(false);
+
+                            finalFuture.complete(world);
+                        } else {
+                            finalFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
+                        }
+                    } catch (Exception e) {
+                        finalFuture.completeExceptionally(e);
+                    }
+
+                    releaseTemplateLock(templateName, templateW);
+                });
+            } catch (Exception ex) {
+                String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[WorldManager] Error generating dungeon world: <error>");
+                plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage() != null ? ex.getMessage() : "Unknown"));
+                finalFuture.completeExceptionally(ex);
+                Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
+            }
         });
     }
 
@@ -110,6 +108,16 @@ public class WorldManager {
             templateW.setAutoSave(true);
             templateUsageCount.remove(templateName);
         }
+    }
+
+    public static void cleanupTemplateLocks() {
+        for (String templateName : templateUsageCount.keySet()) {
+            World world = Bukkit.getWorld(templateName);
+            if (world != null) {
+                world.setAutoSave(true);
+            }
+        }
+        templateUsageCount.clear();
     }
 
     public static void unloadAndDeleteWorld(SinceDungeon plugin, World world) {

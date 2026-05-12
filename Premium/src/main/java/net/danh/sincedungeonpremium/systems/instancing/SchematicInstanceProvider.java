@@ -61,6 +61,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
     public void cleanup() {
         regions.clear();
         reusableSlots.clear();
+        sharedWorld = null;
     }
 
     @Override

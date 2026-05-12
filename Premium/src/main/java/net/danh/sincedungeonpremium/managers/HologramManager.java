@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.util.List;
 public class HologramManager {
 
     private final SinceDungeonPremium plugin;
+    private BukkitTask updateTask;
 
     public HologramManager(SinceDungeonPremium plugin) {
         this.plugin = plugin;
@@ -119,7 +121,19 @@ public class HologramManager {
 
         int updateInterval = plugin.getFileManager().getConfig().getInt("hologram-leaderboard.update-interval-seconds", 300) * 20;
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
+        if (updateTask != null && !updateTask.isCancelled()) {
+            updateTask.cancel();
+        }
+
+        updateTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
+    }
+
+    public void cleanup() {
+        if (updateTask != null && !updateTask.isCancelled()) {
+            updateTask.cancel();
+        }
+        updateTask = null;
+        clearAllHolograms();
     }
 
     /**

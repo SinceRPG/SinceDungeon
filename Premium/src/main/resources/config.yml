@@ -148,6 +148,8 @@ webhooks:
   embed-title: "Dungeon Cleared!"
   embed-color: "5814783" # Decimal color code (Purple)
   embed-description: "Map: **%dungeon%**\nTime: **%time%s**\nPlayers: **%players%**"
+  connect-timeout-ms: 5000
+  read-timeout-ms: 5000
 
 # ---------------------------------------------------------
 # [EFFECTS & FEEDBACK]
