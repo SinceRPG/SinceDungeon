@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -133,6 +134,13 @@ public class WorldManager {
      * Safely bypasses transient chunk loading/saving states holding the world in RAM.
      */
     private static void performUnload(SinceDungeon plugin, World world, File folder, int retries) {
+        // Note: Clear all entities forcefully before unloading to remove dangling pointers that block chunk unloading.
+        for (Entity e : world.getEntities()) {
+            if (!(e instanceof Player)) {
+                e.remove();
+            }
+        }
+
         if (Bukkit.unloadWorld(world, false)) {
             String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
             plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
@@ -144,7 +152,7 @@ public class WorldManager {
                 }
             }, 40L);
         } else if (retries > 0) {
-            // Memory Leak Saftey net - Re-queue if it failed
+            // Note: Re-queue the unload task safely preventing eternal memory leakage.
             String logRetry = plugin.getLanguageManager().getString("admin.log.world_unload_retry", "Retrying unload for world: <world> in 5 seconds...");
             if (logRetry != null) {
                 plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));

@@ -71,6 +71,14 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
     }
 
     @Override
+    public void cleanup(DungeonGame game) {
+        super.cleanup(game); // Note: Flushes active entities
+        attackerEntities.clear();
+        cachedCore = null;
+        coreLoc = null;
+    }
+
+    @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) {
             forceComplete();

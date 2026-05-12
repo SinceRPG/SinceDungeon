@@ -81,6 +81,15 @@ public class EscortAction extends DungeonAction implements Tickable {
         this.attackerEquipment = attackerEquipment;
     }
 
+    @Override
+    public void cleanup(DungeonGame game) {
+        super.cleanup(game); // Note: Purges underlying base arrays
+        attackerEntities.clear();
+        cachedVip = null;
+        targetLocation = null;
+        targetParticleLoc = null;
+    }
+
     private void applyCustomProperties(LivingEntity living, String name, boolean isBaby, List<String> attributesList, List<String> equipmentList) {
         living.setRemoveWhenFarAway(false);
         living.setPersistent(true);

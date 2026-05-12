@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -135,6 +136,12 @@ public class DefaultInstanceProvider implements InstanceProvider {
     }
 
     private void performUnload(World world, File folder, int retries) {
+        for (Entity e : world.getEntities()) {
+            if (!(e instanceof Player)) {
+                e.remove();
+            }
+        }
+
         if (Bukkit.unloadWorld(world, false)) {
             Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {

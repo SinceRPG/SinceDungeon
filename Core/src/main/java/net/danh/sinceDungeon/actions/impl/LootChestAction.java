@@ -54,11 +54,13 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
+        super.cleanup(game); // Note: Fixes the physical entity cache memory leak!
         if (chestBlock != null && !completed) {
             chestBlock.setType(Material.AIR);
         }
         personalInventories.clear();
         finishedPlayers.clear();
+        chestBlock = null;
     }
 
     @Override
@@ -141,9 +143,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
         return inv;
     }
 
-    /**
-     * Emits a rejection sound if the player fails a key verification check.
-     */
     private void playDenySound(Player p) {
         String soundLocked = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_locked", "block.chest.locked");
         if (soundLocked != null) {
@@ -184,7 +183,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
                         return;
                     }
 
-                    // Consume the key and play unlock sound
                     handItem.setAmount(handItem.getAmount() - 1);
                     String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
                     p.playSound(p.getLocation(), SoundUtils.getSound(soundUnlock), 1f, 1f);
@@ -217,7 +215,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
         } else if (event instanceof InventoryCloseEvent e) {
             Inventory inv = e.getInventory();
             if (perPlayer) {
-                // Note: Avoid inv.getHolder() if the inventory has a location matching the target.
                 if (inv.getLocation() == null && inv.getHolder() instanceof VirtualLootHolder) {
                     if (isInventoryEmpty(inv)) {
                         finishedPlayers.add(e.getPlayer().getUniqueId());
@@ -241,7 +238,6 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
             boolean isTarget = false;
 
-            // Note: Avoid inv.getHolder() on world blocks to prevent BlockState snapshot lag.
             Location invLoc = inv.getLocation();
             if (invLoc != null && isTargetChest(invLoc.getBlock())) {
                 isTarget = true;

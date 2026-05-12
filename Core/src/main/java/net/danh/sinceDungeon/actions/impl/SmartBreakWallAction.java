@@ -50,9 +50,12 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
     @Override
     public void cleanup(DungeonGame game) {
+        super.cleanup(game); // Note: Added call to clear tracked collections cleanly
         if (breakTask != null && !breakTask.isCancelled()) {
             breakTask.cancel();
         }
+        breakTask = null;
+        centerLoc = null;
     }
 
     @Override

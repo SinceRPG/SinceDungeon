@@ -72,7 +72,7 @@ public class DungeonGame {
 
     private BukkitTask lobbyTask;
     private BukkitTask tickTask;
-    private BukkitTask kickTask; // FIXED: Proper tracking of the kick countdown task to prevent memory leaks
+    private BukkitTask kickTask; // Note: Task explicitly tracked to avoid ghost countdowns
     private long startTime;
     private int serverTicksActive = 0;
 
@@ -635,10 +635,6 @@ public class DungeonGame {
         }
     }
 
-    /**
-     * Initializes the kick countdown phase.
-     * FIXED: Tracks the BukkitTask securely to abort it if the server forces a shutdown prematurely.
-     */
     public void startKickCountdown(SinceDungeon plugin, Collection<Player> players, int delaySeconds, Runnable onComplete) {
         String displayType = plugin.getConfigFile().getString("dungeon.gameplay.kick-countdown.display-type", "ACTIONBAR").toUpperCase();
 
@@ -651,7 +647,7 @@ public class DungeonGame {
 
             @Override
             public void run() {
-                if (isStopping) { // Safe guard to cancel if the game forces stop early
+                if (isStopping) {
                     this.cancel();
                     return;
                 }
@@ -908,70 +904,81 @@ public class DungeonGame {
         isStopping = true;
         isRunning = false;
 
-        Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
+        try {
+            Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, reason));
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error dispatching DungeonEndEvent: " + e.getMessage());
+        }
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
         if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel();
 
-        if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
-            for (Player p : participants) {
-                applyCooldown(p);
+        try {
+            if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
+                if (participants != null) {
+                    for (Player p : participants) {
+                        applyCooldown(p);
+                    }
+                }
             }
-        }
 
-        if (participants != null) {
-            for (Player p : participants) {
-                plugin.getDungeonManager().removeGame(p.getUniqueId());
-                if (!p.isOnline()) continue;
+            if (participants != null) {
+                for (Player p : participants) {
+                    plugin.getDungeonManager().removeGame(p.getUniqueId());
+                    if (!p.isOnline()) continue;
 
-                p.sendActionBar(ColorUtils.parse(" "));
+                    p.sendActionBar(ColorUtils.parse(" "));
 
-                if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                    if (teleport) {
-                        if (p.isDead()) p.spigot().respawn();
+                    if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                        if (teleport) {
+                            if (p.isDead()) p.spigot().respawn();
 
-                        if (p.isInsideVehicle()) p.leaveVehicle();
-                        p.closeInventory();
-                        p.setVelocity(new Vector(0, 0, 0));
-                        PlayerState state = savedStates.get(p.getUniqueId());
-                        Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+                            if (p.isInsideVehicle()) p.leaveVehicle();
+                            p.closeInventory();
+                            p.setVelocity(new Vector(0, 0, 0));
+                            PlayerState state = savedStates.get(p.getUniqueId());
+                            Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-                        plugin.getDungeonManager().addTransitioning(p.getUniqueId());
+                            plugin.getDungeonManager().addTransitioning(p.getUniqueId());
 
-                        if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
-                            String returnServer = plugin.getConfigFile().getString("cross-server.return-server", "lobby");
-                            restorePlayerState(p);
-                            BungeeUtils.sendPlayerToServer(p, returnServer);
-                        } else {
-                            p.teleportAsync(targetLoc).thenAccept(success -> {
-                                if (success) {
-                                    Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
-                                } else {
-                                    Bukkit.getScheduler().runTask(plugin, () -> {
-                                        p.teleport(targetLoc);
+                            if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
+                                String returnServer = plugin.getConfigFile().getString("cross-server.return-server", "lobby");
+                                restorePlayerState(p);
+                                BungeeUtils.sendPlayerToServer(p, returnServer);
+                            } else {
+                                p.teleportAsync(targetLoc).thenAccept(success -> {
+                                    if (success) {
                                         Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
-                                    });
-                                }
-                            });
+                                    } else {
+                                        Bukkit.getScheduler().runTask(plugin, () -> {
+                                            p.teleport(targetLoc);
+                                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+                                        });
+                                    }
+                                });
+                            }
+                        } else {
+                            restorePlayerState(p);
                         }
                     } else {
                         restorePlayerState(p);
                     }
-                } else {
-                    restorePlayerState(p);
                 }
             }
-        }
-
-        if (dungeonWorld != null) {
-            World w = dungeonWorld;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error processing DungeonGame stop routing: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (dungeonWorld != null) {
+                World w = dungeonWorld;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
+                    aggressivelyCleanupMemory();
+                }, 40L);
+            } else {
                 aggressivelyCleanupMemory();
-            }, 40L);
-        } else {
-            aggressivelyCleanupMemory();
+            }
         }
     }
 
@@ -980,54 +987,56 @@ public class DungeonGame {
         isStopping = true;
         isRunning = false;
 
-        Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
+        try {
+            Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
+        } catch (Exception ignored) { }
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
-        if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel(); // Ensures no player ghosts during a hard reload
+        if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel();
 
-        if (participants != null) {
-            for (Player p : participants) {
-                plugin.getDungeonManager().removeGame(p.getUniqueId());
-                if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                    if (p.isDead()) p.spigot().respawn();
+        try {
+            if (participants != null) {
+                for (Player p : participants) {
+                    plugin.getDungeonManager().removeGame(p.getUniqueId());
+                    if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
+                        if (p.isDead()) p.spigot().respawn();
 
-                    if (p.isInsideVehicle()) p.leaveVehicle();
-                    p.closeInventory();
-                    p.setVelocity(new Vector(0, 0, 0));
+                        if (p.isInsideVehicle()) p.leaveVehicle();
+                        p.closeInventory();
+                        p.setVelocity(new Vector(0, 0, 0));
 
-                    PlayerState state = savedStates.get(p.getUniqueId());
-                    Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
+                        PlayerState state = savedStates.get(p.getUniqueId());
+                        Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
-                    plugin.getDungeonManager().addTransitioning(p.getUniqueId());
-                    p.teleport(targetLoc);
-                    restorePlayerState(p);
-                    p.sendActionBar(ColorUtils.parse(" "));
-                } else if (p.isOnline()) {
-                    restorePlayerState(p);
+                        plugin.getDungeonManager().addTransitioning(p.getUniqueId());
+                        p.teleport(targetLoc);
+                        restorePlayerState(p);
+                        p.sendActionBar(ColorUtils.parse(" "));
+                    } else if (p.isOnline()) {
+                        restorePlayerState(p);
+                    }
                 }
             }
+        } catch (Exception ignored) { } finally {
+            if (dungeonWorld != null) {
+                World w = dungeonWorld;
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    plugin.getInstanceManager().getProvider().forceUnloadAndDeleteInstance(w);
+                }, 5L);
+            }
+            aggressivelyCleanupMemory();
         }
-
-        if (dungeonWorld != null) {
-            World w = dungeonWorld;
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                plugin.getInstanceManager().getProvider().forceUnloadAndDeleteInstance(w);
-            }, 5L);
-        }
-        aggressivelyCleanupMemory();
     }
 
-    /**
-     * Severely aggressively drops all internal references preventing Garbage Collection.
-     * Required to ensure the DungeonWorld unloads fully.
-     */
     private void aggressivelyCleanupMemory() {
         if (this.dungeonWorld != null) {
             plugin.getDungeonManager().unregisterWorldGame(this.dungeonWorld.getName());
         }
 
         if (savedStates != null) savedStates.clear();
+        if (playerKills != null) playerKills.clear();
+
         if (stages != null) {
             for (List<DungeonAction> list : stages) {
                 for (DungeonAction action : list) {
@@ -1040,9 +1049,11 @@ public class DungeonGame {
             }
             stages.clear();
         }
+
         if (participants != null) {
             participants.clear();
         }
+
         if (permAttachments != null) {
             permAttachments.values().forEach(att -> {
                 try {
@@ -1052,6 +1063,7 @@ public class DungeonGame {
             });
             permAttachments.clear();
         }
+
         if (kickTask != null && !kickTask.isCancelled()) {
             kickTask.cancel();
             kickTask = null;
@@ -1064,10 +1076,19 @@ public class DungeonGame {
     }
 
     public void restorePlayerState(Player p) {
-        if (p == null || !p.isOnline()) return;
+        if (p == null) return; // Prevent NPEs if player vanishes completely.
 
         PlayerState state = savedStates.get(p.getUniqueId());
         if (state != null) {
+            // Note: Critical Memory Fix: Even if the player is offline,
+            // we MUST remove the mapped data to free the lingering World pointer.
+            savedStates.remove(p.getUniqueId());
+
+            if (!p.isOnline()) {
+                plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
+                return;
+            }
+
             NamespacedKey compassTag = new NamespacedKey(plugin, "dungeon_compass");
             NamespacedKey keyTag = new NamespacedKey(plugin, "dungeon_key_id");
             for (ItemStack item : p.getInventory().getContents()) {
@@ -1109,12 +1130,9 @@ public class DungeonGame {
             }
             p.setFallDistance(0);
             p.setVelocity(new Vector(0, 0, 0));
-
-            savedStates.remove(p.getUniqueId());
         }
 
         removeMviBypass(p);
-
         plugin.getDungeonManager().removeTransitioning(p.getUniqueId());
     }
 
