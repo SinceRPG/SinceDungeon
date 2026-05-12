@@ -29,7 +29,7 @@ public class PremiumWorldEditHook {
     /**
      * Pastes a schematic file into the world safely.
      *
-     * @param file The schematic file.
+     * @param file     The schematic file.
      * @param location The Bukkit location to paste at.
      * @param pasteAir Whether air blocks in the schematic should overwrite existing blocks.
      * @return True if successful, false otherwise.

@@ -694,7 +694,8 @@ public class EditorGUI {
     }
 
     private void ensureNotificationDefaults(EditorSession session, String path) {
-        if (!session.getConfig().contains(path + ".custom_start")) session.getConfig().set(path + ".custom_start", true);
+        if (!session.getConfig().contains(path + ".custom_start"))
+            session.getConfig().set(path + ".custom_start", true);
         if (!session.getConfig().contains(path + ".init")) session.getConfig().set(path + ".init", true);
         if (!session.getConfig().contains(path + ".progress")) session.getConfig().set(path + ".progress", true);
         if (!session.getConfig().contains(path + ".complete")) session.getConfig().set(path + ".complete", true);

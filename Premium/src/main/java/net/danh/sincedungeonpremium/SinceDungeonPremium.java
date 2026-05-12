@@ -3,6 +3,8 @@ package net.danh.sincedungeonpremium;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
+import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.hooks.PremiumMythicMobsHook;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
@@ -11,8 +13,6 @@ import net.danh.sincedungeonpremium.listeners.WebhookListener;
 import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
 import net.danh.sincedungeonpremium.registry.PremiumActionRegistry;
-import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
-import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sincedungeonpremium.systems.RouletteRewardSystem;
 import net.danh.sincedungeonpremium.systems.instancing.SchematicInstanceProvider;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
@@ -152,7 +152,8 @@ public final class SinceDungeonPremium extends JavaPlugin {
     }
 
     private void restoreCoreSystems() {
-        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null || SinceDungeon.getPlugin() == null) return;
+        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null || SinceDungeon.getPlugin() == null)
+            return;
 
         SinceDungeon core = SinceDungeon.getPlugin();
         if (!core.isEnabled()) return;

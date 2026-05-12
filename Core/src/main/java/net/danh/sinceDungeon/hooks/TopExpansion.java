@@ -15,15 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TopExpansion extends PlaceholderExpansion {
 
-    private final SinceDungeon plugin;
-    private final Map<String, List<TopEntry>> cache = new ConcurrentHashMap<>();
-
     // Track the async caching task statically to kill it upon any /papi reload triggers.
     private static BukkitTask activeCacheTask = null;
+    private final SinceDungeon plugin;
+    private final Map<String, List<TopEntry>> cache = new ConcurrentHashMap<>();
 
     public TopExpansion(SinceDungeon plugin) {
         this.plugin = plugin;
         startCacheTask();
+    }
+
+    public static void cancelCacheTask() {
+        if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
+            activeCacheTask.cancel();
+        }
+        activeCacheTask = null;
     }
 
     private void startCacheTask() {
@@ -44,13 +50,6 @@ public class TopExpansion extends PlaceholderExpansion {
 
     public void cleanup() {
         cache.clear();
-    }
-
-    public static void cancelCacheTask() {
-        if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
-            activeCacheTask.cancel();
-        }
-        activeCacheTask = null;
     }
 
     @Override

@@ -36,8 +36,9 @@ public class TopManager {
 
     /**
      * Wipes the leaderboard records for a specific player.
+     *
      * @param uuid The player UUID
-     * @param map The map ID, or null to clear their records across all maps.
+     * @param map  The map ID, or null to clear their records across all maps.
      */
     public void resetPlayerLeaderboard(UUID uuid, String map) {
         plugin.getDatabaseManager().resetPlayerLeaderboard(uuid, map);

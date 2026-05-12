@@ -12,22 +12,10 @@ import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Particle;
-import org.bukkit.Registry;
-import org.bukkit.Sound;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.Zombie;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -35,11 +23,7 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Premium Action: NPC Interaction
@@ -47,18 +31,6 @@ import java.util.UUID;
  * reward delivery, and click teleport without requiring admins to edit files manually.
  */
 public class NpcInteractionAction extends DungeonAction implements Tickable {
-
-    private enum InteractionMode {
-        TALK,
-        GUIDE,
-        GIVE_ITEM,
-        TELEPORT
-    }
-
-    private enum TargetScope {
-        PLAYER,
-        PARTY
-    }
 
     private final String entityTypeStr;
     private final String customName;
@@ -82,7 +54,6 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
     private final String rewardDisplayName;
     private final List<String> npcAttributes;
     private final List<String> npcEquipment;
-
     private final Map<UUID, Long> clickCooldowns = new HashMap<>();
     private LivingEntity cachedNpc;
     private Mob cachedMob;
@@ -98,7 +69,6 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
     private Sound interactSound;
     private Sound completeSound;
     private Sound denySound;
-
     public NpcInteractionAction(String entityTypeStr, String customName, String npcLocationStr, String targetLocationStr,
                                 String interactionModeStr, String messageScopeStr, String teleportScopeStr,
                                 double maxHealth, double moveSpeed, double successRadius, double interactionRadius,
@@ -262,9 +232,11 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
     }
 
     private void handleClick(DungeonGame game, Player player) {
-        if (player == null || !player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR) return;
+        if (player == null || !player.isOnline() || player.isDead() || player.getGameMode() == GameMode.SPECTATOR)
+            return;
         if (!game.getParticipants().contains(player) || !player.getWorld().equals(game.getWorld())) return;
-        if (cachedNpc == null || player.getLocation().distanceSquared(cachedNpc.getLocation()) > interactionRadius * interactionRadius) return;
+        if (cachedNpc == null || player.getLocation().distanceSquared(cachedNpc.getLocation()) > interactionRadius * interactionRadius)
+            return;
         if (isOnCooldown(player)) return;
 
         playSound(player, interactSound);
@@ -577,5 +549,17 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
         } catch (Exception ignored) {
             return fallback;
         }
+    }
+
+    private enum InteractionMode {
+        TALK,
+        GUIDE,
+        GIVE_ITEM,
+        TELEPORT
+    }
+
+    private enum TargetScope {
+        PLAYER,
+        PARTY
     }
 }
