@@ -59,6 +59,7 @@ public class EditorGUI {
                 case "number_error" -> msg = "&cValue must be a valid number!";
                 case "dungeon_deleted" -> msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
                 case "stage_inserted" -> msg = "&aSuccessfully shifted configuration and inserted Stage <pos>!";
+                case "notification_toggled" -> msg = "&eNotification <key> set to <state>.";
                 default -> {
                     return;
                 }
@@ -592,6 +593,31 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
+    public void openNotificationEditor(Player p, EditorSession session) {
+        session.setLastMenuOpener(player -> openNotificationEditor(player, session));
+        String title = getMsg("title.edit_notifications", "&lAction Notifications");
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_NOTIFICATIONS", 0), 27, ColorUtils.parse(title));
+
+        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".notifications";
+        ensureNotificationDefaults(session, path);
+
+        String enabled = getWord("true_word", "&aON");
+        String disabled = getWord("false_word", "&cOFF");
+        int[] slots = {10, 11, 12, 13, 14};
+        String[] keys = {"custom_start", "init", "progress", "complete", "warning"};
+
+        for (int i = 0; i < keys.length; i++) {
+            boolean value = session.getConfig().getBoolean(path + "." + keys[i], true);
+            String name = getMsg("items.notification_key_format", "&e<key>").replace("<key>", keys[i]);
+            String status = getMsg("items.notification_status", "&7Status: &f<status>").replace("<status>", value ? enabled : disabled);
+            String hint = getMsg("items.notification_hint", "&eLeft Click: Toggle");
+            inv.setItem(slots[i], makeItem(value ? Material.LIME_DYE : Material.GRAY_DYE, name, Arrays.asList(status, hint)));
+        }
+
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
+        p.openInventory(inv);
+    }
+
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action", "&lEdit Action #<index>").replace("<index>", session.getCurrentActionKey());
@@ -622,6 +648,9 @@ public class EditorGUI {
             }
         }
 
+        ensureNotificationDefaults(session, path + ".notifications");
+        sec = session.getConfig().getConfigurationSection(path);
+
         String hintTypeBlocked = getMsg("items.action_type_cant_edit", "&cCannot change action type after creation");
 
         int slot = 0;
@@ -638,11 +667,11 @@ public class EditorGUI {
                 props.hint = hintTypeBlocked;
             } else if (key.equalsIgnoreCase("items")) {
                 props.icon = Material.CHEST;
-                props.hint = getMsg("items.action_val_hint_items", "&eLeft Click: Open GUI | Read YAML config to add Keys");
+                props.hint = getMsg("items.action_val_hint_items", "&eLeft Click: Open item GUI");
                 valStr = getMsg("items.action_val_click_arrange", "&a[Click to arrange items]");
             } else if (key.equalsIgnoreCase("notifications")) {
                 props.icon = Material.BELL;
-                props.hint = getMsg("items.action_val_hint_notif", "&7Per-action notification overrides");
+                props.hint = getMsg("items.action_val_hint_notif", "&eLeft Click: Open notification toggles");
             } else if (key.equalsIgnoreCase("phases")) {
                 props.icon = Material.COMMAND_BLOCK;
                 props.hint = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
@@ -662,6 +691,14 @@ public class EditorGUI {
 
         inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
+    }
+
+    private void ensureNotificationDefaults(EditorSession session, String path) {
+        if (!session.getConfig().contains(path + ".custom_start")) session.getConfig().set(path + ".custom_start", true);
+        if (!session.getConfig().contains(path + ".init")) session.getConfig().set(path + ".init", true);
+        if (!session.getConfig().contains(path + ".progress")) session.getConfig().set(path + ".progress", true);
+        if (!session.getConfig().contains(path + ".complete")) session.getConfig().set(path + ".complete", true);
+        if (!session.getConfig().contains(path + ".warning")) session.getConfig().set(path + ".warning", true);
     }
 
     public void openActionTypeSelector(Player p, EditorSession session, int page) {

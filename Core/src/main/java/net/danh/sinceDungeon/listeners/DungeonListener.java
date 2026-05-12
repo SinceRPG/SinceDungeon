@@ -156,6 +156,7 @@ public class DungeonListener implements Listener {
             if (e.getRightClicked() instanceof ArmorStand || e.getRightClicked() instanceof ItemFrame || e.getRightClicked() instanceof Painting || e.getRightClicked() instanceof LeashHitch) {
                 e.setCancelled(true);
             }
+            pass(e.getPlayer(), e);
         }
     }
 
@@ -165,6 +166,7 @@ public class DungeonListener implements Listener {
             if (e.getRightClicked() instanceof ArmorStand) {
                 e.setCancelled(true);
             }
+            pass(e.getPlayer(), e);
         }
     }
 

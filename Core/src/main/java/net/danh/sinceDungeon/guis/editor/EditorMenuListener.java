@@ -185,6 +185,7 @@ public class EditorMenuListener implements Listener {
             case "STAGES" -> handleStagesMenu(e, p, session, gui, page, slot, cur);
             case "ACTIONS" -> handleActionsMenu(e, p, session, gui, page, slot, cur);
             case "EDIT_ACTION" -> handleEditAction(e, p, session, gui, slot, cur);
+            case "EDIT_NOTIFICATIONS" -> handleNotifications(p, session, gui, slot, cur);
             case "PHASE_LIST" -> handlePhaseList(e, p, session, gui, page, slot, cur);
             case "EDIT_PHASE" -> handleEditPhase(e, p, session, gui, slot);
             case "EDIT_REINFORCEMENTS" -> handleEditReinforcements(e, p, session, gui, slot);
@@ -792,9 +793,7 @@ public class EditorMenuListener implements Listener {
         }
 
         if (key.equalsIgnoreCase("notifications")) {
-            for (String line : plugin.getLanguageManager().getStringList("editor.chat.notifications_hint")) {
-                p.sendMessage(ColorUtils.parse(line));
-            }
+            gui.openNotificationEditor(p, session);
             return;
         }
 
@@ -884,6 +883,24 @@ public class EditorMenuListener implements Listener {
             });
             plugin.getEditorListener().startListening(p, session);
         }
+    }
+
+    private void handleNotifications(Player p, EditorSession session, EditorGUI gui, int slot, ItemStack cur) {
+        if (slot == 18) {
+            gui.openActionEditor(p, session);
+            return;
+        }
+
+        if (cur.getItemMeta() == null || !cur.getItemMeta().hasDisplayName()) return;
+
+        String key = PlainTextComponentSerializer.plainText().serialize(cur.getItemMeta().displayName());
+        if (!List.of("custom_start", "init", "progress", "complete", "warning").contains(key)) return;
+
+        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".notifications." + key;
+        boolean current = session.getConfig().getBoolean(path, true);
+        session.getConfig().set(path, !current);
+        gui.sendMessage(p, "notification_toggled", "<key>", key, "<state>", String.valueOf(!current));
+        gui.openNotificationEditor(p, session);
     }
 
     private void handlePhaseList(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {

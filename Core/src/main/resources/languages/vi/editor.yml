@@ -79,7 +79,7 @@ editor:
     reinf_name: "&eTên hiển thị"
     reinf_attributes: "&eChỉ số sức mạnh"
     reinf_equipment: "&eTrang bị mang theo"
-    action_val_hint_phases: "&7Cài đặt Giai đoạn nâng cao phải được chỉnh sửa thủ công trong tệp YAML."
+    action_val_hint_phases: "&eLeft Click: Open phase GUI"
     dungeon_file_name: "&e<name>"
     dungeon_file_lore:
       - "&eChuột Trái: Chỉnh Sửa"
@@ -267,7 +267,7 @@ editor:
     action_val_hint_loc_single: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Xóa"
     action_val_hint_loc_list: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Làm sạch"
     action_val_hint_list: "&eTrái: Thêm dòng | Phải: Xóa dòng cuối | &cShift-Phải: Xóa sạch"
-    action_val_hint_items: "&eChuột Trái: Xếp đồ | Đọc Config YAML để biết cách nạp Key"
+    action_val_hint_items: "&eLeft Click: Open item GUI"
     action_type_cant_edit: "&cKhông thể đổi loại hình nhiệm vụ sau khi đã tạo"
     prev_page: "&e⬅ Trang Trước"
     next_page: "&eTrang Tiếp ➡"
@@ -456,7 +456,7 @@ editor:
         - "&7Mẹo: Gõ &cclear &7để xóa danh sách tin nhắn này."
       edit_action_items:
         - "&7--- HƯỚNG DẪN TẠO RƯƠNG TIẾP TẾ ---"
-        - "&7Để rương rơi ra Chìa Khóa mở cửa, hãy chỉnh sửa file YAML thủ công."
+        - "&7Place normal item stacks in the chest GUI."
         - "&7Cú pháp Chìa Khóa: &aKEY:<id_chìa_khóa>:<số_lượng>"
         - "&7Ví dụ: &fKEY:door_1:1 &8(Rơi ra chìa khóa để mở door_1)"
         - "&7Vật phẩm Vanilla: &aMATERIAL:AMOUNT"
@@ -533,7 +533,7 @@ editor:
     stage_inserted: "&aĐã chèn và đẩy lùi cấu hình xuống để tạo Giai đoạn <pos> thành công!"
     dungeon_deleted: "&aĐã xóa thành công Dungeon: &e<dungeon>"
     notifications_hint:
-      - "&7[Thông báo] Vui lòng chỉnh sửa mục này thủ công trong file YAML."
+      - "&7[Notifications] Use the in-game toggle menu from the action editor."
       - "&7Định dạng: notifications:"
       - "&7  init: false"
       - "&7  complete: true"

@@ -77,6 +77,33 @@ action-defaults:
     time_penalty: 1
     target_stage: 5
 
+  npc_interaction:
+    time_limit: -1
+    time_penalty: 1
+    entity_type: "VILLAGER"
+    custom_name: "&eDungeon Guide"
+    npc_location: "0,64,0"
+    target_location: "5,64,5"
+    interaction_mode: "TALK"
+    message_scope: "PLAYER"
+    teleport_scope: "PLAYER"
+    max_health: 40.0
+    move_speed: 1.0
+    success_radius: 2.5
+    interaction_radius: 4.0
+    start_on_click: true
+    npc_is_baby: false
+    consume_required_item: true
+    fail_on_npc_death: true
+    click_cooldown_ticks: 20
+    dialogue_lines:
+      - "&e[NPC] &fHello, <player>."
+    required_item: "NONE"
+    reward_item: "NONE"
+    reward_display_name: ""
+    npc_attributes: [ ]
+    npc_equipment: [ ]
+
 # ---------------------------------------------------------
 # [MYTHIC+ AFFIXES]
 # Attach affixes to specific Dungeon Template IDs.
@@ -118,7 +145,7 @@ hologram-leaderboard:
 webhooks:
   enabled: true
   url: "YOUR_DISCORD_WEBHOOK_URL_HERE"
-  embed-title: "🎉 Dungeon Cleared!"
+  embed-title: "Dungeon Cleared!"
   embed-color: "5814783" # Decimal color code (Purple)
   embed-description: "Map: **%dungeon%**\nTime: **%time%s**\nPlayers: **%players%**"
 
@@ -130,11 +157,16 @@ sounds:
   puzzle_fail: "block.note_block.bass"
   roulette_tick: "block.note_block.hat"
   roulette_finish: "entity.player.levelup"
+  npc_interact: "entity.villager.yes"
+  npc_complete: "entity.player.levelup"
+  npc_deny: "entity.villager.no"
 
 particles:
   affix_vampiric: "HEART"
   affix_volcanic_warn: "FLAME"
   affix_volcanic_boom: "EXPLOSION"
+  npc_spawn: "HAPPY_VILLAGER"
+  npc_target: "END_ROD"
 
 # ---------------------------------------------------------
 # [DUNGEON INSTANCING ENGINE]
@@ -151,7 +183,7 @@ instancing:
     paste-air: true
     shared-world:
       enabled: true
-      name: "SinceDungeon_Schematic"
+      name: "SDPremium_Schematic"
       spawn-location: "0,65,0"
       coordinate-y-offset: 0
       region-spacing: 2048

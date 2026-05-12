@@ -326,7 +326,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
     }
 
     private String getSharedWorldName() {
-        return plugin.getFileManager().getConfig().getString("instancing.schematic.shared-world.name", "SinceDungeon_Schematic");
+        return plugin.getFileManager().getConfig().getString("instancing.schematic.shared-world.name", "SDPremium_Schematic");
     }
 
     private Vector readVector(String path, String fallback) {

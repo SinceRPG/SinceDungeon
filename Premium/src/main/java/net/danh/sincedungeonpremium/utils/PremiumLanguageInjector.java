@@ -116,12 +116,34 @@ public class PremiumLanguageInjector {
                 editorChanged = true;
             }
 
+            if (!editorCfg.getConfig().contains("editor.actions_name.npc_interaction")) {
+                editorCfg.set("editor.actions_name.npc_interaction", "&e&lPremium: NPC Interaction");
+                editorCfg.set("editor.actions.npc_interaction", "Spawns an interactive NPC for dialogue, guide movement, hand-ins, and teleporting.");
+                editorCfg.set("editor.input.prompts.edit_action_npc_location", Arrays.asList("&7Enter the NPC spawn coordinates X,Y,Z.", "&7Tip: Type &ahere &7to use your location."));
+                editorCfg.set("editor.input.prompts.edit_action_interaction_mode", Arrays.asList("&7Enter the mode: &aTALK&7, &aGUIDE&7, &aGIVE_ITEM&7, or &aTELEPORT&7."));
+                editorCfg.set("editor.input.prompts.edit_action_message_scope", Arrays.asList("&7Who receives dialogue? &aPLAYER &7or &aPARTY&7."));
+                editorCfg.set("editor.input.prompts.edit_action_teleport_scope", Arrays.asList("&7Who should be teleported? &aPLAYER &7or &aPARTY&7."));
+                editorCfg.set("editor.input.prompts.edit_action_move_speed", Arrays.asList("&7Enter the NPC movement speed multiplier.", "&7Example: &a1.0"));
+                editorCfg.set("editor.input.prompts.edit_action_interaction_radius", Arrays.asList("&7Enter the max click distance from the NPC.", "&7Example: &a4.0"));
+                editorCfg.set("editor.input.prompts.edit_action_start_on_click", Arrays.asList("&7Should GUIDE mode start only after clicking? &atrue &7or &cfalse&7."));
+                editorCfg.set("editor.input.prompts.edit_action_npc_is_baby", Arrays.asList("&7Should the NPC be a baby? &atrue &7or &cfalse&7."));
+                editorCfg.set("editor.input.prompts.edit_action_consume_required_item", Arrays.asList("&7Should GIVE_ITEM mode consume the required item? &atrue &7or &cfalse&7."));
+                editorCfg.set("editor.input.prompts.edit_action_fail_on_npc_death", Arrays.asList("&7Should the dungeon fail if this NPC dies? &atrue &7or &cfalse&7."));
+                editorCfg.set("editor.input.prompts.edit_action_click_cooldown_ticks", Arrays.asList("&7Enter click cooldown in ticks.", "&7Example: &a20 &7= 1 second"));
+                editorCfg.set("editor.input.prompts.edit_action_dialogue_lines", Arrays.asList("&7Enter an NPC dialogue line.", "&7Placeholders: &a<player>&7, &a<npc>", "&7Tip: Type &cclear &7to remove all lines."));
+                editorCfg.set("editor.input.prompts.edit_action_required_item", Arrays.asList("&7Enter the item required for GIVE_ITEM mode.", "&7Use &aNONE &7to disable.", "&7Examples: &aDIAMOND:1 &7or &aKEY:door_1:1"));
+                editorCfg.set("editor.input.prompts.edit_action_reward_item", Arrays.asList("&7Enter the item given after successful interaction.", "&7Use &aNONE &7to disable.", "&7Examples: &aEMERALD:3 &7or &aMMOITEMS:SWORD:FIERY:1"));
+                editorCfg.set("editor.input.prompts.edit_action_reward_display_name", Arrays.asList("&7Enter a display name for the reward message.", "&7Tip: Type &cclear &7to use the item name."));
+                editorChanged = true;
+            }
+
             if (!editorCfg.getConfig().contains("editor.defaults.escort.vip_name")) {
                 editorCfg.set("editor.defaults.escort.vip_name", "&aVIP Escort");
                 editorCfg.set("editor.defaults.escort.attacker_name", "&cAssassin");
                 editorCfg.set("editor.defaults.defend_core.core_name", "&b&lSacred Crystal");
                 editorCfg.set("editor.defaults.defend_core.attacker_name", "&cInvader");
                 editorCfg.set("editor.defaults.give_item.message", "&aYou received a mysterious item...");
+                editorCfg.set("editor.defaults.npc_interaction.name", "&eDungeon Guide");
                 editorChanged = true;
             }
 
@@ -137,6 +159,10 @@ public class PremiumLanguageInjector {
                 errorCfg.set("error.target_not_in_dungeon", "&cThat player is not in your dungeon!");
                 errorCfg.set("error.target_not_spectator", "&cThat player is not knocked out!");
                 errorCfg.set("error.no_life_item", "&cYou need a Soul Crystal in your inventory to revive someone!");
+                errorChanged = true;
+            }
+            if (!errorCfg.getConfig().contains("error.npc_missing_item")) {
+                errorCfg.set("error.npc_missing_item", "&cYou do not have the required item for this NPC.");
                 errorChanged = true;
             }
             if (errorChanged) errorCfg.save();
@@ -196,6 +222,18 @@ public class PremiumLanguageInjector {
             }
             if (!gameCfg.getConfig().contains("objective.projectile_trap")) {
                 gameCfg.set("objective.projectile_trap", "&8Dodge the incoming projectiles!");
+                gameChanged = true;
+            }
+            if (!gameCfg.getConfig().contains("objective.npc_interaction")) {
+                gameCfg.set("objective.npc_interaction", "&aInteract with the NPC &7(<mode>)");
+                gameCfg.set("action.npc_spawned", "&eAn NPC is waiting for you.");
+                gameCfg.set("action.npc_talk_complete", "&aThe conversation is complete.");
+                gameCfg.set("action.npc_guide_start", "&eThe NPC starts guiding the party.");
+                gameCfg.set("action.npc_already_moving", "&eThe NPC is already moving.");
+                gameCfg.set("action.npc_guide_complete", "&aThe NPC reached the destination.");
+                gameCfg.set("action.npc_item_complete", "&aThe NPC accepted your item.");
+                gameCfg.set("action.npc_teleport_complete", "&aThe NPC opened the way forward.");
+                gameCfg.set("action.npc_failed", "&cThe NPC was lost. Mission failed.");
                 gameChanged = true;
             }
 

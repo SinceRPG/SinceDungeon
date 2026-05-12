@@ -16,6 +16,8 @@ log:
   give_item_fail: "Failed to give item in GiveItemAction. Invalid data: <data>"
   play_sound_fail: "Failed to play sound in PlaySoundAction. Invalid sound name: <sound>"
   invalid_projectile: "Invalid Projectile EntityType: <type>"
+  npc_invalid_entity: "Invalid NPC EntityType provided: <type>. Falling back to VILLAGER."
+  npc_guide_requires_mob: "NPC_INTERACTION GUIDE mode requires a Mob EntityType. Provided: <type>."
   webhook_http_fail: "Discord Webhook failed with HTTP code: <code>"
   webhook_send_fail: "Failed to send Discord Webhook: <error>"
   schematic_provider_enabled: "[Instancing] Engine switched to SCHEMATIC Mode (FAWE/WorldEdit Hooked)."

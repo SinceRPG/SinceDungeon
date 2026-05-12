@@ -57,6 +57,27 @@ public class PremiumActionRegistry {
         }
     }
 
+    private static String cfgString(SinceDungeonPremium plugin, String path, String fallback) {
+        return plugin.getFileManager().getConfig().getString(path, fallback);
+    }
+
+    private static int cfgInt(SinceDungeonPremium plugin, String path, int fallback) {
+        return plugin.getFileManager().getConfig().getInt(path, fallback);
+    }
+
+    private static double cfgDouble(SinceDungeonPremium plugin, String path, double fallback) {
+        return plugin.getFileManager().getConfig().getDouble(path, fallback);
+    }
+
+    private static boolean cfgBool(SinceDungeonPremium plugin, String path, boolean fallback) {
+        return plugin.getFileManager().getConfig().getBoolean(path, fallback);
+    }
+
+    private static List<String> cfgList(SinceDungeonPremium plugin, String path, List<String> fallback) {
+        List<String> list = plugin.getFileManager().getConfig().getStringList(path);
+        return list.isEmpty() ? fallback : list;
+    }
+
     public static void registerAll(SinceDungeonPremium plugin) {
         SinceDungeonAPI api = SinceDungeonAPI.get();
         LanguageManager lang = SinceDungeon.getPlugin().getLanguageManager();
@@ -426,6 +447,90 @@ public class PremiumActionRegistry {
                 lang.getString("editor.actions.play_sound", "Plays a global sound effect for the party."),
                 soundDefaults,
                 soundPrompts
+        );
+
+        // 13. NPC INTERACTION ACTION
+        Map<String, Object> npcDefaults = new HashMap<>();
+        npcDefaults.put("time_limit", cfgInt(plugin, "action-defaults.npc_interaction.time_limit", -1));
+        npcDefaults.put("time_penalty", cfgInt(plugin, "action-defaults.npc_interaction.time_penalty", 1));
+        npcDefaults.put("entity_type", cfgString(plugin, "action-defaults.npc_interaction.entity_type", "VILLAGER"));
+        npcDefaults.put("custom_name", cfgString(plugin, "action-defaults.npc_interaction.custom_name", "&eDungeon Guide"));
+        npcDefaults.put("npc_location", cfgString(plugin, "action-defaults.npc_interaction.npc_location", "0,64,0"));
+        npcDefaults.put("target_location", cfgString(plugin, "action-defaults.npc_interaction.target_location", "5,64,5"));
+        npcDefaults.put("interaction_mode", cfgString(plugin, "action-defaults.npc_interaction.interaction_mode", "TALK"));
+        npcDefaults.put("message_scope", cfgString(plugin, "action-defaults.npc_interaction.message_scope", "PLAYER"));
+        npcDefaults.put("teleport_scope", cfgString(plugin, "action-defaults.npc_interaction.teleport_scope", "PLAYER"));
+        npcDefaults.put("max_health", cfgDouble(plugin, "action-defaults.npc_interaction.max_health", 40.0));
+        npcDefaults.put("move_speed", cfgDouble(plugin, "action-defaults.npc_interaction.move_speed", 1.0));
+        npcDefaults.put("success_radius", cfgDouble(plugin, "action-defaults.npc_interaction.success_radius", 2.5));
+        npcDefaults.put("interaction_radius", cfgDouble(plugin, "action-defaults.npc_interaction.interaction_radius", 4.0));
+        npcDefaults.put("start_on_click", cfgBool(plugin, "action-defaults.npc_interaction.start_on_click", true));
+        npcDefaults.put("npc_is_baby", cfgBool(plugin, "action-defaults.npc_interaction.npc_is_baby", false));
+        npcDefaults.put("consume_required_item", cfgBool(plugin, "action-defaults.npc_interaction.consume_required_item", true));
+        npcDefaults.put("fail_on_npc_death", cfgBool(plugin, "action-defaults.npc_interaction.fail_on_npc_death", true));
+        npcDefaults.put("click_cooldown_ticks", cfgInt(plugin, "action-defaults.npc_interaction.click_cooldown_ticks", 20));
+        npcDefaults.put("dialogue_lines", cfgList(plugin, "action-defaults.npc_interaction.dialogue_lines", new ArrayList<>(List.of("&e[NPC] &fHello, <player>."))));
+        npcDefaults.put("required_item", cfgString(plugin, "action-defaults.npc_interaction.required_item", "NONE"));
+        npcDefaults.put("reward_item", cfgString(plugin, "action-defaults.npc_interaction.reward_item", "NONE"));
+        npcDefaults.put("reward_display_name", cfgString(plugin, "action-defaults.npc_interaction.reward_display_name", ""));
+        npcDefaults.put("npc_attributes", cfgList(plugin, "action-defaults.npc_interaction.npc_attributes", new ArrayList<>()));
+        npcDefaults.put("npc_equipment", cfgList(plugin, "action-defaults.npc_interaction.npc_equipment", new ArrayList<>()));
+
+        Map<String, List<String>> npcPrompts = new HashMap<>();
+        npcPrompts.put("entity_type", lang.getStringList("editor.input.prompts.edit_action_entity_type"));
+        npcPrompts.put("custom_name", lang.getStringList("editor.input.prompts.edit_action_custom_name"));
+        npcPrompts.put("npc_location", lang.getStringList("editor.input.prompts.edit_action_npc_location"));
+        npcPrompts.put("target_location", lang.getStringList("editor.input.prompts.edit_action_target_location"));
+        npcPrompts.put("interaction_mode", lang.getStringList("editor.input.prompts.edit_action_interaction_mode"));
+        npcPrompts.put("message_scope", lang.getStringList("editor.input.prompts.edit_action_message_scope"));
+        npcPrompts.put("teleport_scope", lang.getStringList("editor.input.prompts.edit_action_teleport_scope"));
+        npcPrompts.put("max_health", lang.getStringList("editor.input.prompts.edit_action_max_health"));
+        npcPrompts.put("move_speed", lang.getStringList("editor.input.prompts.edit_action_move_speed"));
+        npcPrompts.put("success_radius", lang.getStringList("editor.input.prompts.edit_action_success_radius"));
+        npcPrompts.put("interaction_radius", lang.getStringList("editor.input.prompts.edit_action_interaction_radius"));
+        npcPrompts.put("start_on_click", lang.getStringList("editor.input.prompts.edit_action_start_on_click"));
+        npcPrompts.put("npc_is_baby", lang.getStringList("editor.input.prompts.edit_action_npc_is_baby"));
+        npcPrompts.put("consume_required_item", lang.getStringList("editor.input.prompts.edit_action_consume_required_item"));
+        npcPrompts.put("fail_on_npc_death", lang.getStringList("editor.input.prompts.edit_action_fail_on_npc_death"));
+        npcPrompts.put("click_cooldown_ticks", lang.getStringList("editor.input.prompts.edit_action_click_cooldown_ticks"));
+        npcPrompts.put("dialogue_lines", lang.getStringList("editor.input.prompts.edit_action_dialogue_lines"));
+        npcPrompts.put("required_item", lang.getStringList("editor.input.prompts.edit_action_required_item"));
+        npcPrompts.put("reward_item", lang.getStringList("editor.input.prompts.edit_action_reward_item"));
+        npcPrompts.put("reward_display_name", lang.getStringList("editor.input.prompts.edit_action_reward_display_name"));
+        npcPrompts.put("npc_attributes", lang.getStringList("editor.input.prompts.edit_action_attributes"));
+        npcPrompts.put("npc_equipment", lang.getStringList("editor.input.prompts.edit_action_equipment"));
+
+        api.registerCustomAction(
+                "NPC_INTERACTION",
+                map -> new NpcInteractionAction(
+                        String.valueOf(map.getOrDefault("entity_type", npcDefaults.get("entity_type"))),
+                        String.valueOf(map.getOrDefault("custom_name", npcDefaults.get("custom_name"))),
+                        String.valueOf(map.getOrDefault("npc_location", npcDefaults.get("npc_location"))),
+                        String.valueOf(map.getOrDefault("target_location", npcDefaults.get("target_location"))),
+                        String.valueOf(map.getOrDefault("interaction_mode", npcDefaults.get("interaction_mode"))),
+                        String.valueOf(map.getOrDefault("message_scope", npcDefaults.get("message_scope"))),
+                        String.valueOf(map.getOrDefault("teleport_scope", npcDefaults.get("teleport_scope"))),
+                        parseSafeDouble(map.get("max_health"), (double) npcDefaults.get("max_health")),
+                        parseSafeDouble(map.get("move_speed"), (double) npcDefaults.get("move_speed")),
+                        parseSafeDouble(map.get("success_radius"), (double) npcDefaults.get("success_radius")),
+                        parseSafeDouble(map.get("interaction_radius"), (double) npcDefaults.get("interaction_radius")),
+                        Boolean.parseBoolean(String.valueOf(map.getOrDefault("start_on_click", npcDefaults.get("start_on_click")))),
+                        Boolean.parseBoolean(String.valueOf(map.getOrDefault("npc_is_baby", npcDefaults.get("npc_is_baby")))),
+                        Boolean.parseBoolean(String.valueOf(map.getOrDefault("consume_required_item", npcDefaults.get("consume_required_item")))),
+                        Boolean.parseBoolean(String.valueOf(map.getOrDefault("fail_on_npc_death", npcDefaults.get("fail_on_npc_death")))),
+                        parseSafeInt(map.get("click_cooldown_ticks"), (int) npcDefaults.get("click_cooldown_ticks")),
+                        parseList(map.getOrDefault("dialogue_lines", npcDefaults.get("dialogue_lines"))),
+                        String.valueOf(map.getOrDefault("required_item", npcDefaults.get("required_item"))),
+                        String.valueOf(map.getOrDefault("reward_item", npcDefaults.get("reward_item"))),
+                        String.valueOf(map.getOrDefault("reward_display_name", npcDefaults.get("reward_display_name"))),
+                        parseList(map.getOrDefault("npc_attributes", npcDefaults.get("npc_attributes"))),
+                        parseList(map.getOrDefault("npc_equipment", npcDefaults.get("npc_equipment")))
+                ),
+                lang.getString("editor.actions_name.npc_interaction", "&e&lPremium: NPC Interaction"),
+                Material.VILLAGER_SPAWN_EGG,
+                lang.getString("editor.actions.npc_interaction", "Spawns an interactive NPC for dialogue, guide movement, hand-ins, and teleporting."),
+                npcDefaults,
+                npcPrompts
         );
     }
 }
