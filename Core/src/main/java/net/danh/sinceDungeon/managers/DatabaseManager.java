@@ -10,6 +10,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Manages the database connection for SinceDungeon.
@@ -53,18 +55,18 @@ public class DatabaseManager {
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_mysql_init"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_mysql_init", "[Database] Initializing MySQL connection pool via HikariCP..."));
         } else {
             File dbFile = new File(plugin.getDataFolder(), "data.db");
             config.setJdbcUrl("jdbc:sqlite:" + dbFile.getAbsolutePath());
             config.setMaximumPoolSize(1);
-            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_sqlite_init"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_sqlite_init", "[Database] Initializing SQLite database..."));
         }
 
         try {
             dataSource = new HikariDataSource(config);
             createTables();
-            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_connected"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_connected", "[Database] Successfully connected!"));
         } catch (Exception e) {
             String errorMsg = plugin.getLanguageManager().getString("admin.log.db_error_hikari", "[Database] Failed to initialize: <error>");
             plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
@@ -141,7 +143,8 @@ public class DatabaseManager {
             }
 
         } catch (SQLException e) {
-            plugin.getLogger().severe("[Database] Failed to create tables: " + e.getMessage());
+            String errorMsg = plugin.getLanguageManager().getString("admin.log.db_error_tables", "[Database] Failed to create tables: <error>");
+            plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
         }
     }
 
@@ -151,7 +154,7 @@ public class DatabaseManager {
     public void disconnect() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_closed"));
+            plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_closed", "[Database] Database pool closed."));
         }
     }
 
@@ -185,26 +188,67 @@ public class DatabaseManager {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
-
                 try (PreparedStatement ps = conn.prepareStatement(sqlPartyFastest)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
-
                 try (PreparedStatement ps = conn.prepareStatement(sqlKills)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
-
                 try (PreparedStatement ps = conn.prepareStatement(sqlClears)) {
                     ps.setString(1, map);
                     ps.executeUpdate();
                 }
 
-                plugin.getLogger().info("[Database] Successfully wiped all leaderboard records for map: " + map);
+                String successMsg = plugin.getLanguageManager().getString("admin.log.db_reset_success", "[Database] Successfully wiped all leaderboard records for map: <map>");
+                plugin.getLogger().info(successMsg.replace("<map>", map));
+
             } catch (SQLException e) {
-                plugin.getLogger().severe("[Database] Failed to wipe leaderboard for map " + map + "!");
-                e.printStackTrace();
+                String errorMsg = plugin.getLanguageManager().getString("admin.log.db_reset_error", "[Database] Failed to wipe leaderboard for map <map>!");
+                plugin.getLogger().log(Level.SEVERE, errorMsg.replace("<map>", map), e);
+            }
+        });
+    }
+
+    /**
+     * Executes the SQL DELETE commands to wipe all records for a specific player asynchronously.
+     * If map is provided, wipes only their records on that map. Otherwise, wipes their records across all maps.
+     */
+    public void resetPlayerLeaderboard(UUID playerUuid, String map) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String condition = (map == null) ? "player_uuid = ?" : "player_uuid = ? AND dungeon_id = ?";
+            String sqlFastest = "DELETE FROM top_fastest WHERE " + condition;
+            String sqlKills = "DELETE FROM top_kills WHERE " + condition;
+            String sqlClears = "DELETE FROM top_clears WHERE " + condition;
+
+            try (Connection conn = this.getConnection()) {
+
+                try (PreparedStatement ps = conn.prepareStatement(sqlFastest)) {
+                    ps.setString(1, playerUuid.toString());
+                    if (map != null) ps.setString(2, map);
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlKills)) {
+                    ps.setString(1, playerUuid.toString());
+                    if (map != null) ps.setString(2, map);
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlClears)) {
+                    ps.setString(1, playerUuid.toString());
+                    if (map != null) ps.setString(2, map);
+                    ps.executeUpdate();
+                }
+
+                String logMsg = plugin.getLanguageManager().getString("admin.log.db_reset_player", "[Database] Successfully wiped leaderboard records for player <uuid> on map: <map>")
+                        .replace("<uuid>", playerUuid.toString())
+                        .replace("<map>", map == null ? "ALL" : map);
+                plugin.getLogger().info(logMsg);
+
+            } catch (SQLException e) {
+                String errorMsg = plugin.getLanguageManager().getString("admin.log.db_reset_player_error", "[Database] Failed to wipe leaderboard for player <uuid>!")
+                        .replace("<uuid>", playerUuid.toString());
+                plugin.getLogger().log(Level.SEVERE, errorMsg, e);
             }
         });
     }

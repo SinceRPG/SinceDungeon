@@ -1,4 +1,6 @@
 top:
+  papi_empty_name: "虚位以待"
+  papi_empty_value: "-"
   party_run_name: "队伍通关"
   category_time: "&b&l单人最快通关"
   category_party_time: "&d&l队伍最快通关"

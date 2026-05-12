@@ -15,7 +15,13 @@ admin:
     not_installed: "&cLỗi hệ thống: Không thể trao vật phẩm MMOItems vì Plugin chưa được cài đặt."
     not_found: "&cLỗi hệ thống: Không tìm thấy vật phẩm MMOItems <type>:<id>"
     error: "&cLỗi hệ thống: Vật phẩm <item> cấu hình sai tên hoặc không tồn tại trong server."
+  top_reset_player_success: "&aĐã làm mới thành công bảng xếp hạng cho người chơi &e<player> &atrên bản đồ: &e<map>"
+  top_reset_player_all_success: "&aĐã làm mới thành công bảng xếp hạng cho người chơi &e<player> &atrên tất cả các bản đồ."
   log:
+    db_reset_success: "[Database] Đã xóa thành công toàn bộ dữ liệu bảng xếp hạng cho bản đồ: <map>"
+    db_reset_error: "[Database] Thất bại khi xóa bảng xếp hạng cho bản đồ <map>!"
+    db_reset_player: "[Database] Đã xóa thành công dữ liệu bảng xếp hạng cho người chơi <uuid> trên bản đồ: <map>"
+    db_reset_player_error: "[Database] Thất bại khi xóa bảng xếp hạng cho người chơi <uuid>!"
     cross_server_request_cancelled_quit: "[CrossServer] Đã hủy yêu cầu tìm kiếm máy chủ của <player> vì họ đã thoát game đột ngột."
     redis_connected: "[Redis] Đã kết nối tới Redis thành công!"
     redis_disconnected: "[Redis] Đã đóng kết nối Redis."

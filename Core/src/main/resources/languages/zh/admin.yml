@@ -15,7 +15,13 @@ admin:
     not_installed: "&c系统错误: 无法给予 MMOItems 物品，因为未安装该插件。"
     not_found: "&c系统错误: 找不到 MMOItems 物品 <type>:<id>。"
     error: "&c系统错误: 物品 <item> 配置错误或不存在。"
+  top_reset_player_success: "&a成功重置玩家 &e<player> &a在地图 &e<map> &a上的排行榜数据"
+  top_reset_player_all_success: "&a成功重置玩家 &e<player> &a在所有地图上的排行榜数据"
   log:
+    db_reset_success: "[Database] 成功清空地图的所有排行榜记录: <map>"
+    db_reset_error: "[Database] 清空地图排行榜记录失败 <map>!"
+    db_reset_player: "[Database] 成功清空玩家 <uuid> 在地图上的排行榜记录: <map>"
+    db_reset_player_error: "[Database] 清空玩家排行榜记录失败 <uuid>!"
     cross_server_request_cancelled_quit: "[CrossServer] 已取消 <player> 的副本请求，因为他们已断开连接。"
     redis_connected: "[Redis] 成功连接到 Redis！"
     redis_disconnected: "[Redis] Redis 连接已关闭。"

@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.hooks;
 
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -22,6 +23,16 @@ public class PAPIHook {
             return PlaceholderAPI.setPlaceholders(p, text);
         }
         return text;
+    }
+
+    /**
+     * Registers all internal expansions to the PlaceholderAPI instance.
+     */
+    public static void register(SinceDungeon plugin) {
+        new LivesExpansion(plugin).register();
+        new TopExpansion(plugin).register(); // Injects the Top Leaderboard placeholders
+
+        plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.papi_registered", "Successfully registered PlaceholderAPI integration for SinceDungeon."));
     }
 
     /**

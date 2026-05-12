@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,6 +35,15 @@ public class TopManager {
     }
 
     /**
+     * Wipes the leaderboard records for a specific player.
+     * @param uuid The player UUID
+     * @param map The map ID, or null to clear their records across all maps.
+     */
+    public void resetPlayerLeaderboard(UUID uuid, String map) {
+        plugin.getDatabaseManager().resetPlayerLeaderboard(uuid, map);
+    }
+
+    /**
      * Synchronously retrieves the total number of times a specific player has cleared a specific dungeon.
      */
     public int getPlayerClears(String dungeonId, UUID playerUuid) {
@@ -57,8 +67,12 @@ public class TopManager {
 
     /**
      * Saves a clear time record for a player. Only updates if the new time is FASTER.
+     * Ignores players with the "SinceDungeon.top.ignore" permission.
      */
     public void saveClearTime(String dungeonId, UUID playerUuid, String playerName, int timeSeconds) {
+        Player p = Bukkit.getPlayer(playerUuid);
+        if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = db.getConnection()) {
 
@@ -116,9 +130,14 @@ public class TopManager {
 
     /**
      * Saves a kills record for a player. Only updates if the new count is HIGHER.
+     * Ignores players with the "SinceDungeon.top.ignore" permission.
      */
     public void saveKills(String dungeonId, UUID playerUuid, String playerName, int kills) {
         if (kills <= 0) return;
+
+        Player p = Bukkit.getPlayer(playerUuid);
+        if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = db.getConnection()) {
 
@@ -154,8 +173,12 @@ public class TopManager {
 
     /**
      * Increments the clear count for a player by 1.
+     * Ignores players with the "SinceDungeon.top.ignore" permission.
      */
     public void incrementClears(String dungeonId, UUID playerUuid, String playerName) {
+        Player p = Bukkit.getPlayer(playerUuid);
+        if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = db.getConnection()) {
                 int existing = 0;

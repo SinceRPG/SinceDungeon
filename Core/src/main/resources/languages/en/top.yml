@@ -1,4 +1,6 @@
 top:
+  papi_empty_name: "None"
+  papi_empty_value: "-"
   party_run_name: "Party Run"
   category_time: "&b&lSolo Fastest Clears"
   category_party_time: "&d&lParty Fastest Clears"

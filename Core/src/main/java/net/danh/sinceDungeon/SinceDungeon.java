@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.guis.editor.EditorManager;
 import net.danh.sinceDungeon.guis.editor.EditorMenuListener;
 import net.danh.sinceDungeon.guis.top.TopMenuListener;
 import net.danh.sinceDungeon.hooks.LivesExpansion;
+import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.listeners.CooldownItemListener;
 import net.danh.sinceDungeon.listeners.DungeonListener;
 import net.danh.sinceDungeon.listeners.LifeItemListener;
@@ -114,7 +115,7 @@ public final class SinceDungeon extends JavaPlugin {
         }
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
-            new LivesExpansion(this).register();
+            PAPIHook.register(this);
             getLogger().info(languageManager.getString("admin.log.papi_registered"));
         } else {
             getLogger().warning(languageManager.getString("admin.log.papi_missing"));

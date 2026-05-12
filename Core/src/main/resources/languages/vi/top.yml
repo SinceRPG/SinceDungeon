@@ -1,4 +1,6 @@
 top:
+  papi_empty_name: "Trống"
+  papi_empty_value: "-"
   party_run_name: "Tổ Đội Nhóm"
   category_time: "&b&lKỷ Lục Tốc Độ (Solo)"
   category_party_time: "&d&lKỷ Lục Tốc Độ (Tổ Đội)"

@@ -12,6 +12,7 @@ import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.NamespacedKey;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
@@ -33,7 +34,7 @@ import java.util.List;
 public class SinceDungeonCommand {
 
     public static void register(SinceDungeon plugin, ReloadableRegistrarEvent<Commands> event) {
-        String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeonpremium");
+        String commandName = plugin.getConfigFile().getString("commands.admin", "sincedungeon");
         List<String> aliases = plugin.getConfigFile().getStringList("commands.admin-aliases");
 
         LiteralCommandNode<CommandSourceStack> adminNode = Commands.literal(commandName)
@@ -137,6 +138,62 @@ public class SinceDungeonCommand {
                                             sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<map>", map)));
                                             return 1;
                                         })
+                                )
+                        )
+                        .then(Commands.literal("resetplayer")
+                                .then(Commands.argument("target", StringArgumentType.word())
+                                        .suggests((ctx, builder) -> {
+                                            String remaining = builder.getRemainingLowerCase();
+                                            Bukkit.getOnlinePlayers().stream()
+                                                    .map(Player::getName)
+                                                    .filter(name -> name.toLowerCase().startsWith(remaining))
+                                                    .forEach(builder::suggest);
+                                            return builder.buildFuture();
+                                        })
+                                        .executes(ctx -> {
+                                            CommandSender sender = ctx.getSource().getSender();
+                                            String targetName = StringArgumentType.getString(ctx, "target");
+
+                                            // Execute async to prevent blocking main thread for OfflinePlayer fetch
+                                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                                OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+                                                plugin.getTopManager().resetPlayerLeaderboard(target.getUniqueId(), null);
+
+                                                String msg = plugin.getLanguageManager().getString("admin.top_reset_player_all_success", "&aSuccessfully reset leaderboards for player &e<player> &aacross all maps.");
+                                                sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName() == null ? targetName : target.getName())));
+                                            });
+                                            return 1;
+                                        })
+                                        .then(Commands.argument("map", StringArgumentType.string())
+                                                .suggests((ctx, builder) -> {
+                                                    String remaining = builder.getRemainingLowerCase();
+                                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
+                                                        if (mapName.toLowerCase().contains(remaining)) {
+                                                            builder.suggest(mapName);
+                                                        }
+                                                    }
+                                                    return builder.buildFuture();
+                                                })
+                                                .executes(ctx -> {
+                                                    CommandSender sender = ctx.getSource().getSender();
+                                                    String targetName = StringArgumentType.getString(ctx, "target");
+                                                    String map = StringArgumentType.getString(ctx, "map");
+
+                                                    if (!plugin.getDungeonManager().getTemplates().containsKey(map)) {
+                                                        sender.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
+                                                        return 0;
+                                                    }
+
+                                                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                                        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+                                                        plugin.getTopManager().resetPlayerLeaderboard(target.getUniqueId(), map);
+
+                                                        String msg = plugin.getLanguageManager().getString("admin.top_reset_player_success", "&aSuccessfully reset leaderboards for player &e<player> &aon map: &e<map>");
+                                                        sender.sendMessage(ColorUtils.parseWithPrefix(msg.replace("<player>", target.getName() == null ? targetName : target.getName()).replace("<map>", map)));
+                                                    });
+                                                    return 1;
+                                                })
+                                        )
                                 )
                         )
                 )

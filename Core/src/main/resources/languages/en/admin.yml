@@ -15,7 +15,13 @@ admin:
     not_installed: "&cSystem Error: Cannot give MMOItems because the plugin is not installed."
     not_found: "&cSystem Error: MMOItems <type>:<id> not found."
     error: "&cSystem Error: Item <item> is misconfigured or does not exist."
+  top_reset_player_success: "&aSuccessfully reset leaderboards for player &e<player> &aon map: &e<map>"
+  top_reset_player_all_success: "&aSuccessfully reset leaderboards for player &e<player> &aacross all maps."
   log:
+    db_reset_success: "[Database] Successfully wiped all leaderboard records for map: <map>"
+    db_reset_error: "[Database] Failed to wipe leaderboard for map <map>!"
+    db_reset_player: "[Database] Successfully wiped leaderboard records for player <uuid> on map: <map>"
+    db_reset_player_error: "[Database] Failed to wipe leaderboard for player <uuid>!"
     cross_server_request_cancelled_quit: "[CrossServer] Cancelled pending dungeon request for <player> because they disconnected."
     redis_connected: "[Redis] Connected to Redis successfully!"
     redis_disconnected: "[Redis] Redis connection closed."
