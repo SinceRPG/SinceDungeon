@@ -35,6 +35,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     private final Particle lockedParticle;
 
     private Location triggerLoc;
+    private Location triggerBlockLoc;
     private BukkitTask breakTask = null;
     private boolean isUnlocking = false;
 
@@ -62,7 +63,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
-        this.triggerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+        this.triggerBlockLoc = game.resolveBlockLocation(trigger);
+        this.triggerLoc = triggerBlockLoc.clone().add(0.5, 0.5, 0.5);
 
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
         ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getSection("items.compass");
@@ -101,6 +103,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         if (breakTask != null && !breakTask.isCancelled()) {
             breakTask.cancel();
         }
+        triggerLoc = null;
+        triggerBlockLoc = null;
         removeCompasses(game);
     }
 
@@ -137,10 +141,10 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
             if (!e.hasBlock() || isUnlocking) return;
 
             Block b = e.getClickedBlock();
-            if (b != null && b.getWorld().equals(game.getWorld()) &&
-                    b.getX() == trigger.getBlockX() &&
-                    b.getY() == trigger.getBlockY() &&
-                    b.getZ() == trigger.getBlockZ()) {
+            if (b != null && triggerBlockLoc != null && b.getWorld().equals(game.getWorld()) &&
+                    b.getX() == triggerBlockLoc.getBlockX() &&
+                    b.getY() == triggerBlockLoc.getBlockY() &&
+                    b.getZ() == triggerBlockLoc.getBlockZ()) {
 
                 e.setCancelled(true);
                 ItemStack handItem = e.getItem();
@@ -167,7 +171,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.door_unlocked", "<player>", p.getName());
 
-                    Location spawnLoc = game.getWorld().getSpawnLocation();
+                    Location spawnLoc = game.getRespawnLocation();
                     game.getParticipants().forEach(player -> {
                         if (player.isOnline()) player.setCompassTarget(spawnLoc);
                     });
@@ -207,12 +211,14 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     }
 
     private void removeWall(DungeonGame game) {
-        int minX = Math.min(c1.getBlockX(), c2.getBlockX());
-        int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
-        int minY = Math.min(c1.getBlockY(), c2.getBlockY());
-        int maxY = Math.max(c1.getBlockY(), c2.getBlockY());
-        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
-        int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+        Location cornerA = game.resolveBlockLocation(c1);
+        Location cornerB = game.resolveBlockLocation(c2);
+        int minX = Math.min(cornerA.getBlockX(), cornerB.getBlockX());
+        int maxX = Math.max(cornerA.getBlockX(), cornerB.getBlockX());
+        int minY = Math.min(cornerA.getBlockY(), cornerB.getBlockY());
+        int maxY = Math.max(cornerA.getBlockY(), cornerB.getBlockY());
+        int minZ = Math.min(cornerA.getBlockZ(), cornerB.getBlockZ());
+        int maxZ = Math.max(cornerA.getBlockZ(), cornerB.getBlockZ());
 
         String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
         if (soundUnlock != null) {

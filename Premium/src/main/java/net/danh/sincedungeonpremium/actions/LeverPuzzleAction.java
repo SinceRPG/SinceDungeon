@@ -58,7 +58,7 @@ public class LeverPuzzleAction extends DungeonAction {
 
         for (String s : rawLevers) {
             Vector vec = DungeonLoader.parseVector(s);
-            Location loc = new Location(game.getWorld(), vec.getBlockX(), vec.getBlockY(), vec.getBlockZ());
+            Location loc = game.resolveBlockLocation(vec);
             parsedLevers.add(loc);
 
             Block block = loc.getBlock();

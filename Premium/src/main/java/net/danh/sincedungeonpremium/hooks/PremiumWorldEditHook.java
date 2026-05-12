@@ -10,7 +10,10 @@ import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Location;
 
@@ -52,6 +55,34 @@ public class PremiumWorldEditHook {
         } catch (Exception e) {
             String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.schematic_paste_fail");
             SinceDungeonPremium.getInstance().getLogger().severe(logMsg.replace("<file>", file.getName()) + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Clears a pasted schematic region without unloading the shared dungeon world.
+     * The provider calls this after a run ends so the slot can be reused safely.
+     *
+     * @param min The minimum cuboid corner.
+     * @param max The maximum cuboid corner.
+     * @return True if WorldEdit accepted the clear operation.
+     */
+    public static boolean clearCuboid(Location min, Location max) {
+        if (min == null || max == null || min.getWorld() == null || !min.getWorld().equals(max.getWorld())) {
+            return false;
+        }
+
+        try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(min.getWorld()))) {
+            CuboidRegion region = new CuboidRegion(
+                    BukkitAdapter.adapt(min.getWorld()),
+                    BlockVector3.at(min.getBlockX(), min.getBlockY(), min.getBlockZ()),
+                    BlockVector3.at(max.getBlockX(), max.getBlockY(), max.getBlockZ())
+            );
+            editSession.setBlocks((Region) region, BlockTypes.AIR.getDefaultState());
+            return true;
+        } catch (Exception e) {
+            String logMsg = SinceDungeonPremium.getInstance().getFileManager().getMessageRaw("log.region_clear_fail");
+            SinceDungeonPremium.getInstance().getLogger().warning(logMsg.replace("<error>", e.getMessage()));
             return false;
         }
     }

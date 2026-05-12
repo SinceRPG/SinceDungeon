@@ -123,7 +123,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        Location loc = new Location(game.getWorld(), spawnLoc.getX() + 0.5, spawnLoc.getY(), spawnLoc.getZ() + 0.5);
+        Location loc = game.resolveLocation(spawnLoc, 0.5, 0, 0.5);
         loc.getChunk().load(true);
 
         Entity entity = game.getWorld().spawnEntity(loc, mobType);

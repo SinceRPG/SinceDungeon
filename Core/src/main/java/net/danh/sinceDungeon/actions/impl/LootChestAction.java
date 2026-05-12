@@ -66,7 +66,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
-        Location loc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
+        Location loc = game.resolveBlockLocation(chestLocation);
         Block b = loc.getBlock();
         b.setType(Material.CHEST);
         b.getState().update(true, false);
@@ -315,16 +315,17 @@ public class LootChestAction extends DungeonAction implements Tickable {
 
         Bukkit.getScheduler().runTaskLater(SinceDungeon.getPlugin(), () -> {
             if (chestBlock != null) chestBlock.setType(Material.AIR);
-            Location soundLoc = new Location(game.getWorld(), chestLocation.getBlockX(), chestLocation.getBlockY(), chestLocation.getBlockZ());
+            Location soundLoc = game.resolveBlockLocation(chestLocation);
             game.getWorld().playSound(soundLoc, Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
         }, 1L);
     }
 
     private boolean isTargetChest(Block b) {
-        return b != null && b.getType() == Material.CHEST
-                && b.getX() == chestLocation.getBlockX()
-                && b.getY() == chestLocation.getBlockY()
-                && b.getZ() == chestLocation.getBlockZ();
+        return b != null && chestBlock != null && b.getType() == Material.CHEST
+                && b.getWorld().equals(chestBlock.getWorld())
+                && b.getX() == chestBlock.getX()
+                && b.getY() == chestBlock.getY()
+                && b.getZ() == chestBlock.getZ();
     }
 
     private boolean isInventoryEmpty(Inventory inv) {

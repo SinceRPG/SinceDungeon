@@ -17,6 +17,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
@@ -43,6 +44,7 @@ public class DungeonManager {
     private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
     private final Map<String, CustomItemProvider> customItemProviders = new ConcurrentHashMap<>();
     private final Map<String, DungeonGame> worldGames = new ConcurrentHashMap<>();
+    private final Set<DungeonGame> registeredGames = ConcurrentHashMap.newKeySet();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -523,10 +525,22 @@ public class DungeonManager {
 
     public void registerWorldGame(String worldName, DungeonGame game) {
         worldGames.put(worldName, game);
+        registeredGames.add(game);
     }
 
     public void unregisterWorldGame(String worldName) {
-        worldGames.remove(worldName);
+        DungeonGame game = worldGames.remove(worldName);
+        if (game != null) {
+            registeredGames.remove(game);
+        }
+    }
+
+    public void unregisterGame(DungeonGame game) {
+        if (game == null) return;
+        registeredGames.remove(game);
+        if (game.getWorld() != null) {
+            worldGames.remove(game.getWorld().getName(), game);
+        }
     }
 
     /**
@@ -539,6 +553,48 @@ public class DungeonManager {
      */
     public DungeonGame getGameByWorld(String worldName) {
         return worldGames.get(worldName);
+    }
+
+    /**
+     * Resolves an active game by physical location.
+     * This keeps event routing correct when a provider places several dungeon
+     * instances inside one shared Bukkit world.
+     *
+     * @param location The Bukkit location to test.
+     * @return The matching DungeonGame, or null if no instance owns the location.
+     */
+    public DungeonGame getGameByLocation(Location location) {
+        if (location == null || location.getWorld() == null) return null;
+
+        DungeonGame direct = worldGames.get(location.getWorld().getName());
+        if (direct != null && direct.ownsLocation(location)) {
+            return direct;
+        }
+
+        for (DungeonGame game : registeredGames) {
+            if (game.ownsLocation(location)) {
+                return game;
+            }
+        }
+
+        return null;
+    }
+
+    public DungeonGame getGameByEntity(Entity entity) {
+        return entity != null ? getGameByLocation(entity.getLocation()) : null;
+    }
+
+    public boolean hasGameInWorld(String worldName) {
+        if (worldName == null) return false;
+        if (worldGames.containsKey(worldName)) return true;
+
+        for (DungeonGame game : registeredGames) {
+            if (game.getWorld() != null && game.getWorld().getName().equals(worldName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void cancelPendingRequest(UUID uuid) {

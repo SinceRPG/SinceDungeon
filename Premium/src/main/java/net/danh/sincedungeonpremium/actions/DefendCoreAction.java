@@ -86,7 +86,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         }
 
         Vector vec = DungeonLoader.parseVector(locationStr);
-        this.coreLoc = new Location(game.getWorld(), vec.getX() + 0.5, vec.getY(), vec.getZ() + 0.5);
+        this.coreLoc = game.resolveLocation(vec, 0.5, 0, 0.5);
         coreLoc.getChunk().load(true);
 
         EntityType type;

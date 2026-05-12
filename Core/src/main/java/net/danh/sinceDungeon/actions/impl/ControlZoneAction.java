@@ -72,7 +72,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
-        this.centerLoc = new Location(game.getWorld(), center.getX() + 0.5, center.getY() + 0.5, center.getZ() + 0.5);
+        this.centerLoc = game.resolveLocation(center, 0.5, 0.5, 0.5);
         this.lastTickTime = System.currentTimeMillis();
 
         // JIT Optimization: Cache particle types to avoid parsing strings every tick

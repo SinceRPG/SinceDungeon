@@ -86,7 +86,7 @@ public class AffixListener implements Listener {
         LivingEntity entity = e.getEntity();
         if (entity instanceof Player) return;
 
-        DungeonGame game = SinceDungeonAPI.get().getManager().getGameByWorld(entity.getWorld().getName());
+        DungeonGame game = SinceDungeonAPI.get().getManager().getGameByEntity(entity);
 
         if (game != null && hasAffix(game, "VOLCANIC")) {
             final Location deathLoc = entity.getLocation().clone();

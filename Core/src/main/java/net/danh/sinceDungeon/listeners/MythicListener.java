@@ -6,7 +6,6 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -30,9 +29,7 @@ public class MythicListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL)
     public void onMMDeath(MythicMobDeathEvent e) {
         if (e.getEntity() != null) {
-            World w = e.getEntity().getWorld();
-            // [Performance Fix] O(1) Fast lookup
-            DungeonGame game = plugin.getDungeonManager().getGameByWorld(w.getName());
+            DungeonGame game = plugin.getDungeonManager().getGameByEntity(e.getEntity());
             if (game != null) {
                 game.onEvent(e);
             }
@@ -50,9 +47,7 @@ public class MythicListener implements Listener {
                 return;
             }
 
-            World w = e.getEntity().getWorld();
-            // [Performance Fix] O(1) Fast lookup
-            DungeonGame game = plugin.getDungeonManager().getGameByWorld(w.getName());
+            DungeonGame game = plugin.getDungeonManager().getGameByEntity(e.getEntity());
             if (game != null) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());

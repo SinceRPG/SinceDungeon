@@ -28,6 +28,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector c1;
     private final Vector c2;
     private Location centerLoc;
+    private Location triggerBlockLoc;
 
     private BukkitTask breakTask = null;
     private boolean isBreaking = false;
@@ -45,7 +46,8 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        this.centerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+        this.triggerBlockLoc = game.resolveBlockLocation(trigger);
+        this.centerLoc = triggerBlockLoc.clone().add(0.5, 0.5, 0.5);
     }
 
     @Override
@@ -56,6 +58,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         }
         breakTask = null;
         centerLoc = null;
+        triggerBlockLoc = null;
     }
 
     @Override
@@ -83,10 +86,10 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             if (!e.hasBlock() || isBreaking) return;
 
             Block b = e.getClickedBlock();
-            if (b != null && b.getWorld().equals(game.getWorld()) &&
-                    b.getX() == trigger.getBlockX() &&
-                    b.getY() == trigger.getBlockY() &&
-                    b.getZ() == trigger.getBlockZ()) {
+            if (b != null && triggerBlockLoc != null && b.getWorld().equals(game.getWorld()) &&
+                    b.getX() == triggerBlockLoc.getBlockX() &&
+                    b.getY() == triggerBlockLoc.getBlockY() &&
+                    b.getZ() == triggerBlockLoc.getBlockZ()) {
 
                 isBreaking = true;
                 b.setType(Material.AIR);
@@ -99,12 +102,14 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     }
 
     private void removeWall(DungeonGame game) {
-        int minX = Math.min(c1.getBlockX(), c2.getBlockX());
-        int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
-        int minY = Math.min(c1.getBlockY(), c2.getBlockY());
-        int maxY = Math.max(c1.getBlockY(), c2.getBlockY());
-        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
-        int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+        Location cornerA = game.resolveBlockLocation(c1);
+        Location cornerB = game.resolveBlockLocation(c2);
+        int minX = Math.min(cornerA.getBlockX(), cornerB.getBlockX());
+        int maxX = Math.max(cornerA.getBlockX(), cornerB.getBlockX());
+        int minY = Math.min(cornerA.getBlockY(), cornerB.getBlockY());
+        int maxY = Math.max(cornerA.getBlockY(), cornerB.getBlockY());
+        int minZ = Math.min(cornerA.getBlockZ(), cornerB.getBlockZ());
+        int maxZ = Math.max(cornerA.getBlockZ(), cornerB.getBlockZ());
 
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 

@@ -234,7 +234,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         Sound sType = SoundUtils.getSound(sName);
 
         for (Vector vec : locations) {
-            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            Location loc = game.resolveLocation(vec);
 
             for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;

@@ -36,7 +36,7 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        this.centerLoc = new Location(game.getWorld(), target.getX() + 0.5, target.getY() + 0.5, target.getZ() + 0.5);
+        this.centerLoc = game.resolveLocation(target, 0.5, 0.5, 0.5);
 
         // JIT Optimization: Cache particle config lookup
         String pName = SinceDungeon.getPlugin().getConfigFile().getString("particles.reach_location_idle", "HAPPY_VILLAGER");
@@ -78,8 +78,8 @@ public class ReachLocationAction extends DungeonAction implements Tickable {
         for (Player p : game.getParticipants()) {
             Location loc = p.getLocation();
             if (loc.getWorld() != null && loc.getWorld().equals(game.getWorld()) && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR) {
-                double distSq2D = Math.pow(loc.getX() - (target.getX() + 0.5), 2) + Math.pow(loc.getZ() - (target.getZ() + 0.5), 2);
-                double yDiff = loc.getY() - target.getY();
+                double distSq2D = Math.pow(loc.getX() - centerLoc.getX(), 2) + Math.pow(loc.getZ() - centerLoc.getZ(), 2);
+                double yDiff = loc.getY() - (centerLoc.getY() - 0.5);
 
                 if (distSq2D <= radiusSq && yDiff >= -0.5 && yDiff <= 3.5) {
                     this.completed = true;

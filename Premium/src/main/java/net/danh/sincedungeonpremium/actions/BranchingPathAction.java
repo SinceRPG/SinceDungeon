@@ -44,8 +44,8 @@ public class BranchingPathAction extends DungeonAction implements Tickable {
         Vector vecA = DungeonLoader.parseVector(pathAStr);
         Vector vecB = DungeonLoader.parseVector(pathBStr);
 
-        this.locA = new Location(game.getWorld(), vecA.getX() + 0.5, vecA.getY(), vecA.getZ() + 0.5);
-        this.locB = new Location(game.getWorld(), vecB.getX() + 0.5, vecB.getY(), vecB.getZ() + 0.5);
+        this.locA = game.resolveLocation(vecA, 0.5, 0, 0.5);
+        this.locB = game.resolveLocation(vecB, 0.5, 0, 0.5);
     }
 
     @Override

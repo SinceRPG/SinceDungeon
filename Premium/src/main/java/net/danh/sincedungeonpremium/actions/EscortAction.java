@@ -190,8 +190,8 @@ public class EscortAction extends DungeonAction implements Tickable {
         Vector startVec = DungeonLoader.parseVector(startLocStr);
         Vector targetVec = DungeonLoader.parseVector(targetLocStr);
 
-        Location startLocation = new Location(game.getWorld(), startVec.getX() + 0.5, startVec.getY(), startVec.getZ() + 0.5);
-        this.targetLocation = new Location(game.getWorld(), targetVec.getX() + 0.5, targetVec.getY(), targetVec.getZ() + 0.5);
+        Location startLocation = game.resolveLocation(startVec, 0.5, 0, 0.5);
+        this.targetLocation = game.resolveLocation(targetVec, 0.5, 0, 0.5);
         this.targetParticleLoc = this.targetLocation.clone().add(0, 1, 0);
 
         startLocation.getChunk().load(true);

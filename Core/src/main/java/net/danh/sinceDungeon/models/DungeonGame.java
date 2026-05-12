@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.actions.impl.MythicMobWaveAction;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
+import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.TopManager;
@@ -61,6 +62,10 @@ public class DungeonGame {
     private DungeonTemplate template;
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
     private World dungeonWorld;
+    private InstanceProvider instanceProvider;
+    private Location instanceOrigin;
+    private Location respawnLocation;
+    private int instanceRadius = -1;
 
     private int currentStageIndex = 0;
     private int currentActionIndex = 0;
@@ -227,12 +232,25 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
-        plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+        InstanceProvider provider = plugin.getInstanceManager().getProvider();
+        this.instanceProvider = provider;
+        provider.createInstance(template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (isStopping) {
-                plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(world);
+                provider.releaseInstance(worldName, world);
                 return;
             }
             this.dungeonWorld = world;
+            this.instanceOrigin = provider.getInstanceOrigin(worldName, world);
+            if (this.instanceOrigin == null) {
+                this.instanceOrigin = new Location(world, 0, 0, 0);
+            } else if (this.instanceOrigin.getWorld() == null) {
+                this.instanceOrigin.setWorld(world);
+            }
+            this.instanceRadius = provider.getInstanceRadius(worldName);
+            this.respawnLocation = provider.getInstanceSpawnLocation(worldName, world);
+            if (this.respawnLocation == null) {
+                this.respawnLocation = world.getSpawnLocation().clone().add(0.5, 1, 0.5);
+            }
             plugin.getDungeonManager().registerWorldGame(world.getName(), this);
 
             dungeonWorld.setAutoSave(false);
@@ -288,7 +306,7 @@ public class DungeonGame {
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
-        Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
+        Location spawnLoc = getRespawnLocation();
         boolean saveStats = template.settings().saveAndRestoreStats();
         Set<Player> failedToEnter = new HashSet<>();
 
@@ -972,8 +990,10 @@ public class DungeonGame {
         } finally {
             if (dungeonWorld != null) {
                 World w = dungeonWorld;
+                String instanceId = worldName;
+                InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
+                    provider.releaseInstance(instanceId, w);
                     aggressivelyCleanupMemory();
                 }, 40L);
             } else {
@@ -1021,8 +1041,10 @@ public class DungeonGame {
         } catch (Exception ignored) { } finally {
             if (dungeonWorld != null) {
                 World w = dungeonWorld;
+                String instanceId = worldName;
+                InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getInstanceManager().getProvider().forceUnloadAndDeleteInstance(w);
+                    provider.forceReleaseInstance(instanceId, w);
                 }, 5L);
             }
             aggressivelyCleanupMemory();
@@ -1030,9 +1052,7 @@ public class DungeonGame {
     }
 
     private void aggressivelyCleanupMemory() {
-        if (this.dungeonWorld != null) {
-            plugin.getDungeonManager().unregisterWorldGame(this.dungeonWorld.getName());
-        }
+        plugin.getDungeonManager().unregisterGame(this);
 
         if (savedStates != null) savedStates.clear();
         if (playerKills != null) playerKills.clear();
@@ -1070,6 +1090,10 @@ public class DungeonGame {
         }
 
         this.dungeonWorld = null;
+        this.instanceProvider = null;
+        this.instanceOrigin = null;
+        this.respawnLocation = null;
+        this.instanceRadius = -1;
         this.initiatorId = null;
         this.template = null;
         this.lastParsedBar = null;
@@ -1201,6 +1225,75 @@ public class DungeonGame {
 
     public World getWorld() {
         return dungeonWorld;
+    }
+
+    public String getInstanceId() {
+        return worldName;
+    }
+
+    /**
+     * Converts a dungeon YAML coordinate into the real Bukkit location for this run.
+     * In normal world-copy mode the origin is 0,0,0, while shared schematic mode offsets
+     * X/Y/Z into the region assigned to this party.
+     */
+    public Location resolveLocation(Vector vector, double addX, double addY, double addZ) {
+        Location origin = instanceOrigin != null ? instanceOrigin : new Location(dungeonWorld, 0, 0, 0);
+        return new Location(
+                dungeonWorld,
+                origin.getX() + vector.getX() + addX,
+                origin.getY() + vector.getY() + addY,
+                origin.getZ() + vector.getZ() + addZ
+        );
+    }
+
+    public Location resolveLocation(Vector vector) {
+        return resolveLocation(vector, 0, 0, 0);
+    }
+
+    /**
+     * Resolves block-aligned YAML coordinates for trigger blocks, levers, chests, and walls.
+     */
+    public Location resolveBlockLocation(Vector vector) {
+        Location origin = instanceOrigin != null ? instanceOrigin : new Location(dungeonWorld, 0, 0, 0);
+        return new Location(
+                dungeonWorld,
+                origin.getBlockX() + vector.getBlockX(),
+                origin.getBlockY() + vector.getBlockY(),
+                origin.getBlockZ() + vector.getBlockZ()
+        );
+    }
+
+    public Location getInstanceOrigin() {
+        if (instanceOrigin != null) return instanceOrigin.clone();
+        return dungeonWorld != null ? new Location(dungeonWorld, 0, 0, 0) : null;
+    }
+
+    public int getInstanceRadius() {
+        return instanceRadius;
+    }
+
+    /**
+     * Checks whether a world event belongs to this dungeon's allocated area.
+     * This lets multiple active games safely share one schematic world without
+     * routing mob deaths, targets, or teleports to the wrong party.
+     */
+    public boolean ownsLocation(Location location) {
+        if (location == null || location.getWorld() == null || dungeonWorld == null) return false;
+        if (!location.getWorld().equals(dungeonWorld)) return false;
+        if (instanceRadius < 1 || instanceOrigin == null) return true;
+
+        double dx = Math.abs(location.getX() - instanceOrigin.getX());
+        double dz = Math.abs(location.getZ() - instanceOrigin.getZ());
+        return dx <= instanceRadius && dz <= instanceRadius;
+    }
+
+    public Location getRespawnLocation() {
+        if (respawnLocation != null) return respawnLocation.clone();
+        return dungeonWorld != null ? dungeonWorld.getSpawnLocation().clone().add(0.5, 1, 0.5) : null;
+    }
+
+    public void setRespawnLocation(Location respawnLocation) {
+        this.respawnLocation = respawnLocation != null ? respawnLocation.clone() : null;
     }
 
     public Player getPlayer() {
