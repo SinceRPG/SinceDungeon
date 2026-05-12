@@ -135,3 +135,13 @@ particles:
   affix_vampiric: "HEART"
   affix_volcanic_warn: "FLAME"
   affix_volcanic_boom: "EXPLOSION"
+
+# ---------------------------------------------------------
+# [DUNGEON INSTANCING ENGINE]
+# WORLD = Clones complete world folders (Default Core Behavior).
+# SCHEMATIC = Generates a Void World and uses FAWE to paste a .schem file.
+# ---------------------------------------------------------
+instancing:
+  mode: "SCHEMATIC"
+  # The Y-Level where the schematic will be pasted in the Void World
+  paste-y-level: 64

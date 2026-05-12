@@ -18,7 +18,17 @@ log:
   invalid_projectile: "Invalid Projectile EntityType: <type>"
   webhook_http_fail: "Discord Webhook failed with HTTP code: <code>"
   webhook_send_fail: "Failed to send Discord Webhook: <error>"
-
+  schematic_provider_enabled: "[Instancing] Engine switched to SCHEMATIC Mode (FAWE/WorldEdit Hooked)."
+  worldedit_missing_provider: "[Instancing] Cannot use SCHEMATIC mode because FAWE/WorldEdit is missing! Falling back to WORLD mode."
+  schematic_paste_fail: "[Instancing] Failed to paste schematic <file> -> <error>"
+  schematic_not_found: "[Instancing] Schematic file not found for template: <template>"
+  void_world_fail: "[Instancing] Failed to generate void world for instance: <instance>"
+  world_unloaded: "Unloaded schematic dungeon world: <world>"
+  world_delete_fail: "Failed to fully delete world folder: <world>. It may be locked by another process."
+  world_unload_retry: "Retrying unload for world: <world> in 5 seconds..."
+  world_unload_fail: "Could not unload world: <world>"
+  world_force_unloaded: "Force unloaded dungeon world: <world>"
+  world_force_unload_fail: "CRITICAL: Failed to force-unload world <world> during shutdown!"
 admin:
   reload: "&aPremium configuration and holograms reloaded successfully!"
   holo_created: "&aHologram created and saved successfully!"
