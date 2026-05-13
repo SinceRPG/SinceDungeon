@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.managers.LanguageManager;
 import net.danh.sinceDungeon.utils.ConfigUtils;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Injects Premium-exclusive translation keys directly into the Core Plugin's language files.
@@ -424,9 +425,9 @@ public class PremiumLanguageInjector {
         return false;
     }
 
-    private static boolean setList(ConfigUtils cfg, String locale, String path, java.util.List<String> en, java.util.List<String> vi, java.util.List<String> zh) {
-        java.util.List<String> target = chooseList(locale, en, vi, zh);
-        java.util.List<String> current = cfg.getConfig().getStringList(path);
+    private static boolean setList(ConfigUtils cfg, String locale, String path, List<String> en, List<String> vi, List<String> zh) {
+        List<String> target = chooseList(locale, en, vi, zh);
+        List<String> current = cfg.getConfig().getStringList(path);
         if (!cfg.getConfig().contains(path) || current.isEmpty() || current.equals(en)) {
             cfg.set(path, target);
             return true;
@@ -440,7 +441,7 @@ public class PremiumLanguageInjector {
         return en;
     }
 
-    private static java.util.List<String> chooseList(String locale, java.util.List<String> en, java.util.List<String> vi, java.util.List<String> zh) {
+    private static List<String> chooseList(String locale, List<String> en, List<String> vi, List<String> zh) {
         if (locale != null && locale.toLowerCase().startsWith("vi")) return vi;
         if (locale != null && locale.toLowerCase().startsWith("zh")) return zh;
         return en;

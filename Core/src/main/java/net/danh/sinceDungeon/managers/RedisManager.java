@@ -4,12 +4,14 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
 import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitTask;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Manages the Redis Pub/Sub connection for cross-server dungeon matchmaking.
@@ -22,6 +24,7 @@ public class RedisManager {
     private final String localServerName;
     private JedisPool jedisPool;
     private JedisPubSub pubSub;
+    private BukkitTask listenerTask;
 
     public RedisManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -33,23 +36,52 @@ public class RedisManager {
         String host = plugin.getConfigFile().getString("redis.host", "localhost");
         int port = plugin.getConfigFile().getInt("redis.port", 6379);
         String password = plugin.getConfigFile().getString("redis.password", "");
+        int timeoutMillis = plugin.getConfigFile().getInt("redis.timeout-millis", 2000);
+        int maxTotal = plugin.getConfigFile().getInt("redis.pool.max-total", 10);
 
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        poolConfig.setMaxTotal(10);
+        poolConfig.setMaxTotal(maxTotal);
 
         if (password != null && !password.isEmpty()) {
-            jedisPool = new JedisPool(poolConfig, host, port, 2000, password);
+            jedisPool = new JedisPool(poolConfig, host, port, timeoutMillis, password);
         } else {
-            jedisPool = new JedisPool(poolConfig, host, port, 2000);
+            jedisPool = new JedisPool(poolConfig, host, port, timeoutMillis);
+        }
+
+        try {
+            try (Jedis jedis = jedisPool.getResource()) {
+                jedis.ping();
+            }
+        } catch (Exception e) {
+            jedisPool.close();
+            jedisPool = null;
+            throw e;
         }
 
         plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_connected", "[Redis] Connected to Redis successfully!"));
         startListening();
     }
 
+    public CompletableFuture<Void> connectAsync() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                connect();
+                future.complete(null);
+            } catch (Exception e) {
+                plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.redis_connect_error", "[Redis] Failed to connect: ") + e.getMessage());
+                future.complete(null);
+            }
+        });
+        return future;
+    }
+
     public void disconnect() {
         if (pubSub != null) {
             pubSub.unsubscribe();
+        }
+        if (listenerTask != null && !listenerTask.isCancelled()) {
+            listenerTask.cancel();
         }
         if (jedisPool != null && !jedisPool.isClosed()) {
             jedisPool.close();
@@ -62,7 +94,8 @@ public class RedisManager {
      * Incorporates an infinite while-loop with sleep-backoff to automatically reconnect if the Redis server restarts.
      */
     private void startListening() {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        int reconnectDelayMillis = plugin.getConfigFile().getInt("redis.reconnect-delay-millis", 5000);
+        listenerTask = Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             while (!Thread.currentThread().isInterrupted() && jedisPool != null && !jedisPool.isClosed()) {
                 try (Jedis jedis = jedisPool.getResource()) {
                     pubSub = new JedisPubSub() {
@@ -79,7 +112,7 @@ public class RedisManager {
                     plugin.getLogger().severe(plugin.getLanguageManager().getString("admin.log.redis_listen_error", "[Redis] Listener error/disconnected: ") + e.getMessage());
                     plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_reconnect", "[Redis] Trying to reconnect after 5 seconds..."));
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(reconnectDelayMillis);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                     }
@@ -89,6 +122,11 @@ public class RedisManager {
     }
 
     public void publishMessage(String message) {
+        if (jedisPool == null || jedisPool.isClosed()) {
+            plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.redis_publish_unavailable", "[Redis] Cannot publish because Redis is not connected."));
+            return;
+        }
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 jedis.publish(channelName, message);

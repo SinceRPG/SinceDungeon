@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
@@ -29,6 +30,11 @@ public class CooldownManager {
      * Loads the active cooldowns from the database into memory.
      */
     public void loadCooldowns() {
+        loadCooldownsAsync();
+    }
+
+    public CompletableFuture<Void> loadCooldownsAsync() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             String sql = "SELECT * FROM player_cooldowns WHERE expire_time > ?";
             try (Connection conn = plugin.getDatabaseManager().getConnection();
@@ -46,8 +52,11 @@ public class CooldownManager {
                 }
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.WARNING, plugin.getLanguageManager().getString("admin.log.cooldown_load_error", "[CooldownManager] Failed to load cooldowns."), e);
+            } finally {
+                future.complete(null);
             }
         });
+        return future;
     }
 
     /**

@@ -7,6 +7,7 @@ error:
   mythic_mob_not_found: "&c配置错误: 未找到 MythicMob <mob>。"
   mob_spawn_fail: "&c生成怪物 <mob> 失败: <error>"
   init_failed: "&c初始化副本失败。"
+  startup_not_ready: "&c副本数据仍在加载中，请稍后再试。"
   can_not_teleport: "&c你不能在副本内使用这种方式传送！"
   can_not_drop: "&c为防止物品丢失，你不能在副本内丢弃物品！"
   member_already_in: "&c队伍成员 <player> 当前在另一个副本中！无法开始。"

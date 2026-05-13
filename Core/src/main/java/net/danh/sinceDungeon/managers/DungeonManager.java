@@ -49,12 +49,6 @@ public class DungeonManager {
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
         DefaultRegistry.registerAll(plugin, this);
-
-        Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
-        this.templates.putAll(initialTemplates);
-
-        String msg = plugin.getLanguageManager().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
-        plugin.getLogger().info(msg.replace("<count>", String.valueOf(initialTemplates.size())));
     }
 
     public void addPendingCrossServerGame(UUID leader, String templateId) {
@@ -112,6 +106,12 @@ public class DungeonManager {
     }
 
     public void joinDungeon(Player p, String id) {
+        if (!plugin.isStartupReady()) {
+            String msg = plugin.getLanguageManager().getString("error.startup_not_ready", "&cDungeon data is still loading. Please try again in a moment.");
+            p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            return;
+        }
+
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
 
             if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())
@@ -319,6 +319,29 @@ public class DungeonManager {
 
             plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.dungeon_reloaded"));
         }));
+    }
+
+    /**
+     * Loads dungeon templates after plugin enable without blocking the main thread.
+     * This avoids deadlocks caused by waiting on Bukkit async scheduler tasks from onEnable.
+     */
+    public CompletableFuture<Void> reloadTemplatesAsync() {
+        return loadTemplatesAsync().thenCompose(newTemplates -> {
+            CompletableFuture<Void> applied = new CompletableFuture<>();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                try {
+                    templates.clear();
+                    templates.putAll(newTemplates);
+
+                    String msg = plugin.getLanguageManager().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
+                    plugin.getLogger().info(msg.replace("<count>", String.valueOf(newTemplates.size())));
+                    applied.complete(null);
+                } catch (Exception e) {
+                    applied.completeExceptionally(e);
+                }
+            });
+            return applied;
+        });
     }
 
     private CompletableFuture<Map<String, DungeonTemplate>> loadTemplatesAsync() {

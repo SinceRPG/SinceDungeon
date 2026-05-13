@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
@@ -31,7 +32,7 @@ public class DatabaseManager {
     /**
      * Opens the database connection and creates tables if they don't exist.
      */
-    public void connect() {
+    public boolean connect() {
         HikariConfig config = new HikariConfig();
 
         config.setMaximumPoolSize(plugin.getConfigFile().getInt("database.pool.max-size", 10));
@@ -65,18 +66,29 @@ public class DatabaseManager {
 
         try {
             dataSource = new HikariDataSource(config);
-            createTables();
+            if (!createTables()) {
+                disconnect();
+                return false;
+            }
             plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.db_connected", "[Database] Successfully connected!"));
+            return true;
         } catch (Exception e) {
             String errorMsg = plugin.getLanguageManager().getString("admin.log.db_error_hikari", "[Database] Failed to initialize: <error>");
             plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
+            return false;
         }
+    }
+
+    public CompletableFuture<Boolean> connectAsync() {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> future.complete(connect()));
+        return future;
     }
 
     /**
      * Creates the required tables if they don't exist.
      */
-    private void createTables() {
+    private boolean createTables() {
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             stmt.execute("""
                     CREATE TABLE IF NOT EXISTS top_fastest (
@@ -142,9 +154,11 @@ public class DatabaseManager {
             } catch (SQLException ignored) {
             }
 
+            return true;
         } catch (SQLException e) {
             String errorMsg = plugin.getLanguageManager().getString("admin.log.db_error_tables", "[Database] Failed to create tables: <error>");
             plugin.getLogger().severe(errorMsg.replace("<error>", e.getMessage()));
+            return false;
         }
     }
 

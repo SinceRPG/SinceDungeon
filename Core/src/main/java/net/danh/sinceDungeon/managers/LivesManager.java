@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LivesManager {
@@ -41,6 +42,22 @@ public class LivesManager {
     }
 
     public void loadPlayer(UUID uuid) {
+        loadPlayerAsync(uuid);
+    }
+
+    public CompletableFuture<Void> loadPlayerAsync(UUID uuid) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        if (!plugin.getDatabaseManager().isConnected()) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> loadPlayerAsync(uuid).whenComplete((ignored, throwable) -> {
+                if (throwable != null) {
+                    future.completeExceptionally(throwable);
+                } else {
+                    future.complete(null);
+                }
+            }), 20L);
+            return future;
+        }
+
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try (Connection conn = plugin.getDatabaseManager().getConnection()) {
 
@@ -66,8 +83,11 @@ public class LivesManager {
                 }
             } catch (SQLException e) {
                 plugin.getLogger().severe("Failed to load lives for " + uuid + ": " + e.getMessage());
+            } finally {
+                future.complete(null);
             }
         });
+        return future;
     }
 
     public void unloadPlayer(UUID uuid) {
@@ -123,14 +143,16 @@ public class LivesManager {
                 data.setLastRegen(now - (diff % regenIntervalMillis));
                 data.setModified(true);
 
-                Player p = Bukkit.getPlayer(data.getUuid());
-                if (p != null && p.isOnline()) {
-                    String msg = plugin.getLanguageManager().getString("lives.regenerated")
-                            .replace("<amount>", String.valueOf(recovered))
-                            .replace("<current>", String.valueOf(newLives))
-                            .replace("<max>", String.valueOf(data.getMaxLives()));
-                    p.sendMessage(ColorUtils.parseWithPrefix(msg));
-                }
+                String msg = plugin.getLanguageManager().getString("lives.regenerated")
+                        .replace("<amount>", String.valueOf(recovered))
+                        .replace("<current>", String.valueOf(newLives))
+                        .replace("<max>", String.valueOf(data.getMaxLives()));
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    Player online = Bukkit.getPlayer(data.getUuid());
+                    if (online != null && online.isOnline()) {
+                        online.sendMessage(ColorUtils.parseWithPrefix(msg));
+                    }
+                });
             }
         }
     }

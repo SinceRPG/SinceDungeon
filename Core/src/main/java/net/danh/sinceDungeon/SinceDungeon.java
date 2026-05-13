@@ -33,7 +33,11 @@ import org.jspecify.annotations.NonNull;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public final class SinceDungeon extends JavaPlugin {
     private static SinceDungeon plugin;
@@ -56,6 +60,7 @@ public final class SinceDungeon extends JavaPlugin {
     private InstanceManager instanceManager;
 
     private DungeonListener dungeonListener;
+    private volatile boolean startupReady;
 
     public static SinceDungeon getPlugin() {
         return plugin;
@@ -98,17 +103,16 @@ public final class SinceDungeon extends JavaPlugin {
         editorListener = new EditorListener(this);
 
         databaseManager = new DatabaseManager(this);
-        databaseManager.connect();
         topManager = new TopManager(this, databaseManager);
         livesManager = new LivesManager(this);
 
         cooldownManager = new CooldownManager(this);
-        cooldownManager.loadCooldowns();
+        startDataServices();
 
         if (configFile.getBoolean("cross-server.enabled", false)) {
             getLogger().warning(languageManager.getString("admin.log.experimental_cross_server", "⚠️ EXPERIMENTAL FEATURE ENABLED: CROSS-SERVER (v1.5.5+)"));
             redisManager = new RedisManager(this);
-            redisManager.connect();
+            redisManager.connectAsync();
             String bungeeChannel = configFile.getString("cross-server.bungee-channel", "BungeeCord");
             getServer().getMessenger().registerOutgoingPluginChannel(this, bungeeChannel);
         }
@@ -143,9 +147,49 @@ public final class SinceDungeon extends JavaPlugin {
             getLogger().warning(languageManager.getString("admin.log.version_warning"));
         }
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            livesManager.loadPlayer(p.getUniqueId());
-        }
+    }
+
+    private void startDataServices() {
+        int timeoutSeconds = configFile.getInt("startup.async-timeout-seconds", 30);
+
+        databaseManager.connectAsync()
+                .thenCompose(connected -> {
+                    if (!connected) {
+                        return CompletableFuture.failedFuture(new IllegalStateException("Database initialization failed."));
+                    }
+
+                    CompletableFuture<Void> templates = dungeonManager.reloadTemplatesAsync();
+                    CompletableFuture<Void> cooldowns = cooldownManager.loadCooldownsAsync();
+
+                    return snapshotOnlinePlayerIds().thenCompose(onlinePlayerIds -> {
+                        CompletableFuture<?>[] lifeLoads = onlinePlayerIds.stream()
+                                .map(livesManager::loadPlayerAsync)
+                                .toArray(CompletableFuture[]::new);
+
+                        return CompletableFuture.allOf(CompletableFuture.allOf(lifeLoads), templates, cooldowns);
+                    });
+                })
+                .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                .whenComplete((ignored, throwable) -> Bukkit.getScheduler().runTask(this, () -> {
+                    if (throwable != null) {
+                        String msg = languageManager.getString("admin.log.startup_failed", "[Startup] SinceDungeon startup failed: <error>");
+                        String error = throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
+                        getLogger().severe(msg.replace("<error>", error));
+                        getServer().getPluginManager().disablePlugin(this);
+                        return;
+                    }
+
+                    startupReady = true;
+                    getLogger().info(languageManager.getString("admin.log.startup_ready", "[Startup] SinceDungeon finished loading data."));
+                }));
+    }
+
+    private CompletableFuture<Collection<UUID>> snapshotOnlinePlayerIds() {
+        CompletableFuture<Collection<UUID>> future = new CompletableFuture<>();
+        Bukkit.getScheduler().runTask(this, () -> future.complete(Bukkit.getOnlinePlayers().stream()
+                .map(Player::getUniqueId)
+                .toList()));
+        return future;
     }
 
     private void setupLanguage() {
@@ -311,5 +355,9 @@ public final class SinceDungeon extends JavaPlugin {
 
     public RewardManager getRewardManager() {
         return rewardManager;
+    }
+
+    public boolean isStartupReady() {
+        return startupReady;
     }
 }

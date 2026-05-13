@@ -7,6 +7,7 @@ error:
   mythic_mob_not_found: "&cConfig Error: MythicMob <mob> not found."
   mob_spawn_fail: "&cFailed to spawn mob <mob>: <error>"
   init_failed: "&cFailed to initialize dungeon."
+  startup_not_ready: "&cDungeon data is still loading. Please try again in a moment."
   can_not_teleport: "&cYou cannot teleport this way inside a Dungeon!"
   can_not_drop: "&cYou cannot drop items in a Dungeon to prevent item loss!"
   member_already_in: "&cMember <player> is currently in another Dungeon! Cannot start."
