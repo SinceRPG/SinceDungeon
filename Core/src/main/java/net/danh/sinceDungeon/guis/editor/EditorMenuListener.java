@@ -177,6 +177,7 @@ public class EditorMenuListener implements Listener {
             case "SELECT_TYPE" -> handleSelectType(p, session, gui, page, slot, cur);
             case "DUNGEON" -> handleDungeonMenu(e, p, session, gui, slot, cur);
             case "SETTINGS" -> handleSettingsMenu(p, session, gui, page, slot, cur);
+            case "ADVANCED_YAML" -> handleAdvancedYaml(e, p, session, gui, page, slot, cur);
             case "CONDITIONS" -> handleConditionsMenu(e, p, session, gui, page, slot, cur);
             case "REWARDS_MAIN" -> handleRewardsMain(p, session, gui, slot);
             case "REWARD_TIERS" -> handleRewardTiers(e, p, session, gui, page, slot, cur);
@@ -285,6 +286,8 @@ public class EditorMenuListener implements Listener {
             gui.openRewardMenu(p, session);
         } else if (slot == 16) {
             gui.openStageList(p, session, session.getPage("STAGES"));
+        } else if (slot == 24) {
+            gui.openAdvancedYamlEditor(p, session, session.getPage("ADVANCED_YAML"));
         } else if (slot == 22) {
             session.save();
         } else if (slot == 18) {
@@ -295,6 +298,95 @@ public class EditorMenuListener implements Listener {
                 deleteDungeonSafely(p, dungeonId, gui);
                 gui.openMainMenu(p, 0);
             }
+        }
+    }
+
+    private void handleAdvancedYaml(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
+        if (slot == 48 && cur.getType() == gui.getNavMaterial()) {
+            gui.openAdvancedYamlEditor(p, session, page - 1);
+            return;
+        }
+        if (slot == 50 && cur.getType() == gui.getNavMaterial()) {
+            gui.openAdvancedYamlEditor(p, session, page + 1);
+            return;
+        }
+        if (slot == 45) {
+            gui.openDungeonMenu(p, session);
+            return;
+        }
+        if (slot == 49) {
+            session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_yaml_path", input -> {
+                String[] parts = input.split("=", 2);
+                String cleanPath = parts[0].trim();
+                if (cleanPath.isEmpty() || parts.length < 2) {
+                    gui.sendMessage(p, "input_error", "<error>", "Use path=value");
+                    gui.openAdvancedYamlEditor(p, session, page);
+                    return;
+                }
+                String value = parts[1].trim();
+                session.getConfig().set(cleanPath, gui.getFinalVal(value, cleanPath));
+                gui.sendMessage(p, "update_val", "<key>", cleanPath, "<val>", value);
+                gui.openAdvancedYamlEditor(p, session, session.getPage("ADVANCED_YAML"));
+            });
+            plugin.getEditorListener().startListening(p, session);
+            return;
+        }
+
+        NamespacedKey yamlPathKey = new NamespacedKey(plugin, "yaml_path");
+        ItemMeta meta = cur.getItemMeta();
+        if (meta == null || !meta.getPersistentDataContainer().has(yamlPathKey, PersistentDataType.STRING)) return;
+
+        String path = meta.getPersistentDataContainer().get(yamlPathKey, PersistentDataType.STRING);
+        if (path == null || path.isBlank()) return;
+
+        Object rawValue = session.getConfig().get(path);
+        EditorGUI.FieldProperties props = EditorGUI.FieldProperties.resolve(path, rawValue, plugin);
+
+        if (e.getClick() == ClickType.SHIFT_RIGHT) {
+            session.getConfig().set(path, null);
+            gui.sendMessage(p, "val_cleared");
+            gui.openAdvancedYamlEditor(p, session, page);
+            return;
+        }
+
+        if (rawValue instanceof List<?>) {
+            gui.openStringListEditor(p, session, path, "ADVANCED_YAML", 0);
+            return;
+        }
+
+        if (rawValue instanceof Boolean && e.getClick() == ClickType.RIGHT) {
+            boolean next = !session.getConfig().getBoolean(path);
+            session.getConfig().set(path, next);
+            gui.sendMessage(p, "update_val", "<key>", path, "<val>", String.valueOf(next));
+            gui.openAdvancedYamlEditor(p, session, page);
+            return;
+        }
+
+        if (props.isLocation && e.getClick() == ClickType.RIGHT) {
+            String locStr = String.format(Locale.US, "%.1f,%.1f,%.1f", p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
+            session.getConfig().set(path, locStr);
+            gui.sendMessage(p, "update_loc", "<loc>", locStr);
+            gui.openAdvancedYamlEditor(p, session, page);
+            return;
+        }
+
+        if (e.getClick() == ClickType.LEFT) {
+            session.awaitInput(props.inputType, "edit_yaml_value", value -> {
+                if (props.inputType == EditorSession.InputType.EDIT_NUMBER) {
+                    try {
+                        Double.parseDouble(value);
+                    } catch (Exception ex) {
+                        gui.sendMessage(p, "number_error");
+                        gui.openAdvancedYamlEditor(p, session, page);
+                        return;
+                    }
+                }
+
+                session.getConfig().set(path, gui.getFinalVal(value, path));
+                gui.sendMessage(p, "update_val", "<key>", path, "<val>", value);
+                gui.openAdvancedYamlEditor(p, session, page);
+            });
+            plugin.getEditorListener().startListening(p, session);
         }
     }
 
@@ -1020,6 +1112,7 @@ public class EditorMenuListener implements Listener {
         if (slot == 45) {
             switch (session.getCurrentListReturnMenu()) {
                 case "SETTINGS" -> gui.openSettingsMenu(p, session, session.getPage("SETTINGS"));
+                case "ADVANCED_YAML" -> gui.openAdvancedYamlEditor(p, session, session.getPage("ADVANCED_YAML"));
                 case "EDIT_ACTION" -> gui.openActionEditor(p, session);
                 case "EDIT_PHASE" -> gui.openPhaseEditor(p, session);
                 case "EDIT_REINFORCEMENTS" -> gui.openReinforcementEditor(p, session);

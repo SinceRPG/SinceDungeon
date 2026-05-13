@@ -197,6 +197,7 @@ public class EditorGUI {
         inv.setItem(16, makeItem(Material.DIAMOND_SWORD, getMsg("items.stages", "&cStages"), getLoreList("stages_lore", Collections.singletonList("&7Edit dungeon content"))));
 
         inv.setItem(13, makeItem(Material.COMPARATOR, getMsg("items.settings", "&bGameplay Settings"), getLoreList("settings_lore", Arrays.asList("&7Edit custom game rules", "&7for this specific map."))));
+        inv.setItem(24, makeItem(Material.COMMAND_BLOCK, getMsg("items.advanced_yaml", "&dAdvanced YAML"), getLoreList("advanced_yaml_lore", Arrays.asList("&7Edit every raw dungeon YAML path.", "&7Use this for advanced or new fields."))));
 
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save", "&a&lSave Changes"), null));
         inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
@@ -300,6 +301,68 @@ public class EditorGUI {
         inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
+    }
+
+    public void openAdvancedYamlEditor(Player p, EditorSession session, int page) {
+        session.setPage("ADVANCED_YAML", page);
+        session.setLastMenuOpener(player -> openAdvancedYamlEditor(player, session, session.getPage("ADVANCED_YAML")));
+
+        List<String> paths = new ArrayList<>();
+        collectLeafPaths(session.getConfig(), "", paths);
+        paths.sort(String::compareToIgnoreCase);
+
+        int total = paths.size();
+        int maxPage = Math.max(0, (total - 1) / 45);
+        page = Math.max(0, Math.min(maxPage, page));
+
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "ADVANCED_YAML", page), 54, ColorUtils.parse(getMsg("title.advanced_yaml", "&lAdvanced YAML")));
+
+        NamespacedKey yamlPathKey = new NamespacedKey(plugin, "yaml_path");
+        for (int i = 0; i < 45; i++) {
+            int idx = i + page * 45;
+            if (idx >= total) break;
+
+            String path = paths.get(idx);
+            Object rawValue = session.getConfig().get(path);
+            FieldProperties props = FieldProperties.resolve(path, rawValue, plugin);
+            String value = rawValue instanceof List<?> list ? list.size() + " " + getWord("items", "items") : String.valueOf(rawValue);
+
+            List<String> lore = Arrays.asList(
+                    getMsg("items.yaml_path", "&7Path: &f<path>").replace("<path>", path),
+                    getMsg("items.yaml_value", "&7Value: &f<value>").replace("<value>", value),
+                    props.hint,
+                    getMsg("items.yaml_delete_hint", "&cShift-Right: Delete")
+            );
+
+            ItemStack item = makeItem(props.icon, getMsg("items.yaml_entry", "&e<path>").replace("<path>", trimPath(path)), lore);
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.getPersistentDataContainer().set(yamlPathKey, PersistentDataType.STRING, path);
+                item.setItemMeta(meta);
+            }
+            inv.setItem(i, item);
+        }
+
+        inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_yaml_path", "&aAdd YAML Path"), Arrays.asList("&7Creates or overwrites a raw path.", "&eLeft Click: enter path and value")));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
+        setPagination(inv, page, maxPage, 48, 50);
+        p.openInventory(inv);
+    }
+
+    private void collectLeafPaths(ConfigurationSection section, String prefix, List<String> paths) {
+        for (String key : section.getKeys(false)) {
+            String path = prefix.isEmpty() ? key : prefix + "." + key;
+            if (section.isConfigurationSection(key)) {
+                ConfigurationSection child = section.getConfigurationSection(key);
+                if (child != null) collectLeafPaths(child, path, paths);
+            } else {
+                paths.add(path);
+            }
+        }
+    }
+
+    private String trimPath(String path) {
+        return path.length() <= 36 ? path : "..." + path.substring(path.length() - 33);
     }
 
     public void openConditionList(Player p, EditorSession session, int page) {
