@@ -29,11 +29,11 @@ public: true
 settings:
   max-players: 6
 
-conditions: {}
+conditions: { }
 
-rewards: {}
+rewards: { }
 
-stages: {}
+stages: { }
 ```
 
 ## `template-world`
@@ -76,9 +76,9 @@ settings:
   required-item: "NONE"
   consume-required-item: true
   commands:
-    on-start: []
-    on-finish: []
-    on-first-finish: []
+    on-start: [ ]
+    on-finish: [ ]
+    on-first-finish: [ ]
 ```
 
 Death actions:

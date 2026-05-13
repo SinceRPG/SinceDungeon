@@ -5,6 +5,7 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -17,7 +18,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.List;
 import java.util.Map;
@@ -100,28 +100,25 @@ public class AffixListener implements Listener {
             } catch (Exception ignored) {
             }
 
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    // CRITICAL FIX: Ensure world still exists before processing explosion
-                    if (deathLoc.getWorld() == null || !deathLoc.getChunk().isLoaded()) return;
+            SchedulerCompat.runAtLocationLater(plugin, deathLoc, () -> {
+                // CRITICAL FIX: Ensure world still exists before processing explosion
+                if (deathLoc.getWorld() == null || !deathLoc.getChunk().isLoaded()) return;
 
-                    try {
-                        String boomP = plugin.getFileManager().getConfig().getString("particles.affix_volcanic_boom", "EXPLOSION");
-                        deathLoc.getWorld().spawnParticle(Particle.valueOf(boomP.toUpperCase()), deathLoc, 2);
-                        deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
-                    } catch (Exception ignored) {
-                    }
+                try {
+                    String boomP = plugin.getFileManager().getConfig().getString("particles.affix_volcanic_boom", "EXPLOSION");
+                    deathLoc.getWorld().spawnParticle(Particle.valueOf(boomP.toUpperCase()), deathLoc, 2);
+                    deathLoc.getWorld().playSound(deathLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
+                } catch (Exception ignored) {
+                }
 
-                    for (Player p : deathLoc.getWorld().getPlayers()) {
-                        if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {
-                            p.damage(damage);
-                            String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.affix_volcanic_hit", "&cYou were burned by a Volcanic explosion!");
-                            p.sendMessage(ColorUtils.parseWithPrefix(msg));
-                        }
+                for (Player p : deathLoc.getWorld().getPlayers()) {
+                    if (!p.isDead() && p.getLocation().distanceSquared(deathLoc) <= (radius * radius)) {
+                        p.damage(damage);
+                        String msg = SinceDungeon.getPlugin().getLanguageManager().getString("action.affix_volcanic_hit", "&cYou were burned by a Volcanic explosion!");
+                        p.sendMessage(ColorUtils.parseWithPrefix(msg));
                     }
                 }
-            }.runTaskLater(plugin, delayTicks);
+            }, delayTicks);
         }
     }
 }

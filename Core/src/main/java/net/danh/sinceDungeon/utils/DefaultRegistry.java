@@ -101,7 +101,7 @@ public class DefaultRegistry {
     private static void registerDefaultProcessors(SinceDungeon plugin, DungeonManager manager) {
         manager.registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
-        manager.registerRewardProcessor("COMMAND", (p, val, displayName) -> Bukkit.getScheduler().runTask(plugin, () -> {
+        manager.registerRewardProcessor("COMMAND", (p, val, displayName) -> SchedulerCompat.runGlobal(plugin, () -> {
             String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
             if (cmd.startsWith("/")) {
                 cmd = cmd.substring(1);

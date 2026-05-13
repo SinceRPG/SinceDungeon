@@ -120,4 +120,5 @@ MMOITEMS:SWORD:SILVER_LANCE:1
 
 ## Inventory Safety
 
-If the player inventory is full, rewards are safely dropped at a valid location. If the player is inside a dungeon instance, the plugin attempts to avoid dropping rewards into a deleted/generated dungeon world.
+If the player inventory is full, rewards are safely dropped at a valid location. If the player is inside a dungeon
+instance, the plugin attempts to avoid dropping rewards into a deleted/generated dungeon world.

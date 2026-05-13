@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -313,7 +314,7 @@ public class LootChestAction extends DungeonAction implements Tickable {
             }
         }
 
-        Bukkit.getScheduler().runTaskLater(SinceDungeon.getPlugin(), () -> {
+        SchedulerCompat.runGlobalLater(SinceDungeon.getPlugin(), () -> {
             if (chestBlock != null) chestBlock.setType(Material.AIR);
             Location soundLoc = game.resolveBlockLocation(chestLocation);
             game.getWorld().playSound(soundLoc, Sound.ENTITY_ITEM_PICKUP, 1f, 1f);

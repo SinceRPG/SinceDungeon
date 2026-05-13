@@ -9,10 +9,7 @@ import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
-import net.danh.sinceDungeon.utils.BungeeUtils;
-import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.DefaultRegistry;
-import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -57,7 +54,7 @@ public class DungeonManager {
         int timeoutSeconds = plugin.getConfigFile().getInt("cross-server.transfer-timeout-seconds", 30);
         long timeoutTicks = timeoutSeconds * 20L;
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerCompat.runGlobalLater(plugin, () -> {
             if (pendingCrossServerGames.containsKey(leader)) {
                 pendingCrossServerGames.remove(leader);
                 plugin.getPartyManager().getProvider().disbandParty(leader);
@@ -99,7 +96,7 @@ public class DungeonManager {
     public void checkPendingCrossServerJoin(Player p) {
         if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
             String templateId = pendingCrossServerGames.remove(p.getUniqueId());
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> {
                 joinDungeonLocal(p, templateId);
             }, 40L);
         }
@@ -141,7 +138,7 @@ public class DungeonManager {
 
             plugin.getRedisManager().requestDungeonServer(id, p.getUniqueId(), partyDataRaw);
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> {
                 if (pendingRequests.containsKey(p.getUniqueId())) {
                     pendingRequests.remove(p.getUniqueId());
                     if (p.isOnline()) {
@@ -159,7 +156,7 @@ public class DungeonManager {
 
     public void addTransitioning(UUID uuid) {
         transitioningPlayers.add(uuid);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> removeTransitioning(uuid), 200L);
+        SchedulerCompat.runGlobalLater(plugin, () -> removeTransitioning(uuid), 200L);
     }
 
     public void removeTransitioning(UUID uuid) {
@@ -310,7 +307,7 @@ public class DungeonManager {
      */
     public CompletableFuture<Void> reload() {
         stopAllGames();
-        return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
+        return loadTemplatesAsync().thenAccept(newTemplates -> SchedulerCompat.runGlobal(plugin, () -> {
             templates.clear();
             templates.putAll(newTemplates);
 
@@ -328,7 +325,7 @@ public class DungeonManager {
     public CompletableFuture<Void> reloadTemplatesAsync() {
         return loadTemplatesAsync().thenCompose(newTemplates -> {
             CompletableFuture<Void> applied = new CompletableFuture<>();
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 try {
                     templates.clear();
                     templates.putAll(newTemplates);
@@ -356,7 +353,7 @@ public class DungeonManager {
 
         for (File f : files) {
             CompletableFuture<Void> future = new CompletableFuture<>();
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsync(plugin, () -> {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);

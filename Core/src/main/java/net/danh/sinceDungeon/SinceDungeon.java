@@ -18,10 +18,7 @@ import net.danh.sinceDungeon.managers.*;
 import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
-import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.ConfigUtils;
-import net.danh.sinceDungeon.utils.ServerVersion;
-import net.danh.sinceDungeon.utils.WorldUtils;
+import net.danh.sinceDungeon.utils.*;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -170,7 +167,7 @@ public final class SinceDungeon extends JavaPlugin {
                     });
                 })
                 .orTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                .whenComplete((ignored, throwable) -> Bukkit.getScheduler().runTask(this, () -> {
+                .whenComplete((ignored, throwable) -> SchedulerCompat.runGlobal(this, () -> {
                     if (throwable != null) {
                         String msg = languageManager.getString("admin.log.startup_failed", "[Startup] SinceDungeon startup failed: <error>");
                         String error = throwable.getMessage() == null ? throwable.getClass().getSimpleName() : throwable.getMessage();
@@ -186,7 +183,7 @@ public final class SinceDungeon extends JavaPlugin {
 
     private CompletableFuture<Collection<UUID>> snapshotOnlinePlayerIds() {
         CompletableFuture<Collection<UUID>> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTask(this, () -> future.complete(Bukkit.getOnlinePlayers().stream()
+        SchedulerCompat.runGlobal(this, () -> future.complete(Bukkit.getOnlinePlayers().stream()
                 .map(Player::getUniqueId)
                 .toList()));
         return future;
@@ -267,17 +264,17 @@ public final class SinceDungeon extends JavaPlugin {
         File[] files = container.listFiles();
 
         if (files != null) {
-            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            SchedulerCompat.runAsync(this, () -> {
                 String currentPrefix = getConfigFile().getString("dungeon.world-prefix", "SinceDungeon_");
                 if (currentPrefix == null || currentPrefix.trim().isEmpty()) currentPrefix = "SinceDungeon_";
                 for (File file : files) {
                     if (file.isDirectory() && (file.getName().startsWith("SinceDungeon_") || file.getName().startsWith(currentPrefix))) {
-                        Bukkit.getScheduler().runTask(this, () -> {
+                        SchedulerCompat.runGlobal(this, () -> {
                             World w = Bukkit.getWorld(file.getName());
                             if (w != null) {
                                 Bukkit.unloadWorld(w, false);
                             }
-                            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                            SchedulerCompat.runAsync(this, () -> {
                                 String msg = languageManager.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
                                 getLogger().info(msg.replace("<world>", file.getName()));
                                 WorldUtils.deleteWorld(file);

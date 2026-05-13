@@ -3,7 +3,7 @@ package net.danh.sinceDungeon.managers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import net.danh.sinceDungeon.SinceDungeon;
-import org.bukkit.Bukkit;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 
 import java.io.File;
 import java.sql.Connection;
@@ -81,7 +81,7 @@ public class DatabaseManager {
 
     public CompletableFuture<Boolean> connectAsync() {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> future.complete(connect()));
+        SchedulerCompat.runAsync(plugin, () -> future.complete(connect()));
         return future;
     }
 
@@ -190,7 +190,7 @@ public class DatabaseManager {
      * Executes the SQL DELETE commands to wipe all records for a specific map asynchronously.
      */
     public void resetLeaderboard(String map) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String sqlFastest = "DELETE FROM top_fastest WHERE dungeon_id = ?";
             String sqlPartyFastest = "DELETE FROM party_top_fastest WHERE dungeon_id = ?";
             String sqlKills = "DELETE FROM top_kills WHERE dungeon_id = ?";
@@ -230,7 +230,7 @@ public class DatabaseManager {
      * If map is provided, wipes only their records on that map. Otherwise, wipes their records across all maps.
      */
     public void resetPlayerLeaderboard(UUID playerUuid, String map) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String condition = (map == null) ? "player_uuid = ?" : "player_uuid = ? AND dungeon_id = ?";
             String sqlFastest = "DELETE FROM top_fastest WHERE " + condition;
             String sqlKills = "DELETE FROM top_kills WHERE " + condition;

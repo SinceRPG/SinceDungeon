@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -331,7 +332,7 @@ public class DungeonListener implements Listener {
                     String msg = plugin.getLanguageManager().getString("admin.ghost_rescued", "&eThe system rescued you from a deleted or corrupted Dungeon instance.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    SchedulerCompat.runGlobalLater(plugin, () -> {
                         try {
                             if (finalAttachment != null) {
                                 p.removeAttachment(finalAttachment);
@@ -604,7 +605,7 @@ public class DungeonListener implements Listener {
 
             final boolean finalOutOfLives = outOfLives;
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> {
                 if (!p.isOnline()) return;
                 DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
                 if (checkGame == null || !checkGame.isRunning()) return;

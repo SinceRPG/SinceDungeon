@@ -3,8 +3,7 @@ package net.danh.sinceDungeon.managers;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
-import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitTask;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
@@ -24,7 +23,7 @@ public class RedisManager {
     private final String localServerName;
     private JedisPool jedisPool;
     private JedisPubSub pubSub;
-    private BukkitTask listenerTask;
+    private SchedulerCompat.TaskHandle listenerTask;
 
     public RedisManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -64,7 +63,7 @@ public class RedisManager {
 
     public CompletableFuture<Void> connectAsync() {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 connect();
                 future.complete(null);
@@ -95,7 +94,7 @@ public class RedisManager {
      */
     private void startListening() {
         int reconnectDelayMillis = plugin.getConfigFile().getInt("redis.reconnect-delay-millis", 5000);
-        listenerTask = Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        listenerTask = SchedulerCompat.runAsync(plugin, () -> {
             while (!Thread.currentThread().isInterrupted() && jedisPool != null && !jedisPool.isClosed()) {
                 try (Jedis jedis = jedisPool.getResource()) {
                     pubSub = new JedisPubSub() {
@@ -127,7 +126,7 @@ public class RedisManager {
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 jedis.publish(channelName, message);
             } catch (Exception e) {
@@ -171,7 +170,7 @@ public class RedisManager {
             String partyDataRaw = parts.length > 3 ? parts[3] : "";
 
             if (plugin.getDungeonManager().getTemplates().containsKey(templateId)) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     if (!partyDataRaw.isEmpty()) {
                         String[] members = partyDataRaw.split(",");
                         if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
@@ -186,12 +185,12 @@ public class RedisManager {
             UUID leaderUuid = UUID.fromString(parts[1]);
             String targetServer = parts[2];
 
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 plugin.getDungeonManager().handleCrossServerReady(leaderUuid, targetServer);
             });
         } else if (action.equals("PARTY_DISBAND")) {
             UUID leaderUuid = UUID.fromString(parts[1]);
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
                     Party party = defaultParty.getPartyObject(leaderUuid);
                     if (party != null) {
@@ -201,7 +200,7 @@ public class RedisManager {
             });
         } else if (action.equals("PARTY_LEAVE")) {
             UUID targetUuid = UUID.fromString(parts[1]);
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 if (plugin.getPartyManager().getProvider() instanceof DefaultPartyProvider defaultParty) {
                     defaultParty.silentQuit(targetUuid);
                 }

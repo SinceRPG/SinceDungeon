@@ -7,9 +7,11 @@ This page explains how to set up one dungeon with either Core world-folder insta
 SinceDungeon has two instance providers:
 
 - `WORLD`: Core default behavior. The plugin clones a full template world folder for every run.
-- `SCHEMATIC`: Premium behavior. The plugin creates or reuses a void world and pastes a `.schem` or `.schematic` file for every run.
+- `SCHEMATIC`: Premium behavior. The plugin creates or reuses a void world and pastes a `.schem` or `.schematic` file
+  for every run.
 
-Core registers the default world provider. Premium overwrites the instance provider when schematic mode is enabled and the required WorldEdit hook is available.
+Core registers the default world provider. Premium overwrites the instance provider when schematic mode is enabled and
+the required WorldEdit hook is available.
 
 ## World Folder Mode
 
@@ -102,7 +104,8 @@ Field behavior:
 - `clear-on-release`: clears the used region when the run ends.
 - `clear-min-y` and `clear-max-y`: vertical clear bounds.
 
-Dungeon action coordinates still use the original schematic coordinates. The Premium provider offsets them internally into the assigned shared-world region.
+Dungeon action coordinates still use the original schematic coordinates. The Premium provider offsets them internally
+into the assigned shared-world region.
 
 ## Per-Dungeon Setup Workflow
 
@@ -138,11 +141,13 @@ corner1: "-2,64,-10"
 corner2: "2,68,-10"
 ```
 
-In the GUI editor, location fields can be filled from the player's current position or by right-clicking a block while the editor is waiting for location input.
+In the GUI editor, location fields can be filled from the player's current position or by right-clicking a block while
+the editor is waiting for location input.
 
 ## Action Setup Order
 
-Use actions as small objectives. A clean dungeon normally uses one objective per action and one or more actions per stage.
+Use actions as small objectives. A clean dungeon normally uses one objective per action and one or more actions per
+stage.
 
 Common setup patterns:
 

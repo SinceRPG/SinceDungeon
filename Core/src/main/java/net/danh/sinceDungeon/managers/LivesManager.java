@@ -2,9 +2,9 @@ package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,12 +18,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LivesManager {
     private final SinceDungeon plugin;
     private final Map<UUID, PlayerLives> cache = new ConcurrentHashMap<>();
-    private final BukkitTask syncTask; // Track task for proper memory cleanup
+    private final SchedulerCompat.TaskHandle syncTask; // Track task for proper memory cleanup
 
     public LivesManager(SinceDungeon plugin) {
         this.plugin = plugin;
 
-        syncTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        syncTask = SchedulerCompat.runAsyncTimer(plugin, () -> {
             for (PlayerLives lives : cache.values()) {
                 if (lives.isModified()) {
                     saveToDatabase(lives);
@@ -48,7 +48,7 @@ public class LivesManager {
     public CompletableFuture<Void> loadPlayerAsync(UUID uuid) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         if (!plugin.getDatabaseManager().isConnected()) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> loadPlayerAsync(uuid).whenComplete((ignored, throwable) -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> loadPlayerAsync(uuid).whenComplete((ignored, throwable) -> {
                 if (throwable != null) {
                     future.completeExceptionally(throwable);
                 } else {
@@ -58,7 +58,7 @@ public class LivesManager {
             return future;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Connection conn = plugin.getDatabaseManager().getConnection()) {
 
                 int defaultMax = plugin.getConfigFile().getInt("lives.default-max-lives", 3);
@@ -93,7 +93,7 @@ public class LivesManager {
     public void unloadPlayer(UUID uuid) {
         PlayerLives data = cache.remove(uuid);
         if (data != null && data.isModified()) {
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> saveToDatabase(data));
+            SchedulerCompat.runAsync(plugin, () -> saveToDatabase(data));
         }
     }
 
@@ -147,7 +147,7 @@ public class LivesManager {
                         .replace("<amount>", String.valueOf(recovered))
                         .replace("<current>", String.valueOf(newLives))
                         .replace("<max>", String.valueOf(data.getMaxLives()));
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     Player online = Bukkit.getPlayer(data.getUuid());
                     if (online != null && online.isOnline()) {
                         online.sendMessage(ColorUtils.parseWithPrefix(msg));

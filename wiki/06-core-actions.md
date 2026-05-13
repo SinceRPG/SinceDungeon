@@ -175,7 +175,7 @@ boss:
   bar_style: "SOLID"
   attributes:
     - "movement_speed:0.3"
-  equipment: []
+  equipment: [ ]
   enrage_time: -1
   enrage_message: "&c&lThe Boss has become ENRAGED!"
   enrage_attributes:
@@ -189,6 +189,6 @@ boss:
         mob: "ZOMBIE"
         amount: 3
         custom_name: "&cMinion"
-        attributes: []
-        equipment: []
+        attributes: [ ]
+        equipment: [ ]
 ```

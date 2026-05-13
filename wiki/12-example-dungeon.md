@@ -120,8 +120,8 @@ stages:
               mob: "ZOMBIE"
               amount: 3
               custom_name: "&cCrypt Minion"
-              attributes: []
-              equipment: []
+              attributes: [ ]
+              equipment: [ ]
 ```
 
 For Premium schematic mode, place:

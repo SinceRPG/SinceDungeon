@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -74,7 +75,7 @@ public class TopManager {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Connection conn = db.getConnection()) {
 
                 try (PreparedStatement check = conn.prepareStatement(
@@ -111,7 +112,7 @@ public class TopManager {
      * Saves a Party clear time record into the database as a unique run entry.
      */
     public void savePartyClearTime(String dungeonId, String membersNames, int timeSeconds) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Connection conn = db.getConnection()) {
                 String sql = "INSERT INTO party_top_fastest (record_id, dungeon_id, members_names, time_seconds, recorded_at) VALUES (?,?,?,?,?)";
 
@@ -139,7 +140,7 @@ public class TopManager {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Connection conn = db.getConnection()) {
 
                 try (PreparedStatement check = conn.prepareStatement(
@@ -180,7 +181,7 @@ public class TopManager {
         Player p = Bukkit.getPlayer(playerUuid);
         if (p != null && p.hasPermission("SinceDungeon.top.ignore")) return;
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try (Connection conn = db.getConnection()) {
                 int existing = 0;
 

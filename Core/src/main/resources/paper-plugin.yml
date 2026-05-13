@@ -2,6 +2,7 @@ name: SinceDungeon
 version: '${version}'
 main: net.danh.sinceDungeon.SinceDungeon
 api-version: '1.21'
+folia-supported: true
 authors: [ VoChiDanh ]
 website: https://gitlab.com/sincerpg/SinceDungeon/-/wikis/home
 dependencies:

@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -16,8 +17,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -36,7 +35,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
 
     private Location triggerLoc;
     private Location triggerBlockLoc;
-    private BukkitTask breakTask = null;
+    private SchedulerCompat.TaskHandle breakTask = null;
     private boolean isUnlocking = false;
 
     public UnlockDoorAction(Vector trigger, Vector c1, Vector c2, String keyId, String particleName) {
@@ -225,45 +224,41 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
             game.getWorld().playSound(triggerLoc, SoundUtils.getSound(soundUnlock), 1f, 0.5f);
         }
 
-        breakTask = new BukkitRunnable() {
-            // JIT Optimization: Reusing the same Location object pointer to prevent massive GC allocations per tick
-            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
-            int currentX = minX;
-            int currentY = minY;
-            int currentZ = minZ;
+        final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
+        final int[] currentX = {minX};
+        final int[] currentY = {minY};
+        final int[] currentZ = {minZ};
 
-            @Override
-            public void run() {
-                if (game.getWorld() == null || !game.isRunning()) {
-                    cancel();
-                    return;
+        breakTask = SchedulerCompat.runAtLocationTimer(SinceDungeon.getPlugin(), triggerLoc, () -> {
+            if (game.getWorld() == null || !game.isRunning()) {
+                if (breakTask != null) breakTask.cancel();
+                return;
+            }
+
+            int blocksProcessed = 0;
+            while (blocksProcessed < 50) {
+                Block block = game.getWorld().getBlockAt(currentX[0], currentY[0], currentZ[0]);
+                if (block.getType() != Material.AIR) {
+                    particleLoc.set(currentX[0] + 0.5, currentY[0] + 0.5, currentZ[0] + 0.5);
+                    game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                    block.setType(Material.AIR, false);
                 }
+                blocksProcessed++;
 
-                int blocksProcessed = 0;
-                while (blocksProcessed < 50) {
-                    Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
-                    if (block.getType() != Material.AIR) {
-                        particleLoc.set(currentX + 0.5, currentY + 0.5, currentZ + 0.5);
-                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
-                        block.setType(Material.AIR, false);
-                    }
-                    blocksProcessed++;
-
-                    currentX++;
-                    if (currentX > maxX) {
-                        currentX = minX;
-                        currentY++;
-                        if (currentY > maxY) {
-                            currentY = minY;
-                            currentZ++;
-                            if (currentZ > maxZ) {
-                                cancel();
-                                return;
-                            }
+                currentX[0]++;
+                if (currentX[0] > maxX) {
+                    currentX[0] = minX;
+                    currentY[0]++;
+                    if (currentY[0] > maxY) {
+                        currentY[0] = minY;
+                        currentZ[0]++;
+                        if (currentZ[0] > maxZ) {
+                            if (breakTask != null) breakTask.cancel();
+                            return;
                         }
                     }
                 }
             }
-        }.runTaskTimer(SinceDungeon.getPlugin(), 0L, 1L);
+        }, 0L, 1L);
     }
 }

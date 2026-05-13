@@ -62,7 +62,8 @@ startup:
   async-timeout-seconds: 30
 ```
 
-This controls how long the plugin waits for async startup data loading before failing startup. Increase it if the database is remote or the server has many dungeon files.
+This controls how long the plugin waits for async startup data loading before failing startup. Increase it if the
+database is remote or the server has many dungeon files.
 
 ## Cross-Server Mode
 

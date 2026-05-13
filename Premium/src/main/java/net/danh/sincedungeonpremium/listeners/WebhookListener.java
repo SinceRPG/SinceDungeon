@@ -1,6 +1,7 @@
 package net.danh.sincedungeonpremium.listeners;
 
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -60,7 +61,7 @@ public class WebhookListener implements Listener {
     }
 
     private void sendWebhookAsync(String urlString, String title, String description, String colorDec) {
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 // Replaces deprecated new URL(String) from Java 20
                 URL url = URI.create(urlString).toURL();

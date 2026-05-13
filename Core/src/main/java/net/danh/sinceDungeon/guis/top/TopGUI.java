@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.guis.top;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -79,10 +80,10 @@ public class TopGUI {
         int rawGuiSize = plugin.getConfigFile().getInt("leaderboard.gui-size", 54);
         final int guiSize = Math.max(18, rawGuiSize);
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             List<TopManager.TopEntry> records = plugin.getTopManager().getTop(dungeonId, category, limit);
 
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 String titleRaw = plugin.getLanguageManager().getString("top.gui_title", "&6&lLeaderboard: &e<map>");
                 Inventory inv = Bukkit.createInventory(new TopHolder(dungeonId, category, page), guiSize, ColorUtils.parse(titleRaw.replace("<map>", dungeonId)));
 

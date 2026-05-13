@@ -3,9 +3,9 @@ package net.danh.sinceDungeon.guis.editor;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -111,7 +111,7 @@ public class EditorListener implements Listener {
 
                 activeInputs.remove(p.getUniqueId());
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     try {
                         session.completeInput(msg);
                     } catch (Exception ex) {
@@ -160,7 +160,7 @@ public class EditorListener implements Listener {
         }
 
         String finalValue = msg;
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        SchedulerCompat.runGlobal(plugin, () -> {
             EditorSession.InputType type = session.getInputType();
 
             if (type == EditorSession.InputType.CREATE_FILENAME) {
@@ -211,7 +211,7 @@ public class EditorListener implements Listener {
     }
 
     private void reopenSessionMenu(EditorSession session) {
-        Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
+        SchedulerCompat.runGlobal(plugin, session::reopenLastMenu);
     }
 
     public void clearAll() {

@@ -7,6 +7,7 @@ import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -1200,7 +1201,7 @@ public class EditorMenuListener implements Listener {
                     }
                 }
 
-                Bukkit.getScheduler().runTaskLater(plugin, () -> new EditorGUI(plugin).openActionEditor(p, session), 1L);
+                SchedulerCompat.runGlobalLater(plugin, () -> new EditorGUI(plugin).openActionEditor(p, session), 1L);
             }
         }
     }

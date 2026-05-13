@@ -5,7 +5,7 @@ import io.lumine.mythic.bukkit.events.MythicMobSpawnEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
-import org.bukkit.Bukkit;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -49,7 +49,7 @@ public class MythicListener implements Listener {
 
             DungeonGame game = plugin.getDungeonManager().getGameByEntity(e.getEntity());
             if (game != null) {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                SchedulerCompat.runGlobalLater(plugin, () -> {
                     UUID parentId = MythicMobsHook.getParentUUID(e.getEntity().getUniqueId());
                     if (parentId != null) {
                         game.trackChildEntity(parentId, e.getEntity().getUniqueId(), e.getEntity().getLocation(), e.getMobType().getInternalName());

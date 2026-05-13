@@ -69,6 +69,7 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
     private Sound interactSound;
     private Sound completeSound;
     private Sound denySound;
+
     public NpcInteractionAction(String entityTypeStr, String customName, String npcLocationStr, String targetLocationStr,
                                 String interactionModeStr, String messageScopeStr, String teleportScopeStr,
                                 double maxHealth, double moveSpeed, double successRadius, double interactionRadius,

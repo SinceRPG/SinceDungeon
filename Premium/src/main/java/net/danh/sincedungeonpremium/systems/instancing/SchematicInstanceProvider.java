@@ -1,6 +1,7 @@
 package net.danh.sincedungeonpremium.systems.instancing;
 
 import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
@@ -52,7 +53,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
             if (Bukkit.isPrimaryThread()) {
                 ensureSharedWorld();
             } else {
-                Bukkit.getScheduler().runTask(plugin, this::ensureSharedWorld);
+                SchedulerCompat.runGlobal(plugin, this::ensureSharedWorld);
             }
         }
     }
@@ -77,12 +78,12 @@ public class SchematicInstanceProvider implements InstanceProvider {
 
         CompletableFuture<World> future = new CompletableFuture<>();
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        SchedulerCompat.runGlobal(plugin, () -> {
             try {
                 World world = ensureSharedWorld();
                 InstanceRegion region = allocateRegion(instanceId, world);
 
-                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                SchedulerCompat.runAsync(plugin, () -> {
                     File schemFile = resolveSchematicFile(templateName);
                     if (schemFile.exists()) {
                         boolean pasteAir = plugin.getFileManager().getConfig().getBoolean("instancing.schematic.paste-air", true);
@@ -98,7 +99,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
                         plugin.getLogger().warning(warnMsg);
                     }
 
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    SchedulerCompat.runGlobal(plugin, () -> {
                         configureWorld(world);
                         String logMsg = plugin.getFileManager().getMessageRaw("log.schematic_region_allocated");
                         plugin.getLogger().info(logMsg
@@ -196,7 +197,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
     private CompletableFuture<World> createDedicatedWorldInstance(String templateName, String instanceId) {
         CompletableFuture<World> future = new CompletableFuture<>();
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        SchedulerCompat.runGlobal(plugin, () -> {
             WorldCreator creator = new WorldCreator(instanceId);
             creator.generator(new VoidGenerator());
             creator.generateStructures(false);
@@ -213,7 +214,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
                 return;
             }
 
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsync(plugin, () -> {
                 File schemFile = resolveSchematicFile(templateName);
                 if (schemFile.exists()) {
                     int yLevel = plugin.getFileManager().getConfig().getInt("instancing.paste-y-level", 64);
@@ -232,7 +233,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
                     plugin.getLogger().warning(warnMsg);
                 }
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     configureWorld(world);
                     future.complete(world);
                 });
@@ -273,9 +274,9 @@ public class SchematicInstanceProvider implements InstanceProvider {
             return;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             boolean cleared = PremiumWorldEditHook.clearCuboid(getClearMin(world, region), getClearMax(world, region));
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 if (cleared) {
                     reusableSlots.offer(region.slot());
                     String logMsg = plugin.getFileManager().getMessageRaw("log.schematic_region_released");
@@ -369,7 +370,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) p.teleport(safeLoc);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, 5), 10L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, 5), 10L);
         } else {
             performUnload(world, folder, 5);
         }
@@ -386,7 +387,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
             String logSuccess = plugin.getFileManager().getMessageRaw("log.world_unloaded").replace("<world>", world.getName());
             plugin.getLogger().info(logSuccess);
 
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsyncLater(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
                     String logWarn = plugin.getFileManager().getMessageRaw("log.world_delete_fail").replace("<world>", folder.getName());
                     plugin.getLogger().warning(logWarn);
@@ -395,7 +396,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
         } else if (retries > 0) {
             String logRetry = plugin.getFileManager().getMessageRaw("log.world_unload_retry").replace("<world>", world.getName());
             plugin.getLogger().warning(logRetry);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
         } else {
             String logWarn = plugin.getFileManager().getMessageRaw("log.world_unload_fail").replace("<world>", world.getName());
             plugin.getLogger().warning(logWarn);
@@ -415,7 +416,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
             String logSuccess = plugin.getFileManager().getMessageRaw("log.world_force_unloaded").replace("<world>", world.getName());
             plugin.getLogger().info(logSuccess);
 
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
+            SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
         } else {
             String logCritical = plugin.getFileManager().getMessageRaw("log.world_force_unload_fail").replace("<world>", world.getName());
             plugin.getLogger().severe(logCritical);

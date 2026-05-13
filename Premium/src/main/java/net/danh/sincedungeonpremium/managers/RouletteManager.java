@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.guis.RouletteHolder;
@@ -24,7 +25,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,44 +81,41 @@ public class RouletteManager implements Listener {
         String soundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_tick", "block.note_block.hat");
         Sound soundTick = SoundUtils.getSound(soundStr);
 
-        new BukkitRunnable() {
-            int ticks = 0;
-            int delay = 1;
-            int maxTicks = 60;
-
-            @Override
-            public void run() {
-                if (!player.isOnline() || !player.getOpenInventory().getTopInventory().equals(inv)) {
-                    this.cancel();
-                    return;
-                }
-
-                for (int i = 16; i > 9; i--) {
-                    inv.setItem(i, inv.getItem(i - 1));
-                }
-
-                DungeonReward nextReward = getRandomReward(pool);
-                ItemStack displayItem = buildDisplayItem(nextReward);
-                inv.setItem(9, displayItem);
-
-                if (soundTick != null) {
-                    player.playSound(player.getLocation(), soundTick, 1f, 1f);
-                }
-
-                ticks++;
-
-                if (ticks > 40) delay = 2;
-                if (ticks > 50) delay = 4;
-                if (ticks > 55) delay = 8;
-
-                if (ticks >= maxTicks) {
-                    this.cancel();
-                    finishSpin(player, inv, session, wonReward);
-                } else if (ticks % delay != 0) {
-                    // Loop skip
-                }
+        final int[] ticks = {0};
+        final int[] delay = {1};
+        final int maxTicks = 60;
+        final SchedulerCompat.TaskHandle[] task = new SchedulerCompat.TaskHandle[1];
+        task[0] = SchedulerCompat.runAtEntityTimer(plugin, player, () -> {
+            if (!player.isOnline() || !player.getOpenInventory().getTopInventory().equals(inv)) {
+                task[0].cancel();
+                return;
             }
-        }.runTaskTimer(plugin, 0L, 1L);
+
+            for (int i = 16; i > 9; i--) {
+                inv.setItem(i, inv.getItem(i - 1));
+            }
+
+            DungeonReward nextReward = getRandomReward(pool);
+            ItemStack displayItem = buildDisplayItem(nextReward);
+            inv.setItem(9, displayItem);
+
+            if (soundTick != null) {
+                player.playSound(player.getLocation(), soundTick, 1f, 1f);
+            }
+
+            ticks[0]++;
+
+            if (ticks[0] > 40) delay[0] = 2;
+            if (ticks[0] > 50) delay[0] = 4;
+            if (ticks[0] > 55) delay[0] = 8;
+
+            if (ticks[0] >= maxTicks) {
+                task[0].cancel();
+                finishSpin(player, inv, session, wonReward);
+            } else if (ticks[0] % delay[0] != 0) {
+                // Loop skip
+            }
+        }, 0L, 1L);
     }
 
     private void finishSpin(Player player, Inventory inv, RewardSession session, DungeonReward wonReward) {
@@ -137,7 +134,7 @@ public class RouletteManager implements Listener {
 
         grantReward(player, wonReward);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerCompat.runAtEntity(plugin, player, () -> SchedulerCompat.runGlobalLater(plugin, () -> {
             if (player.isOnline()) {
                 if (session.getChestCount() > 0) {
                     // Activate state lock to prevent InventoryCloseEvent from triggering auto-claim
@@ -148,7 +145,7 @@ public class RouletteManager implements Listener {
                     player.closeInventory();
                 }
             }
-        }, 40L);
+        }, 40L));
     }
 
     private void grantReward(Player player, DungeonReward wonReward) {

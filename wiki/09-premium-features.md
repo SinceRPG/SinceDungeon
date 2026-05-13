@@ -1,6 +1,7 @@
 # Premium Features
 
-SinceDungeon Premium extends Core with advanced actions, schematic instancing, reward presentation, affixes, webhooks, and holograms.
+SinceDungeon Premium extends Core with advanced actions, schematic instancing, reward presentation, affixes, webhooks,
+and holograms.
 
 ## Premium Requirements
 
@@ -234,8 +235,8 @@ dialogue_lines:
 required_item: "NONE"
 reward_item: "NONE"
 reward_display_name: ""
-npc_attributes: []
-npc_equipment: []
+npc_attributes: [ ]
+npc_equipment: [ ]
 ```
 
 ## Affixes
@@ -278,7 +279,7 @@ Shows reward drops with holographic presentation if the required hologram depend
 ```yaml
 hologram-leaderboard:
   update-interval-seconds: 300
-  locations: {}
+  locations: { }
 ```
 
 Premium commands can create, move, and delete leaderboard holograms.

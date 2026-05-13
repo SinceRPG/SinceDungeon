@@ -1,7 +1,7 @@
 package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
-import org.bukkit.Bukkit;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,7 +35,7 @@ public class CooldownManager {
 
     public CompletableFuture<Void> loadCooldownsAsync() {
         CompletableFuture<Void> future = new CompletableFuture<>();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String sql = "SELECT * FROM player_cooldowns WHERE expire_time > ?";
             try (Connection conn = plugin.getDatabaseManager().getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -69,7 +69,7 @@ public class CooldownManager {
     public void setCooldown(UUID uuid, String dungeonId, long expireTime) {
         cooldownCache.computeIfAbsent(dungeonId, k -> new ConcurrentHashMap<>()).put(uuid, expireTime);
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String sql = plugin.getConfigFile().getString("database.type", "sqlite").equalsIgnoreCase("mysql")
                     ? "INSERT INTO player_cooldowns (uuid, dungeon_id, expire_time) VALUES (?,?,?) ON DUPLICATE KEY UPDATE expire_time=VALUES(expire_time)"
                     : "INSERT OR REPLACE INTO player_cooldowns (uuid, dungeon_id, expire_time) VALUES (?,?,?)";
@@ -98,7 +98,7 @@ public class CooldownManager {
             dungeonCooldowns.remove(uuid);
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String sql = "DELETE FROM player_cooldowns WHERE uuid = ? AND dungeon_id = ?";
             try (Connection conn = plugin.getDatabaseManager().getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -121,7 +121,7 @@ public class CooldownManager {
             mapCooldowns.remove(uuid);
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String sql = "DELETE FROM player_cooldowns WHERE uuid = ?";
             try (Connection conn = plugin.getDatabaseManager().getConnection();
                  PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -155,7 +155,7 @@ public class CooldownManager {
             }
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             String updateSql = "UPDATE player_cooldowns SET expire_time = expire_time - ? WHERE uuid = ?";
             String deleteSql = "DELETE FROM player_cooldowns WHERE expire_time <= ?";
 

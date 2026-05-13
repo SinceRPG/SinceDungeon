@@ -350,7 +350,7 @@ public class RewardGUI implements Listener {
                             String msg = getMsg("claimed_all");
                             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
                             try {
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
+                                net.danh.sinceDungeon.utils.SchedulerCompat.runAtEntity(plugin, p, () -> net.danh.sinceDungeon.utils.SchedulerCompat.runGlobalLater(plugin, p::closeInventory, 20L));
                             } catch (Exception ignored) {
                             }
                         }

@@ -1,6 +1,7 @@
 package net.danh.sinceDungeon.managers;
 
 import net.danh.sinceDungeon.SinceDungeon;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
@@ -53,7 +54,7 @@ public class WorldManager {
     }
 
     private static void executeAsyncCopyAndLoad(SinceDungeon plugin, String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 File source = new File(Bukkit.getWorldContainer(), templateName);
                 File target = new File(Bukkit.getWorldContainer(), instanceId);
@@ -71,7 +72,7 @@ public class WorldManager {
 
                 new File(target, "uid.dat").delete();
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     try {
                         WorldCreator creator = new WorldCreator(instanceId);
                         creator.generatorSettings("");
@@ -96,7 +97,7 @@ public class WorldManager {
                 String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[WorldManager] Error generating dungeon world: <error>");
                 plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage() != null ? ex.getMessage() : "Unknown"));
                 finalFuture.completeExceptionally(ex);
-                Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
+                SchedulerCompat.runGlobal(plugin, () -> releaseTemplateLock(templateName, templateW));
             }
         });
     }
@@ -131,7 +132,7 @@ public class WorldManager {
                 p.teleport(safeLoc);
             }
             // Add a slight delay before triggering the unload to allow the teleport to fully process
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder, 5), 10L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(plugin, world, folder, 5), 10L);
         } else {
             performUnload(plugin, world, folder, 5);
         }
@@ -153,7 +154,7 @@ public class WorldManager {
             String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
             plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
 
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsyncLater(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
                     String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
                     plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
@@ -165,7 +166,7 @@ public class WorldManager {
             if (logRetry != null) {
                 plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(plugin, world, folder, retries - 1), 100L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(plugin, world, folder, retries - 1), 100L);
         } else {
             String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
             plugin.getLogger().severe(logWarn.replace("<world>", world.getName()));
@@ -184,7 +185,7 @@ public class WorldManager {
             String logSuccess = plugin.getLanguageManager().getString("admin.log.world_force_unloaded", "Force unloaded dungeon world: <world>");
             plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
 
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsyncLater(plugin, () -> {
                 WorldUtils.deleteWorld(folder);
             }, 40L);
 

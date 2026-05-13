@@ -4,12 +4,12 @@ import eu.decentsoftware.holograms.api.DHAPI;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager.TopCategory;
 import net.danh.sinceDungeon.managers.TopManager.TopEntry;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.util.List;
 public class HologramManager {
 
     private final SinceDungeonPremium plugin;
-    private BukkitTask updateTask;
+    private SchedulerCompat.TaskHandle updateTask;
 
     public HologramManager(SinceDungeonPremium plugin) {
         this.plugin = plugin;
@@ -125,7 +125,7 @@ public class HologramManager {
             updateTask.cancel();
         }
 
-        updateTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
+        updateTask = SchedulerCompat.runAsyncTimer(plugin, this::updateAllHolograms, 100L, updateInterval);
     }
 
     public void cleanup() {
@@ -160,7 +160,7 @@ public class HologramManager {
 
             List<TopEntry> topEntries = SinceDungeon.getPlugin().getTopManager().getTop(mapId, category, 10);
 
-            Bukkit.getScheduler().runTask(plugin, () -> renderHologram(key, mapId, category, locStr, topEntries));
+            SchedulerCompat.runGlobal(plugin, () -> renderHologram(key, mapId, category, locStr, topEntries));
         }
     }
 

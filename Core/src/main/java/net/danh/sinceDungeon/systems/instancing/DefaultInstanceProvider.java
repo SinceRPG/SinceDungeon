@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.systems.instancing;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.kyori.adventure.util.TriState;
@@ -69,7 +70,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
     }
 
     private void executeAsyncCopyAndLoad(String templateName, String instanceId, CompletableFuture<World> finalFuture, World templateW) {
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 File source = new File(Bukkit.getWorldContainer(), templateName);
                 File target = new File(Bukkit.getWorldContainer(), instanceId);
@@ -85,7 +86,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
 
                 new File(target, "uid.dat").delete();
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     try {
                         WorldCreator creator = new WorldCreator(instanceId);
                         creator.generatorSettings("");
@@ -113,7 +114,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
                 String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[InstanceProvider] Error generating dungeon world: <error>");
                 plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage() != null ? ex.getMessage() : "Unknown"));
                 finalFuture.completeExceptionally(ex);
-                Bukkit.getScheduler().runTask(plugin, () -> releaseTemplateLock(templateName, templateW));
+                SchedulerCompat.runGlobal(plugin, () -> releaseTemplateLock(templateName, templateW));
             }
         });
     }
@@ -136,7 +137,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) p.teleport(safeLoc);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, 5), 10L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, 5), 10L);
         } else {
             performUnload(world, folder, 5);
         }
@@ -150,7 +151,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
         }
 
         if (Bukkit.unloadWorld(world, false)) {
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsyncLater(plugin, () -> {
                 if (!WorldUtils.deleteWorld(folder)) {
                     String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
                     plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
@@ -161,7 +162,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
             if (logRetry != null) {
                 plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
         } else {
             String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
             plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
@@ -178,7 +179,7 @@ public class DefaultInstanceProvider implements InstanceProvider {
         }
 
         if (Bukkit.unloadWorld(world, false)) {
-            Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
+            SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
         } else {
             String logCritical = plugin.getLanguageManager().getString("admin.log.world_force_unload_fail", "CRITICAL: Failed to force-unload world <world> during shutdown!");
             plugin.getLogger().severe(logCritical.replace("<world>", world.getName()));

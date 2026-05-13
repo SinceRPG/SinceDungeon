@@ -4,8 +4,8 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -64,12 +64,12 @@ public class EditorSession {
         if (file == null) return;
         String yamlData = config.saveToString();
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 file.getParentFile().mkdirs();
                 Files.writeString(file.toPath(), yamlData);
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     String msg = plugin.getLanguageManager().getString("editor.chat.saved");
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
@@ -91,7 +91,7 @@ public class EditorSession {
                     }
                 });
             } catch (IOException e) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     String errorMsg = plugin.getLanguageManager().getString("editor.chat.save_error");
                     if (errorMsg != null && player.isOnline())
                         player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
