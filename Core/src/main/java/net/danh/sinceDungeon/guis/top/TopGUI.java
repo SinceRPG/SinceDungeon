@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.guis.top;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -41,7 +42,7 @@ public class TopGUI {
             try {
                 ItemMeta meta = item.getItemMeta();
                 if (meta != null) {
-                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                    ItemBuilder.applyCustomModelData(meta, Integer.parseInt(parts[1]));
                     item.setItemMeta(meta);
                 }
             } catch (Exception ignored) {
@@ -176,7 +177,7 @@ public class TopGUI {
                 if (parts.length > 1) {
                     try {
                         ItemMeta m = navItemBase.getItemMeta();
-                        m.setCustomModelData(Integer.parseInt(parts[1]));
+                        ItemBuilder.applyCustomModelData(m, Integer.parseInt(parts[1]));
                         navItemBase.setItemMeta(m);
                     } catch (Exception ignored) {
                     }

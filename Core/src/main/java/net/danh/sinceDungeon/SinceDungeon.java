@@ -272,18 +272,29 @@ public final class SinceDungeon extends JavaPlugin {
                         SchedulerCompat.runGlobal(this, () -> {
                             World w = Bukkit.getWorld(file.getName());
                             if (w != null) {
-                                Bukkit.unloadWorld(w, false);
+                                SchedulerCompat.unloadWorld(this, w, false).whenComplete((ignored, throwable) -> {
+                                    if (throwable != null) {
+                                        getLogger().warning(throwable.getMessage());
+                                        return;
+                                    }
+                                    deleteStuckWorld(file);
+                                });
+                            } else {
+                                deleteStuckWorld(file);
                             }
-                            SchedulerCompat.runAsync(this, () -> {
-                                String msg = languageManager.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
-                                getLogger().info(msg.replace("<world>", file.getName()));
-                                WorldUtils.deleteWorld(file);
-                            });
                         });
                     }
                 }
             });
         }
+    }
+
+    private void deleteStuckWorld(File file) {
+        SchedulerCompat.runAsync(this, () -> {
+            String msg = languageManager.getString("admin.log.cleanup_deleted", "[Cleanup] Deleted leftover generated dungeon world: <world>");
+            getLogger().info(msg.replace("<world>", file.getName()));
+            WorldUtils.deleteWorld(file);
+        });
     }
 
     private void registerListeners(Listener @NonNull ... listeners) {

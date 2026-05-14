@@ -3,9 +3,7 @@ package net.danh.sinceDungeon.systems.instancing;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
-import net.kyori.adventure.util.TriState;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -53,18 +51,20 @@ public class DefaultInstanceProvider implements InstanceProvider {
             return finalFuture;
         }
 
-        World templateW = Bukkit.getWorld(templateName);
+        SchedulerCompat.runGlobal(plugin, () -> {
+            World templateW = Bukkit.getWorld(templateName);
 
-        if (templateW != null) {
-            templateW.save();
-            int count = templateUsageCount.merge(templateName, 1, Integer::sum);
-            if (count == 1) {
-                templateW.setAutoSave(false);
+            if (templateW != null) {
+                templateW.save();
+                int count = templateUsageCount.merge(templateName, 1, Integer::sum);
+                if (count == 1) {
+                    templateW.setAutoSave(false);
+                }
+                executeAsyncCopyAndLoad(templateName, instanceId, finalFuture, templateW);
+            } else {
+                executeAsyncCopyAndLoad(templateName, instanceId, finalFuture, null);
             }
-            executeAsyncCopyAndLoad(templateName, instanceId, finalFuture, templateW);
-        } else {
-            executeAsyncCopyAndLoad(templateName, instanceId, finalFuture, null);
-        }
+        });
 
         return finalFuture;
     }
@@ -86,30 +86,24 @@ public class DefaultInstanceProvider implements InstanceProvider {
 
                 new File(target, "uid.dat").delete();
 
-                SchedulerCompat.runGlobal(plugin, () -> {
+                SchedulerCompat.createWorld(plugin, createWorldCreator(instanceId)).whenComplete((world, throwable) -> SchedulerCompat.runGlobal(plugin, () -> {
                     try {
-                        WorldCreator creator = new WorldCreator(instanceId);
-                        creator.generatorSettings("");
-                        creator.generateStructures(false);
-
-                        if (ServerVersion.isAtMost(1, 21, 9)) creator.keepSpawnLoaded(TriState.FALSE);
-
-                        World world = Bukkit.createWorld(creator);
+                        if (throwable != null) {
+                            finalFuture.completeExceptionally(throwable);
+                            return;
+                        }
                         if (world != null) {
-                            world.setAutoSave(false);
-                            world.setTime(6000);
-                            world.setStorm(false);
-                            world.setThundering(false);
+                            configureWorld(world);
                             finalFuture.complete(world);
                         } else {
-                            finalFuture.completeExceptionally(new RuntimeException("Bukkit returned null for created world."));
+                            finalFuture.completeExceptionally(new RuntimeException("WorldCreator returned null for created world."));
                         }
                     } catch (Exception e) {
                         finalFuture.completeExceptionally(e);
+                    } finally {
+                        releaseTemplateLock(templateName, templateW);
                     }
-
-                    releaseTemplateLock(templateName, templateW);
-                });
+                }));
             } catch (Exception ex) {
                 String logErr = plugin.getLanguageManager().getString("admin.log.world_gen_error", "[InstanceProvider] Error generating dungeon world: <error>");
                 plugin.getLogger().severe(logErr.replace("<error>", ex.getMessage() != null ? ex.getMessage() : "Unknown"));
@@ -137,36 +131,38 @@ public class DefaultInstanceProvider implements InstanceProvider {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) p.teleportAsync(safeLoc);
-            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, 5), 10L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, unloadRetries()), unloadDelayTicks());
         } else {
-            performUnload(world, folder, 5);
+            performUnload(world, folder, unloadRetries());
         }
     }
 
     private void performUnload(World world, File folder, int retries) {
-        for (Entity e : world.getEntities()) {
-            if (!(e instanceof Player)) {
-                e.remove();
+        if (!SchedulerCompat.isFolia()) {
+            for (Entity e : world.getEntities()) {
+                if (!(e instanceof Player)) {
+                    e.remove();
+                }
             }
         }
 
-        if (Bukkit.unloadWorld(world, false)) {
-            SchedulerCompat.runAsyncLater(plugin, () -> {
-                if (!WorldUtils.deleteWorld(folder)) {
-                    String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
-                    plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
-                }
-            }, 40L);
-        } else if (retries > 0) {
-            String logRetry = plugin.getLanguageManager().getString("admin.log.world_unload_retry", "Retrying unload for world: <world> in 5 seconds...");
-            if (logRetry != null) {
-                plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
+        SchedulerCompat.unloadWorld(plugin, world, false).whenComplete((unloaded, throwable) -> {
+            if (throwable != null) {
+                plugin.getLogger().warning(throwable.getMessage());
+                scheduleUnloadRetry(world, folder, retries);
+                return;
             }
-            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
-        } else {
-            String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
-            plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
-        }
+            if (Boolean.TRUE.equals(unloaded)) {
+                SchedulerCompat.runAsyncLater(plugin, () -> {
+                    if (!WorldUtils.deleteWorld(folder)) {
+                        String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
+                        plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
+                    }
+                }, deleteDelayTicks());
+                return;
+            }
+            scheduleUnloadRetry(world, folder, retries);
+        });
     }
 
     @Override
@@ -178,11 +174,56 @@ public class DefaultInstanceProvider implements InstanceProvider {
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
         }
 
-        if (Bukkit.unloadWorld(world, false)) {
-            SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
-        } else {
-            String logCritical = plugin.getLanguageManager().getString("admin.log.world_force_unload_fail", "CRITICAL: Failed to force-unload world <world> during shutdown!");
-            plugin.getLogger().severe(logCritical.replace("<world>", world.getName()));
+        SchedulerCompat.unloadWorld(plugin, world, false).whenComplete((unloaded, throwable) -> {
+            if (throwable == null && Boolean.TRUE.equals(unloaded)) {
+                SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), deleteDelayTicks());
+            } else {
+                String logCritical = plugin.getLanguageManager().getString("admin.log.world_force_unload_fail", "CRITICAL: Failed to force-unload world <world> during shutdown!");
+                plugin.getLogger().severe(logCritical.replace("<world>", world.getName()));
+            }
+        });
+    }
+
+    private WorldCreator createWorldCreator(String instanceId) {
+        WorldCreator creator = new WorldCreator(instanceId);
+        creator.generatorSettings(plugin.getConfigFile().getString("dungeon.world-generator-settings", ""));
+        creator.generateStructures(plugin.getConfigFile().getBoolean("dungeon.generate-structures", false));
+        return creator;
+    }
+
+    private void configureWorld(World world) {
+        world.setAutoSave(plugin.getConfigFile().getBoolean("dungeon.instance-autosave", false));
+        world.setTime(plugin.getConfigFile().getInt("dungeon.default-time", 6000));
+        world.setStorm(plugin.getConfigFile().getBoolean("dungeon.default-storm", false));
+        world.setThundering(plugin.getConfigFile().getBoolean("dungeon.default-thundering", false));
+    }
+
+    private void scheduleUnloadRetry(World world, File folder, int retries) {
+        if (retries > 0) {
+            String logRetry = plugin.getLanguageManager().getString("admin.log.world_unload_retry", "Retrying unload for world: <world> in 5 seconds...");
+            if (logRetry != null) {
+                plugin.getLogger().warning(logRetry.replace("<world>", world.getName()));
+            }
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), retryDelayTicks());
+            return;
         }
+        String logWarn = plugin.getLanguageManager().getString("admin.log.world_unload_fail", "Could not unload world: <world>");
+        plugin.getLogger().warning(logWarn.replace("<world>", world.getName()));
+    }
+
+    private int unloadRetries() {
+        return Math.max(0, plugin.getConfigFile().getInt("dungeon.unload-retries", 5));
+    }
+
+    private long unloadDelayTicks() {
+        return Math.max(1L, plugin.getConfigFile().getInt("dungeon.unload-delay-ticks", 10));
+    }
+
+    private long retryDelayTicks() {
+        return Math.max(1L, plugin.getConfigFile().getInt("dungeon.unload-retry-delay-ticks", 100));
+    }
+
+    private long deleteDelayTicks() {
+        return Math.max(1L, plugin.getConfigFile().getInt("dungeon.delete-delay-ticks", 40));
     }
 }

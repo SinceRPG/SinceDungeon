@@ -7,9 +7,9 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.*;
@@ -439,25 +439,8 @@ public class NpcInteractionAction extends DungeonAction implements Tickable {
         }
     }
 
-    @SuppressWarnings({"deprecation", "removal"})
     private Attribute resolveAttribute(String attrName) {
-        if (ServerVersion.isAtLeast(1, 21, 3)) {
-            try {
-                return Registry.ATTRIBUTE.get(NamespacedKey.minecraft(attrName));
-            } catch (Throwable ignored) {
-                return null;
-            }
-        }
-
-        try {
-            return Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-            try {
-                return Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException ignoredAgain) {
-                return null;
-            }
-        }
+        return AttributeUtils.resolve(attrName);
     }
 
     private void applyEquipment(LivingEntity living) {

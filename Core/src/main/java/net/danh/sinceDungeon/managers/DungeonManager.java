@@ -262,7 +262,11 @@ public class DungeonManager {
                     Object msgObj = data.get("start_message");
                     List<String> msgs = new ArrayList<>();
                     if (msgObj instanceof String) msgs.add((String) msgObj);
-                    else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
+                    else if (msgObj instanceof List<?> list) {
+                        for (Object value : list) {
+                            if (value != null) msgs.add(value.toString());
+                        }
+                    }
                     action.setStartMessages(msgs);
                 }
                 if (data.containsKey("notifications")) {

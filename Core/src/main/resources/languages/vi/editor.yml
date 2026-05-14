@@ -148,6 +148,11 @@ editor:
     setting_kick_delay_lore:
       - "&7Hiện tại: &f<val>s"
       - "&eChuột Trái: Chỉnh sửa"
+    setting_start_location_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Nhập tọa độ"
+      - "&eChuột Phải: Dùng vị trí hiện tại"
+      - "&cShift-Phải: Dùng world spawn"
     setting_force_weather_lore:
       - "&7Hiện tại: <val>"
       - "&eChuột Trái: Bật/Tắt"
@@ -199,6 +204,7 @@ editor:
     setting_prevent_drop: "&eKhóa Vứt Vật Phẩm"
     setting_block_pearls: "&eChặn Ngọc Ender & Trái Chorus"
     setting_kick_delay: "&eĐếm Ngược Thoát Khi Win"
+    setting_start_location: "&eVị Trí Bắt Đầu"
     setting_force_weather: "&eÉp Buổi Sáng & Tạnh Mưa"
     setting_save_stats: "&eLưu & Trả Lại Máu, Thức Ăn Khi Ra/Vào"
     setting_death_action: "&eHành Động Khi Chết"
@@ -448,6 +454,12 @@ editor:
       edit_kick_delay:
         - "&7Nhập Số Giây sẽ đá người chơi ra sau khi Win xong Map này."
         - "&7Ví dụ: &a15"
+      edit_start_location:
+        - "&7Nhập vị trí bắt đầu của Dungeon theo tọa độ local."
+        - "&7Định dạng: &aX,Y,Z &7hoặc &aX,Y,Z,YAW,PITCH"
+        - "&7Ví dụ: &a0,65,0,180,0"
+        - "&7Mẹo: Gõ &ahere &7để dùng vị trí hiện tại."
+        - "&7Mẹo: Gõ &cclear &7để dùng world/provider spawn."
       edit_action_mob:
         - "&7Nhập tên quái vật (MythicMobs Internal Name hoặc Vanilla EntityType)."
         - "&7Ví dụ MythicMobs: &aSkeletonKing"
@@ -561,6 +573,7 @@ editor:
     item_set_hand: "&aĐã sao chép dữ liệu từ vật phẩm trên tay: <item>"
     hand_empty: "&cBạn phải cầm một khối/vật phẩm trên tay chính!"
     update_loc: "&aCập nhật tọa độ thành công: <loc>"
+    start_location_cleared: "&eĐã đặt lại vị trí bắt đầu về world/provider spawn."
     invalid_filename: "&cTên file không được chứa các ký tự đặc biệt hoặc dấu cách!"
     input_error: "&cLỗi trong quá trình nhập: <error>"
     list_limit_reached: "&cChỉ được lưu tối đa 50 phần tử/tọa độ cho danh sách này để chống tràn RAM!"

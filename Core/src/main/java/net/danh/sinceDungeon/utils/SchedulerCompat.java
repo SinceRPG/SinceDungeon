@@ -2,11 +2,14 @@ package net.danh.sinceDungeon.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -143,6 +146,42 @@ public final class SchedulerCompat {
         }
     }
 
+    public static CompletableFuture<World> createWorld(Plugin plugin, WorldCreator creator) {
+        CompletableFuture<World> future = new CompletableFuture<>();
+        TaskHandle handle = runGlobal(plugin, () -> {
+            try {
+                future.complete(creator.createWorld());
+            } catch (Throwable throwable) {
+                future.completeExceptionally(throwable);
+            }
+        });
+        completeIfSchedulerUnavailable(future, handle);
+        return future;
+    }
+
+    public static CompletableFuture<Boolean> unloadWorld(Plugin plugin, World world, boolean save) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (world == null) {
+            future.complete(false);
+            return future;
+        }
+        TaskHandle handle = runGlobal(plugin, () -> {
+            try {
+                future.complete(Bukkit.unloadWorld(world, save));
+            } catch (Throwable throwable) {
+                future.completeExceptionally(throwable);
+            }
+        });
+        completeIfSchedulerUnavailable(future, handle);
+        return future;
+    }
+
+    private static void completeIfSchedulerUnavailable(CompletableFuture<?> future, TaskHandle handle) {
+        if (FOLIA && handle.isCancelled() && !future.isDone()) {
+            future.completeExceptionally(new IllegalStateException("Folia global scheduler is unavailable."));
+        }
+    }
+
     private static TaskHandle invokeScheduler(Object owner, String schedulerMethod, String method, Plugin plugin, Runnable task, long... ticksOrMillis) {
         try {
             Object scheduler = owner.getClass().getMethod(schedulerMethod).invoke(owner);
@@ -156,7 +195,10 @@ public final class SchedulerCompat {
             }
             return TaskHandle.reflective(schedulerRun.invoke(scheduler, args));
         } catch (ReflectiveOperationException e) {
-            plugin.getLogger().warning("Failed to use Folia scheduler, running task on Paper scheduler fallback: " + e.getMessage());
+            plugin.getLogger().warning("Failed to use Folia scheduler: " + e.getMessage());
+            if (FOLIA) {
+                return TaskHandle.none();
+            }
             return TaskHandle.bukkit(Bukkit.getScheduler().runTask(plugin, task));
         }
     }
@@ -175,7 +217,10 @@ public final class SchedulerCompat {
             args[parameterCount - 1] = TimeUnit.MILLISECONDS;
             return TaskHandle.reflective(schedulerRun.invoke(scheduler, args));
         } catch (ReflectiveOperationException e) {
-            plugin.getLogger().warning("Failed to use Folia async scheduler, running task on Paper scheduler fallback: " + e.getMessage());
+            plugin.getLogger().warning("Failed to use Folia async scheduler: " + e.getMessage());
+            if (FOLIA) {
+                return TaskHandle.none();
+            }
             return TaskHandle.bukkit(Bukkit.getScheduler().runTaskAsynchronously(plugin, task));
         }
     }
@@ -219,6 +264,10 @@ public final class SchedulerCompat {
 
         private static TaskHandle reflective(Object task) {
             return new TaskHandle(task);
+        }
+
+        private static TaskHandle none() {
+            return new TaskHandle(null);
         }
 
         public void cancel() {

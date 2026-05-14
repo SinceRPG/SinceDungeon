@@ -177,7 +177,7 @@ public class EditorMenuListener implements Listener {
         switch (menuType) {
             case "SELECT_TYPE" -> handleSelectType(p, session, gui, page, slot, cur);
             case "DUNGEON" -> handleDungeonMenu(e, p, session, gui, slot, cur);
-            case "SETTINGS" -> handleSettingsMenu(p, session, gui, page, slot, cur);
+            case "SETTINGS" -> handleSettingsMenu(e, p, session, gui, page, slot, cur);
             case "ADVANCED_YAML" -> handleAdvancedYaml(e, p, session, gui, page, slot, cur);
             case "CONDITIONS" -> handleConditionsMenu(e, p, session, gui, page, slot, cur);
             case "REWARDS_MAIN" -> handleRewardsMain(p, session, gui, slot);
@@ -391,7 +391,7 @@ public class EditorMenuListener implements Listener {
         }
     }
 
-    private void handleSettingsMenu(Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
+    private void handleSettingsMenu(InventoryClickEvent e, Player p, EditorSession session, EditorGUI gui, int page, int slot, ItemStack cur) {
         if (slot == 18 && cur.getType() == gui.getNavMaterial()) {
             gui.openDungeonMenu(p, session);
             return;
@@ -440,6 +440,30 @@ public class EditorMenuListener implements Listener {
                     session.awaitInput(EditorSession.InputType.EDIT_STRING, prompt, val -> {
                         session.getConfig().set(opt.getLocalPath(), val);
                         gui.sendMessage(p, "update_val", "<key>", gui.getMsg("items." + opt.getLangKey(), opt.getLangKey()), "<val>", val);
+                        gui.openSettingsMenu(p, session, page);
+                    });
+                    plugin.getEditorListener().startListening(p, session);
+                }
+                case "LOCATION" -> {
+                    if (e.getClick() == ClickType.RIGHT) {
+                        String locStr = String.format(Locale.US, "%.1f,%.1f,%.1f,%.1f,%.1f", p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ(), p.getLocation().getYaw(), p.getLocation().getPitch());
+                        session.getConfig().set(opt.getLocalPath(), locStr);
+                        gui.sendMessage(p, "update_loc", "<loc>", locStr);
+                        gui.openSettingsMenu(p, session, page);
+                        return;
+                    }
+                    if (e.getClick() == ClickType.SHIFT_RIGHT) {
+                        session.getConfig().set(opt.getLocalPath(), "NONE");
+                        gui.sendMessage(p, "start_location_cleared");
+                        gui.openSettingsMenu(p, session, page);
+                        return;
+                    }
+                    String prompt = "edit_" + opt.name().toLowerCase(Locale.ROOT);
+                    session.awaitInput(EditorSession.InputType.EDIT_LOCATION, prompt, val -> {
+                        String clearKw = plugin.getLanguageManager().getString("editor.words.clear", "clear");
+                        String finalVal = val.equalsIgnoreCase(clearKw) ? "NONE" : val;
+                        session.getConfig().set(opt.getLocalPath(), finalVal);
+                        gui.sendMessage(p, finalVal.equalsIgnoreCase("NONE") ? "start_location_cleared" : "update_loc", "<loc>", finalVal);
                         gui.openSettingsMenu(p, session, page);
                     });
                     plugin.getEditorListener().startListening(p, session);

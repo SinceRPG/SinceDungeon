@@ -110,6 +110,14 @@ public class ItemBuilder {
         return item.getItemMeta().getPersistentDataContainer().get(key, type);
     }
 
+    public static void applyCustomModelData(ItemMeta meta, int value) {
+        if (meta == null) return;
+        try {
+            ItemMeta.class.getMethod("setCustomModelData", Integer.class).invoke(meta, value);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
     /**
      * Parses dynamic item configurations utilizing the internal CustomItemProvider registry.
      * Supports standard Vanilla Item Parsing format: MATERIAL:AMOUNT or MATERIAL:AMOUNT:CMD
@@ -157,7 +165,7 @@ public class ItemBuilder {
                 if (cmd != -1) {
                     ItemMeta itemMeta = is.getItemMeta();
                     if (itemMeta != null) {
-                        itemMeta.setCustomModelData(cmd);
+                        applyCustomModelData(itemMeta, cmd);
                         is.setItemMeta(itemMeta);
                     }
                 }
@@ -177,7 +185,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder customModelData(int cmd) {
-        if (meta != null) meta.setCustomModelData(cmd);
+        applyCustomModelData(meta, cmd);
         return this;
     }
 
@@ -235,7 +243,7 @@ public class ItemBuilder {
             if (cfg.isConfigurationSection("custom-model-data")) {
                 ConfigurationSection cmdSec = cfg.getConfigurationSection("custom-model-data");
                 if (cmdSec.contains("value")) {
-                    meta.setCustomModelData(cmdSec.getInt("value"));
+                    applyCustomModelData(meta, cmdSec.getInt("value"));
                 }
 
                 if (ServerVersion.isAtLeast(1, 21, 5)) {
@@ -263,7 +271,7 @@ public class ItemBuilder {
                     }
                 }
             } else {
-                meta.setCustomModelData(cfg.getInt("custom-model-data"));
+                applyCustomModelData(meta, cfg.getInt("custom-model-data"));
             }
         }
 

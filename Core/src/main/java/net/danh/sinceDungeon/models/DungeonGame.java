@@ -14,6 +14,7 @@ import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.PlayerUtils;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
@@ -234,18 +235,21 @@ public class DungeonGame {
                 this.instanceOrigin.setWorld(world);
             }
             this.instanceRadius = provider.getInstanceRadius(worldName);
-            this.respawnLocation = provider.getInstanceSpawnLocation(worldName, world);
+            this.respawnLocation = resolveConfiguredStartLocation(template.settings().startLocation());
+            if (this.respawnLocation == null) {
+                this.respawnLocation = provider.getInstanceSpawnLocation(worldName, world);
+            }
             if (this.respawnLocation == null) {
                 this.respawnLocation = world.getSpawnLocation().clone().add(0.5, 1, 0.5);
             }
             plugin.getDungeonManager().registerWorldGame(world.getName(), this);
 
-            dungeonWorld.setAutoSave(false);
+            dungeonWorld.setAutoSave(plugin.getConfigFile().getBoolean("dungeon.instance-autosave", false));
 
             if (template.settings().forceDaylightAndClearWeather()) {
-                dungeonWorld.setTime(6000);
-                dungeonWorld.setStorm(false);
-                dungeonWorld.setThundering(false);
+                dungeonWorld.setTime(plugin.getConfigFile().getInt("dungeon.default-time", 6000));
+                dungeonWorld.setStorm(plugin.getConfigFile().getBoolean("dungeon.default-storm", false));
+                dungeonWorld.setThundering(plugin.getConfigFile().getBoolean("dungeon.default-thundering", false));
             }
             startCountdown();
         })).exceptionally(ex -> {
@@ -855,7 +859,7 @@ public class DungeonGame {
 
         if (!isQuitting) {
             if (p.isDead()) {
-                p.spigot().respawn();
+                PlayerUtils.respawn(p);
             }
             if (p.isInsideVehicle()) p.leaveVehicle();
             p.closeInventory();
@@ -926,7 +930,7 @@ public class DungeonGame {
 
                     if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
                         if (teleport) {
-                            if (p.isDead()) p.spigot().respawn();
+                            PlayerUtils.respawn(p);
 
                             if (p.isInsideVehicle()) p.leaveVehicle();
                             p.closeInventory();
@@ -997,7 +1001,7 @@ public class DungeonGame {
                 for (Player p : participants) {
                     plugin.getDungeonManager().removeGame(p.getUniqueId());
                     if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                        if (p.isDead()) p.spigot().respawn();
+                        PlayerUtils.respawn(p);
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
                         p.closeInventory();
@@ -1027,11 +1031,7 @@ public class DungeonGame {
                 Runnable releaseTask = () -> {
                     provider.forceReleaseInstance(instanceId, w);
                 };
-                if (Bukkit.isPrimaryThread()) {
-                    releaseTask.run();
-                } else {
-                    SchedulerCompat.runGlobal(plugin, releaseTask);
-                }
+                SchedulerCompat.runGlobal(plugin, releaseTask);
             }
         }
     }
@@ -1233,6 +1233,33 @@ public class DungeonGame {
 
     public Location resolveLocation(Vector vector) {
         return resolveLocation(vector, 0, 0, 0);
+    }
+
+    private Location resolveConfiguredStartLocation(String configuredLocation) {
+        if (configuredLocation == null || configuredLocation.isBlank() || configuredLocation.equalsIgnoreCase("NONE")) {
+            return null;
+        }
+        String[] parts = configuredLocation.replace(" ", "").split(",");
+        if (parts.length < 3) {
+            String warning = plugin.getLanguageManager().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
+            plugin.getLogger().warning(warning.replace("<data>", configuredLocation));
+            return null;
+        }
+        try {
+            Vector local = new Vector(
+                    Double.parseDouble(parts[0]),
+                    Double.parseDouble(parts[1]),
+                    Double.parseDouble(parts[2])
+            );
+            Location location = resolveLocation(local, 0.5, 0, 0.5);
+            if (parts.length >= 4) location.setYaw(Float.parseFloat(parts[3]));
+            if (parts.length >= 5) location.setPitch(Float.parseFloat(parts[4]));
+            return location;
+        } catch (NumberFormatException exception) {
+            String warning = plugin.getLanguageManager().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
+            plugin.getLogger().warning(warning.replace("<data>", configuredLocation));
+            return null;
+        }
     }
 
     /**

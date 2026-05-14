@@ -107,7 +107,9 @@ public class EditorListener implements Listener {
             if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
                 e.setCancelled(true);
                 Location l = e.getClickedBlock().getLocation();
-                String msg = String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
+                String msg = "edit_start_location".equals(session.getPromptKey())
+                        ? String.format(Locale.US, "%d,%d,%d,%.1f,%.1f", l.getBlockX(), l.getBlockY(), l.getBlockZ(), p.getLocation().getYaw(), p.getLocation().getPitch())
+                        : String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
 
                 activeInputs.remove(p.getUniqueId());
 
@@ -151,7 +153,9 @@ public class EditorListener implements Listener {
         if (msg.equalsIgnoreCase(hereKw)) {
             if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
                 Location l = p.getLocation();
-                msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
+                msg = "edit_start_location".equals(session.getPromptKey())
+                        ? String.format(Locale.US, "%.1f,%.1f,%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch())
+                        : String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
 
                 String m = plugin.getLanguageManager().getString("editor.chat.input_here");
                 String prefix = plugin.getLanguageManager().getString("prefix", "");

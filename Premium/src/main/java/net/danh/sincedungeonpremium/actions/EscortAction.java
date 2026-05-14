@@ -8,9 +8,9 @@ import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -118,15 +118,7 @@ public class EscortAction extends DungeonAction implements Tickable {
                     continue;
                 }
 
-                Attribute attribute = null;
-                if (ServerVersion.isAtLeast(1, 21, 3)) {
-                    try {
-                        attribute = Registry.ATTRIBUTE.get(NamespacedKey.minecraft(attrName));
-                    } catch (Throwable ignored) {
-                    }
-                } else {
-                    attribute = getLegacyAttribute(attrName);
-                }
+                Attribute attribute = AttributeUtils.resolve(attrName);
 
                 if (attribute != null) {
                     AttributeInstance instance = living.getAttribute(attribute);
@@ -165,19 +157,6 @@ public class EscortAction extends DungeonAction implements Tickable {
                 }
             }
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    private Attribute getLegacyAttribute(String attrName) {
-        try {
-            return Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-        } catch (Exception e) {
-            try {
-                return Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
     }
 
     @Override

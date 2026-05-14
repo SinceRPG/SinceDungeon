@@ -9,6 +9,7 @@ import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.PlayerUtils;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
@@ -610,7 +611,7 @@ public class DungeonListener implements Listener {
                 DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
                 if (checkGame == null || !checkGame.isRunning()) return;
 
-                p.spigot().respawn();
+                PlayerUtils.respawn(p);
 
                 String deathAction = "RESPAWN";
                 if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {

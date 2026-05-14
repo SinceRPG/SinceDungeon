@@ -33,6 +33,22 @@ dungeon:
   # World name prefix when generating a dungeon instance
   world-prefix: "SinceDungeon_"
 
+  # Optional default dungeon start location in local dungeon coordinates.
+  # Use NONE to spawn at the provider/world spawn. Format: X,Y,Z or X,Y,Z,YAW,PITCH.
+  start-location: "NONE"
+
+  # WorldCreator and cleanup options used by cloned dungeon worlds on Paper and Folia.
+  world-generator-settings: ""
+  generate-structures: false
+  instance-autosave: false
+  default-time: 6000
+  default-storm: false
+  default-thundering: false
+  unload-retries: 5
+  unload-delay-ticks: 10
+  unload-retry-delay-ticks: 100
+  delete-delay-ticks: 40
+
   # Action when a player dies in a Dungeon (if out of lives):
   # RESPAWN: Respawn at start of dungeon.
   # FAIL: The entire team fails immediately.

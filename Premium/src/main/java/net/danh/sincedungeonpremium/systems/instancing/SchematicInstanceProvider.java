@@ -2,11 +2,9 @@ package net.danh.sincedungeonpremium.systems.instancing;
 
 import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.WorldUtils;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.hooks.PremiumWorldEditHook;
-import net.kyori.adventure.util.TriState;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -50,11 +48,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
         }
 
         if (isSharedWorld()) {
-            if (Bukkit.isPrimaryThread()) {
-                ensureSharedWorld();
-            } else {
-                SchedulerCompat.runGlobal(plugin, this::ensureSharedWorld);
-            }
+            SchedulerCompat.runGlobal(plugin, this::prepareSharedWorld);
         }
     }
 
@@ -177,11 +171,8 @@ public class SchematicInstanceProvider implements InstanceProvider {
         WorldCreator creator = new WorldCreator(worldName);
         creator.generator(new VoidGenerator());
         creator.generateStructures(false);
-        if (ServerVersion.isAtMost(1, 21, 9)) {
-            creator.keepSpawnLoaded(TriState.FALSE);
-        }
 
-        sharedWorld = Bukkit.createWorld(creator);
+        sharedWorld = creator.createWorld();
         if (sharedWorld == null) {
             String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", worldName);
             plugin.getLogger().severe(errorMsg);
@@ -194,6 +185,14 @@ public class SchematicInstanceProvider implements InstanceProvider {
         return sharedWorld;
     }
 
+    private void prepareSharedWorld() {
+        try {
+            ensureSharedWorld();
+        } catch (IllegalStateException e) {
+            plugin.getLogger().warning(e.getMessage());
+        }
+    }
+
     private CompletableFuture<World> createDedicatedWorldInstance(String templateName, String instanceId) {
         CompletableFuture<World> future = new CompletableFuture<>();
 
@@ -202,11 +201,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
             creator.generator(new VoidGenerator());
             creator.generateStructures(false);
 
-            if (ServerVersion.isAtMost(1, 21, 9)) {
-                creator.keepSpawnLoaded(TriState.FALSE);
-            }
-
-            World world = Bukkit.createWorld(creator);
+            World world = creator.createWorld();
             if (world == null) {
                 String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", instanceId);
                 plugin.getLogger().severe(errorMsg);
@@ -266,28 +261,32 @@ public class SchematicInstanceProvider implements InstanceProvider {
         InstanceRegion region = regions.remove(instanceId);
         if (region == null || world == null) return;
 
-        removeRegionEntities(world, region);
-
         boolean clearOnRelease = plugin.getFileManager().getConfig().getBoolean("instancing.schematic.shared-world.clear-on-release", true);
         if (!clearOnRelease) {
-            reusableSlots.offer(region.slot());
+            SchedulerCompat.runAtLocation(plugin, region.origin(), () -> {
+                removeRegionEntities(world, region);
+                reusableSlots.offer(region.slot());
+            });
             return;
         }
 
-        SchedulerCompat.runAsync(plugin, () -> {
-            boolean cleared = PremiumWorldEditHook.clearCuboid(getClearMin(world, region), getClearMax(world, region));
-            SchedulerCompat.runGlobal(plugin, () -> {
-                if (cleared) {
-                    reusableSlots.offer(region.slot());
-                    String logMsg = plugin.getFileManager().getMessageRaw("log.schematic_region_released");
-                    plugin.getLogger().info(logMsg.replace("<instance>", instanceId));
-                }
+        SchedulerCompat.runAtLocation(plugin, region.origin(), () -> {
+            removeRegionEntities(world, region);
+            SchedulerCompat.runAsync(plugin, () -> {
+                boolean cleared = PremiumWorldEditHook.clearCuboid(getClearMin(world, region), getClearMax(world, region));
+                SchedulerCompat.runAtLocation(plugin, region.origin(), () -> {
+                    if (cleared) {
+                        reusableSlots.offer(region.slot());
+                        String logMsg = plugin.getFileManager().getMessageRaw("log.schematic_region_released");
+                        plugin.getLogger().info(logMsg.replace("<instance>", instanceId));
+                    }
+                });
             });
         });
     }
 
     private void removeRegionEntities(World world, InstanceRegion region) {
-        for (Entity entity : world.getEntities()) {
+        for (Entity entity : world.getNearbyEntities(region.entityScanCenter(world), region.radius(), region.verticalRadius(world), region.radius())) {
             if (!(entity instanceof Player) && region.contains(entity.getLocation())) {
                 entity.remove();
             }
@@ -355,10 +354,10 @@ public class SchematicInstanceProvider implements InstanceProvider {
     }
 
     private void configureWorld(World world) {
-        world.setAutoSave(false);
-        world.setTime(6000);
-        world.setStorm(false);
-        world.setThundering(false);
+        world.setAutoSave(plugin.getFileManager().getConfig().getBoolean("instancing.world-settings.autosave", false));
+        world.setTime(plugin.getFileManager().getConfig().getInt("instancing.world-settings.time", 6000));
+        world.setStorm(plugin.getFileManager().getConfig().getBoolean("instancing.world-settings.storm", false));
+        world.setThundering(plugin.getFileManager().getConfig().getBoolean("instancing.world-settings.thundering", false));
     }
 
     @Override
@@ -370,20 +369,28 @@ public class SchematicInstanceProvider implements InstanceProvider {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) p.teleportAsync(safeLoc);
-            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, 5), 10L);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, unloadRetries()), unloadDelayTicks());
         } else {
-            performUnload(world, folder, 5);
+            performUnload(world, folder, unloadRetries());
         }
     }
 
     private void performUnload(World world, File folder, int retries) {
-        for (Entity e : world.getEntities()) {
-            if (!(e instanceof Player)) {
-                e.remove();
+        if (!SchedulerCompat.isFolia()) {
+            for (Entity e : world.getEntities()) {
+                if (!(e instanceof Player)) {
+                    e.remove();
+                }
             }
         }
 
-        if (Bukkit.unloadWorld(world, false)) {
+        SchedulerCompat.unloadWorld(plugin, world, false).whenComplete((unloaded, throwable) -> {
+            if (throwable != null) {
+                plugin.getLogger().warning(throwable.getMessage());
+                scheduleUnloadRetry(world, folder, retries);
+                return;
+            }
+            if (Boolean.TRUE.equals(unloaded)) {
             String logSuccess = plugin.getFileManager().getMessageRaw("log.world_unloaded").replace("<world>", world.getName());
             plugin.getLogger().info(logSuccess);
 
@@ -392,15 +399,11 @@ public class SchematicInstanceProvider implements InstanceProvider {
                     String logWarn = plugin.getFileManager().getMessageRaw("log.world_delete_fail").replace("<world>", folder.getName());
                     plugin.getLogger().warning(logWarn);
                 }
-            }, 40L);
-        } else if (retries > 0) {
-            String logRetry = plugin.getFileManager().getMessageRaw("log.world_unload_retry").replace("<world>", world.getName());
-            plugin.getLogger().warning(logRetry);
-            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), 100L);
-        } else {
-            String logWarn = plugin.getFileManager().getMessageRaw("log.world_unload_fail").replace("<world>", world.getName());
-            plugin.getLogger().warning(logWarn);
-        }
+            }, deleteDelayTicks());
+                return;
+            }
+            scheduleUnloadRetry(world, folder, retries);
+        });
     }
 
     @Override
@@ -412,15 +415,43 @@ public class SchematicInstanceProvider implements InstanceProvider {
             p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
         }
 
-        if (Bukkit.unloadWorld(world, false)) {
-            String logSuccess = plugin.getFileManager().getMessageRaw("log.world_force_unloaded").replace("<world>", world.getName());
-            plugin.getLogger().info(logSuccess);
+        SchedulerCompat.unloadWorld(plugin, world, false).whenComplete((unloaded, throwable) -> {
+            if (throwable == null && Boolean.TRUE.equals(unloaded)) {
+                String logSuccess = plugin.getFileManager().getMessageRaw("log.world_force_unloaded").replace("<world>", world.getName());
+                plugin.getLogger().info(logSuccess);
+                SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), deleteDelayTicks());
+            } else {
+                String logCritical = plugin.getFileManager().getMessageRaw("log.world_force_unload_fail").replace("<world>", world.getName());
+                plugin.getLogger().severe(logCritical);
+            }
+        });
+    }
 
-            SchedulerCompat.runAsyncLater(plugin, () -> WorldUtils.deleteWorld(folder), 40L);
-        } else {
-            String logCritical = plugin.getFileManager().getMessageRaw("log.world_force_unload_fail").replace("<world>", world.getName());
-            plugin.getLogger().severe(logCritical);
+    private void scheduleUnloadRetry(World world, File folder, int retries) {
+        if (retries > 0) {
+            String logRetry = plugin.getFileManager().getMessageRaw("log.world_unload_retry").replace("<world>", world.getName());
+            plugin.getLogger().warning(logRetry);
+            SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, retries - 1), retryDelayTicks());
+            return;
         }
+        String logWarn = plugin.getFileManager().getMessageRaw("log.world_unload_fail").replace("<world>", world.getName());
+        plugin.getLogger().warning(logWarn);
+    }
+
+    private int unloadRetries() {
+        return Math.max(0, plugin.getFileManager().getConfig().getInt("instancing.world-settings.unload-retries", 5));
+    }
+
+    private long unloadDelayTicks() {
+        return Math.max(1L, plugin.getFileManager().getConfig().getInt("instancing.world-settings.unload-delay-ticks", 10));
+    }
+
+    private long retryDelayTicks() {
+        return Math.max(1L, plugin.getFileManager().getConfig().getInt("instancing.world-settings.unload-retry-delay-ticks", 100));
+    }
+
+    private long deleteDelayTicks() {
+        return Math.max(1L, plugin.getFileManager().getConfig().getInt("instancing.world-settings.delete-delay-ticks", 40));
     }
 
     private record InstanceRegion(int slot, Location origin, Location pasteLocation, int radius) {
@@ -430,6 +461,14 @@ public class SchematicInstanceProvider implements InstanceProvider {
                     && location.getWorld().equals(origin.getWorld())
                     && Math.abs(location.getX() - origin.getX()) <= radius
                     && Math.abs(location.getZ() - origin.getZ()) <= radius;
+        }
+
+        int verticalRadius(World world) {
+            return Math.max(1, (world.getMaxHeight() - world.getMinHeight()) / 2);
+        }
+
+        Location entityScanCenter(World world) {
+            return new Location(world, origin.getX(), world.getMinHeight() + verticalRadius(world), origin.getZ());
         }
     }
 }

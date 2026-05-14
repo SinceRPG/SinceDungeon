@@ -5,10 +5,10 @@ import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.MathCache;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -243,17 +243,7 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
                     continue;
                 }
 
-                Attribute attribute = null;
-
-                if (ServerVersion.isAtLeast(1, 21, 3)) {
-                    try {
-                        NamespacedKey key = NamespacedKey.minecraft(attrName);
-                        attribute = Registry.ATTRIBUTE.get(key);
-                    } catch (Throwable ignored) {
-                    }
-                } else {
-                    attribute = getLegacyAttribute(attrName);
-                }
+                Attribute attribute = AttributeUtils.resolve(attrName);
 
                 if (attribute != null) {
                     AttributeInstance instance = living.getAttribute(attribute);
@@ -297,19 +287,4 @@ public class ControlZoneAction extends DungeonAction implements Tickable {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private Attribute getLegacyAttribute(String attrName) {
-        Attribute attr = null;
-        try {
-            attr = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-        }
-        if (attr == null) {
-            try {
-                attr = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        return attr;
-    }
 }

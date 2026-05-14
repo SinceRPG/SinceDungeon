@@ -232,6 +232,7 @@ public class EditorSession {
         PREVENT_DROP("settings.prevent-item-dropping", "dungeon.gameplay.prevent-item-dropping", Material.BARRIER, "setting_prevent_drop", "BOOL", true),
         BLOCK_PEARLS("settings.block-ender-pearls", "dungeon.gameplay.block-ender-pearls", Material.ENDER_PEARL, "setting_block_pearls", "BOOL", true),
         KICK_DELAY("settings.kick-delay-after-finish", "dungeon.gameplay.kick-delay-after-finish", Material.CLOCK, "setting_kick_delay", "INT", 10),
+        START_LOCATION("settings.start-location", "dungeon.start-location", Material.COMPASS, "setting_start_location", "LOCATION", "NONE"),
         FORCE_WEATHER("settings.force-daylight-and-clear-weather", "dungeon.gameplay.force-daylight-and-clear-weather", Material.SUNFLOWER, "setting_force_weather", "BOOL", true),
         SAVE_STATS("settings.save-and-restore-stats", "dungeon.save-and-restore-stats", Material.GOLDEN_APPLE, "setting_save_stats", "BOOL", false),
         DEATH_ACTION("settings.death-action", "dungeon.death-action", Material.SKELETON_SKULL, "setting_death_action", "DEATH_ENUM", "RESPAWN"),

@@ -13,6 +13,9 @@ public: true
 # GENERAL SETTINGS
 # =============================================================
 settings:
+  # Optional local coordinate where players enter and respawn.
+  # Use "NONE" to keep the instance provider/world spawn.
+  start-location: "NONE"
   # Limits how many players can enter this specific map (Set to 6 for a Raid)
   max-players: 6
   # Entry requirement (Lives)

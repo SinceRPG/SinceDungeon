@@ -4,13 +4,17 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.ConnectionPoolConfig;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPubSub;
+import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.providers.PooledConnectionProvider;
 
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Manages the Redis Pub/Sub connection for cross-server dungeon matchmaking.
@@ -21,9 +25,10 @@ public class RedisManager {
     private final SinceDungeon plugin;
     private final String channelName;
     private final String localServerName;
-    private JedisPool jedisPool;
+    private UnifiedJedis jedis;
     private JedisPubSub pubSub;
     private SchedulerCompat.TaskHandle listenerTask;
+    private final AtomicBoolean listening = new AtomicBoolean(false);
 
     public RedisManager(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -31,6 +36,7 @@ public class RedisManager {
         this.localServerName = plugin.getConfigFile().getString("cross-server.server-name", "dungeon-node-1");
     }
 
+    @SuppressWarnings("deprecation")
     public void connect() {
         String host = plugin.getConfigFile().getString("redis.host", "localhost");
         int port = plugin.getConfigFile().getInt("redis.port", 6379);
@@ -38,22 +44,24 @@ public class RedisManager {
         int timeoutMillis = plugin.getConfigFile().getInt("redis.timeout-millis", 2000);
         int maxTotal = plugin.getConfigFile().getInt("redis.pool.max-total", 10);
 
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        ConnectionPoolConfig poolConfig = new ConnectionPoolConfig();
         poolConfig.setMaxTotal(maxTotal);
 
+        DefaultJedisClientConfig.Builder clientConfig = DefaultJedisClientConfig.builder()
+                .timeoutMillis(timeoutMillis);
         if (password != null && !password.isEmpty()) {
-            jedisPool = new JedisPool(poolConfig, host, port, timeoutMillis, password);
-        } else {
-            jedisPool = new JedisPool(poolConfig, host, port, timeoutMillis);
+            clientConfig.password(password);
         }
 
+        // Jedis 7 still exposes pooled Pub/Sub through this bridge, so keep it isolated here for easy client upgrades.
+        PooledConnectionProvider provider = new PooledConnectionProvider(new HostAndPort(host, port), clientConfig.build(), poolConfig);
+        jedis = new UnifiedJedis(provider, 1, Duration.ofMillis(timeoutMillis));
+
         try {
-            try (Jedis jedis = jedisPool.getResource()) {
-                jedis.ping();
-            }
+            jedis.ping();
         } catch (Exception e) {
-            jedisPool.close();
-            jedisPool = null;
+            jedis.close();
+            jedis = null;
             throw e;
         }
 
@@ -76,14 +84,18 @@ public class RedisManager {
     }
 
     public void disconnect() {
+        listening.set(false);
         if (pubSub != null) {
             pubSub.unsubscribe();
+            pubSub = null;
         }
         if (listenerTask != null && !listenerTask.isCancelled()) {
             listenerTask.cancel();
         }
-        if (jedisPool != null && !jedisPool.isClosed()) {
-            jedisPool.close();
+        listenerTask = null;
+        if (jedis != null) {
+            jedis.close();
+            jedis = null;
             plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_disconnected", "[Redis] Redis connection closed."));
         }
     }
@@ -94,9 +106,10 @@ public class RedisManager {
      */
     private void startListening() {
         int reconnectDelayMillis = plugin.getConfigFile().getInt("redis.reconnect-delay-millis", 5000);
+        listening.set(true);
         listenerTask = SchedulerCompat.runAsync(plugin, () -> {
-            while (!Thread.currentThread().isInterrupted() && jedisPool != null && !jedisPool.isClosed()) {
-                try (Jedis jedis = jedisPool.getResource()) {
+            while (listening.get() && !Thread.currentThread().isInterrupted() && jedis != null) {
+                try {
                     pubSub = new JedisPubSub() {
                         @Override
                         public void onMessage(String channel, String message) {
@@ -108,6 +121,9 @@ public class RedisManager {
                     plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_connected", "[Redis] Ready to receive Cross-server messages."));
                     jedis.subscribe(pubSub, channelName);
                 } catch (Exception e) {
+                    if (!listening.get()) {
+                        break;
+                    }
                     plugin.getLogger().severe(plugin.getLanguageManager().getString("admin.log.redis_listen_error", "[Redis] Listener error/disconnected: ") + e.getMessage());
                     plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.redis_reconnect", "[Redis] Trying to reconnect after 5 seconds..."));
                     try {
@@ -121,14 +137,14 @@ public class RedisManager {
     }
 
     public void publishMessage(String message) {
-        if (jedisPool == null || jedisPool.isClosed()) {
+        if (jedis == null) {
             plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.redis_publish_unavailable", "[Redis] Cannot publish because Redis is not connected."));
             return;
         }
 
         SchedulerCompat.runAsync(plugin, () -> {
-            try (Jedis jedis = jedisPool.getResource()) {
-                jedis.publish(channelName, message);
+            try {
+                this.jedis.publish(channelName, message);
             } catch (Exception e) {
                 plugin.getLogger().warning(plugin.getLanguageManager().getString("admin.log.redis_publish_error", "[Redis] Cannot publish message: ") + e.getMessage());
             }

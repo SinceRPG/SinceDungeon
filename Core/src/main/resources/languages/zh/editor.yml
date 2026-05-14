@@ -148,6 +148,11 @@ editor:
     setting_kick_delay_lore:
       - "&7当前: &f<val>秒"
       - "&e左键点击编辑"
+    setting_start_location_lore:
+      - "&7当前: &f<val>"
+      - "&e左键: 输入位置"
+      - "&e右键: 使用当前位置"
+      - "&cShift-右键: 使用世界出生点"
     setting_force_weather_lore:
       - "&7当前: <val>"
       - "&e左键点击切换"
@@ -199,6 +204,7 @@ editor:
     setting_prevent_drop: "&e防止玩家丢弃物品"
     setting_block_pearls: "&e禁用末影珍珠/紫颂果"
     setting_kick_delay: "&e胜利后踢出延迟"
+    setting_start_location: "&e开始位置"
     setting_force_weather: "&e强制锁定为白天和晴天"
     setting_save_stats: "&e保存并恢复玩家状态"
     setting_death_action: "&e死亡后的动作"
@@ -448,6 +454,12 @@ editor:
       edit_kick_delay:
         - "&7输入玩家胜利后被踢出前的延迟时间 (秒)。"
         - "&7示例: &a15"
+      edit_start_location:
+        - "&7输入副本开始位置，使用本地坐标。"
+        - "&7格式: &aX,Y,Z &7或 &aX,Y,Z,YAW,PITCH"
+        - "&7示例: &a0,65,0,180,0"
+        - "&7提示: 输入 &ahere &7使用当前位置。"
+        - "&7提示: 输入 &cclear &7使用世界/Provider 出生点。"
       edit_action_mob:
         - "&7输入怪物名称 (MythicMobs 内部名称 或 原版 EntityType)。"
         - "&7MythicMobs 示例: &aSkeletonKing"
@@ -561,6 +573,7 @@ editor:
     item_set_hand: "&a已复制手持物品: <item>"
     hand_empty: "&c你必须在主手中持有一个物品！"
     update_loc: "&a已更新位置: <loc>"
+    start_location_cleared: "&e开始位置已重置为世界/Provider 出生点。"
     invalid_filename: "&c无效的文件名！请避免使用特殊字符。"
     input_error: "&c输入错误: <error>"
     list_limit_reached: "&c为防止内存问题，已达到列表大小上限 (最大 50 项/坐标)！"

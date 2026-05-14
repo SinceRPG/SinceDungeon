@@ -90,7 +90,7 @@ public class EditorGUI {
                 }
             }
             meta.lore(lore);
-            if (cmd != -1) meta.setCustomModelData(cmd);
+            if (cmd != -1) ItemBuilder.applyCustomModelData(meta, cmd);
             item.setItemMeta(meta);
         }
         return item;
@@ -235,6 +235,14 @@ public class EditorGUI {
                 }
                 case "STRING" ->
                         valStr = session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue());
+                case "LOCATION" -> {
+                    valStr = session.getConfig().contains(opt.getLocalPath())
+                            ? session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue())
+                            : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue()) : (String) opt.getDefaultValue());
+                    if (valStr == null || valStr.isBlank() || valStr.equalsIgnoreCase("NONE")) {
+                        valStr = getWord("default_word", "Default");
+                    }
+                }
                 case "INT" -> {
                     int val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getInt(opt.getLocalPath()) : (Integer) opt.getDefaultValue();
                     valStr = val > 0 ? String.valueOf(val) : (opt.name().equals("MAX_PLAYERS") ? getWord("unlimited", "Unlimited") : String.valueOf(val));

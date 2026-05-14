@@ -179,6 +179,16 @@ instancing:
   mode: "SCHEMATIC"
   # The Y-Level where the schematic will be pasted in the Void World
   paste-y-level: 64
+  # Shared and dedicated schematic worlds use these defaults on Paper and Folia.
+  world-settings:
+    autosave: false
+    time: 6000
+    storm: false
+    thundering: false
+    unload-retries: 5
+    unload-delay-ticks: 10
+    unload-retry-delay-ticks: 100
+    delete-delay-ticks: 40
   schematic:
     # When enabled, every dungeon run is pasted into an isolated region of this one world.
     # Actions still use the same YAML coordinates; Core offsets them into the assigned region.

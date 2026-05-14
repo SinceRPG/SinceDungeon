@@ -148,6 +148,11 @@ editor:
     setting_kick_delay_lore:
       - "&7Current: &f<val>s"
       - "&eLeft Click to edit"
+    setting_start_location_lore:
+      - "&7Current: &f<val>"
+      - "&eLeft Click: Type location"
+      - "&eRight Click: Use current position"
+      - "&cShift-Right: Use world spawn"
     setting_force_weather_lore:
       - "&7Current: <val>"
       - "&eLeft Click to toggle"
@@ -199,6 +204,7 @@ editor:
     setting_prevent_drop: "&ePrevent Item Dropping"
     setting_block_pearls: "&eBlock Ender Pearls/Chorus"
     setting_kick_delay: "&eKick Delay After Win"
+    setting_start_location: "&eStart Location"
     setting_force_weather: "&eForce Daylight & Clear Weather"
     setting_save_stats: "&eSave & Restore Player Stats"
     setting_death_action: "&eDeath Action"
@@ -445,6 +451,12 @@ editor:
       edit_kick_delay:
         - "&7Enter the Delay in Seconds before kicking players out upon win."
         - "&7Example: &a15"
+      edit_start_location:
+        - "&7Enter the dungeon start location in local coordinates."
+        - "&7Format: &aX,Y,Z &7or &aX,Y,Z,YAW,PITCH"
+        - "&7Example: &a0,65,0,180,0"
+        - "&7Tip: Type &ahere &7to use your current position."
+        - "&7Tip: Type &cclear &7to use the world/provider spawn."
       edit_action_mob:
         - "&7Enter the monster name (MythicMobs Internal Name or Vanilla EntityType)."
         - "&7MythicMobs Example: &aSkeletonKing"
@@ -555,6 +567,7 @@ editor:
     item_set_hand: "&aCopied item in hand: <item>"
     hand_empty: "&cYou must hold an item in your main hand!"
     update_loc: "&aUpdated location: <loc>"
+    start_location_cleared: "&eStart location reset to world/provider spawn."
     invalid_filename: "&cInvalid file name! Please avoid special characters."
     input_error: "&cInput error: <error>"
     list_limit_reached: "&cList size limit reached (Max 50 items/locations) to prevent memory issues!"
