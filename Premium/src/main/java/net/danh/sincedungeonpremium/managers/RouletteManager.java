@@ -20,7 +20,11 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -28,12 +32,12 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Premium-Exclusive Manager: Interactive Roulette Spin
  * Responsibilities:
- * - Generates a 27-slot physical scrolling menu utilizing Minecraft native APIs.
+ * - Generates a configurable physical scrolling menu utilizing Minecraft native APIs.
  * - Preserves ALL metadata formatting (Names, Lore, NBT) when displaying preview items.
  * - Securely pushes execution back into Core systems to process the won rewards.
  * - Optimized: Avoids IO lookups during high-frequency runnable loops.
@@ -41,11 +45,61 @@ import java.util.Random;
 public class RouletteManager implements Listener {
 
     private final SinceDungeonPremium plugin;
-    private final Random random = new Random();
+    private final RewardGUI rewardGUI;
 
     public RouletteManager(SinceDungeonPremium plugin) {
         this.plugin = plugin;
+        this.rewardGUI = new RewardGUI(SinceDungeon.getPlugin());
         Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
+    private int getGuiSize() {
+        int size = plugin.getFileManager().getConfig().getInt("roulette.gui-size", 27);
+        if (size % 9 != 0 || size < 27 || size > 54) return 27;
+        return size;
+    }
+
+    private int getRewardSlot(int size) {
+        int slot = plugin.getFileManager().getConfig().getInt("roulette.reward-slot", 13);
+        if (slot < 0 || slot >= size) return Math.min(13, size - 1);
+        return slot;
+    }
+
+    private int getSpinStartSlot(int size) {
+        int slot = plugin.getFileManager().getConfig().getInt("roulette.spin-start-slot", 9);
+        if (slot < 0 || slot >= size) return 9;
+        return slot;
+    }
+
+    private int getSpinEndSlot(int size) {
+        int slot = plugin.getFileManager().getConfig().getInt("roulette.spin-end-slot", 17);
+        if (slot < 0 || slot >= size) return Math.min(17, size - 1);
+        return slot;
+    }
+
+    private int getIntSetting(String path, int fallback, int min) {
+        return Math.max(min, plugin.getFileManager().getConfig().getInt(path, fallback));
+    }
+
+    private int getSlotSetting(String path, int fallback, int size) {
+        int slot = plugin.getFileManager().getConfig().getInt(path, fallback);
+        if (slot < 0 || slot >= size) return Math.min(fallback, size - 1);
+        return slot;
+    }
+
+    private Material getMaterialSetting(String path, Material fallback) {
+        String raw = plugin.getFileManager().getConfig().getString(path, fallback.name());
+        Material material = raw == null ? null : Material.matchMaterial(raw);
+        return material == null ? fallback : material;
+    }
+
+    private boolean isBlockedInventoryAction(InventoryAction action) {
+        String actionName = action.name();
+        return action == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                action == InventoryAction.HOTBAR_SWAP ||
+                actionName.equals("HOTBAR_MOVE_AND_READD") ||
+                action == InventoryAction.COLLECT_TO_CURSOR ||
+                actionName.contains("DROP");
     }
 
     public void openRoulette(Player player, RewardSession session) {
@@ -62,14 +116,16 @@ public class RouletteManager implements Listener {
         DungeonReward wonReward = getRandomReward(pool); // Pre-calculate winning reward to secure against closing
 
         String title = plugin.getFileManager().getConfig().getString("roulette.title", "&6&lReward Spin");
-        Inventory inv = Bukkit.createInventory(new RouletteHolder(session, wonReward), 27, ColorUtils.parse(title));
+        int guiSize = getGuiSize();
+        Inventory inv = Bukkit.createInventory(new RouletteHolder(session, wonReward), guiSize, ColorUtils.parse(title));
 
-        ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        ItemStack border = new ItemStack(getMaterialSetting("roulette.border-material", Material.BLACK_STAINED_GLASS_PANE));
         for (int i = 0; i < 9; i++) inv.setItem(i, border);
-        for (int i = 18; i < 27; i++) inv.setItem(i, border);
+        for (int i = guiSize - 9; i < guiSize; i++) inv.setItem(i, border);
 
-        inv.setItem(4, new ItemStack(Material.HOPPER));
-        inv.setItem(22, new ItemStack(Material.HOPPER));
+        Material pointer = getMaterialSetting("roulette.pointer-material", Material.HOPPER);
+        inv.setItem(getSlotSetting("roulette.top-pointer-slot", 4, guiSize), new ItemStack(pointer));
+        inv.setItem(getSlotSetting("roulette.bottom-pointer-slot", 22, guiSize), new ItemStack(pointer));
 
         player.openInventory(inv);
 
@@ -77,14 +133,23 @@ public class RouletteManager implements Listener {
     }
 
     private void startSpinAnimation(Player player, Inventory inv, List<DungeonReward> pool, RewardSession session, DungeonReward wonReward) {
-        // JIT Optimization: Pre-fetch sound data to avoid YAML read loops during animation ticks
+        // Pre-fetch sound and timing data to avoid YAML reads while the animation is ticking.
         String soundStr = plugin.getFileManager().getConfig().getString("sounds.roulette_tick", "block.note_block.hat");
         Sound soundTick = SoundUtils.getSound(soundStr);
+        int maxFrames = getIntSetting("roulette.animation.frames", 60, 1);
+        int slowAtFrame = getIntSetting("roulette.animation.slow-at-frame", 40, 1);
+        int slowerAtFrame = getIntSetting("roulette.animation.slower-at-frame", 50, 1);
+        int slowestAtFrame = getIntSetting("roulette.animation.slowest-at-frame", 55, 1);
+        int slowDelayTicks = getIntSetting("roulette.animation.slow-delay-ticks", 2, 1);
+        int slowerDelayTicks = getIntSetting("roulette.animation.slower-delay-ticks", 4, 1);
+        int slowestDelayTicks = getIntSetting("roulette.animation.slowest-delay-ticks", 8, 1);
+        int size = inv.getSize();
+        int spinStartSlot = getSpinStartSlot(size);
+        int spinEndSlot = Math.max(spinStartSlot, getSpinEndSlot(size));
 
         new BukkitRunnable() {
-            int ticks = 0;
-            int delay = 1;
-            int maxTicks = 60;
+            int frames = 0;
+            int elapsedTicks = 0;
 
             @Override
             public void run() {
@@ -93,29 +158,30 @@ public class RouletteManager implements Listener {
                     return;
                 }
 
-                for (int i = 16; i > 9; i--) {
+                elapsedTicks++;
+                int delay = 1;
+                if (frames > slowAtFrame) delay = slowDelayTicks;
+                if (frames > slowerAtFrame) delay = slowerDelayTicks;
+                if (frames > slowestAtFrame) delay = slowestDelayTicks;
+                if (elapsedTicks % delay != 0) return;
+
+                for (int i = spinEndSlot; i > spinStartSlot; i--) {
                     inv.setItem(i, inv.getItem(i - 1));
                 }
 
                 DungeonReward nextReward = getRandomReward(pool);
                 ItemStack displayItem = buildDisplayItem(nextReward);
-                inv.setItem(9, displayItem);
+                inv.setItem(spinStartSlot, displayItem);
 
                 if (soundTick != null) {
                     player.playSound(player.getLocation(), soundTick, 1f, 1f);
                 }
 
-                ticks++;
+                frames++;
 
-                if (ticks > 40) delay = 2;
-                if (ticks > 50) delay = 4;
-                if (ticks > 55) delay = 8;
-
-                if (ticks >= maxTicks) {
+                if (frames >= maxFrames) {
                     this.cancel();
                     finishSpin(player, inv, session, wonReward);
-                } else if (ticks % delay != 0) {
-                    // Loop skip
                 }
             }
         }.runTaskTimer(plugin, 0L, 1L);
@@ -133,7 +199,7 @@ public class RouletteManager implements Listener {
         }
 
         ItemStack wonDisplay = buildDisplayItem(wonReward);
-        inv.setItem(13, wonDisplay);
+        inv.setItem(getRewardSlot(inv.getSize()), wonDisplay);
 
         grantReward(player, wonReward);
 
@@ -148,7 +214,7 @@ public class RouletteManager implements Listener {
                     player.closeInventory();
                 }
             }
-        }, 40L);
+        }, getIntSetting("roulette.next-spin-delay-ticks", 40, 1));
     }
 
     private void grantReward(Player player, DungeonReward wonReward) {
@@ -156,10 +222,31 @@ public class RouletteManager implements Listener {
         Bukkit.getPluginManager().callEvent(claimEvent);
 
         if (!claimEvent.isCancelled()) {
-            RewardProcessor processor = SinceDungeonAPI.get().getManager().getRewardProcessor(wonReward.type());
+            DungeonReward finalReward = claimEvent.getReward();
+            RewardProcessor processor = SinceDungeonAPI.get().getManager().getRewardProcessor(finalReward.type());
             if (processor != null) {
-                processor.giveReward(player, wonReward.value(), wonReward.displayName());
+                processor.giveReward(player, finalReward.value(), finalReward.displayName());
             }
+        }
+    }
+
+    @EventHandler
+    public void onRouletteClick(InventoryClickEvent e) {
+        if (!(e.getView().getTopInventory().getHolder() instanceof RouletteHolder)) return;
+
+        e.setCancelled(true);
+        if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
+            return;
+        }
+        if (isBlockedInventoryAction(e.getAction())) {
+            return;
+        }
+    }
+
+    @EventHandler
+    public void onRouletteDrag(InventoryDragEvent e) {
+        if (e.getView().getTopInventory().getHolder() instanceof RouletteHolder) {
+            e.setCancelled(true);
         }
     }
 
@@ -182,7 +269,7 @@ public class RouletteManager implements Listener {
 
             // Securely force-claim the rest of the chests so no data is lost
             if (session != null && session.getChestCount() > 0) {
-                new RewardGUI(SinceDungeon.getPlugin()).forceClaimAll(p, session);
+                rewardGUI.forceClaimAll(p, session);
             }
 
             RewardSessionManager.removeSession(p);
@@ -191,7 +278,11 @@ public class RouletteManager implements Listener {
 
     private DungeonReward getRandomReward(List<DungeonReward> pool) {
         double totalWeight = pool.stream().mapToDouble(DungeonReward::chance).sum();
-        double roll = random.nextDouble() * totalWeight;
+        if (totalWeight <= 0) {
+            return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        }
+
+        double roll = ThreadLocalRandom.current().nextDouble(totalWeight);
         double currentWeight = 0.0;
         for (DungeonReward reward : pool) {
             currentWeight += reward.chance();

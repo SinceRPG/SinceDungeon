@@ -2,7 +2,11 @@ package net.danh.sinceDungeon.guis.reward;
 
 import net.danh.sinceDungeon.models.DungeonTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Maintains the session state for a player actively opening reward chests.
@@ -74,7 +78,6 @@ public class RewardSession {
         this.totalPages = (int) Math.ceil((double) chestCount / maxPerPage);
         if (this.totalPages == 0) this.totalPages = 1;
 
-        Random rand = new Random();
         int chestsToDistribute = this.chestCount;
 
         for (int p = 0; p < totalPages; p++) {
@@ -88,7 +91,7 @@ public class RewardSession {
 
             int chestsOnPage = Math.min(chestsToDistribute, availableSlots.size());
             for (int i = 0; i < chestsOnPage; i++) {
-                int slot = availableSlots.remove(rand.nextInt(availableSlots.size()));
+                int slot = availableSlots.remove(ThreadLocalRandom.current().nextInt(availableSlots.size()));
                 pageMap.put(slot, false);
             }
             chestPages.put(p, pageMap);

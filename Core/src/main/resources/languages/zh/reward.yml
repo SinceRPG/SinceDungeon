@@ -10,6 +10,7 @@ reward:
   settings:
     gui_size: 27
     button_slot: 13
+    close_delay_ticks: 20
   icons:
     button:
       material: CHEST

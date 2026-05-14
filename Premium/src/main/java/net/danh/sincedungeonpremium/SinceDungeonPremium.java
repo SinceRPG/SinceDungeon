@@ -3,6 +3,7 @@ package net.danh.sincedungeonpremium;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.hooks.PremiumMythicMobsHook;
 import net.danh.sincedungeonpremium.listeners.AffixListener;
@@ -78,6 +79,10 @@ public final class SinceDungeonPremium extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        SinceDungeon core = SinceDungeon.getPlugin();
+        if (core != null && core.isEnabled() && core.getRewardManager() != null) {
+            core.getRewardManager().setRewardSystem(new DefaultRewardSystem(core));
+        }
         if (hologramManager != null) {
             hologramManager.clearAllHolograms();
         }

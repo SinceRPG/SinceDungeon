@@ -14,7 +14,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -23,7 +27,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class RewardGUI implements Listener {
     private final SinceDungeon plugin;
@@ -51,6 +55,19 @@ public class RewardGUI implements Listener {
         int size = getGuiSize();
         if (slot < 0 || slot >= size) return size / 2;
         return slot;
+    }
+
+    private int getCloseDelayTicks() {
+        return Math.max(1, getConfig().getInt("reward.settings.close_delay_ticks", 20));
+    }
+
+    private boolean isBlockedInventoryAction(InventoryAction action) {
+        String actionName = action.name();
+        return action == InventoryAction.MOVE_TO_OTHER_INVENTORY ||
+                action == InventoryAction.HOTBAR_SWAP ||
+                actionName.equals("HOTBAR_MOVE_AND_READD") ||
+                action == InventoryAction.COLLECT_TO_CURSOR ||
+                actionName.contains("DROP");
     }
 
     private void playSound(Player p, String key) {
@@ -125,9 +142,9 @@ public class RewardGUI implements Listener {
         double totalWeight = 0.0;
         for (DungeonReward reward : pool) totalWeight += reward.chance();
 
-        if (totalWeight <= 0) return pool.get(new Random().nextInt(pool.size()));
+        if (totalWeight <= 0) return pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
 
-        double random = new Random().nextDouble() * totalWeight;
+        double random = ThreadLocalRandom.current().nextDouble(totalWeight);
         double currentWeight = 0.0;
         for (DungeonReward reward : pool) {
             currentWeight += reward.chance();
@@ -250,12 +267,7 @@ public class RewardGUI implements Listener {
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent e) {
         if (e.getView().getTopInventory().getHolder() instanceof RewardHolder) {
-            for (int slot : e.getRawSlots()) {
-                if (slot < e.getView().getTopInventory().getSize()) {
-                    e.setCancelled(true);
-                    return;
-                }
-            }
+            e.setCancelled(true);
         }
     }
 
@@ -264,23 +276,19 @@ public class RewardGUI implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (!(e.getView().getTopInventory().getHolder() instanceof RewardHolder holder)) return;
 
+        e.setCancelled(true);
+
         if (e.getClick() == ClickType.NUMBER_KEY || e.getClick() == ClickType.DOUBLE_CLICK || e.getClick() == ClickType.SWAP_OFFHAND) {
-            e.setCancelled(true);
             return;
         }
 
-        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.HOTBAR_SWAP ||
-                e.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD || e.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
-                e.getAction().name().contains("DROP")) {
-            e.setCancelled(true);
+        if (isBlockedInventoryAction(e.getAction())) {
             return;
         }
 
         if (e.getClickedInventory() == null) return;
 
         if (e.getClickedInventory() == e.getView().getTopInventory()) {
-            e.setCancelled(true);
-
             RewardSession session = holder.session();
             if (session == null) {
                 p.closeInventory();
@@ -350,7 +358,7 @@ public class RewardGUI implements Listener {
                             String msg = getMsg("claimed_all");
                             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
                             try {
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), 20L);
+                                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), getCloseDelayTicks());
                             } catch (Exception ignored) {
                             }
                         }
