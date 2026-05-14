@@ -194,6 +194,8 @@ instancing:
     # Actions still use the same YAML coordinates; Core offsets them into the assigned region.
     paste-air: true
     shared-world:
+      # Folia cannot create or load worlds at runtime.
+      # On Folia, this world must already be loaded by the server before the plugin enables.
       enabled: true
       name: "SDPremium_Schematic"
       spawn-location: "0,65,0"

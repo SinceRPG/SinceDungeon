@@ -72,9 +72,12 @@ public class SchematicInstanceProvider implements InstanceProvider {
 
         CompletableFuture<World> future = new CompletableFuture<>();
 
-        SchedulerCompat.runGlobal(plugin, () -> {
+        createSharedWorldAsync().whenComplete((world, throwable) -> SchedulerCompat.runGlobal(plugin, () -> {
+            if (throwable != null) {
+                future.completeExceptionally(throwable);
+                return;
+            }
             try {
-                World world = ensureSharedWorld();
                 InstanceRegion region = allocateRegion(instanceId, world);
 
                 SchedulerCompat.runAsync(plugin, () -> {
@@ -107,7 +110,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
             } catch (Exception e) {
                 future.completeExceptionally(e);
             }
-        });
+        }));
 
         return future;
     }
@@ -168,74 +171,116 @@ public class SchematicInstanceProvider implements InstanceProvider {
             return sharedWorld;
         }
 
-        WorldCreator creator = new WorldCreator(worldName);
-        creator.generator(new VoidGenerator());
-        creator.generateStructures(false);
-
-        sharedWorld = creator.createWorld();
-        if (sharedWorld == null) {
-            String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", worldName);
-            plugin.getLogger().severe(errorMsg);
-            throw new IllegalStateException(errorMsg);
-        }
-
-        configureWorld(sharedWorld);
-        String logMsg = plugin.getFileManager().getMessageRaw("log.shared_world_ready");
-        plugin.getLogger().info(logMsg.replace("<world>", sharedWorld.getName()));
-        return sharedWorld;
+        throw missingSharedWorldException(worldName);
     }
 
     private void prepareSharedWorld() {
-        try {
-            ensureSharedWorld();
-        } catch (IllegalStateException e) {
-            plugin.getLogger().warning(e.getMessage());
+        if (SchedulerCompat.isFolia()) {
+            try {
+                ensureSharedWorld();
+            } catch (IllegalStateException e) {
+                plugin.getLogger().warning(e.getMessage());
+            }
+            return;
         }
+        createSharedWorldAsync().exceptionally(throwable -> {
+            plugin.getLogger().warning(throwable.getMessage());
+            return null;
+        });
     }
 
     private CompletableFuture<World> createDedicatedWorldInstance(String templateName, String instanceId) {
         CompletableFuture<World> future = new CompletableFuture<>();
+
+        if (SchedulerCompat.isFolia()) {
+            String errorMsg = plugin.getFileManager().getMessageRaw("log.folia_dynamic_world_unsupported").replace("<instance>", instanceId);
+            plugin.getLogger().severe(errorMsg);
+            future.completeExceptionally(new UnsupportedOperationException(errorMsg));
+            return future;
+        }
 
         SchedulerCompat.runGlobal(plugin, () -> {
             WorldCreator creator = new WorldCreator(instanceId);
             creator.generator(new VoidGenerator());
             creator.generateStructures(false);
 
-            World world = creator.createWorld();
-            if (world == null) {
-                String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", instanceId);
-                plugin.getLogger().severe(errorMsg);
-                future.completeExceptionally(new RuntimeException(errorMsg));
-                return;
-            }
-
-            SchedulerCompat.runAsync(plugin, () -> {
-                File schemFile = resolveSchematicFile(templateName);
-                if (schemFile.exists()) {
-                    int yLevel = plugin.getFileManager().getConfig().getInt("instancing.paste-y-level", 64);
-                    boolean pasteAir = plugin.getFileManager().getConfig().getBoolean("instancing.schematic.paste-air", true);
-                    Location pasteLoc = new Location(world, 0, yLevel, 0);
-
-                    boolean success = PremiumWorldEditHook.pasteSchematic(schemFile, pasteLoc, pasteAir);
-                    if (!success) {
-                        String errMsg = plugin.getFileManager().getMessageRaw("log.schematic_paste_fail")
-                                .replace("<file>", schemFile.getName())
-                                .replace("<error>", plugin.getFileManager().getMessageRaw("log.worldedit_unknown_fail"));
-                        plugin.getLogger().warning(errMsg);
-                    }
-                } else {
-                    String warnMsg = plugin.getFileManager().getMessageRaw("log.schematic_not_found").replace("<template>", templateName);
-                    plugin.getLogger().warning(warnMsg);
+            SchedulerCompat.createWorld(plugin, creator).whenComplete((world, throwable) -> {
+                if (throwable != null) {
+                    future.completeExceptionally(throwable);
+                    return;
+                }
+                if (world == null) {
+                    String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", instanceId);
+                    plugin.getLogger().severe(errorMsg);
+                    future.completeExceptionally(new RuntimeException(errorMsg));
+                    return;
                 }
 
-                SchedulerCompat.runGlobal(plugin, () -> {
-                    configureWorld(world);
-                    future.complete(world);
+                SchedulerCompat.runAsync(plugin, () -> {
+                    File schemFile = resolveSchematicFile(templateName);
+                    if (schemFile.exists()) {
+                        int yLevel = plugin.getFileManager().getConfig().getInt("instancing.paste-y-level", 64);
+                        boolean pasteAir = plugin.getFileManager().getConfig().getBoolean("instancing.schematic.paste-air", true);
+                        Location pasteLoc = new Location(world, 0, yLevel, 0);
+
+                        boolean success = PremiumWorldEditHook.pasteSchematic(schemFile, pasteLoc, pasteAir);
+                        if (!success) {
+                            String errMsg = plugin.getFileManager().getMessageRaw("log.schematic_paste_fail")
+                                    .replace("<file>", schemFile.getName())
+                                    .replace("<error>", plugin.getFileManager().getMessageRaw("log.worldedit_unknown_fail"));
+                            plugin.getLogger().warning(errMsg);
+                        }
+                    } else {
+                        String warnMsg = plugin.getFileManager().getMessageRaw("log.schematic_not_found").replace("<template>", templateName);
+                        plugin.getLogger().warning(warnMsg);
+                    }
+
+                    SchedulerCompat.runGlobal(plugin, () -> {
+                        configureWorld(world);
+                        future.complete(world);
+                    });
                 });
             });
         });
 
         return future;
+    }
+
+    private CompletableFuture<World> createSharedWorldAsync() {
+        String worldName = getSharedWorldName();
+        World existing = Bukkit.getWorld(worldName);
+        if (existing != null) {
+            sharedWorld = existing;
+            configureWorld(sharedWorld);
+            return CompletableFuture.completedFuture(sharedWorld);
+        }
+
+        if (SchedulerCompat.isFolia()) {
+            IllegalStateException exception = missingSharedWorldException(worldName);
+            plugin.getLogger().severe(exception.getMessage());
+            return CompletableFuture.failedFuture(exception);
+        }
+
+        WorldCreator creator = new WorldCreator(worldName);
+        creator.generator(new VoidGenerator());
+        creator.generateStructures(false);
+
+        return SchedulerCompat.createWorld(plugin, creator).thenApply(world -> {
+            if (world == null) {
+                String errorMsg = plugin.getFileManager().getMessageRaw("log.void_world_fail").replace("<instance>", worldName);
+                throw new IllegalStateException(errorMsg);
+            }
+            sharedWorld = world;
+            configureWorld(sharedWorld);
+            String logMsg = plugin.getFileManager().getMessageRaw("log.shared_world_ready");
+            plugin.getLogger().info(logMsg.replace("<world>", sharedWorld.getName()));
+            return sharedWorld;
+        });
+    }
+
+    private IllegalStateException missingSharedWorldException(String worldName) {
+        String errorMsg = plugin.getFileManager().getMessageRaw("log.folia_shared_world_missing").replace("<world>", worldName);
+        return new IllegalStateException(errorMsg);
     }
 
     private InstanceRegion allocateRegion(String instanceId, World world) {

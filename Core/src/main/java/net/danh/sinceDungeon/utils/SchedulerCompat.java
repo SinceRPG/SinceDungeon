@@ -148,6 +148,10 @@ public final class SchedulerCompat {
 
     public static CompletableFuture<World> createWorld(Plugin plugin, WorldCreator creator) {
         CompletableFuture<World> future = new CompletableFuture<>();
+        if (FOLIA) {
+            future.completeExceptionally(new UnsupportedOperationException("Folia does not support Bukkit runtime world creation. Preload the world before plugin startup."));
+            return future;
+        }
         TaskHandle handle = runGlobal(plugin, () -> {
             try {
                 future.complete(creator.createWorld());

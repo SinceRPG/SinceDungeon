@@ -37,7 +37,8 @@ dungeon:
   # Use NONE to spawn at the provider/world spawn. Format: X,Y,Z or X,Y,Z,YAW,PITCH.
   start-location: "NONE"
 
-  # WorldCreator and cleanup options used by cloned dungeon worlds on Paper and Folia.
+  # WorldCreator and cleanup options used by cloned dungeon worlds on Paper.
+  # Folia 26.1.2 does not support Bukkit runtime world creation; use a preloaded shared-world provider there.
   world-generator-settings: ""
   generate-structures: false
   instance-autosave: false
