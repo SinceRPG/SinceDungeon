@@ -369,7 +369,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
         List<Player> players = world.getPlayers();
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
-            for (Player p : players) p.teleport(safeLoc);
+            for (Player p : players) p.teleportAsync(safeLoc);
             SchedulerCompat.runGlobalLater(plugin, () -> performUnload(world, folder, 5), 10L);
         } else {
             performUnload(world, folder, 5);
@@ -409,7 +409,7 @@ public class SchematicInstanceProvider implements InstanceProvider {
         File folder = world.getWorldFolder();
 
         for (Player p : world.getPlayers()) {
-            p.teleport(Bukkit.getWorlds().get(0).getSpawnLocation());
+            p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
         }
 
         if (Bukkit.unloadWorld(world, false)) {

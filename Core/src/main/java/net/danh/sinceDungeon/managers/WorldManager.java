@@ -129,7 +129,7 @@ public class WorldManager {
         if (!players.isEmpty()) {
             Location safeLoc = Bukkit.getWorlds().get(0).getSpawnLocation();
             for (Player p : players) {
-                p.teleport(safeLoc);
+                p.teleportAsync(safeLoc);
             }
             // Add a slight delay before triggering the unload to allow the teleport to fully process
             SchedulerCompat.runGlobalLater(plugin, () -> performUnload(plugin, world, folder, 5), 10L);
@@ -178,7 +178,7 @@ public class WorldManager {
         File folder = world.getWorldFolder();
 
         for (Player p : world.getPlayers()) {
-            p.teleport(Bukkit.getWorlds().get(0).getSpawnLocation());
+            p.teleportAsync(Bukkit.getWorlds().get(0).getSpawnLocation());
         }
 
         if (Bukkit.unloadWorld(world, false)) {

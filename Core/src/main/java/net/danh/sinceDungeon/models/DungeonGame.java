@@ -836,7 +836,7 @@ public class DungeonGame {
                             SchedulerCompat.runAtEntity(plugin, p, () -> SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L));
                         } else if (p.isOnline()) {
                             SchedulerCompat.runAtEntity(plugin, p, () -> {
-                                p.teleport(targetLoc);
+                                p.teleportAsync(targetLoc);
                                 SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                             });
                         }
@@ -865,7 +865,7 @@ public class DungeonGame {
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
             if (wasInDungeon) {
-                p.teleport(targetLoc);
+                p.teleportAsync(targetLoc);
             }
             SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
         } else {
@@ -946,7 +946,7 @@ public class DungeonGame {
                                         SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                                     } else {
                                         SchedulerCompat.runAtEntity(plugin, p, () -> {
-                                            p.teleport(targetLoc);
+                                            p.teleportAsync(targetLoc);
                                             SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                                         });
                                     }
@@ -1007,7 +1007,7 @@ public class DungeonGame {
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
                         plugin.getDungeonManager().addTransitioning(p.getUniqueId());
-                        p.teleport(targetLoc);
+                        p.teleportAsync(targetLoc);
                         restorePlayerState(p);
                         p.sendActionBar(ColorUtils.parse(" "));
                     } else if (p.isOnline()) {

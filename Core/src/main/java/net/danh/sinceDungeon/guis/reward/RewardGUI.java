@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -350,7 +351,7 @@ public class RewardGUI implements Listener {
                             String msg = getMsg("claimed_all");
                             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
                             try {
-                                net.danh.sinceDungeon.utils.SchedulerCompat.runAtEntity(plugin, p, () -> net.danh.sinceDungeon.utils.SchedulerCompat.runGlobalLater(plugin, p::closeInventory, 20L));
+                                SchedulerCompat.runAtEntity(plugin, p, () -> SchedulerCompat.runGlobalLater(plugin, p::closeInventory, 20L));
                             } catch (Exception ignored) {
                             }
                         }
