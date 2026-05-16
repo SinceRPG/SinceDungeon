@@ -9,7 +9,6 @@ import net.danh.sinceDungeon.guis.editor.EditorListener;
 import net.danh.sinceDungeon.guis.editor.EditorManager;
 import net.danh.sinceDungeon.guis.editor.EditorMenuListener;
 import net.danh.sinceDungeon.guis.top.TopMenuListener;
-import net.danh.sinceDungeon.hooks.LivesExpansion;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.listeners.CooldownItemListener;
 import net.danh.sinceDungeon.listeners.DungeonListener;

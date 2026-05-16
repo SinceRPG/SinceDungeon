@@ -15,11 +15,7 @@ import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
@@ -34,15 +30,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -989,7 +977,8 @@ public class DungeonGame {
 
         try {
             Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this, DungeonEndEvent.EndReason.FORCE_STOPPED));
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
         if (tickTask != null && !tickTask.isCancelled()) tickTask.cancel();
         if (lobbyTask != null && !lobbyTask.isCancelled()) lobbyTask.cancel();
@@ -1018,7 +1007,8 @@ public class DungeonGame {
                     }
                 }
             }
-        } catch (Exception ignored) { } finally {
+        } catch (Exception ignored) {
+        } finally {
             if (dungeonWorld != null) {
                 World w = dungeonWorld;
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
