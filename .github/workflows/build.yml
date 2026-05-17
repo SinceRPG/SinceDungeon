@@ -10,11 +10,11 @@ on:
 # Define all hardcoded variables globally for the workflow
 env:
   # Base Webhook URLs (NO ?thread_id AT THE END)
-  WEBHOOK_URL_FREE: "https://discord.com/api/webhooks/1471469221614583810/pfMtLyRbTDKiUGMJyVBjhhJ3RDgQelOX71iMGqWg3HdrlokqBJSt1Ox3aC4yTkkGtZ-_"
-  THREAD_ID_FREE: "1475129559530864852"
+  WEBHOOK_URL_FREE: ${{ secrets.DISCORD_WEBHOOK_URL_FREE }}
+  THREAD_ID_FREE: ${{ secrets.DISCORD_WEBHOOK_THREAD_ID_FREE }}
 
-  WEBHOOK_URL_PREMIUM: "https://discord.com/api/webhooks/1500473462723051643/kFv5yPMXscfXOMyt_u8pB3XyhGYCmshPMCSaiu2AFkMb0DpibTrKti1j4RxshzTDeWnX"
-  THREAD_ID_PREMIUM: "1500473399594451044"
+  WEBHOOK_URL_PREMIUM: ${{ secrets.DISCORD_WEBHOOK_URL_PREMIUM }}
+  THREAD_ID_PREMIUM: ${{ secrets.DISCORD_WEBHOOK_THREAD_ID_PREMIUM }}
 
   # Gradle Settings
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
