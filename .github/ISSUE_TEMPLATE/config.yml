@@ -1,0 +1,6 @@
+# ==============================================================================
+# Global Issue Template Configuration
+# Description: Enforces the usage of defined templates by disabling blank issues.
+# ==============================================================================
+
+blank_issues_enabled: false

@@ -1,0 +1,118 @@
+# ==============================================================================
+# Minecraft Plugin Bug Report Form
+# Description: Gathers specific server environment details (Software, Java version,
+#              Server version) necessary for debugging Minecraft Java plugins.
+# ==============================================================================
+
+name: Bug Report
+description: Report an issue or unexpected behavior in the plugin.
+title: "[BUG] <Provide a short summary of the issue>"
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 🐛 Bug Report
+        Thank you for reporting an issue! To help us resolve it quickly, please provide all the requested details about your Minecraft server environment.
+
+  - type: dropdown
+    id: server_software
+    attributes:
+      label: Server Software
+      description: Which server software are you running?
+      multiple: false
+      options:
+        - Paper
+        - Purpur
+        - Spigot
+        - Folia
+        - Pufferfish
+        - Other (Please specify in the description)
+    validations:
+      required: true
+
+  - type: input
+    id: server_version
+    attributes:
+      label: Server Version
+      description: What is the exact version of your server? (e.g., git-Paper-196 (MC: 1.20.4))
+      placeholder: Run /version and paste the output here.
+    validations:
+      required: true
+
+  - type: input
+    id: plugin_version
+    attributes:
+      label: Plugin Version
+      description: Which version of this plugin are you using?
+      placeholder: ex. v1.2.0 or build #45
+    validations:
+      required: true
+
+  - type: dropdown
+    id: java_version
+    attributes:
+      label: Java Version
+      description: Which version of Java is your server running on?
+      multiple: false
+      options:
+        - Java 21
+        - Java 17
+        - Java 16
+        - Java 11
+        - Java 8
+        - Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Provide a clear and concise description of what the bug is.
+      placeholder: What went wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to Reproduce
+      description: Please provide the exact steps to reproduce the behavior in-game or via console.
+      placeholder: |
+        1. Equip item X...
+        2. Run command /...
+        3. See error in console...
+    validations:
+      required: true
+
+  - type: textarea
+    id: console_errors
+    attributes:
+      label: Console Errors / Stacktrace
+      description: If there are any errors in the server console, paste them here. Do NOT paste images of text. Use pastebin.com if the log is too long.
+      render: log
+    validations:
+      required: false
+
+  - type: textarea
+    id: active_plugins
+    attributes:
+      label: Active Plugins
+      description: List any other plugins that might be conflicting.
+      placeholder: Run /plugins and list relevant ones here...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting your report.
+      options:
+        - label: I have tested this on the latest version of the plugin.
+          required: true
+        - label: I have searched the existing issues to ensure this bug has not already been reported.
+          required: true
