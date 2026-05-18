@@ -59,6 +59,7 @@ public class EditorGUI {
                 case "number_error" -> msg = "&cValue must be a valid number!";
                 case "dungeon_deleted" -> msg = "&aSuccessfully deleted dungeon: &e<dungeon>";
                 case "stage_inserted" -> msg = "&aSuccessfully shifted configuration and inserted Stage <pos>!";
+                case "notification_toggled" -> msg = "&eNotification <key> set to <state>.";
                 default -> {
                     return;
                 }
@@ -89,7 +90,7 @@ public class EditorGUI {
                 }
             }
             meta.lore(lore);
-            if (cmd != -1) meta.setCustomModelData(cmd);
+            if (cmd != -1) ItemBuilder.applyCustomModelData(meta, cmd);
             item.setItemMeta(meta);
         }
         return item;
@@ -196,6 +197,7 @@ public class EditorGUI {
         inv.setItem(16, makeItem(Material.DIAMOND_SWORD, getMsg("items.stages", "&cStages"), getLoreList("stages_lore", Collections.singletonList("&7Edit dungeon content"))));
 
         inv.setItem(13, makeItem(Material.COMPARATOR, getMsg("items.settings", "&bGameplay Settings"), getLoreList("settings_lore", Arrays.asList("&7Edit custom game rules", "&7for this specific map."))));
+        inv.setItem(24, makeItem(Material.COMMAND_BLOCK, getMsg("items.advanced_yaml", "&dAdvanced YAML"), getLoreList("advanced_yaml_lore", Arrays.asList("&7Edit every raw dungeon YAML path.", "&7Use this for advanced or new fields."))));
 
         inv.setItem(22, makeItem(Material.WRITABLE_BOOK, getMsg("items.save", "&a&lSave Changes"), null));
         inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
@@ -233,6 +235,14 @@ public class EditorGUI {
                 }
                 case "STRING" ->
                         valStr = session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue());
+                case "LOCATION" -> {
+                    valStr = session.getConfig().contains(opt.getLocalPath())
+                            ? session.getConfig().getString(opt.getLocalPath(), (String) opt.getDefaultValue())
+                            : (opt.getGlobalFallbackPath() != null ? plugin.getConfigFile().getString(opt.getGlobalFallbackPath(), (String) opt.getDefaultValue()) : (String) opt.getDefaultValue());
+                    if (valStr == null || valStr.isBlank() || valStr.equalsIgnoreCase("NONE")) {
+                        valStr = getWord("default_word", "Default");
+                    }
+                }
                 case "INT" -> {
                     int val = session.getConfig().contains(opt.getLocalPath()) ? session.getConfig().getInt(opt.getLocalPath()) : (Integer) opt.getDefaultValue();
                     valStr = val > 0 ? String.valueOf(val) : (opt.name().equals("MAX_PLAYERS") ? getWord("unlimited", "Unlimited") : String.valueOf(val));
@@ -299,6 +309,68 @@ public class EditorGUI {
         inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         setPagination(inv, page, maxPage, 48, 50);
         p.openInventory(inv);
+    }
+
+    public void openAdvancedYamlEditor(Player p, EditorSession session, int page) {
+        session.setPage("ADVANCED_YAML", page);
+        session.setLastMenuOpener(player -> openAdvancedYamlEditor(player, session, session.getPage("ADVANCED_YAML")));
+
+        List<String> paths = new ArrayList<>();
+        collectLeafPaths(session.getConfig(), "", paths);
+        paths.sort(String::compareToIgnoreCase);
+
+        int total = paths.size();
+        int maxPage = Math.max(0, (total - 1) / 45);
+        page = Math.max(0, Math.min(maxPage, page));
+
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "ADVANCED_YAML", page), 54, ColorUtils.parse(getMsg("title.advanced_yaml", "&lAdvanced YAML")));
+
+        NamespacedKey yamlPathKey = new NamespacedKey(plugin, "yaml_path");
+        for (int i = 0; i < 45; i++) {
+            int idx = i + page * 45;
+            if (idx >= total) break;
+
+            String path = paths.get(idx);
+            Object rawValue = session.getConfig().get(path);
+            FieldProperties props = FieldProperties.resolve(path, rawValue, plugin);
+            String value = rawValue instanceof List<?> list ? list.size() + " " + getWord("items", "items") : String.valueOf(rawValue);
+
+            List<String> lore = Arrays.asList(
+                    getMsg("items.yaml_path", "&7Path: &f<path>").replace("<path>", path),
+                    getMsg("items.yaml_value", "&7Value: &f<value>").replace("<value>", value),
+                    props.hint,
+                    getMsg("items.yaml_delete_hint", "&cShift-Right: Delete")
+            );
+
+            ItemStack item = makeItem(props.icon, getMsg("items.yaml_entry", "&e<path>").replace("<path>", trimPath(path)), lore);
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                meta.getPersistentDataContainer().set(yamlPathKey, PersistentDataType.STRING, path);
+                item.setItemMeta(meta);
+            }
+            inv.setItem(i, item);
+        }
+
+        inv.setItem(49, makeItem(Material.EMERALD, getMsg("items.add_yaml_path", "&aAdd YAML Path"), Arrays.asList("&7Creates or overwrites a raw path.", "&eLeft Click: enter path and value")));
+        inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
+        setPagination(inv, page, maxPage, 48, 50);
+        p.openInventory(inv);
+    }
+
+    private void collectLeafPaths(ConfigurationSection section, String prefix, List<String> paths) {
+        for (String key : section.getKeys(false)) {
+            String path = prefix.isEmpty() ? key : prefix + "." + key;
+            if (section.isConfigurationSection(key)) {
+                ConfigurationSection child = section.getConfigurationSection(key);
+                if (child != null) collectLeafPaths(child, path, paths);
+            } else {
+                paths.add(path);
+            }
+        }
+    }
+
+    private String trimPath(String path) {
+        return path.length() <= 36 ? path : "..." + path.substring(path.length() - 33);
     }
 
     public void openConditionList(Player p, EditorSession session, int page) {
@@ -592,6 +664,31 @@ public class EditorGUI {
         p.openInventory(inv);
     }
 
+    public void openNotificationEditor(Player p, EditorSession session) {
+        session.setLastMenuOpener(player -> openNotificationEditor(player, session));
+        String title = getMsg("title.edit_notifications", "&lAction Notifications");
+        Inventory inv = Bukkit.createInventory(new EditorHolder(session, "EDIT_NOTIFICATIONS", 0), 27, ColorUtils.parse(title));
+
+        String path = "stages." + session.getCurrentStage() + ".actions." + session.getCurrentActionKey() + ".notifications";
+        ensureNotificationDefaults(session, path);
+
+        String enabled = getWord("true_word", "&aON");
+        String disabled = getWord("false_word", "&cOFF");
+        int[] slots = {10, 11, 12, 13, 14};
+        String[] keys = {"custom_start", "init", "progress", "complete", "warning"};
+
+        for (int i = 0; i < keys.length; i++) {
+            boolean value = session.getConfig().getBoolean(path + "." + keys[i], true);
+            String name = getMsg("items.notification_key_format", "&e<key>").replace("<key>", keys[i]);
+            String status = getMsg("items.notification_status", "&7Status: &f<status>").replace("<status>", value ? enabled : disabled);
+            String hint = getMsg("items.notification_hint", "&eLeft Click: Toggle");
+            inv.setItem(slots[i], makeItem(value ? Material.LIME_DYE : Material.GRAY_DYE, name, Arrays.asList(status, hint)));
+        }
+
+        inv.setItem(18, getNavItemStack(getMsg("items.back", "&cGo Back")));
+        p.openInventory(inv);
+    }
+
     public void openActionEditor(Player p, EditorSession session) {
         session.setLastMenuOpener(player -> openActionEditor(player, session));
         String title = getMsg("title.edit_action", "&lEdit Action #<index>").replace("<index>", session.getCurrentActionKey());
@@ -622,6 +719,9 @@ public class EditorGUI {
             }
         }
 
+        ensureNotificationDefaults(session, path + ".notifications");
+        sec = session.getConfig().getConfigurationSection(path);
+
         String hintTypeBlocked = getMsg("items.action_type_cant_edit", "&cCannot change action type after creation");
 
         int slot = 0;
@@ -638,11 +738,11 @@ public class EditorGUI {
                 props.hint = hintTypeBlocked;
             } else if (key.equalsIgnoreCase("items")) {
                 props.icon = Material.CHEST;
-                props.hint = getMsg("items.action_val_hint_items", "&eLeft Click: Open GUI | Read YAML config to add Keys");
+                props.hint = getMsg("items.action_val_hint_items", "&eLeft Click: Open item GUI");
                 valStr = getMsg("items.action_val_click_arrange", "&a[Click to arrange items]");
             } else if (key.equalsIgnoreCase("notifications")) {
                 props.icon = Material.BELL;
-                props.hint = getMsg("items.action_val_hint_notif", "&7Per-action notification overrides");
+                props.hint = getMsg("items.action_val_hint_notif", "&eLeft Click: Open notification toggles");
             } else if (key.equalsIgnoreCase("phases")) {
                 props.icon = Material.COMMAND_BLOCK;
                 props.hint = getMsg("items.action_val_hint_open_gui", "&eLeft Click: Open GUI");
@@ -662,6 +762,15 @@ public class EditorGUI {
 
         inv.setItem(45, getNavItemStack(getMsg("items.back", "&cGo Back")));
         p.openInventory(inv);
+    }
+
+    private void ensureNotificationDefaults(EditorSession session, String path) {
+        if (!session.getConfig().contains(path + ".custom_start"))
+            session.getConfig().set(path + ".custom_start", true);
+        if (!session.getConfig().contains(path + ".init")) session.getConfig().set(path + ".init", true);
+        if (!session.getConfig().contains(path + ".progress")) session.getConfig().set(path + ".progress", true);
+        if (!session.getConfig().contains(path + ".complete")) session.getConfig().set(path + ".complete", true);
+        if (!session.getConfig().contains(path + ".warning")) session.getConfig().set(path + ".warning", true);
     }
 
     public void openActionTypeSelector(Player p, EditorSession session, int page) {

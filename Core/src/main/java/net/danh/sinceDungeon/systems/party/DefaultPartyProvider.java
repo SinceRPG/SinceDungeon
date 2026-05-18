@@ -4,12 +4,12 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.interfaces.PartyProvider;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Collections;
 import java.util.Map;
@@ -28,7 +28,7 @@ public class DefaultPartyProvider implements PartyProvider {
     private final Map<UUID, Party> activeParties = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Long>> activeInvites = new ConcurrentHashMap<>();
     private final Set<UUID> partyChatToggled = Collections.newSetFromMap(new ConcurrentHashMap<>());
-    private BukkitTask purgeTask;
+    private SchedulerCompat.TaskHandle purgeTask;
 
     public DefaultPartyProvider(SinceDungeon plugin) {
         this.plugin = plugin;
@@ -36,7 +36,7 @@ public class DefaultPartyProvider implements PartyProvider {
 
     @Override
     public void initialize() {
-        purgeTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::purgeExpiredInvites, 1200L, 1200L);
+        purgeTask = SchedulerCompat.runAsyncTimer(plugin, this::purgeExpiredInvites, 1200L, 1200L);
     }
 
     @Override

@@ -132,7 +132,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
         if (finalAmount <= 0) finalAmount = 1;
 
         for (Vector vec : locations) {
-            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            Location loc = game.resolveLocation(vec);
             for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;
                 double offsetZ = (Math.random() - 0.5) * 1.5;

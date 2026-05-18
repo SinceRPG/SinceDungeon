@@ -2,9 +2,9 @@ package net.danh.sinceDungeon.guis.reward;
 
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RewardSessionManager {
     private static final Map<UUID, RewardSession> sessions = new ConcurrentHashMap<>();
-    private static BukkitTask cleanupTask;
+    private static SchedulerCompat.TaskHandle cleanupTask;
 
     /**
      * Starts the automated garbage collection task to clear orphaned or expired reward sessions.
@@ -31,7 +31,7 @@ public class RewardSessionManager {
         }
 
         RewardGUI gui = new RewardGUI(plugin);
-        cleanupTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+        cleanupTask = SchedulerCompat.runGlobalTimer(plugin, () -> {
             long now = System.currentTimeMillis();
 
             int expireSeconds = plugin.getConfigFile().getInt("reward.session-expire-seconds", 300);
@@ -69,6 +69,7 @@ public class RewardSessionManager {
         if (cleanupTask != null && !cleanupTask.isCancelled()) {
             cleanupTask.cancel();
         }
+        cleanupTask = null;
     }
 
     public static Map<UUID, RewardSession> getSessions() {

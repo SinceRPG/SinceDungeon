@@ -77,6 +77,33 @@ action-defaults:
     time_penalty: 1
     target_stage: 5
 
+  npc_interaction:
+    time_limit: -1
+    time_penalty: 1
+    entity_type: "VILLAGER"
+    custom_name: "&eDungeon Guide"
+    npc_location: "0,64,0"
+    target_location: "5,64,5"
+    interaction_mode: "TALK"
+    message_scope: "PLAYER"
+    teleport_scope: "PLAYER"
+    max_health: 40.0
+    move_speed: 1.0
+    success_radius: 2.5
+    interaction_radius: 4.0
+    start_on_click: true
+    npc_is_baby: false
+    consume_required_item: true
+    fail_on_npc_death: true
+    click_cooldown_ticks: 20
+    dialogue_lines:
+      - "&e[NPC] &fHello, <player>."
+    required_item: "NONE"
+    reward_item: "NONE"
+    reward_display_name: ""
+    npc_attributes: [ ]
+    npc_equipment: [ ]
+
 # ---------------------------------------------------------
 # [MYTHIC+ AFFIXES]
 # Attach affixes to specific Dungeon Template IDs.
@@ -135,9 +162,11 @@ hologram-leaderboard:
 webhooks:
   enabled: true
   url: "YOUR_DISCORD_WEBHOOK_URL_HERE"
-  embed-title: "🎉 Dungeon Cleared!"
+  embed-title: "Dungeon Cleared!"
   embed-color: "5814783" # Decimal color code (Purple)
   embed-description: "Map: **%dungeon%**\nTime: **%time%s**\nPlayers: **%players%**"
+  connect-timeout-ms: 5000
+  read-timeout-ms: 5000
 
 # ---------------------------------------------------------
 # [EFFECTS & FEEDBACK]
@@ -147,8 +176,50 @@ sounds:
   puzzle_fail: "block.note_block.bass"
   roulette_tick: "block.note_block.hat"
   roulette_finish: "entity.player.levelup"
+  npc_interact: "entity.villager.yes"
+  npc_complete: "entity.player.levelup"
+  npc_deny: "entity.villager.no"
 
 particles:
   affix_vampiric: "HEART"
   affix_volcanic_warn: "FLAME"
   affix_volcanic_boom: "EXPLOSION"
+  npc_spawn: "HAPPY_VILLAGER"
+  npc_target: "END_ROD"
+
+# ---------------------------------------------------------
+# [DUNGEON INSTANCING ENGINE]
+# WORLD = Clones complete world folders (Default Core Behavior).
+# SCHEMATIC = Generates a Void World and uses FAWE to paste a .schem file.
+# ---------------------------------------------------------
+instancing:
+  mode: "SCHEMATIC"
+  # The Y-Level where the schematic will be pasted in the Void World
+  paste-y-level: 64
+  # Shared and dedicated schematic worlds use these defaults on Paper and Folia.
+  world-settings:
+    autosave: false
+    time: 6000
+    storm: false
+    thundering: false
+    unload-retries: 5
+    unload-delay-ticks: 10
+    unload-retry-delay-ticks: 100
+    delete-delay-ticks: 40
+  schematic:
+    # When enabled, every dungeon run is pasted into an isolated region of this one world.
+    # Actions still use the same YAML coordinates; Core offsets them into the assigned region.
+    paste-air: true
+    shared-world:
+      # Folia cannot create or load worlds at runtime.
+      # On Folia, this world must already be loaded by the server before the plugin enables.
+      enabled: true
+      name: "SDPremium_Schematic"
+      spawn-location: "0,65,0"
+      coordinate-y-offset: 0
+      region-spacing: 2048
+      region-radius: 512
+      grid-width: 128
+      clear-on-release: true
+      clear-min-y: -64
+      clear-max-y: 320

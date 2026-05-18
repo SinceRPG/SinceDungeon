@@ -3,6 +3,8 @@ package net.danh.sinceDungeon.guis.top;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -40,7 +42,7 @@ public class TopGUI {
             try {
                 ItemMeta meta = item.getItemMeta();
                 if (meta != null) {
-                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                    ItemBuilder.applyCustomModelData(meta, Integer.parseInt(parts[1]));
                     item.setItemMeta(meta);
                 }
             } catch (Exception ignored) {
@@ -79,10 +81,10 @@ public class TopGUI {
         int rawGuiSize = plugin.getConfigFile().getInt("leaderboard.gui-size", 54);
         final int guiSize = Math.max(18, rawGuiSize);
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             List<TopManager.TopEntry> records = plugin.getTopManager().getTop(dungeonId, category, limit);
 
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 String titleRaw = plugin.getLanguageManager().getString("top.gui_title", "&6&lLeaderboard: &e<map>");
                 Inventory inv = Bukkit.createInventory(new TopHolder(dungeonId, category, page), guiSize, ColorUtils.parse(titleRaw.replace("<map>", dungeonId)));
 
@@ -175,7 +177,7 @@ public class TopGUI {
                 if (parts.length > 1) {
                     try {
                         ItemMeta m = navItemBase.getItemMeta();
-                        m.setCustomModelData(Integer.parseInt(parts[1]));
+                        ItemBuilder.applyCustomModelData(m, Integer.parseInt(parts[1]));
                         navItemBase.setItemMeta(m);
                     } catch (Exception ignored) {
                     }

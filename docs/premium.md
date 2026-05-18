@@ -188,6 +188,35 @@ volume: 1.0
 pitch: 1.0
 ```
 
+### NPC_INTERACTION
+
+```yaml
+type: "NPC_INTERACTION"
+entity_type: "VILLAGER"
+custom_name: "&eDungeon Guide"
+npc_location: "0,64,0"
+target_location: "5,64,5"
+interaction_mode: "TALK"
+message_scope: "PLAYER"
+teleport_scope: "PLAYER"
+max_health: 40.0
+move_speed: 1.0
+success_radius: 2.5
+interaction_radius: 4.0
+start_on_click: true
+npc_is_baby: false
+consume_required_item: true
+fail_on_npc_death: true
+click_cooldown_ticks: 20
+dialogue_lines:
+  - "&e[NPC] &fHello, <player>."
+required_item: "NONE"
+reward_item: "NONE"
+reward_display_name: ""
+npc_attributes: []
+npc_equipment: []
+```
+
 ## Mythic+ Affixes
 
 Attach affixes by dungeon ID:
@@ -294,3 +323,14 @@ rewards:
       chance: 5.0
       name: "<gold>Ancient Relic"
 ```
+
+## Schematic Instancing
+
+Premium can switch Core's instance provider to schematic mode when WorldEdit or FastAsyncWorldEdit is installed:
+
+```yaml
+instancing:
+  mode: "SCHEMATIC"
+```
+
+See [Folia and Schematic Instancing](folia-schematic.md) for full setup notes.

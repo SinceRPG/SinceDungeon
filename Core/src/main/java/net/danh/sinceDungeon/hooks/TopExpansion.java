@@ -4,9 +4,8 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager.TopCategory;
 import net.danh.sinceDungeon.managers.TopManager.TopEntry;
-import org.bukkit.Bukkit;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TopExpansion extends PlaceholderExpansion {
 
     // Track the async caching task statically to kill it upon any /papi reload triggers.
-    private static BukkitTask activeCacheTask = null;
+    private static SchedulerCompat.TaskHandle activeCacheTask = null;
     private final SinceDungeon plugin;
     private final Map<String, List<TopEntry>> cache = new ConcurrentHashMap<>();
 
@@ -25,12 +24,19 @@ public class TopExpansion extends PlaceholderExpansion {
         startCacheTask();
     }
 
+    public static void cancelCacheTask() {
+        if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
+            activeCacheTask.cancel();
+        }
+        activeCacheTask = null;
+    }
+
     private void startCacheTask() {
         if (activeCacheTask != null && !activeCacheTask.isCancelled()) {
             activeCacheTask.cancel();
         }
 
-        activeCacheTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+        activeCacheTask = SchedulerCompat.runAsyncTimer(plugin, () -> {
             for (String mapId : plugin.getDungeonManager().getTemplates().keySet()) {
                 for (TopCategory category : TopCategory.values()) {
                     String cacheKey = mapId + "_" + category.name();
@@ -41,6 +47,10 @@ public class TopExpansion extends PlaceholderExpansion {
         }, 0L, 6000L); // 5 minutes
     }
 
+    public void cleanup() {
+        cache.clear();
+    }
+
     @Override
     public @NotNull String getIdentifier() {
         return "sincedungeontop";
@@ -48,12 +58,12 @@ public class TopExpansion extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getAuthor() {
-        return String.join(", ", plugin.getDescription().getAuthors());
+        return String.join(", ", plugin.getPluginMeta().getAuthors());
     }
 
     @Override
     public @NotNull String getVersion() {
-        return plugin.getDescription().getVersion();
+        return plugin.getPluginMeta().getVersion();
     }
 
     @Override

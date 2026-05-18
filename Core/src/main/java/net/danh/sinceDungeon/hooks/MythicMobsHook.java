@@ -4,10 +4,12 @@ import io.lumine.mythic.api.mobs.MythicMob;
 import io.lumine.mythic.bukkit.BukkitAdapter;
 import io.lumine.mythic.bukkit.MythicBukkit;
 import io.lumine.mythic.core.mobs.ActiveMob;
+import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Centralized bridge for MythicMobs API.
@@ -53,7 +55,7 @@ public class MythicMobsHook {
                 }
             }
         } catch (Exception | NoClassDefFoundError e) {
-            e.printStackTrace();
+            SinceDungeon.getPlugin().getLogger().log(Level.WARNING, "Failed to spawn MythicMob " + mobId, e);
         }
         return null;
     }

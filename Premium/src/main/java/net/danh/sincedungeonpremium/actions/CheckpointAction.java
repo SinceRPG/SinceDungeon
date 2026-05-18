@@ -47,7 +47,7 @@ public class CheckpointAction extends DungeonAction implements Tickable {
             return;
         }
         Vector vec = DungeonLoader.parseVector(locationStr);
-        this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY() + 1, vec.getBlockZ() + 0.5);
+        this.centerLoc = game.resolveLocation(vec, 0.5, 1, 0.5);
         this.particleLoc.setWorld(game.getWorld());
 
         try {
@@ -78,8 +78,8 @@ public class CheckpointAction extends DungeonAction implements Tickable {
 
         for (Player p : game.getParticipants()) {
             if (p.isOnline() && !p.isDead() && p.getLocation().distanceSquared(centerLoc) <= (radius * radius)) {
-                // Set the specific respawn location so Core handles it
-                game.getWorld().setSpawnLocation(centerLoc);
+                // Store the respawn on the game, not the world, so shared schematic runs do not overwrite each other.
+                game.setRespawnLocation(centerLoc);
 
                 Sound sound = SoundUtils.getSound(soundStr);
                 if (sound != null) {

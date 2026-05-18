@@ -92,3 +92,17 @@ Check:
 - The hologram was created with `/sdp hologram create`.
 - The configured category is valid.
 - Database contains leaderboard entries.
+
+## Folia Dungeon Instances Fail to Create
+
+Folia cannot create or load Bukkit worlds at runtime. Use Premium `SCHEMATIC` mode with `instancing.schematic.shared-world.enabled: true`, and preload the configured shared world before the plugin starts.
+
+## Schematic Dungeon Is Empty
+
+Check:
+
+- WorldEdit or FastAsyncWorldEdit is installed.
+- `instancing.mode: "SCHEMATIC"`.
+- The schematic file exists in `plugins/SinceDungeon-PremiumAddon/schematics/`.
+- The schematic filename matches the dungeon `template-world`.
+- On Folia, the shared world is already loaded.

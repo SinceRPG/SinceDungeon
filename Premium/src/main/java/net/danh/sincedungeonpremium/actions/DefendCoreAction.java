@@ -7,9 +7,9 @@ import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -86,7 +86,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
         }
 
         Vector vec = DungeonLoader.parseVector(locationStr);
-        this.coreLoc = new Location(game.getWorld(), vec.getX() + 0.5, vec.getY(), vec.getZ() + 0.5);
+        this.coreLoc = game.resolveLocation(vec, 0.5, 0, 0.5);
         coreLoc.getChunk().load(true);
 
         EntityType type;
@@ -309,22 +309,7 @@ public class DefendCoreAction extends DungeonAction implements Tickable {
                     continue;
                 }
 
-                Attribute attribute = null;
-                if (ServerVersion.isAtLeast(1, 21, 3)) {
-                    try {
-                        attribute = Registry.ATTRIBUTE.get(NamespacedKey.minecraft(attrName));
-                    } catch (Throwable ignored) {
-                    }
-                } else {
-                    try {
-                        attribute = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-                    } catch (Exception e) {
-                        try {
-                            attribute = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-                        } catch (Exception ignored) {
-                        }
-                    }
-                }
+                Attribute attribute = AttributeUtils.resolve(attrName);
 
                 if (attribute != null) {
                     AttributeInstance instance = living.getAttribute(attribute);

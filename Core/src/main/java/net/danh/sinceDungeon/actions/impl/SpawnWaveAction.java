@@ -4,9 +4,9 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -138,17 +138,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
                     continue;
                 }
 
-                Attribute attribute = null;
-
-                if (ServerVersion.isAtLeast(1, 21, 3)) {
-                    try {
-                        NamespacedKey key = NamespacedKey.minecraft(attrName);
-                        attribute = Registry.ATTRIBUTE.get(key);
-                    } catch (Throwable ignored) {
-                    }
-                } else {
-                    attribute = getLegacyAttribute(attrName);
-                }
+                Attribute attribute = AttributeUtils.resolve(attrName);
 
                 if (attribute != null) {
                     AttributeInstance instance = living.getAttribute(attribute);
@@ -193,23 +183,6 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private Attribute getLegacyAttribute(String attrName) {
-        Attribute attr = null;
-        try {
-            attr = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-        }
-
-        if (attr == null) {
-            try {
-                attr = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        return attr;
-    }
-
     @Override
     public void start(DungeonGame game) {
         int count = 0;
@@ -234,7 +207,7 @@ public class SpawnWaveAction extends DungeonAction implements Tickable {
         Sound sType = SoundUtils.getSound(sName);
 
         for (Vector vec : locations) {
-            Location loc = new Location(game.getWorld(), vec.getX(), vec.getY(), vec.getZ());
+            Location loc = game.resolveLocation(vec);
 
             for (int i = 0; i < finalAmount; i++) {
                 double offsetX = (Math.random() - 0.5) * 1.5;

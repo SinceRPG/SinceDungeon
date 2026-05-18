@@ -17,6 +17,8 @@ title: Getting Started
 
 For Premium features, also place `SinceDungeon-PremiumAddon.jar` in `plugins/`. Premium requires Core to be installed and enabled.
 
+On Folia, use Premium schematic shared-world mode. Core's default full-world cloning relies on runtime world creation, which Folia does not support.
+
 ## Build From Source
 
 The project uses Gradle and Java 21.

@@ -53,6 +53,7 @@ public class DungeonLoader {
         boolean cooldownOnLeave = config.contains("settings.cooldown-on-leave") ? config.getBoolean("settings.cooldown-on-leave") : plugin.getConfigFile().getBoolean("dungeon.gameplay.cooldown-on-leave", false);
         String requiredItem = config.getString("settings.required-item", "NONE");
         boolean consumeRequiredItem = config.getBoolean("settings.consume-required-item", true);
+        String startLocation = config.contains("settings.start-location") ? config.getString("settings.start-location", "NONE") : plugin.getConfigFile().getString("dungeon.start-location", "NONE");
 
         List<String> onStartCmds = config.getStringList("settings.commands.on-start");
         List<String> onFinishCmds = config.getStringList("settings.commands.on-finish");
@@ -63,7 +64,7 @@ public class DungeonLoader {
                 saveStats, deathAction, clearMobDrops, reqLives, deductLives,
                 randomizeStages, maxPlayers, cooldownSeconds, cooldownOnLeave,
                 onStartCmds, onFinishCmds, onFirstFinishCmds, requiredItem,
-                consumeRequiredItem
+                consumeRequiredItem, startLocation
         );
 
         List<DungeonTemplate.Condition> conditions = new ArrayList<>();

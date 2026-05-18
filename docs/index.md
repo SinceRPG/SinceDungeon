@@ -27,6 +27,7 @@ The project is split into two plugins:
 - [Permissions](permissions.md)
 - [Integrations](integrations.md)
 - [Premium Addon](premium.md)
+- [Folia and Schematic Instancing](folia-schematic.md)
 - [Developer API](developer-api.md)
 - [Troubleshooting](troubleshooting.md)
 
@@ -40,6 +41,7 @@ The project is split into two plugins:
   - MythicLib
   - MMOItems
   - DecentHolograms, Premium only
+  - WorldEdit or FastAsyncWorldEdit, Premium schematic instancing
   - Redis and proxy messaging for experimental cross-server matchmaking
 
 ## Core Concepts

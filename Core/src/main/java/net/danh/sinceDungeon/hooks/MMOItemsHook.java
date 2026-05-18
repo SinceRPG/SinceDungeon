@@ -3,7 +3,10 @@ package net.danh.sinceDungeon.hooks;
 import io.lumine.mythic.lib.api.item.NBTItem;
 import net.Indyuce.mmoitems.MMOItems;
 import net.Indyuce.mmoitems.api.Type;
+import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.logging.Level;
 
 /**
  * Handles interactions and logic parsing for the MMOItems plugin.
@@ -25,7 +28,7 @@ public class MMOItemsHook {
             if (item != null) item.setAmount(amount);
             return item;
         } catch (Exception e) {
-            e.printStackTrace();
+            SinceDungeon.getPlugin().getLogger().log(Level.WARNING, "Failed to load MMOItem " + typeStr + ":" + id, e);
             return null;
         }
     }

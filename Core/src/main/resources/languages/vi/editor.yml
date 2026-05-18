@@ -54,11 +54,15 @@ editor:
     edit_action: "&lCấu Hình Nhiệm Vụ #<index>"
     settings: "&lCài Đặt Chuyên Sâu"
     edit_action_items: "&lSắp xếp Rương: <index>"
+    edit_notifications: "&lThông Báo Nhiệm Vụ"
     string_list: "&lChỉnh Sửa Danh Sách"
   items:
     clear_list: "&c&lXóa Sạch Danh Sách"
     action_val_click_arrange: "&a[Nhấn để sắp xếp vật phẩm]"
-    action_val_hint_notif: "&7Tùy chỉnh thông báo cho nhiệm vụ này"
+    action_val_hint_notif: "&eChuột Trái: Mở bật/tắt thông báo"
+    notification_key_format: "&e<key>"
+    notification_status: "&7Trạng thái: &f<status>"
+    notification_hint: "&eChuột Trái: Bật/Tắt"
     action_val_phases_count: "&f<count> giai đoạn"
     insert_stage: "&bChèn Giai Đoạn Vào Đây"
     insert_stage_lore:
@@ -79,7 +83,7 @@ editor:
     reinf_name: "&eTên hiển thị"
     reinf_attributes: "&eChỉ số sức mạnh"
     reinf_equipment: "&eTrang bị mang theo"
-    action_val_hint_phases: "&7Cài đặt Giai đoạn nâng cao phải được chỉnh sửa thủ công trong tệp YAML."
+    action_val_hint_phases: "&eChuột Trái: Mở giao diện giai đoạn"
     dungeon_file_name: "&e<name>"
     dungeon_file_lore:
       - "&eChuột Trái: Chỉnh Sửa"
@@ -144,6 +148,11 @@ editor:
     setting_kick_delay_lore:
       - "&7Hiện tại: &f<val>s"
       - "&eChuột Trái: Chỉnh sửa"
+    setting_start_location_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&eChuột Trái: Nhập tọa độ"
+      - "&eChuột Phải: Dùng vị trí hiện tại"
+      - "&cShift-Phải: Dùng world spawn"
     setting_force_weather_lore:
       - "&7Hiện tại: <val>"
       - "&eChuột Trái: Bật/Tắt"
@@ -195,6 +204,7 @@ editor:
     setting_prevent_drop: "&eKhóa Vứt Vật Phẩm"
     setting_block_pearls: "&eChặn Ngọc Ender & Trái Chorus"
     setting_kick_delay: "&eĐếm Ngược Thoát Khi Win"
+    setting_start_location: "&eVị Trí Bắt Đầu"
     setting_force_weather: "&eÉp Buổi Sáng & Tạnh Mưa"
     setting_save_stats: "&eLưu & Trả Lại Máu, Thức Ăn Khi Ra/Vào"
     setting_death_action: "&eHành Động Khi Chết"
@@ -267,7 +277,7 @@ editor:
     action_val_hint_loc_single: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Xóa"
     action_val_hint_loc_list: "&eTrái: Điền tay | Phải: Lấy tọa độ đứng | &cShift-Phải: Làm sạch"
     action_val_hint_list: "&eTrái: Thêm dòng | Phải: Xóa dòng cuối | &cShift-Phải: Xóa sạch"
-    action_val_hint_items: "&eChuột Trái: Xếp đồ | Đọc Config YAML để biết cách nạp Key"
+    action_val_hint_items: "&eChuột Trái: Mở giao diện vật phẩm"
     action_type_cant_edit: "&cKhông thể đổi loại hình nhiệm vụ sau khi đã tạo"
     prev_page: "&e⬅ Trang Trước"
     next_page: "&eTrang Tiếp ➡"
@@ -444,6 +454,12 @@ editor:
       edit_kick_delay:
         - "&7Nhập Số Giây sẽ đá người chơi ra sau khi Win xong Map này."
         - "&7Ví dụ: &a15"
+      edit_start_location:
+        - "&7Nhập vị trí bắt đầu của Dungeon theo tọa độ local."
+        - "&7Định dạng: &aX,Y,Z &7hoặc &aX,Y,Z,YAW,PITCH"
+        - "&7Ví dụ: &a0,65,0,180,0"
+        - "&7Mẹo: Gõ &ahere &7để dùng vị trí hiện tại."
+        - "&7Mẹo: Gõ &cclear &7để dùng world/provider spawn."
       edit_action_mob:
         - "&7Nhập tên quái vật (MythicMobs Internal Name hoặc Vanilla EntityType)."
         - "&7Ví dụ MythicMobs: &aSkeletonKing"
@@ -456,7 +472,7 @@ editor:
         - "&7Mẹo: Gõ &cclear &7để xóa danh sách tin nhắn này."
       edit_action_items:
         - "&7--- HƯỚNG DẪN TẠO RƯƠNG TIẾP TẾ ---"
-        - "&7Để rương rơi ra Chìa Khóa mở cửa, hãy chỉnh sửa file YAML thủ công."
+        - "&7Đặt các vật phẩm bình thường vào giao diện rương."
         - "&7Cú pháp Chìa Khóa: &aKEY:<id_chìa_khóa>:<số_lượng>"
         - "&7Ví dụ: &fKEY:door_1:1 &8(Rơi ra chìa khóa để mở door_1)"
         - "&7Vật phẩm Vanilla: &aMATERIAL:AMOUNT"
@@ -533,12 +549,13 @@ editor:
     stage_inserted: "&aĐã chèn và đẩy lùi cấu hình xuống để tạo Giai đoạn <pos> thành công!"
     dungeon_deleted: "&aĐã xóa thành công Dungeon: &e<dungeon>"
     notifications_hint:
-      - "&7[Thông báo] Vui lòng chỉnh sửa mục này thủ công trong file YAML."
+      - "&7[Thông báo] Dùng menu bật/tắt trong trình chỉnh sửa nhiệm vụ."
       - "&7Định dạng: notifications:"
       - "&7  init: false"
       - "&7  complete: true"
       - "&7Các khóa hỗ trợ: custom_start, init, progress, complete, warning"
     input_cancel: "&cĐã hủy bỏ thao tác."
+    notification_toggled: "&eThông báo <key> đã được đặt thành <state>."
     input_here: "&aĐã ghi nhận tọa độ: <loc>"
     save_error: "&cLỗi nghiêm trọng khi lưu file: <error>"
     saved: "&aLưu cấu trúc Dungeon thành công!"
@@ -556,6 +573,7 @@ editor:
     item_set_hand: "&aĐã sao chép dữ liệu từ vật phẩm trên tay: <item>"
     hand_empty: "&cBạn phải cầm một khối/vật phẩm trên tay chính!"
     update_loc: "&aCập nhật tọa độ thành công: <loc>"
+    start_location_cleared: "&eĐã đặt lại vị trí bắt đầu về world/provider spawn."
     invalid_filename: "&cTên file không được chứa các ký tự đặc biệt hoặc dấu cách!"
     input_error: "&cLỗi trong quá trình nhập: <error>"
     list_limit_reached: "&cChỉ được lưu tối đa 50 phần tử/tọa độ cho danh sách này để chống tràn RAM!"

@@ -50,7 +50,7 @@ public class DamageZoneAction extends DungeonAction implements Tickable {
         }
 
         Vector vec = DungeonLoader.parseVector(locationStr);
-        this.centerLoc = new Location(game.getWorld(), vec.getBlockX() + 0.5, vec.getBlockY(), vec.getBlockZ() + 0.5);
+        this.centerLoc = game.resolveLocation(vec, 0.5, 0, 0.5);
         this.pointerLoc.setWorld(game.getWorld());
 
         try {

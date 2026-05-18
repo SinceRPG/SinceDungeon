@@ -32,7 +32,7 @@ public class TeleportAction extends DungeonAction {
         }
 
         Vector targetVec = DungeonLoader.parseVector(targetLocationStr);
-        Location targetLoc = new Location(game.getWorld(), targetVec.getX() + 0.5, targetVec.getY(), targetVec.getZ() + 0.5);
+        Location targetLoc = game.resolveLocation(targetVec, 0.5, 0, 0.5);
         Sound sound = SoundUtils.getSound(soundStr);
 
         for (Player p : game.getParticipants()) {

@@ -207,7 +207,7 @@ public class DungeonCommand {
                                         lifeItem.setAmount(lifeItem.getAmount() - 1);
                                         plugin.getLivesManager().setLives(target.getUniqueId(), 1);
                                         target.setGameMode(GameMode.SURVIVAL);
-                                        target.teleport(p.getLocation());
+                                        target.teleportAsync(p.getLocation());
 
                                         AttributeInstance attr = target.getAttribute(Attribute.MAX_HEALTH);
                                         target.setHealth(attr != null ? attr.getValue() : 20.0);

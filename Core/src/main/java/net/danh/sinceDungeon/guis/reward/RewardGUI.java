@@ -6,6 +6,8 @@ import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -89,12 +91,12 @@ public class RewardGUI implements Listener {
 
             if (parts.length > 1) {
                 try {
-                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                    ItemBuilder.applyCustomModelData(meta, Integer.parseInt(parts[1]));
                 } catch (Exception ignored) {
                 }
             }
             if (getConfig().contains(path + ".custom-model-data")) {
-                meta.setCustomModelData(getConfig().getInt(path + ".custom-model-data"));
+                ItemBuilder.applyCustomModelData(meta, getConfig().getInt(path + ".custom-model-data"));
             }
 
             List<String> loreRaw = getConfig().getStringList(path + ".lore");
@@ -122,7 +124,7 @@ public class RewardGUI implements Listener {
 
             if (parts.length > 1) {
                 try {
-                    meta.setCustomModelData(Integer.parseInt(parts[1]));
+                    ItemBuilder.applyCustomModelData(meta, Integer.parseInt(parts[1]));
                 } catch (Exception ignored) {
                 }
             }
@@ -278,7 +280,10 @@ public class RewardGUI implements Listener {
             return;
         }
 
-        if (isBlockedInventoryAction(e.getAction())) {
+        if (e.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY || e.getAction() == InventoryAction.HOTBAR_SWAP ||
+                e.getAction().name().equals("HOTBAR_MOVE_AND_READD") || e.getAction() == InventoryAction.COLLECT_TO_CURSOR ||
+                e.getAction().name().contains("DROP")) {
+            e.setCancelled(true);
             return;
         }
 
@@ -354,7 +359,7 @@ public class RewardGUI implements Listener {
                             String msg = getMsg("claimed_all");
                             if (msg != null) p.sendMessage(ColorUtils.parseWithPrefix(msg));
                             try {
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> p.closeInventory(), getCloseDelayTicks());
+                                SchedulerCompat.runAtEntity(plugin, p, () -> SchedulerCompat.runGlobalLater(plugin, p::closeInventory, 20L));
                             } catch (Exception ignored) {
                             }
                         }

@@ -6,9 +6,9 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.hooks.MythicMobsHook;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.AttributeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
-import net.danh.sinceDungeon.utils.ServerVersion;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -125,7 +125,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        Location loc = new Location(game.getWorld(), spawnLoc.getX() + 0.5, spawnLoc.getY(), spawnLoc.getZ() + 0.5);
+        Location loc = game.resolveLocation(spawnLoc, 0.5, 0, 0.5);
         loc.getChunk().load(true);
 
         Entity entity = game.getWorld().spawnEntity(loc, mobType);
@@ -347,25 +347,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                 continue;
             }
 
-            Attribute attribute = null;
-            if (ServerVersion.isAtLeast(1, 21, 3)) {
-                try {
-                    NamespacedKey key = NamespacedKey.minecraft(attrName);
-                    attribute = Registry.ATTRIBUTE.get(key);
-                } catch (Throwable ignored) {
-                }
-            } else {
-                try {
-                    attribute = Attribute.valueOf(attrName.toUpperCase(Locale.ROOT));
-                } catch (IllegalArgumentException ignored) {
-                }
-                if (attribute == null) {
-                    try {
-                        attribute = Attribute.valueOf("GENERIC_" + attrName.toUpperCase(Locale.ROOT));
-                    } catch (IllegalArgumentException ignored) {
-                    }
-                }
-            }
+            Attribute attribute = AttributeUtils.resolve(attrName);
 
             if (attribute != null) {
                 AttributeInstance instance = living.getAttribute(attribute);

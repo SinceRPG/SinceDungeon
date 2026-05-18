@@ -7,12 +7,15 @@ import net.danh.sinceDungeon.actions.impl.MythicMobWaveAction;
 import net.danh.sinceDungeon.api.events.DungeonEndEvent;
 import net.danh.sinceDungeon.api.events.DungeonFinishEvent;
 import net.danh.sinceDungeon.api.events.DungeonStageCompleteEvent;
+import net.danh.sinceDungeon.api.interfaces.InstanceProvider;
 import net.danh.sinceDungeon.hooks.PAPIHook;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.utils.BungeeUtils;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.PlayerUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.*;
@@ -25,14 +28,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class DungeonGame {
@@ -49,6 +51,10 @@ public class DungeonGame {
     private DungeonTemplate template;
     private List<CopyOnWriteArrayList<DungeonAction>> stages = new ArrayList<>();
     private World dungeonWorld;
+    private InstanceProvider instanceProvider;
+    private Location instanceOrigin;
+    private Location respawnLocation;
+    private int instanceRadius = -1;
 
     private int currentStageIndex = 0;
     private int currentActionIndex = 0;
@@ -58,9 +64,9 @@ public class DungeonGame {
     private boolean isStopping = false;
     private boolean isCleared = false;
 
-    private BukkitTask lobbyTask;
-    private BukkitTask tickTask;
-    private BukkitTask kickTask; // Note: Task explicitly tracked to avoid ghost countdowns
+    private SchedulerCompat.TaskHandle lobbyTask;
+    private SchedulerCompat.TaskHandle tickTask;
+    private SchedulerCompat.TaskHandle kickTask; // Note: Task explicitly tracked to avoid ghost countdowns
     private long startTime;
     private int serverTicksActive = 0;
 
@@ -215,24 +221,40 @@ public class DungeonGame {
         broadcastTitle("game.title.loading_main", "game.title.loading_sub", fadeIn, stay, fadeOut);
         broadcastMessage("lobby.preparing");
 
-        plugin.getInstanceManager().getProvider().createInstance(template.templateWorld(), worldName).thenAccept(world -> Bukkit.getScheduler().runTask(plugin, () -> {
+        InstanceProvider provider = plugin.getInstanceManager().getProvider();
+        this.instanceProvider = provider;
+        provider.createInstance(template.templateWorld(), worldName).thenAccept(world -> SchedulerCompat.runGlobal(plugin, () -> {
             if (isStopping) {
-                plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(world);
+                provider.releaseInstance(worldName, world);
                 return;
             }
             this.dungeonWorld = world;
+            this.instanceOrigin = provider.getInstanceOrigin(worldName, world);
+            if (this.instanceOrigin == null) {
+                this.instanceOrigin = new Location(world, 0, 0, 0);
+            } else if (this.instanceOrigin.getWorld() == null) {
+                this.instanceOrigin.setWorld(world);
+            }
+            this.instanceRadius = provider.getInstanceRadius(worldName);
+            this.respawnLocation = resolveConfiguredStartLocation(template.settings().startLocation());
+            if (this.respawnLocation == null) {
+                this.respawnLocation = provider.getInstanceSpawnLocation(worldName, world);
+            }
+            if (this.respawnLocation == null) {
+                this.respawnLocation = world.getSpawnLocation().clone().add(0.5, 1, 0.5);
+            }
             plugin.getDungeonManager().registerWorldGame(world.getName(), this);
 
-            dungeonWorld.setAutoSave(false);
+            dungeonWorld.setAutoSave(plugin.getConfigFile().getBoolean("dungeon.instance-autosave", false));
 
             if (template.settings().forceDaylightAndClearWeather()) {
-                dungeonWorld.setTime(6000);
-                dungeonWorld.setStorm(false);
-                dungeonWorld.setThundering(false);
+                dungeonWorld.setTime(plugin.getConfigFile().getInt("dungeon.default-time", 6000));
+                dungeonWorld.setStorm(plugin.getConfigFile().getBoolean("dungeon.default-storm", false));
+                dungeonWorld.setThundering(plugin.getConfigFile().getBoolean("dungeon.default-thundering", false));
             }
             startCountdown();
         })).exceptionally(ex -> {
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            SchedulerCompat.runGlobal(plugin, () -> {
                 broadcastMessage("error.create_failed");
                 String logFail = plugin.getLanguageManager().getString("admin.log.instance_create_fail", "Failed to create dungeon world: <error>");
                 plugin.getLogger().severe(logFail.replace("<error>", ex.getMessage()));
@@ -243,40 +265,36 @@ public class DungeonGame {
     }
 
     private void startCountdown() {
-        lobbyTask = new BukkitRunnable() {
-            int count = plugin.getConfigFile().getInt("dungeon.lobby-countdown", 5);
-
-            @Override
-            public void run() {
-                if (isStopping) {
-                    cancel();
-                    return;
-                }
-                if (count <= 0) {
-                    enterDungeon();
-                    cancel();
-                    return;
-                }
-
-                String titleMain = plugin.getLanguageManager().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count));
-                String titleSub = plugin.getLanguageManager().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
-
-                for (Player p : participants) {
-                    if (p.isOnline()) {
-                        p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO)));
-                        playSound(p, "lobby_countdown", 1f, 2f);
-                    }
-                }
-                broadcastMessage("lobby.countdown", "<time>", String.valueOf(count));
-                count--;
+        final int[] count = {plugin.getConfigFile().getInt("dungeon.lobby-countdown", 5)};
+        lobbyTask = SchedulerCompat.runGlobalTimer(plugin, () -> {
+            if (isStopping) {
+                if (lobbyTask != null) lobbyTask.cancel();
+                return;
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+            if (count[0] <= 0) {
+                enterDungeon();
+                if (lobbyTask != null) lobbyTask.cancel();
+                return;
+            }
+
+            String titleMain = plugin.getLanguageManager().getString("game.title.countdown_main", "<red><bold><time>").replace("<time>", String.valueOf(count[0]));
+            String titleSub = plugin.getLanguageManager().getString("game.title.countdown_sub", "<gold>Prepare for battle!");
+
+            for (Player p : participants) {
+                if (p.isOnline()) {
+                    p.showTitle(Title.title(ColorUtils.parse(titleMain), ColorUtils.parse(titleSub), Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ZERO)));
+                    playSound(p, "lobby_countdown", 1f, 2f);
+                }
+            }
+            broadcastMessage("lobby.countdown", "<time>", String.valueOf(count[0]));
+            count[0]--;
+        }, 0L, 20L);
     }
 
     private void enterDungeon() {
         isPreparing = false;
         isRunning = true;
-        Location spawnLoc = dungeonWorld.getSpawnLocation().add(0.5, 1, 0.5);
+        Location spawnLoc = getRespawnLocation();
         boolean saveStats = template.settings().saveAndRestoreStats();
         Set<Player> failedToEnter = new HashSet<>();
 
@@ -339,17 +357,14 @@ public class DungeonGame {
 
         this.startTime = System.currentTimeMillis();
 
-        tickTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!isRunning) {
-                    cancel();
-                    return;
-                }
-                serverTicksActive += 4;
-                runTick();
+        tickTask = SchedulerCompat.runAtLocationTimer(plugin, getRespawnLocation(), () -> {
+            if (!isRunning) {
+                if (tickTask != null) tickTask.cancel();
+                return;
             }
-        }.runTaskTimer(plugin, 4L, 4L);
+            serverTicksActive += 4;
+            runTick();
+        }, 4L, 4L);
 
         startStage(0);
     }
@@ -581,7 +596,7 @@ public class DungeonGame {
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(currentStageIndex + 1), 60L);
+        SchedulerCompat.runAtLocationLater(plugin, getRespawnLocation(), () -> startStage(currentStageIndex + 1), 60L);
     }
 
     public void jumpToStage(int targetStage) {
@@ -604,7 +619,7 @@ public class DungeonGame {
         DungeonStageCompleteEvent stageEvent = new DungeonStageCompleteEvent(this, currentStageIndex);
         Bukkit.getPluginManager().callEvent(stageEvent);
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> startStage(targetStage - 1), 60L);
+        SchedulerCompat.runAtLocationLater(plugin, getRespawnLocation(), () -> startStage(targetStage - 1), 60L);
     }
 
     public void checkWipeout() {
@@ -630,55 +645,51 @@ public class DungeonGame {
             this.kickTask.cancel();
         }
 
-        this.kickTask = new BukkitRunnable() {
-            int timeLeft = delaySeconds;
-
-            @Override
-            public void run() {
-                if (isStopping) {
-                    this.cancel();
-                    return;
-                }
-
-                if (timeLeft <= 0) {
-                    if (onComplete != null) {
-                        onComplete.run();
-                    }
-                    this.cancel();
-                    return;
-                }
-
-                for (Player p : players) {
-                    if (p == null || !p.isOnline()) continue;
-
-                    switch (displayType) {
-                        case "ACTIONBAR":
-                            String actionMsg = plugin.getLanguageManager().getString("game.kick_countdown.actionbar", "&eTeleporting to Lobby in &c<time>s&e...");
-                            p.sendActionBar(ColorUtils.parse(actionMsg.replace("<time>", String.valueOf(timeLeft))));
-                            break;
-
-                        case "TITLE":
-                            String titleMain = plugin.getLanguageManager().getString("game.kick_countdown.title.main", "&c<time>");
-                            String titleSub = plugin.getLanguageManager().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
-
-                            Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ZERO);
-                            Title title = Title.title(ColorUtils.parse(titleMain.replace("<time>", String.valueOf(timeLeft))), ColorUtils.parse(titleSub.replace("<time>", String.valueOf(timeLeft))), times);
-                            p.showTitle(title);
-                            break;
-
-                        case "CHAT":
-                            String chatMsg = plugin.getLanguageManager().getString("game.kick_countdown.chat", "&eThe dungeon will close in &c<time> &eseconds.");
-                            p.sendMessage(ColorUtils.parseWithPrefix(chatMsg.replace("<time>", String.valueOf(timeLeft))));
-                            break;
-
-                        case "NONE":
-                        default:
-                            break;
-                    }
-                }
-                timeLeft--;
+        final int[] timeLeft = {delaySeconds};
+        this.kickTask = SchedulerCompat.runGlobalTimer(plugin, () -> {
+            if (isStopping) {
+                if (this.kickTask != null) this.kickTask.cancel();
+                return;
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+
+            if (timeLeft[0] <= 0) {
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+                if (this.kickTask != null) this.kickTask.cancel();
+                return;
+            }
+
+            for (Player p : players) {
+                if (p == null || !p.isOnline()) continue;
+
+                switch (displayType) {
+                    case "ACTIONBAR":
+                        String actionMsg = plugin.getLanguageManager().getString("game.kick_countdown.actionbar", "&eTeleporting to Lobby in &c<time>s&e...");
+                        p.sendActionBar(ColorUtils.parse(actionMsg.replace("<time>", String.valueOf(timeLeft[0]))));
+                        break;
+
+                    case "TITLE":
+                        String titleMain = plugin.getLanguageManager().getString("game.kick_countdown.title.main", "&c<time>");
+                        String titleSub = plugin.getLanguageManager().getString("game.kick_countdown.title.sub", "&eSeconds until teleport");
+
+                        Title.Times times = Title.Times.times(Duration.ZERO, Duration.ofSeconds(2), Duration.ZERO);
+                        Title title = Title.title(ColorUtils.parse(titleMain.replace("<time>", String.valueOf(timeLeft[0]))), ColorUtils.parse(titleSub.replace("<time>", String.valueOf(timeLeft[0]))), times);
+                        p.showTitle(title);
+                        break;
+
+                    case "CHAT":
+                        String chatMsg = plugin.getLanguageManager().getString("game.kick_countdown.chat", "&eThe dungeon will close in &c<time> &eseconds.");
+                        p.sendMessage(ColorUtils.parseWithPrefix(chatMsg.replace("<time>", String.valueOf(timeLeft[0]))));
+                        break;
+
+                    case "NONE":
+                    default:
+                        break;
+                }
+            }
+            timeLeft[0]--;
+        }, 0L, 20L);
     }
 
     private void applyCooldown(Player p) {
@@ -729,7 +740,7 @@ public class DungeonGame {
             }
 
             final UUID resolvedLeaderId = leaderId;
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            SchedulerCompat.runAsync(plugin, () -> {
                 for (Player p : participants) {
                     if (!p.isOnline()) continue;
 
@@ -737,7 +748,7 @@ public class DungeonGame {
                     boolean isFirstTime = (previousClears == 0);
 
                     if (isFirstTime) {
-                        Bukkit.getScheduler().runTask(plugin, () -> {
+                        SchedulerCompat.runGlobal(plugin, () -> {
                             executeActionCommandsForPlayer(template.settings().onFirstFinishCmds(), p, currentStageIndex);
                         });
                     }
@@ -827,18 +838,18 @@ public class DungeonGame {
 
                     p.teleportAsync(targetLoc).thenAccept(success -> {
                         if (success && p.isOnline()) {
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+                            SchedulerCompat.runAtEntity(plugin, p, () -> SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L));
                         } else if (p.isOnline()) {
-                            Bukkit.getScheduler().runTask(plugin, () -> {
-                                p.teleport(targetLoc);
-                                Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+                            SchedulerCompat.runAtEntity(plugin, p, () -> {
+                                p.teleportAsync(targetLoc);
+                                SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                             });
                         }
                     });
                 }
             }
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 40L);
+            SchedulerCompat.runGlobalLater(plugin, () -> stop(false, DungeonEndEvent.EndReason.CLEARED), 40L);
         });
     }
 
@@ -849,7 +860,7 @@ public class DungeonGame {
 
         if (!isQuitting) {
             if (p.isDead()) {
-                p.spigot().respawn();
+                PlayerUtils.respawn(p);
             }
             if (p.isInsideVehicle()) p.leaveVehicle();
             p.closeInventory();
@@ -859,9 +870,9 @@ public class DungeonGame {
             Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
             if (wasInDungeon) {
-                p.teleport(targetLoc);
+                p.teleportAsync(targetLoc);
             }
-            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+            SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
         } else {
             restorePlayerState(p);
         }
@@ -920,7 +931,7 @@ public class DungeonGame {
 
                     if (dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
                         if (teleport) {
-                            if (p.isDead()) p.spigot().respawn();
+                            PlayerUtils.respawn(p);
 
                             if (p.isInsideVehicle()) p.leaveVehicle();
                             p.closeInventory();
@@ -937,11 +948,11 @@ public class DungeonGame {
                             } else {
                                 p.teleportAsync(targetLoc).thenAccept(success -> {
                                     if (success) {
-                                        Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+                                        SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                                     } else {
-                                        Bukkit.getScheduler().runTask(plugin, () -> {
-                                            p.teleport(targetLoc);
-                                            Bukkit.getScheduler().runTaskLater(plugin, () -> restorePlayerState(p), 20L);
+                                        SchedulerCompat.runAtEntity(plugin, p, () -> {
+                                            p.teleportAsync(targetLoc);
+                                            SchedulerCompat.runGlobalLater(plugin, () -> restorePlayerState(p), 20L);
                                         });
                                     }
                                 });
@@ -955,13 +966,14 @@ public class DungeonGame {
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().severe("Error processing DungeonGame stop routing: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Error processing DungeonGame stop routing: " + e.getMessage(), e);
         } finally {
             if (dungeonWorld != null) {
                 World w = dungeonWorld;
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getInstanceManager().getProvider().unloadAndDeleteInstance(w);
+                String instanceId = worldName;
+                InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
+                SchedulerCompat.runGlobalLater(plugin, () -> {
+                    provider.releaseInstance(instanceId, w);
                     aggressivelyCleanupMemory();
                 }, 40L);
             } else {
@@ -989,7 +1001,7 @@ public class DungeonGame {
                 for (Player p : participants) {
                     plugin.getDungeonManager().removeGame(p.getUniqueId());
                     if (p.isOnline() && dungeonWorld != null && p.getWorld().equals(dungeonWorld)) {
-                        if (p.isDead()) p.spigot().respawn();
+                        PlayerUtils.respawn(p);
 
                         if (p.isInsideVehicle()) p.leaveVehicle();
                         p.closeInventory();
@@ -999,7 +1011,7 @@ public class DungeonGame {
                         Location targetLoc = (state != null && state.location.getWorld() != null) ? state.location : Bukkit.getWorlds().get(0).getSpawnLocation();
 
                         plugin.getDungeonManager().addTransitioning(p.getUniqueId());
-                        p.teleport(targetLoc);
+                        p.teleportAsync(targetLoc);
                         restorePlayerState(p);
                         p.sendActionBar(ColorUtils.parse(" "));
                     } else if (p.isOnline()) {
@@ -1009,20 +1021,23 @@ public class DungeonGame {
             }
         } catch (Exception ignored) {
         } finally {
-            if (dungeonWorld != null) {
-                World w = dungeonWorld;
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    plugin.getInstanceManager().getProvider().forceUnloadAndDeleteInstance(w);
-                }, 5L);
-            }
+            World w = dungeonWorld;
+            String instanceId = worldName;
+            InstanceProvider provider = instanceProvider != null ? instanceProvider : plugin.getInstanceManager().getProvider();
+
             aggressivelyCleanupMemory();
+
+            if (w != null && provider != null) {
+                Runnable releaseTask = () -> {
+                    provider.forceReleaseInstance(instanceId, w);
+                };
+                SchedulerCompat.runGlobal(plugin, releaseTask);
+            }
         }
     }
 
     private void aggressivelyCleanupMemory() {
-        if (this.dungeonWorld != null) {
-            plugin.getDungeonManager().unregisterWorldGame(this.dungeonWorld.getName());
-        }
+        plugin.getDungeonManager().unregisterGame(this);
 
         if (savedStates != null) savedStates.clear();
         if (playerKills != null) playerKills.clear();
@@ -1060,6 +1075,10 @@ public class DungeonGame {
         }
 
         this.dungeonWorld = null;
+        this.instanceProvider = null;
+        this.instanceOrigin = null;
+        this.respawnLocation = null;
+        this.instanceRadius = -1;
         this.initiatorId = null;
         this.template = null;
         this.lastParsedBar = null;
@@ -1191,6 +1210,102 @@ public class DungeonGame {
 
     public World getWorld() {
         return dungeonWorld;
+    }
+
+    public String getInstanceId() {
+        return worldName;
+    }
+
+    /**
+     * Converts a dungeon YAML coordinate into the real Bukkit location for this run.
+     * In normal world-copy mode the origin is 0,0,0, while shared schematic mode offsets
+     * X/Y/Z into the region assigned to this party.
+     */
+    public Location resolveLocation(Vector vector, double addX, double addY, double addZ) {
+        Location origin = instanceOrigin != null ? instanceOrigin : new Location(dungeonWorld, 0, 0, 0);
+        return new Location(
+                dungeonWorld,
+                origin.getX() + vector.getX() + addX,
+                origin.getY() + vector.getY() + addY,
+                origin.getZ() + vector.getZ() + addZ
+        );
+    }
+
+    public Location resolveLocation(Vector vector) {
+        return resolveLocation(vector, 0, 0, 0);
+    }
+
+    private Location resolveConfiguredStartLocation(String configuredLocation) {
+        if (configuredLocation == null || configuredLocation.isBlank() || configuredLocation.equalsIgnoreCase("NONE")) {
+            return null;
+        }
+        String[] parts = configuredLocation.replace(" ", "").split(",");
+        if (parts.length < 3) {
+            String warning = plugin.getLanguageManager().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
+            plugin.getLogger().warning(warning.replace("<data>", configuredLocation));
+            return null;
+        }
+        try {
+            Vector local = new Vector(
+                    Double.parseDouble(parts[0]),
+                    Double.parseDouble(parts[1]),
+                    Double.parseDouble(parts[2])
+            );
+            Location location = resolveLocation(local, 0.5, 0, 0.5);
+            if (parts.length >= 4) location.setYaw(Float.parseFloat(parts[3]));
+            if (parts.length >= 5) location.setPitch(Float.parseFloat(parts[4]));
+            return location;
+        } catch (NumberFormatException exception) {
+            String warning = plugin.getLanguageManager().getString("admin.warning.vector_parse_fail", "Vector parsing failed: '<data>'");
+            plugin.getLogger().warning(warning.replace("<data>", configuredLocation));
+            return null;
+        }
+    }
+
+    /**
+     * Resolves block-aligned YAML coordinates for trigger blocks, levers, chests, and walls.
+     */
+    public Location resolveBlockLocation(Vector vector) {
+        Location origin = instanceOrigin != null ? instanceOrigin : new Location(dungeonWorld, 0, 0, 0);
+        return new Location(
+                dungeonWorld,
+                origin.getBlockX() + vector.getBlockX(),
+                origin.getBlockY() + vector.getBlockY(),
+                origin.getBlockZ() + vector.getBlockZ()
+        );
+    }
+
+    public Location getInstanceOrigin() {
+        if (instanceOrigin != null) return instanceOrigin.clone();
+        return dungeonWorld != null ? new Location(dungeonWorld, 0, 0, 0) : null;
+    }
+
+    public int getInstanceRadius() {
+        return instanceRadius;
+    }
+
+    /**
+     * Checks whether a world event belongs to this dungeon's allocated area.
+     * This lets multiple active games safely share one schematic world without
+     * routing mob deaths, targets, or teleports to the wrong party.
+     */
+    public boolean ownsLocation(Location location) {
+        if (location == null || location.getWorld() == null || dungeonWorld == null) return false;
+        if (!location.getWorld().equals(dungeonWorld)) return false;
+        if (instanceRadius < 1 || instanceOrigin == null) return true;
+
+        double dx = Math.abs(location.getX() - instanceOrigin.getX());
+        double dz = Math.abs(location.getZ() - instanceOrigin.getZ());
+        return dx <= instanceRadius && dz <= instanceRadius;
+    }
+
+    public Location getRespawnLocation() {
+        if (respawnLocation != null) return respawnLocation.clone();
+        return dungeonWorld != null ? dungeonWorld.getSpawnLocation().clone().add(0.5, 1, 0.5) : null;
+    }
+
+    public void setRespawnLocation(Location respawnLocation) {
+        this.respawnLocation = respawnLocation != null ? respawnLocation.clone() : null;
     }
 
     public Player getPlayer() {

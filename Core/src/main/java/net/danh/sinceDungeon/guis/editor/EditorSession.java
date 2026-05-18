@@ -4,8 +4,8 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -64,12 +64,12 @@ public class EditorSession {
         if (file == null) return;
         String yamlData = config.saveToString();
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        SchedulerCompat.runAsync(plugin, () -> {
             try {
                 file.getParentFile().mkdirs();
                 Files.writeString(file.toPath(), yamlData);
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     String msg = plugin.getLanguageManager().getString("editor.chat.saved");
                     if (msg != null && player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
 
@@ -91,7 +91,7 @@ public class EditorSession {
                     }
                 });
             } catch (IOException e) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     String errorMsg = plugin.getLanguageManager().getString("editor.chat.save_error");
                     if (errorMsg != null && player.isOnline())
                         player.sendMessage(ColorUtils.parse(errorMsg.replace("<error>", e.getMessage())));
@@ -232,6 +232,7 @@ public class EditorSession {
         PREVENT_DROP("settings.prevent-item-dropping", "dungeon.gameplay.prevent-item-dropping", Material.BARRIER, "setting_prevent_drop", "BOOL", true),
         BLOCK_PEARLS("settings.block-ender-pearls", "dungeon.gameplay.block-ender-pearls", Material.ENDER_PEARL, "setting_block_pearls", "BOOL", true),
         KICK_DELAY("settings.kick-delay-after-finish", "dungeon.gameplay.kick-delay-after-finish", Material.CLOCK, "setting_kick_delay", "INT", 10),
+        START_LOCATION("settings.start-location", "dungeon.start-location", Material.COMPASS, "setting_start_location", "LOCATION", "NONE"),
         FORCE_WEATHER("settings.force-daylight-and-clear-weather", "dungeon.gameplay.force-daylight-and-clear-weather", Material.SUNFLOWER, "setting_force_weather", "BOOL", true),
         SAVE_STATS("settings.save-and-restore-stats", "dungeon.save-and-restore-stats", Material.GOLDEN_APPLE, "setting_save_stats", "BOOL", false),
         DEATH_ACTION("settings.death-action", "dungeon.death-action", Material.SKELETON_SKULL, "setting_death_action", "DEATH_ENUM", "RESPAWN"),

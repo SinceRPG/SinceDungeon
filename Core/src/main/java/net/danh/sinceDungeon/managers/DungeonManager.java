@@ -9,14 +9,12 @@ import net.danh.sinceDungeon.api.interfaces.CustomItemProvider;
 import net.danh.sinceDungeon.api.interfaces.RewardProcessor;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.models.DungeonTemplate;
-import net.danh.sinceDungeon.utils.BungeeUtils;
-import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.DefaultRegistry;
-import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
@@ -25,6 +23,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public class DungeonManager {
     private final SinceDungeon plugin;
@@ -43,16 +42,11 @@ public class DungeonManager {
     private final Map<UUID, Long> pendingRequests = new ConcurrentHashMap<>();
     private final Map<String, CustomItemProvider> customItemProviders = new ConcurrentHashMap<>();
     private final Map<String, DungeonGame> worldGames = new ConcurrentHashMap<>();
+    private final Set<DungeonGame> registeredGames = ConcurrentHashMap.newKeySet();
 
     public DungeonManager(SinceDungeon plugin) {
         this.plugin = plugin;
         DefaultRegistry.registerAll(plugin, this);
-
-        Map<String, DungeonTemplate> initialTemplates = loadTemplatesAsync().join();
-        this.templates.putAll(initialTemplates);
-
-        String msg = plugin.getLanguageManager().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
-        plugin.getLogger().info(msg.replace("<count>", String.valueOf(initialTemplates.size())));
     }
 
     public void addPendingCrossServerGame(UUID leader, String templateId) {
@@ -61,7 +55,7 @@ public class DungeonManager {
         int timeoutSeconds = plugin.getConfigFile().getInt("cross-server.transfer-timeout-seconds", 30);
         long timeoutTicks = timeoutSeconds * 20L;
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        SchedulerCompat.runGlobalLater(plugin, () -> {
             if (pendingCrossServerGames.containsKey(leader)) {
                 pendingCrossServerGames.remove(leader);
                 plugin.getPartyManager().getProvider().disbandParty(leader);
@@ -103,14 +97,17 @@ public class DungeonManager {
     public void checkPendingCrossServerJoin(Player p) {
         if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
             String templateId = pendingCrossServerGames.remove(p.getUniqueId());
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                joinDungeonLocal(p, templateId, true);
+            SchedulerCompat.runGlobalLater(plugin, () -> {
+                joinDungeonLocal(p, templateId, p.hasPermission("SinceDungeon.admin"));
             }, 40L);
         }
     }
 
     public void joinDungeon(Player p, String id) {
-        joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+        if (!plugin.isStartupReady()) {
+            String msg = plugin.getLanguageManager().getString("error.startup_not_ready", "&cDungeon data is still loading. Please try again in a moment.");
+            joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+        }
     }
 
     public void joinDungeon(Player p, String id, boolean allowPrivate) {
@@ -128,8 +125,7 @@ public class DungeonManager {
 
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
 
-            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())
-                    && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
+            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId()) && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                 return;
             }
@@ -148,14 +144,12 @@ public class DungeonManager {
             String partyDataRaw = p.getUniqueId().toString() + "~" + p.getName();
             Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(p.getUniqueId());
             if (members != null && !members.isEmpty()) {
-                partyDataRaw = members.stream()
-                        .map(uuid -> uuid.toString() + "~" + plugin.getPartyManager().getProvider().getMemberName(uuid))
-                        .reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
+                partyDataRaw = members.stream().map(uuid -> uuid.toString() + "~" + plugin.getPartyManager().getProvider().getMemberName(uuid)).reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
             }
 
             plugin.getRedisManager().requestDungeonServer(id, p.getUniqueId(), partyDataRaw);
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> {
                 if (pendingRequests.containsKey(p.getUniqueId())) {
                     pendingRequests.remove(p.getUniqueId());
                     if (p.isOnline()) {
@@ -173,7 +167,7 @@ public class DungeonManager {
 
     public void addTransitioning(UUID uuid) {
         transitioningPlayers.add(uuid);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> removeTransitioning(uuid), 200L);
+        SchedulerCompat.runGlobalLater(plugin, () -> removeTransitioning(uuid), 200L);
     }
 
     public void removeTransitioning(UUID uuid) {
@@ -192,12 +186,20 @@ public class DungeonManager {
         rewardProcessors.put(type.toUpperCase(), processor);
     }
 
+    public void unregisterRewardProcessor(String type) {
+        if (type != null) rewardProcessors.remove(type.toUpperCase());
+    }
+
     public RewardProcessor getRewardProcessor(String type) {
         return rewardProcessors.get(type.toUpperCase());
     }
 
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         conditionProcessors.put(type.toUpperCase(), processor);
+    }
+
+    public void unregisterConditionProcessor(String type) {
+        if (type != null) conditionProcessors.remove(type.toUpperCase());
     }
 
     private void handleItemDrop(Player p, ItemStack item, String displayName) {
@@ -235,6 +237,13 @@ public class DungeonManager {
         actionMeta.put(key, new ActionMeta(displayName, icon, description, defaults, customPrompts != null ? customPrompts : new HashMap<>()));
     }
 
+    public void unregisterAction(String type) {
+        if (type == null) return;
+        String key = type.toUpperCase();
+        actionParsers.remove(key);
+        actionMeta.remove(key);
+    }
+
     public Set<String> getRegisteredActions() {
         return actionMeta.keySet();
     }
@@ -264,7 +273,11 @@ public class DungeonManager {
                     Object msgObj = data.get("start_message");
                     List<String> msgs = new ArrayList<>();
                     if (msgObj instanceof String) msgs.add((String) msgObj);
-                    else if (msgObj instanceof List) msgs.addAll((List<String>) msgObj);
+                    else if (msgObj instanceof List<?> list) {
+                        for (Object value : list) {
+                            if (value != null) msgs.add(value.toString());
+                        }
+                    }
                     action.setStartMessages(msgs);
                 }
                 if (data.containsKey("notifications")) {
@@ -289,7 +302,7 @@ public class DungeonManager {
         } catch (Exception e) {
             String logMsg = plugin.getLanguageManager().getString("admin.log.action_create_fail", "Failed to create action <type>: <error>");
             plugin.getLogger().warning(logMsg.replace("<type>", type).replace("<error>", e.getMessage()));
-            e.printStackTrace();
+            plugin.getLogger().log(Level.WARNING, logMsg.replace("<type>", type).replace("<error>", e.getMessage()), e);
             return null;
         }
     }
@@ -309,7 +322,7 @@ public class DungeonManager {
      */
     public CompletableFuture<Void> reload() {
         stopAllGames();
-        return loadTemplatesAsync().thenAccept(newTemplates -> Bukkit.getScheduler().runTask(plugin, () -> {
+        return loadTemplatesAsync().thenAccept(newTemplates -> SchedulerCompat.runGlobal(plugin, () -> {
             templates.clear();
             templates.putAll(newTemplates);
 
@@ -318,6 +331,29 @@ public class DungeonManager {
 
             plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.dungeon_reloaded"));
         }));
+    }
+
+    /**
+     * Loads dungeon templates after plugin enable without blocking the main thread.
+     * This avoids deadlocks caused by waiting on Bukkit async scheduler tasks from onEnable.
+     */
+    public CompletableFuture<Void> reloadTemplatesAsync() {
+        return loadTemplatesAsync().thenCompose(newTemplates -> {
+            CompletableFuture<Void> applied = new CompletableFuture<>();
+            SchedulerCompat.runGlobal(plugin, () -> {
+                try {
+                    templates.clear();
+                    templates.putAll(newTemplates);
+
+                    String msg = plugin.getLanguageManager().getString("admin.log.dungeon_loaded", "Loaded <count> Dungeon templates!");
+                    plugin.getLogger().info(msg.replace("<count>", String.valueOf(newTemplates.size())));
+                    applied.complete(null);
+                } catch (Exception e) {
+                    applied.completeExceptionally(e);
+                }
+            });
+            return applied;
+        });
     }
 
     private CompletableFuture<Map<String, DungeonTemplate>> loadTemplatesAsync() {
@@ -331,7 +367,8 @@ public class DungeonManager {
         Map<String, DungeonTemplate> bufferMap = new ConcurrentHashMap<>();
 
         for (File f : files) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            SchedulerCompat.runAsync(plugin, () -> {
                 String id = f.getName().replace(".yml", "");
                 try {
                     DungeonTemplate t = DungeonLoader.loadTemplate(plugin, id);
@@ -339,13 +376,14 @@ public class DungeonManager {
                 } catch (Exception e) {
                     String msg = plugin.getLanguageManager().getString("admin.log.template_load_error", "Error loading template <id>: <error>");
                     plugin.getLogger().severe(msg.replace("<id>", id).replace("<error>", e.getMessage()));
+                } finally {
+                    future.complete(null);
                 }
             });
             futures.add(future);
         }
 
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(v -> bufferMap);
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(v -> bufferMap);
     }
 
     private void joinDungeonLocal(Player p, String id, boolean allowPrivate) {
@@ -475,13 +513,11 @@ public class DungeonManager {
                 if (parsedReqItem != null) {
                     for (Player participant : participants) {
                         if (!participant.getInventory().containsAtLeast(parsedReqItem, parsedReqItem.getAmount())) {
-                            String msg = plugin.getLanguageManager().getString("error.missing_required_item", "&cYou lack the required item to enter: <item>")
-                                    .replace("<item>", reqItemStr);
+                            String msg = plugin.getLanguageManager().getString("error.missing_required_item", "&cYou lack the required item to enter: <item>").replace("<item>", reqItemStr);
                             participant.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                             if (!participant.equals(p)) {
-                                String leaderMsg = plugin.getLanguageManager().getString("error.party_member_missing_item", "&cMember <player> lacks the required entry item.")
-                                        .replace("<player>", participant.getName());
+                                String leaderMsg = plugin.getLanguageManager().getString("error.party_member_missing_item", "&cMember <player> lacks the required entry item.").replace("<player>", participant.getName());
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg));
                             }
                             return;
@@ -497,9 +533,7 @@ public class DungeonManager {
                         LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
                         int current = lives != null ? lives.getCurrentLives() : 0;
 
-                        String msg = plugin.getLanguageManager().getString("lives.not_enough")
-                                .replace("<required>", String.valueOf(reqLives))
-                                .replace("<current>", String.valueOf(current));
+                        String msg = plugin.getLanguageManager().getString("lives.not_enough").replace("<required>", String.valueOf(reqLives)).replace("<current>", String.valueOf(current));
 
                         participant.sendMessage(ColorUtils.parseWithPrefix(msg));
                         if (!participant.equals(p)) {
@@ -529,7 +563,7 @@ public class DungeonManager {
             } catch (Exception e) {
                 String logErr = plugin.getLanguageManager().getString("admin.log.lobby_error", "Error starting dungeon lobby for <player>");
                 plugin.getLogger().severe(logErr.replace("<player>", p.getName()));
-                e.printStackTrace();
+                plugin.getLogger().log(Level.SEVERE, logErr.replace("<player>", p.getName()), e);
                 for (Player participant : participants) {
                     activeGames.remove(participant.getUniqueId());
                 }
@@ -545,10 +579,22 @@ public class DungeonManager {
 
     public void registerWorldGame(String worldName, DungeonGame game) {
         worldGames.put(worldName, game);
+        registeredGames.add(game);
     }
 
     public void unregisterWorldGame(String worldName) {
-        worldGames.remove(worldName);
+        DungeonGame game = worldGames.remove(worldName);
+        if (game != null) {
+            registeredGames.remove(game);
+        }
+    }
+
+    public void unregisterGame(DungeonGame game) {
+        if (game == null) return;
+        registeredGames.remove(game);
+        if (game.getWorld() != null) {
+            worldGames.remove(game.getWorld().getName(), game);
+        }
     }
 
     /**
@@ -561,6 +607,48 @@ public class DungeonManager {
      */
     public DungeonGame getGameByWorld(String worldName) {
         return worldGames.get(worldName);
+    }
+
+    /**
+     * Resolves an active game by physical location.
+     * This keeps event routing correct when a provider places several dungeon
+     * instances inside one shared Bukkit world.
+     *
+     * @param location The Bukkit location to test.
+     * @return The matching DungeonGame, or null if no instance owns the location.
+     */
+    public DungeonGame getGameByLocation(Location location) {
+        if (location == null || location.getWorld() == null) return null;
+
+        DungeonGame direct = worldGames.get(location.getWorld().getName());
+        if (direct != null && direct.ownsLocation(location)) {
+            return direct;
+        }
+
+        for (DungeonGame game : registeredGames) {
+            if (game.ownsLocation(location)) {
+                return game;
+            }
+        }
+
+        return null;
+    }
+
+    public DungeonGame getGameByEntity(Entity entity) {
+        return entity != null ? getGameByLocation(entity.getLocation()) : null;
+    }
+
+    public boolean hasGameInWorld(String worldName) {
+        if (worldName == null) return false;
+        if (worldGames.containsKey(worldName)) return true;
+
+        for (DungeonGame game : registeredGames) {
+            if (game.getWorld() != null && game.getWorld().getName().equals(worldName)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void cancelPendingRequest(UUID uuid) {
@@ -590,6 +678,10 @@ public class DungeonManager {
 
     public void registerItemProvider(String prefix, CustomItemProvider provider) {
         customItemProviders.put(prefix.toUpperCase(), provider);
+    }
+
+    public void unregisterItemProvider(String prefix) {
+        if (prefix != null) customItemProviders.remove(prefix.toUpperCase());
     }
 
     public CustomItemProvider getItemProvider(String prefix) {

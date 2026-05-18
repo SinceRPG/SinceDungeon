@@ -46,6 +46,10 @@ public class SinceDungeonAPI {
         return instance;
     }
 
+    public static void shutdown() {
+        instance = null;
+    }
+
     public RewardManager getRewardManager() {
         return plugin.getRewardManager();
     }
@@ -103,16 +107,28 @@ public class SinceDungeonAPI {
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
+    public void unregisterCustomAction(String type) {
+        plugin.getDungeonManager().unregisterAction(type);
+    }
+
     public void registerRewardProcessor(String type, RewardProcessor processor) {
         plugin.getDungeonManager().registerRewardProcessor(type, processor);
         String logMsg = plugin.getLanguageManager().getString("admin.log.api_reward_registered", "[API] Registered Reward Processor: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
     }
 
+    public void unregisterRewardProcessor(String type) {
+        plugin.getDungeonManager().unregisterRewardProcessor(type);
+    }
+
     public void registerConditionProcessor(String type, ConditionProcessor processor) {
         plugin.getDungeonManager().registerConditionProcessor(type, processor);
         String logMsg = plugin.getLanguageManager().getString("admin.log.api_condition_registered", "[API] Registered Condition Processor: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", type.toUpperCase()));
+    }
+
+    public void unregisterConditionProcessor(String type) {
+        plugin.getDungeonManager().unregisterConditionProcessor(type);
     }
 
     public void registerTemplate(DungeonTemplate template) {
@@ -139,6 +155,10 @@ public class SinceDungeonAPI {
         plugin.getDungeonManager().registerItemProvider(prefix, provider);
         String logMsg = plugin.getLanguageManager().getString("admin.log.api_item_provider_registered", "[API] Registered Custom Item Provider: <type>");
         plugin.getLogger().info(logMsg.replace("<type>", prefix.toUpperCase()));
+    }
+
+    public void unregisterItemProvider(String prefix) {
+        plugin.getDungeonManager().unregisterItemProvider(prefix);
     }
 
     /**

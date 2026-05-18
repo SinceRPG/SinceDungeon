@@ -19,26 +19,25 @@ public class SoundUtils {
             soundName = soundName.substring(10);
         }
 
-        if (ServerVersion.isAtLeast(1, 21, 3)) {
-            try {
-                NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
-                if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
-                Sound sound = Registry.SOUND_EVENT.get(key);
-                if (sound != null) return sound;
-                return (Sound) Sound.class.getField(soundName.toUpperCase(Locale.ROOT)).get(null);
-            } catch (Throwable ignored) {
-            }
-        } else {
-            try {
-                return Sound.valueOf(soundName.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException | IncompatibleClassChangeError e) {
-                try {
-                    String legacyName = soundName.replace(".", "_").toUpperCase(Locale.ROOT);
-                    return Sound.valueOf(legacyName);
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+        try {
+            NamespacedKey key = NamespacedKey.fromString(soundName.toLowerCase(Locale.ROOT));
+            if (key == null) key = NamespacedKey.minecraft(soundName.toLowerCase(Locale.ROOT));
+            Sound sound = Registry.SOUND_EVENT.get(key);
+            if (sound != null) return sound;
+        } catch (Throwable ignored) {
         }
-        return null;
+
+        Sound legacy = resolveLegacy(soundName.toUpperCase(Locale.ROOT));
+        if (legacy != null) return legacy;
+        return resolveLegacy(soundName.replace(".", "_").toUpperCase(Locale.ROOT));
+    }
+
+    private static Sound resolveLegacy(String enumName) {
+        try {
+            Object value = Sound.class.getMethod("valueOf", String.class).invoke(null, enumName);
+            return value instanceof Sound sound ? sound : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
     }
 }

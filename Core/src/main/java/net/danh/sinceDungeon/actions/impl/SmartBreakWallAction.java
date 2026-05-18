@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.actions.DungeonAction;
 import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -15,8 +16,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 /**
@@ -28,8 +27,9 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     private final Vector c1;
     private final Vector c2;
     private Location centerLoc;
+    private Location triggerBlockLoc;
 
-    private BukkitTask breakTask = null;
+    private SchedulerCompat.TaskHandle breakTask = null;
     private boolean isBreaking = false;
 
     public SmartBreakWallAction(Vector trigger, Vector c1, Vector c2) {
@@ -45,7 +45,8 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
     @Override
     public void start(DungeonGame game) {
-        this.centerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+        this.triggerBlockLoc = game.resolveBlockLocation(trigger);
+        this.centerLoc = triggerBlockLoc.clone().add(0.5, 0.5, 0.5);
     }
 
     @Override
@@ -56,6 +57,7 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
         }
         breakTask = null;
         centerLoc = null;
+        triggerBlockLoc = null;
     }
 
     @Override
@@ -83,10 +85,10 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
             if (!e.hasBlock() || isBreaking) return;
 
             Block b = e.getClickedBlock();
-            if (b != null && b.getWorld().equals(game.getWorld()) &&
-                    b.getX() == trigger.getBlockX() &&
-                    b.getY() == trigger.getBlockY() &&
-                    b.getZ() == trigger.getBlockZ()) {
+            if (b != null && triggerBlockLoc != null && b.getWorld().equals(game.getWorld()) &&
+                    b.getX() == triggerBlockLoc.getBlockX() &&
+                    b.getY() == triggerBlockLoc.getBlockY() &&
+                    b.getZ() == triggerBlockLoc.getBlockZ()) {
 
                 isBreaking = true;
                 b.setType(Material.AIR);
@@ -99,12 +101,14 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
     }
 
     private void removeWall(DungeonGame game) {
-        int minX = Math.min(c1.getBlockX(), c2.getBlockX());
-        int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
-        int minY = Math.min(c1.getBlockY(), c2.getBlockY());
-        int maxY = Math.max(c1.getBlockY(), c2.getBlockY());
-        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
-        int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+        Location cornerA = game.resolveBlockLocation(c1);
+        Location cornerB = game.resolveBlockLocation(c2);
+        int minX = Math.min(cornerA.getBlockX(), cornerB.getBlockX());
+        int maxX = Math.max(cornerA.getBlockX(), cornerB.getBlockX());
+        int minY = Math.min(cornerA.getBlockY(), cornerB.getBlockY());
+        int maxY = Math.max(cornerA.getBlockY(), cornerB.getBlockY());
+        int minZ = Math.min(cornerA.getBlockZ(), cornerB.getBlockZ());
+        int maxZ = Math.max(cornerA.getBlockZ(), cornerB.getBlockZ());
 
         long volume = (long) (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
 
@@ -125,62 +129,59 @@ public class SmartBreakWallAction extends DungeonAction implements Tickable {
 
         final Particle finalCrumble = crumbleParticle;
 
-        breakTask = new BukkitRunnable() {
-            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
-            int currentX = minX;
-            int currentY = minY;
-            int currentZ = minZ;
+        final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
+        final int[] currentX = {minX};
+        final int[] currentY = {minY};
+        final int[] currentZ = {minZ};
 
-            @Override
-            public void run() {
-                if (game.getWorld() == null || !game.isRunning()) {
-                    cancel();
-                    return;
-                }
+        breakTask = SchedulerCompat.runAtLocationTimer(SinceDungeon.getPlugin(), centerLoc, () -> {
+            if (game.getWorld() == null || !game.isRunning()) {
+                if (breakTask != null) breakTask.cancel();
+                return;
+            }
 
-                int blocksProcessed = 0;
-                while (blocksProcessed < 50) {
-                    Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
-                    if (block.getType() != Material.AIR) {
-                        try {
-                            particleLoc.set(currentX + 0.5, currentY + 0.5, currentZ + 0.5);
-                            if (finalCrumble.getDataType() == BlockData.class) {
-                                game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
-                            } else {
-                                game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05);
-                            }
-                        } catch (Exception ignored) {
+            int blocksProcessed = 0;
+            while (blocksProcessed < 50) {
+                Block block = game.getWorld().getBlockAt(currentX[0], currentY[0], currentZ[0]);
+                if (block.getType() != Material.AIR) {
+                    try {
+                        particleLoc.set(currentX[0] + 0.5, currentY[0] + 0.5, currentZ[0] + 0.5);
+                        if (finalCrumble.getDataType() == BlockData.class) {
+                            game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                        } else {
+                            game.getWorld().spawnParticle(finalCrumble, particleLoc, 5, 0.2, 0.2, 0.2, 0.05);
                         }
-                        block.setType(Material.AIR, false);
+                    } catch (Exception ignored) {
                     }
-                    blocksProcessed++;
+                    block.setType(Material.AIR, false);
+                }
+                blocksProcessed++;
 
-                    currentX++;
-                    if (currentX > maxX) {
-                        currentX = minX;
-                        currentY++;
-                        if (currentY > maxY) {
-                            currentY = minY;
-                            currentZ++;
-                            if (currentZ > maxZ) {
-                                Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
+                currentX[0]++;
+                if (currentX[0] > maxX) {
+                    currentX[0] = minX;
+                    currentY[0]++;
+                    if (currentY[0] > maxY) {
+                        currentY[0] = minY;
+                        currentZ[0]++;
+                        if (currentZ[0] > maxZ) {
+                            Location center = new Location(game.getWorld(), (minX + maxX) / 2.0, (minY + maxY) / 2.0, (minZ + maxZ) / 2.0);
 
-                                String soundExplode = SinceDungeon.getPlugin().getConfigFile().getString("sounds.wall_break", "entity.generic.explode");
-                                game.getWorld().playSound(center, SoundUtils.getSound(soundExplode), 1f, 1f);
+                            String soundExplode = SinceDungeon.getPlugin().getConfigFile().getString("sounds.wall_break", "entity.generic.explode");
+                            game.getWorld().playSound(center, SoundUtils.getSound(soundExplode), 1f, 1f);
 
-                                String explosionName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
-                                try {
-                                    game.getWorld().spawnParticle(Particle.valueOf(explosionName.toUpperCase()), center, 3);
-                                } catch (Exception ignored) {
-                                }
-
-                                cancel();
-                                return;
+                            String explosionName = SinceDungeon.getPlugin().getConfigFile().getString("particles.wall_break", "EXPLOSION");
+                            try {
+                                game.getWorld().spawnParticle(Particle.valueOf(explosionName.toUpperCase()), center, 3);
+                            } catch (Exception ignored) {
                             }
+
+                            if (breakTask != null) breakTask.cancel();
+                            return;
                         }
                     }
                 }
             }
-        }.runTaskTimer(SinceDungeon.getPlugin(), 0L, 1L);
+        }, 0L, 1L);
     }
 }

@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.actions.Tickable;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -16,8 +17,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
@@ -35,7 +34,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     private final Particle lockedParticle;
 
     private Location triggerLoc;
-    private BukkitTask breakTask = null;
+    private Location triggerBlockLoc;
+    private SchedulerCompat.TaskHandle breakTask = null;
     private boolean isUnlocking = false;
 
     public UnlockDoorAction(Vector trigger, Vector c1, Vector c2, String keyId, String particleName) {
@@ -62,7 +62,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     @Override
     public void start(DungeonGame game) {
         if (game.getWorld() == null) return;
-        this.triggerLoc = new Location(game.getWorld(), trigger.getBlockX() + 0.5, trigger.getBlockY() + 0.5, trigger.getBlockZ() + 0.5);
+        this.triggerBlockLoc = game.resolveBlockLocation(trigger);
+        this.triggerLoc = triggerBlockLoc.clone().add(0.5, 0.5, 0.5);
 
         NamespacedKey compassTag = new NamespacedKey(SinceDungeon.getPlugin(), "dungeon_compass");
         ConfigurationSection cfg = SinceDungeon.getPlugin().getConfigFile().getSection("items.compass");
@@ -101,6 +102,8 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
         if (breakTask != null && !breakTask.isCancelled()) {
             breakTask.cancel();
         }
+        triggerLoc = null;
+        triggerBlockLoc = null;
         removeCompasses(game);
     }
 
@@ -137,10 +140,10 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
             if (!e.hasBlock() || isUnlocking) return;
 
             Block b = e.getClickedBlock();
-            if (b != null && b.getWorld().equals(game.getWorld()) &&
-                    b.getX() == trigger.getBlockX() &&
-                    b.getY() == trigger.getBlockY() &&
-                    b.getZ() == trigger.getBlockZ()) {
+            if (b != null && triggerBlockLoc != null && b.getWorld().equals(game.getWorld()) &&
+                    b.getX() == triggerBlockLoc.getBlockX() &&
+                    b.getY() == triggerBlockLoc.getBlockY() &&
+                    b.getZ() == triggerBlockLoc.getBlockZ()) {
 
                 e.setCancelled(true);
                 ItemStack handItem = e.getItem();
@@ -167,7 +170,7 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
                     this.completed = true;
                     game.sendActionMessage(this, "complete", "action.door_unlocked", "<player>", p.getName());
 
-                    Location spawnLoc = game.getWorld().getSpawnLocation();
+                    Location spawnLoc = game.getRespawnLocation();
                     game.getParticipants().forEach(player -> {
                         if (player.isOnline()) player.setCompassTarget(spawnLoc);
                     });
@@ -207,57 +210,55 @@ public class UnlockDoorAction extends DungeonAction implements Tickable {
     }
 
     private void removeWall(DungeonGame game) {
-        int minX = Math.min(c1.getBlockX(), c2.getBlockX());
-        int maxX = Math.max(c1.getBlockX(), c2.getBlockX());
-        int minY = Math.min(c1.getBlockY(), c2.getBlockY());
-        int maxY = Math.max(c1.getBlockY(), c2.getBlockY());
-        int minZ = Math.min(c1.getBlockZ(), c2.getBlockZ());
-        int maxZ = Math.max(c1.getBlockZ(), c2.getBlockZ());
+        Location cornerA = game.resolveBlockLocation(c1);
+        Location cornerB = game.resolveBlockLocation(c2);
+        int minX = Math.min(cornerA.getBlockX(), cornerB.getBlockX());
+        int maxX = Math.max(cornerA.getBlockX(), cornerB.getBlockX());
+        int minY = Math.min(cornerA.getBlockY(), cornerB.getBlockY());
+        int maxY = Math.max(cornerA.getBlockY(), cornerB.getBlockY());
+        int minZ = Math.min(cornerA.getBlockZ(), cornerB.getBlockZ());
+        int maxZ = Math.max(cornerA.getBlockZ(), cornerB.getBlockZ());
 
         String soundUnlock = SinceDungeon.getPlugin().getConfigFile().getString("sounds.door_unlock", "block.iron_door.open");
         if (soundUnlock != null) {
             game.getWorld().playSound(triggerLoc, SoundUtils.getSound(soundUnlock), 1f, 0.5f);
         }
 
-        breakTask = new BukkitRunnable() {
-            // JIT Optimization: Reusing the same Location object pointer to prevent massive GC allocations per tick
-            final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
-            int currentX = minX;
-            int currentY = minY;
-            int currentZ = minZ;
+        final Location particleLoc = new Location(game.getWorld(), 0, 0, 0);
+        final int[] currentX = {minX};
+        final int[] currentY = {minY};
+        final int[] currentZ = {minZ};
 
-            @Override
-            public void run() {
-                if (game.getWorld() == null || !game.isRunning()) {
-                    cancel();
-                    return;
+        breakTask = SchedulerCompat.runAtLocationTimer(SinceDungeon.getPlugin(), triggerLoc, () -> {
+            if (game.getWorld() == null || !game.isRunning()) {
+                if (breakTask != null) breakTask.cancel();
+                return;
+            }
+
+            int blocksProcessed = 0;
+            while (blocksProcessed < 50) {
+                Block block = game.getWorld().getBlockAt(currentX[0], currentY[0], currentZ[0]);
+                if (block.getType() != Material.AIR) {
+                    particleLoc.set(currentX[0] + 0.5, currentY[0] + 0.5, currentZ[0] + 0.5);
+                    game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
+                    block.setType(Material.AIR, false);
                 }
+                blocksProcessed++;
 
-                int blocksProcessed = 0;
-                while (blocksProcessed < 50) {
-                    Block block = game.getWorld().getBlockAt(currentX, currentY, currentZ);
-                    if (block.getType() != Material.AIR) {
-                        particleLoc.set(currentX + 0.5, currentY + 0.5, currentZ + 0.5);
-                        game.getWorld().spawnParticle(Particle.BLOCK_CRUMBLE, particleLoc, 5, 0.2, 0.2, 0.2, 0.05, block.getBlockData());
-                        block.setType(Material.AIR, false);
-                    }
-                    blocksProcessed++;
-
-                    currentX++;
-                    if (currentX > maxX) {
-                        currentX = minX;
-                        currentY++;
-                        if (currentY > maxY) {
-                            currentY = minY;
-                            currentZ++;
-                            if (currentZ > maxZ) {
-                                cancel();
-                                return;
-                            }
+                currentX[0]++;
+                if (currentX[0] > maxX) {
+                    currentX[0] = minX;
+                    currentY[0]++;
+                    if (currentY[0] > maxY) {
+                        currentY[0] = minY;
+                        currentZ[0]++;
+                        if (currentZ[0] > maxZ) {
+                            if (breakTask != null) breakTask.cancel();
+                            return;
                         }
                     }
                 }
             }
-        }.runTaskTimer(SinceDungeon.getPlugin(), 0L, 1L);
+        }, 0L, 1L);
     }
 }

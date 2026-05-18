@@ -1,14 +1,19 @@
 package net.danh.sinceDungeon.hooks;
 
 import me.clip.placeholderapi.PlaceholderAPI;
+import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import net.danh.sinceDungeon.SinceDungeon;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handles interactions with the PlaceholderAPI plugin.
  */
 public class PAPIHook {
+    private static final List<PlaceholderExpansion> REGISTERED_EXPANSIONS = new ArrayList<>();
 
     /**
      * Parses a string containing PAPI placeholders into its true values.
@@ -29,10 +34,28 @@ public class PAPIHook {
      * Registers all internal expansions to the PlaceholderAPI instance.
      */
     public static void register(SinceDungeon plugin) {
-        new LivesExpansion(plugin).register();
-        new TopExpansion(plugin).register(); // Injects the Top Leaderboard placeholders
+        unregister();
+
+        LivesExpansion livesExpansion = new LivesExpansion(plugin);
+        TopExpansion topExpansion = new TopExpansion(plugin);
+
+        livesExpansion.register();
+        topExpansion.register();
+        REGISTERED_EXPANSIONS.add(livesExpansion);
+        REGISTERED_EXPANSIONS.add(topExpansion);
 
         plugin.getLogger().info(plugin.getLanguageManager().getString("admin.log.papi_registered", "Successfully registered PlaceholderAPI integration for SinceDungeon."));
+    }
+
+    public static void unregister() {
+        for (PlaceholderExpansion expansion : REGISTERED_EXPANSIONS) {
+            if (expansion instanceof TopExpansion topExpansion) {
+                topExpansion.cleanup();
+            }
+            expansion.unregister();
+        }
+        REGISTERED_EXPANSIONS.clear();
+        TopExpansion.cancelCacheTask();
     }
 
     /**

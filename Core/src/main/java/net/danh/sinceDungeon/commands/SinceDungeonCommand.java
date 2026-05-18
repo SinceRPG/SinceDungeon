@@ -11,6 +11,7 @@ import net.danh.sinceDungeon.api.SinceDungeonAPI;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
@@ -155,7 +156,7 @@ public class SinceDungeonCommand {
                                             String targetName = StringArgumentType.getString(ctx, "target");
 
                                             // Execute async to prevent blocking main thread for OfflinePlayer fetch
-                                            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                            SchedulerCompat.runAsync(plugin, () -> {
                                                 OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
                                                 plugin.getTopManager().resetPlayerLeaderboard(target.getUniqueId(), null);
 
@@ -184,7 +185,7 @@ public class SinceDungeonCommand {
                                                         return 0;
                                                     }
 
-                                                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                                    SchedulerCompat.runAsync(plugin, () -> {
                                                         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
                                                         plugin.getTopManager().resetPlayerLeaderboard(target.getUniqueId(), map);
 

@@ -9,6 +9,8 @@ import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.PlayerUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Handles all core gameplay events occurring within an active Dungeon instance.
@@ -54,6 +57,17 @@ public class DungeonListener implements Listener {
         this.worldPrefix = (prefix == null || prefix.trim().isEmpty()) ? "SinceDungeon_" : prefix;
     }
 
+    private boolean isDungeonWorld(World world) {
+        return world != null
+                && (world.getName().startsWith(worldPrefix) || plugin.getDungeonManager().hasGameInWorld(world.getName()));
+    }
+
+    private boolean isDungeonLocation(Location location) {
+        return location != null
+                && location.getWorld() != null
+                && (location.getWorld().getName().startsWith(worldPrefix) || plugin.getDungeonManager().getGameByLocation(location) != null);
+    }
+
     private void pass(Player p, Event e) {
         if (p == null) return;
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
@@ -72,38 +86,35 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityExplode(EntityExplodeEvent e) {
-        if (e.getLocation().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonLocation(e.getLocation())) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockExplode(BlockExplodeEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getBlock().getWorld())) {
             e.blockList().clear();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockIgnite(BlockIgniteEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getBlock().getWorld())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBlockBurn(BlockBurnEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getBlock().getWorld())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent e) {
-        if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
-            if (e.getEntity() instanceof FallingBlock) {
-                return;
-            }
+        if (isDungeonWorld(e.getBlock().getWorld())) {
             e.setCancelled(true);
         }
     }
@@ -124,14 +135,14 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHangingBreak(HangingBreakEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageDecor(EntityDamageEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Painting || e.getEntity() instanceof Minecart || e.getEntity() instanceof Boat || e.getEntity() instanceof LeashHitch) {
 
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
@@ -148,6 +159,7 @@ public class DungeonListener implements Listener {
             if (e.getRightClicked() instanceof ArmorStand || e.getRightClicked() instanceof ItemFrame || e.getRightClicked() instanceof Painting || e.getRightClicked() instanceof LeashHitch) {
                 e.setCancelled(true);
             }
+            pass(e.getPlayer(), e);
         }
     }
 
@@ -157,12 +169,13 @@ public class DungeonListener implements Listener {
             if (e.getRightClicked() instanceof ArmorStand) {
                 e.setCancelled(true);
             }
+            pass(e.getPlayer(), e);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onArmorStandManipulate(PlayerArmorStandManipulateEvent e) {
-        if (e.getPlayer().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getPlayer().getWorld())) {
             e.setCancelled(true);
         }
     }
@@ -192,21 +205,30 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTransform(EntityTransformEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSlimeSplit(SlimeSplitEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             e.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntitySpawn(EntitySpawnEvent e) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
+            if (e.getEntity() instanceof FallingBlock) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityPortal(EntityPortalEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             e.setCancelled(true);
         }
     }
@@ -220,7 +242,7 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(e.getEntity().getWorld())) {
             if (e.getEntity() instanceof ArmorStand || e.getEntity() instanceof ItemFrame || e.getEntity() instanceof Minecart) {
                 if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
                     if (MythicMobsHook.isMythicMob(e.getEntity())) return;
@@ -284,7 +306,7 @@ public class DungeonListener implements Listener {
         }
 
         // MVI FIX: Ghost Rescue Bypass conditionally verifies Multi-Verse implementation before overriding configurations.
-        if (p.getLocation().getWorld() != null && p.getLocation().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(p.getLocation().getWorld())) {
             World ghostWorld = p.getLocation().getWorld();
             String logMsg = plugin.getLanguageManager().getString("admin.log.rescuing_ghost", "Rescuing ghosted player <player> from deleted instance.");
             plugin.getLogger().warning(logMsg.replace("<player>", p.getName()));
@@ -312,7 +334,7 @@ public class DungeonListener implements Listener {
                     String msg = plugin.getLanguageManager().getString("admin.ghost_rescued", "&eThe system rescued you from a deleted or corrupted Dungeon instance.");
                     p.sendMessage(ColorUtils.parseWithPrefix(msg));
 
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    SchedulerCompat.runGlobalLater(plugin, () -> {
                         try {
                             if (finalAttachment != null) {
                                 p.removeAttachment(finalAttachment);
@@ -397,12 +419,11 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onKill(EntityDeathEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonLocation(e.getEntity().getLocation())) {
             if (!(e.getEntity() instanceof Player)) {
                 boolean clearDrops = plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
 
-                // [Performance Fix] O(1) Fast lookup instead of iterating activeGames
-                DungeonGame targetGame = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
+                DungeonGame targetGame = plugin.getDungeonManager().getGameByEntity(e.getEntity());
 
                 if (targetGame != null && targetGame.getTemplate() != null) {
                     clearDrops = targetGame.getTemplate().settings().clearMobDrops();
@@ -414,8 +435,7 @@ public class DungeonListener implements Listener {
                 }
             }
 
-            // [Performance Fix] O(1) Fast lookup
-            DungeonGame game = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
+            DungeonGame game = plugin.getDungeonManager().getGameByEntity(e.getEntity());
             if (game != null) {
                 game.onEvent(e);
             }
@@ -457,7 +477,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "cancelPendingRequest")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -474,7 +494,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "handlePlayerDisconnect")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -488,7 +508,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "PartyManager")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -502,7 +522,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "LivesManager")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
     }
 
@@ -510,7 +530,7 @@ public class DungeonListener implements Listener {
     public void onWorldChange(PlayerChangedWorldEvent e) {
         Player p = e.getPlayer();
 
-        if (p.getWorld().getName().startsWith(worldPrefix)) {
+        if (isDungeonWorld(p.getWorld())) {
             DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
             if (game == null || !p.getWorld().equals(game.getWorld())) {
 
@@ -542,7 +562,7 @@ public class DungeonListener implements Listener {
         Player p = e.getPlayer();
         DungeonGame game = plugin.getDungeonManager().getGame(p.getUniqueId());
         if (game != null && game.getWorld() != null) {
-            Location spawnLoc = game.getWorld().getSpawnLocation().add(0.5, 1, 0.5);
+            Location spawnLoc = game.getRespawnLocation();
             e.setRespawnLocation(spawnLoc);
         }
     }
@@ -587,12 +607,12 @@ public class DungeonListener implements Listener {
 
             final boolean finalOutOfLives = outOfLives;
 
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            SchedulerCompat.runGlobalLater(plugin, () -> {
                 if (!p.isOnline()) return;
                 DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
                 if (checkGame == null || !checkGame.isRunning()) return;
 
-                p.spigot().respawn();
+                PlayerUtils.respawn(p);
 
                 String deathAction = "RESPAWN";
                 if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
@@ -630,9 +650,8 @@ public class DungeonListener implements Listener {
     public void onTeleport(PlayerTeleportEvent e) {
         Player p = e.getPlayer();
 
-        if (e.getTo() != null && e.getTo().getWorld() != null && e.getTo().getWorld().getName().startsWith(worldPrefix)) {
-            // [Performance Fix] O(1) Fast lookup
-            DungeonGame targetGame = plugin.getDungeonManager().getGameByWorld(e.getTo().getWorld().getName());
+        if (e.getTo() != null && isDungeonLocation(e.getTo())) {
+            DungeonGame targetGame = plugin.getDungeonManager().getGameByLocation(e.getTo());
 
             if (targetGame == null || !targetGame.getParticipants().contains(p)) {
                 if (p.hasPermission("SinceDungeon.admin") && p.getGameMode() == GameMode.SPECTATOR) {
@@ -695,9 +714,8 @@ public class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityTarget(EntityTargetEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
-            // [Performance Fix] O(1) Fast lookup instead of massive loops on high frequency events
-            DungeonGame game = plugin.getDungeonManager().getGameByWorld(e.getEntity().getWorld().getName());
+        if (isDungeonLocation(e.getEntity().getLocation())) {
+            DungeonGame game = plugin.getDungeonManager().getGameByEntity(e.getEntity());
             if (game != null) {
                 game.onEvent(e);
             }

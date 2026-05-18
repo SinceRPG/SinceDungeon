@@ -3,6 +3,7 @@ package net.danh.sincedungeonpremium;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.api.SinceDungeonAPI;
+import net.danh.sinceDungeon.systems.instancing.DefaultInstanceProvider;
 import net.danh.sinceDungeon.systems.reward.DefaultRewardSystem;
 import net.danh.sincedungeonpremium.commands.PremiumCommand;
 import net.danh.sincedungeonpremium.hooks.PremiumMythicMobsHook;
@@ -13,19 +14,12 @@ import net.danh.sincedungeonpremium.managers.FileManager;
 import net.danh.sincedungeonpremium.managers.HologramManager;
 import net.danh.sincedungeonpremium.registry.PremiumActionRegistry;
 import net.danh.sincedungeonpremium.systems.RouletteRewardSystem;
+import net.danh.sincedungeonpremium.systems.instancing.SchematicInstanceProvider;
 import net.danh.sincedungeonpremium.utils.PremiumLanguageInjector;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.plugin.java.JavaPlugin;
 
-/**
- * Core Entry Point for SinceDungeon Premium Addon.
- * Responsibilities:
- * - Validates dependency presence (SinceDungeon Core).
- * - Automatically injects GUI translations into Core.
- * - Initializes Managers for Files, Holograms, and Roulette GUIs.
- * - Hooks into the core API to inject Premium actions, rewards, and conditions.
- */
 public final class SinceDungeonPremium extends JavaPlugin {
 
     private static SinceDungeonPremium instance;
@@ -72,6 +66,17 @@ public final class SinceDungeonPremium extends JavaPlugin {
         registerPremiumListeners();
         registerCommands();
 
+        // Check Instancing Mode
+        String instancingMode = fileManager.getConfig().getString("instancing.mode", "WORLD");
+        if (instancingMode.equalsIgnoreCase("SCHEMATIC")) {
+            if (getServer().getPluginManager().getPlugin("WorldEdit") != null || getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
+                SinceDungeonAPI.get().getInstanceManager().setProvider(new SchematicInstanceProvider(this));
+                getLogger().info(fileManager.getMessageRaw("log.schematic_provider_enabled"));
+            } else {
+                getLogger().warning(fileManager.getMessageRaw("log.worldedit_missing_provider"));
+            }
+        }
+
         SinceDungeonAPI.get().getRewardManager().setRewardSystem(new RouletteRewardSystem(this));
 
         getLogger().info(fileManager.getMessageRaw("log.plugin_enabled"));
@@ -84,11 +89,16 @@ public final class SinceDungeonPremium extends JavaPlugin {
             core.getRewardManager().setRewardSystem(new DefaultRewardSystem(core));
         }
         if (hologramManager != null) {
-            hologramManager.clearAllHolograms();
+            hologramManager.cleanup();
         }
+
+        restoreCoreSystems();
+        unregisterPremiumExtensions();
+
         if (fileManager != null) {
             getLogger().info(fileManager.getMessageRaw("log.plugin_disabled"));
         }
+        instance = null;
     }
 
     private void registerCommands() {
@@ -107,7 +117,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
     private void registerPremiumProcessors() {
         SinceDungeonAPI api = SinceDungeonAPI.get();
 
-        // 1. EXP LEVELS REWARD
         api.registerRewardProcessor("EXP_LEVELS", (player, value, displayName) -> {
             try {
                 int levels = Integer.parseInt(value.trim());
@@ -118,7 +127,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
             }
         });
 
-        // 2. EXP POINTS REWARD
         api.registerRewardProcessor("EXP_POINTS", (player, value, displayName) -> {
             try {
                 int points = Integer.parseInt(value.trim());
@@ -129,7 +137,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
             }
         });
 
-        // 3. FULL HEAL REWARD
         api.registerRewardProcessor("FULL_HEAL", (player, value, displayName) -> {
             AttributeInstance attr = player.getAttribute(Attribute.MAX_HEALTH);
             double maxHealth = attr != null ? attr.getValue() : 20.0;
@@ -139,7 +146,6 @@ public final class SinceDungeonPremium extends JavaPlugin {
             fileManager.sendMessage(player, "rewards.full_heal");
         });
 
-        // CONDITION: PERMISSION
         api.registerConditionProcessor("HAS_PERMISSION", (player, value) -> player.hasPermission(value.trim()));
     }
 
@@ -147,5 +153,53 @@ public final class SinceDungeonPremium extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AffixListener(this), this);
         getServer().getPluginManager().registerEvents(new WebhookListener(this), this);
         getServer().getPluginManager().registerEvents(new PremiumRewardListener(this), this);
+    }
+
+    private void restoreCoreSystems() {
+        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null || SinceDungeon.getPlugin() == null)
+            return;
+
+        SinceDungeon core = SinceDungeon.getPlugin();
+        if (!core.isEnabled()) return;
+
+        if (core.getDungeonManager() != null) {
+            core.getDungeonManager().stopAllGames();
+        }
+
+        if (core.getInstanceManager() != null && core.getInstanceManager().getProvider() instanceof SchematicInstanceProvider) {
+            core.getInstanceManager().setProvider(new DefaultInstanceProvider(core));
+        }
+
+        if (core.getRewardManager() != null && core.getRewardManager().getRewardSystem() instanceof RouletteRewardSystem) {
+            core.getRewardManager().setRewardSystem(new DefaultRewardSystem(core));
+        }
+    }
+
+    private void unregisterPremiumExtensions() {
+        if (getServer().getPluginManager().getPlugin("SinceDungeon") == null) return;
+        if (SinceDungeon.getPlugin() == null || !SinceDungeon.getPlugin().isEnabled()) return;
+
+        SinceDungeonAPI api;
+        try {
+            api = SinceDungeonAPI.get();
+        } catch (IllegalStateException ignored) {
+            return;
+        }
+
+        String[] actions = {
+                "BUFF", "ESCORT_NPC", "BRANCHING_PATH", "LEVER_PUZZLE",
+                "CHECKPOINT", "DAMAGE_ZONE", "JUMP_STAGE", "CINEMATIC_DIALOGUE",
+                "PROJECTILE_TRAP", "DEFEND_CORE", "GIVE_ITEM", "PLAY_SOUND", "NPC_INTERACTION"
+        };
+        for (String action : actions) {
+            api.unregisterCustomAction(action);
+        }
+
+        api.unregisterRewardProcessor("EXP_LEVELS");
+        api.unregisterRewardProcessor("EXP_POINTS");
+        api.unregisterRewardProcessor("FULL_HEAL");
+        api.unregisterRewardProcessor("MYTHIC_ITEM");
+        api.unregisterConditionProcessor("HAS_PERMISSION");
+        api.unregisterItemProvider("MYTHIC_ITEM");
     }
 }

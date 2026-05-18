@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.managers;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -25,7 +26,7 @@ public class PartyManager {
 
     public PartyManager(SinceDungeon plugin) {
         this.plugin = plugin;
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::purgeExpiredInvites, 1200L, 1200L);
+        SchedulerCompat.runAsyncTimer(plugin, this::purgeExpiredInvites, 1200L, 1200L);
     }
 
     public void forceCreateCrossServerParty(UUID leader, String[] members) {

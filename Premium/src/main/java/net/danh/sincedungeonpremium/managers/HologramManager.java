@@ -4,6 +4,7 @@ import eu.decentsoftware.holograms.api.DHAPI;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.TopManager.TopCategory;
 import net.danh.sinceDungeon.managers.TopManager.TopEntry;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -26,6 +27,7 @@ import java.util.List;
 public class HologramManager {
 
     private final SinceDungeonPremium plugin;
+    private SchedulerCompat.TaskHandle updateTask;
 
     public HologramManager(SinceDungeonPremium plugin) {
         this.plugin = plugin;
@@ -119,7 +121,19 @@ public class HologramManager {
 
         int updateInterval = plugin.getFileManager().getConfig().getInt("hologram-leaderboard.update-interval-seconds", 300) * 20;
 
-        Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::updateAllHolograms, 100L, updateInterval);
+        if (updateTask != null && !updateTask.isCancelled()) {
+            updateTask.cancel();
+        }
+
+        updateTask = SchedulerCompat.runGlobalTimer(plugin, this::updateAllHolograms, 100L, updateInterval);
+    }
+
+    public void cleanup() {
+        if (updateTask != null && !updateTask.isCancelled()) {
+            updateTask.cancel();
+        }
+        updateTask = null;
+        clearAllHolograms();
     }
 
     /**
@@ -127,27 +141,37 @@ public class HologramManager {
      * updated leaderboard records from the database, then dispatches rendering tasks.
      */
     public void updateAllHolograms() {
-        ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
-        if (holos == null) return;
+        SchedulerCompat.runGlobal(plugin, () -> {
+            ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
+            if (holos == null) return;
 
-        for (String key : holos.getKeys(false)) {
-            String mapId = holos.getString(key + ".map");
-            String categoryStr = holos.getString(key + ".category");
-            String locStr = holos.getString(key + ".location");
+            List<HologramSnapshot> snapshots = new ArrayList<>();
+            for (String key : holos.getKeys(false)) {
+                String mapId = holos.getString(key + ".map");
+                String categoryStr = holos.getString(key + ".category");
+                String locStr = holos.getString(key + ".location");
 
-            if (mapId == null || categoryStr == null || locStr == null) continue;
+                if (mapId == null || categoryStr == null || locStr == null) continue;
 
-            TopCategory category;
-            try {
-                category = TopCategory.valueOf(categoryStr.toUpperCase());
-            } catch (Exception e) {
-                continue;
+                TopCategory category;
+                try {
+                    category = TopCategory.valueOf(categoryStr.toUpperCase());
+                } catch (Exception e) {
+                    continue;
+                }
+
+                snapshots.add(new HologramSnapshot(key, mapId, category, locStr));
             }
 
-            List<TopEntry> topEntries = SinceDungeon.getPlugin().getTopManager().getTop(mapId, category, 10);
-
-            Bukkit.getScheduler().runTask(plugin, () -> renderHologram(key, mapId, category, locStr, topEntries));
-        }
+            SchedulerCompat.runAsync(plugin, () -> {
+                for (HologramSnapshot snapshot : snapshots) {
+                    List<TopEntry> topEntries = SinceDungeon.getPlugin().getTopManager().getTop(snapshot.mapId(), snapshot.category(), 10);
+                    Location location = parseLocation(snapshot.locStr());
+                    if (location == null) continue;
+                    SchedulerCompat.runAtLocation(plugin, location, () -> renderHologram(snapshot.holoId(), snapshot.mapId(), snapshot.category(), location, topEntries));
+                }
+            });
+        });
     }
 
     /**
@@ -157,15 +181,10 @@ public class HologramManager {
      * @param holoId     The unique identifier of the hologram.
      * @param mapId      The dungeon map ID being displayed.
      * @param category   The leaderboard category to fetch the localized name.
-     * @param locStr     The serialized location string.
+     * @param loc        The resolved hologram location.
      * @param topEntries The fetched list of top records.
      */
-    private void renderHologram(String holoId, String mapId, TopCategory category, String locStr, List<TopEntry> topEntries) {
-        String[] parts = locStr.split(",");
-        if (parts.length < 4) return;
-
-        Location loc = new Location(Bukkit.getWorld(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]));
-
+    private void renderHologram(String holoId, String mapId, TopCategory category, Location loc, List<TopEntry> topEntries) {
         List<String> lines = new ArrayList<>();
         lines.add(plugin.getFileManager().getMessageRaw("holograms.header"));
         lines.add(plugin.getFileManager().getMessageRaw("holograms.map_line").replace("<map>", mapId));
@@ -207,6 +226,19 @@ public class HologramManager {
         }
     }
 
+    private Location parseLocation(String locStr) {
+        String[] parts = locStr.split(",");
+        if (parts.length < 4) return null;
+
+        try {
+            if (Bukkit.getWorld(parts[0]) == null) return null;
+            return new Location(Bukkit.getWorld(parts[0]), Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]));
+        } catch (NumberFormatException exception) {
+            plugin.getLogger().warning(plugin.getFileManager().getMessageRaw("log.invalid_hologram_location").replace("<location>", locStr));
+            return null;
+        }
+    }
+
     public void clearAllHolograms() {
         if (!Bukkit.getPluginManager().isPluginEnabled("DecentHolograms")) return;
         ConfigurationSection holos = plugin.getFileManager().getConfig().getConfigurationSection("hologram-leaderboard.locations");
@@ -217,5 +249,8 @@ public class HologramManager {
                 }
             }
         }
+    }
+
+    private record HologramSnapshot(String holoId, String mapId, TopCategory category, String locStr) {
     }
 }

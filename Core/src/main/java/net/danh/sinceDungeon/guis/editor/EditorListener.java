@@ -3,9 +3,9 @@ package net.danh.sinceDungeon.guis.editor;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -107,11 +107,13 @@ public class EditorListener implements Listener {
             if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
                 e.setCancelled(true);
                 Location l = e.getClickedBlock().getLocation();
-                String msg = String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
+                String msg = "edit_start_location".equals(session.getPromptKey())
+                        ? String.format(Locale.US, "%d,%d,%d,%.1f,%.1f", l.getBlockX(), l.getBlockY(), l.getBlockZ(), p.getLocation().getYaw(), p.getLocation().getPitch())
+                        : String.format(Locale.US, "%d,%d,%d", l.getBlockX(), l.getBlockY(), l.getBlockZ());
 
                 activeInputs.remove(p.getUniqueId());
 
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                SchedulerCompat.runGlobal(plugin, () -> {
                     try {
                         session.completeInput(msg);
                     } catch (Exception ex) {
@@ -151,7 +153,9 @@ public class EditorListener implements Listener {
         if (msg.equalsIgnoreCase(hereKw)) {
             if (session.getInputType() == EditorSession.InputType.EDIT_LOCATION || session.getInputType() == EditorSession.InputType.EDIT_LOCATION_LIST) {
                 Location l = p.getLocation();
-                msg = String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
+                msg = "edit_start_location".equals(session.getPromptKey())
+                        ? String.format(Locale.US, "%.1f,%.1f,%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ(), l.getYaw(), l.getPitch())
+                        : String.format(Locale.US, "%.1f,%.1f,%.1f", l.getX(), l.getY(), l.getZ());
 
                 String m = plugin.getLanguageManager().getString("editor.chat.input_here");
                 String prefix = plugin.getLanguageManager().getString("prefix", "");
@@ -160,7 +164,7 @@ public class EditorListener implements Listener {
         }
 
         String finalValue = msg;
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        SchedulerCompat.runGlobal(plugin, () -> {
             EditorSession.InputType type = session.getInputType();
 
             if (type == EditorSession.InputType.CREATE_FILENAME) {
@@ -211,7 +215,7 @@ public class EditorListener implements Listener {
     }
 
     private void reopenSessionMenu(EditorSession session) {
-        Bukkit.getScheduler().runTask(plugin, session::reopenLastMenu);
+        SchedulerCompat.runGlobal(plugin, session::reopenLastMenu);
     }
 
     public void clearAll() {
