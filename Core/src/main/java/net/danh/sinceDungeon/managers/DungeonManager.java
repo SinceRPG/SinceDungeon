@@ -97,7 +97,7 @@ public class DungeonManager {
         if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
             String templateId = pendingCrossServerGames.remove(p.getUniqueId());
             SchedulerCompat.runGlobalLater(plugin, () -> {
-                joinDungeonLocal(p, templateId);
+                joinDungeonLocal(p, templateId, p.hasPermission("SinceDungeon.admin"));
             }, 40L);
         }
     }
@@ -105,7 +105,8 @@ public class DungeonManager {
     public void joinDungeon(Player p, String id) {
         if (!plugin.isStartupReady()) {
             String msg = plugin.getLanguageManager().getString("error.startup_not_ready", "&cDungeon data is still loading. Please try again in a moment.");
-        joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+            joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+        }
     }
 
     public void joinDungeon(Player p, String id, boolean allowPrivate) {
@@ -123,8 +124,7 @@ public class DungeonManager {
 
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
 
-            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())
-                    && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
+            if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId()) && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("party.not_leader")));
                 return;
             }
@@ -143,9 +143,7 @@ public class DungeonManager {
             String partyDataRaw = p.getUniqueId().toString() + "~" + p.getName();
             Set<UUID> members = plugin.getPartyManager().getProvider().getMembers(p.getUniqueId());
             if (members != null && !members.isEmpty()) {
-                partyDataRaw = members.stream()
-                        .map(uuid -> uuid.toString() + "~" + plugin.getPartyManager().getProvider().getMemberName(uuid))
-                        .reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
+                partyDataRaw = members.stream().map(uuid -> uuid.toString() + "~" + plugin.getPartyManager().getProvider().getMemberName(uuid)).reduce((a, b) -> a + "," + b).orElse(partyDataRaw);
             }
 
             plugin.getRedisManager().requestDungeonServer(id, p.getUniqueId(), partyDataRaw);
@@ -384,8 +382,7 @@ public class DungeonManager {
             futures.add(future);
         }
 
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(v -> bufferMap);
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(v -> bufferMap);
     }
 
     private void joinDungeonLocal(Player p, String id, boolean allowPrivate) {
@@ -515,13 +512,11 @@ public class DungeonManager {
                 if (parsedReqItem != null) {
                     for (Player participant : participants) {
                         if (!participant.getInventory().containsAtLeast(parsedReqItem, parsedReqItem.getAmount())) {
-                            String msg = plugin.getLanguageManager().getString("error.missing_required_item", "&cYou lack the required item to enter: <item>")
-                                    .replace("<item>", reqItemStr);
+                            String msg = plugin.getLanguageManager().getString("error.missing_required_item", "&cYou lack the required item to enter: <item>").replace("<item>", reqItemStr);
                             participant.sendMessage(ColorUtils.parseWithPrefix(msg));
 
                             if (!participant.equals(p)) {
-                                String leaderMsg = plugin.getLanguageManager().getString("error.party_member_missing_item", "&cMember <player> lacks the required entry item.")
-                                        .replace("<player>", participant.getName());
+                                String leaderMsg = plugin.getLanguageManager().getString("error.party_member_missing_item", "&cMember <player> lacks the required entry item.").replace("<player>", participant.getName());
                                 p.sendMessage(ColorUtils.parseWithPrefix(leaderMsg));
                             }
                             return;
@@ -537,9 +532,7 @@ public class DungeonManager {
                         LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(participant.getUniqueId());
                         int current = lives != null ? lives.getCurrentLives() : 0;
 
-                        String msg = plugin.getLanguageManager().getString("lives.not_enough")
-                                .replace("<required>", String.valueOf(reqLives))
-                                .replace("<current>", String.valueOf(current));
+                        String msg = plugin.getLanguageManager().getString("lives.not_enough").replace("<required>", String.valueOf(reqLives)).replace("<current>", String.valueOf(current));
 
                         participant.sendMessage(ColorUtils.parseWithPrefix(msg));
                         if (!participant.equals(p)) {
