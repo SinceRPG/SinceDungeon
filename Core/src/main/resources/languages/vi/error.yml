@@ -3,6 +3,7 @@ error:
   key_not_found: "&cBạn cần có Chìa khóa để mở cánh cửa này!"
   file_not_found: "&cKhông tìm thấy dữ liệu Dungeon: <file>"
   dungeon_maintenance: "&cDungeon này hiện đang được bảo trì."
+  dungeon_not_public: "&cDungeon này chưa được công khai."
   create_failed: "&cKhởi tạo Dungeon thất bại. Vui lòng báo cáo cho Quản trị viên."
   mythic_mob_not_found: "&cLỗi cấu hình: Không tìm thấy loại quái MythicMob <mob>."
   mob_spawn_fail: "&cGặp lỗi khi triệu hồi quái <mob>: <error>"

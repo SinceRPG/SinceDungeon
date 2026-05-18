@@ -104,12 +104,28 @@ public class DungeonManager {
         if (pendingCrossServerGames.containsKey(p.getUniqueId())) {
             String templateId = pendingCrossServerGames.remove(p.getUniqueId());
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                joinDungeonLocal(p, templateId);
+                joinDungeonLocal(p, templateId, true);
             }, 40L);
         }
     }
 
     public void joinDungeon(Player p, String id) {
+        joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+    }
+
+    public void joinDungeon(Player p, String id, boolean allowPrivate) {
+        DungeonTemplate template = templates.get(id);
+        if (template == null) {
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
+            return;
+        }
+
+        if (!template.isPublic() && !allowPrivate) {
+            String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
+            p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            return;
+        }
+
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
 
             if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId())
@@ -152,7 +168,7 @@ public class DungeonManager {
             return;
         }
 
-        joinDungeonLocal(p, id);
+        joinDungeonLocal(p, id, allowPrivate);
     }
 
     public void addTransitioning(UUID uuid) {
@@ -332,7 +348,7 @@ public class DungeonManager {
                 .thenApply(v -> bufferMap);
     }
 
-    private void joinDungeonLocal(Player p, String id) {
+    private void joinDungeonLocal(Player p, String id, boolean allowPrivate) {
         synchronized (joinLock) {
             Set<Player> participants = new HashSet<>();
 
@@ -418,6 +434,12 @@ public class DungeonManager {
             DungeonTemplate tmpl = templates.get(id);
             if (tmpl == null) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
+                return;
+            }
+
+            if (!tmpl.isPublic() && !allowPrivate) {
+                String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
+                p.sendMessage(ColorUtils.parseWithPrefix(msg));
                 return;
             }
 

@@ -3,6 +3,7 @@ error:
   key_not_found: "&cYou need a Key to open this door!"
   file_not_found: "&cDungeon file not found: <file>"
   dungeon_maintenance: "&cThis dungeon is currently under maintenance."
+  dungeon_not_public: "&cThis dungeon is not public yet."
   create_failed: "&cFailed to initialize dungeon. Please notify an admin."
   mythic_mob_not_found: "&cConfig Error: MythicMob <mob> not found."
   mob_spawn_fail: "&cFailed to spawn mob <mob>: <error>"
