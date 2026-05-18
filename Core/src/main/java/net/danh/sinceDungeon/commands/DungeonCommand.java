@@ -10,6 +10,7 @@ import net.danh.sinceDungeon.guis.top.TopGUI;
 import net.danh.sinceDungeon.managers.LivesManager;
 import net.danh.sinceDungeon.managers.TopManager;
 import net.danh.sinceDungeon.models.DungeonGame;
+import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import org.bukkit.Bukkit;
@@ -63,11 +64,12 @@ public class DungeonCommand {
                         .then(Commands.argument("map", StringArgumentType.string())
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
-                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic()) {
-                                            if (mapName.toLowerCase().contains(remaining)) {
-                                                builder.suggest(mapName);
-                                            }
+                                    boolean canSeePrivate = ctx.getSource().getSender().hasPermission("SinceDungeon.admin");
+                                    for (var entry : plugin.getDungeonManager().getTemplates().entrySet()) {
+                                        String mapName = entry.getKey();
+                                        DungeonTemplate template = entry.getValue();
+                                        if ((template.isPublic() || canSeePrivate) && mapName.toLowerCase().contains(remaining)) {
+                                            builder.suggest(mapName);
                                         }
                                     }
                                     return builder.buildFuture();
@@ -75,7 +77,13 @@ public class DungeonCommand {
                                 .executes(ctx -> {
                                     if (ctx.getSource().getExecutor() instanceof Player p) {
                                         String map = StringArgumentType.getString(ctx, "map");
-                                        if (plugin.getDungeonManager().getTemplates().containsKey(map)) {
+                                        DungeonTemplate template = plugin.getDungeonManager().getTemplates().get(map);
+                                        if (template != null) {
+                                            if (!template.isPublic() && !p.hasPermission("SinceDungeon.admin")) {
+                                                String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
+                                                p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                                                return 0;
+                                            }
                                             new TopGUI(plugin).openTopGUI(p, map, TopManager.TopCategory.FASTEST_TIME, 0);
                                         } else {
                                             p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", map)));
@@ -91,11 +99,12 @@ public class DungeonCommand {
                         .then(Commands.argument("name", StringArgumentType.string())
                                 .suggests((ctx, builder) -> {
                                     String remaining = builder.getRemainingLowerCase();
-                                    for (String mapName : plugin.getDungeonManager().getTemplates().keySet()) {
-                                        if (plugin.getDungeonManager().getTemplates().get(mapName).isPublic()) {
-                                            if (mapName.toLowerCase().contains(remaining)) {
-                                                builder.suggest(mapName);
-                                            }
+                                    boolean canSeePrivate = ctx.getSource().getSender().hasPermission("SinceDungeon.admin");
+                                    for (var entry : plugin.getDungeonManager().getTemplates().entrySet()) {
+                                        String mapName = entry.getKey();
+                                        DungeonTemplate template = entry.getValue();
+                                        if ((template.isPublic() || canSeePrivate) && mapName.toLowerCase().contains(remaining)) {
+                                            builder.suggest(mapName);
                                         }
                                     }
                                     return builder.buildFuture();
@@ -122,7 +131,7 @@ public class DungeonCommand {
                                             String targetName = StringArgumentType.getString(ctx, "target");
                                             Player target = Bukkit.getPlayerExact(targetName);
                                             if (target != null) {
-                                                plugin.getDungeonManager().joinDungeon(target, StringArgumentType.getString(ctx, "name"));
+                                                plugin.getDungeonManager().joinDungeon(target, StringArgumentType.getString(ctx, "name"), true);
                                             } else {
                                                 ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.join_dungeon.not_found_player")
                                                         .replace("<player>", targetName)));

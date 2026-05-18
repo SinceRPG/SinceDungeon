@@ -66,6 +66,10 @@ public class SinceDungeonAPI {
         plugin.getDungeonManager().joinDungeon(player, dungeonId);
     }
 
+    public void joinDungeon(Player player, String dungeonId, boolean allowPrivate) {
+        plugin.getDungeonManager().joinDungeon(player, dungeonId, allowPrivate);
+    }
+
     public void quitDungeon(Player player) {
         plugin.getDungeonManager().quitDungeon(player);
     }

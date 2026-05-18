@@ -105,6 +105,18 @@ public class DungeonManager {
     public void joinDungeon(Player p, String id) {
         if (!plugin.isStartupReady()) {
             String msg = plugin.getLanguageManager().getString("error.startup_not_ready", "&cDungeon data is still loading. Please try again in a moment.");
+        joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+    }
+
+    public void joinDungeon(Player p, String id, boolean allowPrivate) {
+        DungeonTemplate template = templates.get(id);
+        if (template == null) {
+            p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
+            return;
+        }
+
+        if (!template.isPublic() && !allowPrivate) {
+            String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
             p.sendMessage(ColorUtils.parseWithPrefix(msg));
             return;
         }
@@ -151,7 +163,7 @@ public class DungeonManager {
             return;
         }
 
-        joinDungeonLocal(p, id);
+        joinDungeonLocal(p, id, allowPrivate);
     }
 
     public void addTransitioning(UUID uuid) {
@@ -376,7 +388,7 @@ public class DungeonManager {
                 .thenApply(v -> bufferMap);
     }
 
-    private void joinDungeonLocal(Player p, String id) {
+    private void joinDungeonLocal(Player p, String id, boolean allowPrivate) {
         synchronized (joinLock) {
             Set<Player> participants = new HashSet<>();
 
@@ -462,6 +474,12 @@ public class DungeonManager {
             DungeonTemplate tmpl = templates.get(id);
             if (tmpl == null) {
                 p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("error.file_not_found").replace("<file>", id)));
+                return;
+            }
+
+            if (!tmpl.isPublic() && !allowPrivate) {
+                String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
+                p.sendMessage(ColorUtils.parseWithPrefix(msg));
                 return;
             }
 

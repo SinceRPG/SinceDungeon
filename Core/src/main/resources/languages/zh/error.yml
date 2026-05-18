@@ -3,6 +3,7 @@ error:
   key_not_found: "&c你需要一把钥匙才能打开这扇门！"
   file_not_found: "&c未找到副本文件: <file>"
   dungeon_maintenance: "&c此副本目前正在维护中。"
+  dungeon_not_public: "&c此副本尚未公开。"
   create_failed: "&c初始化副本失败。请通知管理员。"
   mythic_mob_not_found: "&c配置错误: 未找到 MythicMob <mob>。"
   mob_spawn_fail: "&c生成怪物 <mob> 失败: <error>"
