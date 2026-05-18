@@ -30,17 +30,23 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     private final List<Vector> locations;
     private final boolean scaleWithParty;
     private final String targetToKill;
+    private final BossSeal bossSeal;
 
     private final Map<UUID, Entity> spawnedMobs = new HashMap<>();
     private boolean hasTargetSpawned = false;
 
     public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty, String targetToKill) {
+        this(internalName, amount, level, locations, scaleWithParty, targetToKill, BossSeal.disabled());
+    }
+
+    public MythicMobWaveAction(String internalName, int amount, int level, List<Vector> locations, boolean scaleWithParty, String targetToKill, BossSeal bossSeal) {
         this.internalName = internalName;
         this.amount = amount;
         this.level = Math.max(1, level);
         this.locations = locations;
         this.scaleWithParty = scaleWithParty;
         this.targetToKill = (targetToKill != null && !targetToKill.trim().isEmpty()) ? targetToKill : "NONE";
+        this.bossSeal = bossSeal != null ? bossSeal : BossSeal.disabled();
     }
 
     @Override
@@ -53,6 +59,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
+        bossSeal.remove();
         spawnedMobs.clear();
     }
 
@@ -157,6 +164,7 @@ public class MythicMobWaveAction extends DungeonAction implements Tickable {
             this.completed = true;
             game.sendActionMessage(this, "complete", "action.mythic_wave_complete", "<mob>", mobName);
         } else {
+            bossSeal.apply(game);
             game.sendActionMessage(this, "init", "action.mythic_wave_start", "<amount>", String.valueOf(count), "<mob>", mobName);
         }
     }

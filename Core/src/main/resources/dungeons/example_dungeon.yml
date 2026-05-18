@@ -144,6 +144,13 @@ stages:
         level: 5
         locations:
           - "0,64,-50"
+        # Optional: close entrances while the boss is alive, then restore the original blocks.
+        seal:
+          enabled: false
+          material: "BARRIER"
+          regions:
+            - corner1: "-2,64,-35"
+              corner2: "2,67,-35"
         time_limit: 120
         time_penalty: 1
         start_message: "<dark_red><bold>THE LICH KING HAS AWAKENED!"
