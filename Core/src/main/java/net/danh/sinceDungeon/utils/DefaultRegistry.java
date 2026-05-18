@@ -295,6 +295,7 @@ public class DefaultRegistry {
         mmDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.mythic_wave.time_penalty", 1));
         mmDefaults.put("target_to_kill", plugin.getConfigFile().getString("action-defaults.mythic_wave.target_to_kill", "NONE"));
         mmDefaults.put("locations", new ArrayList<>(Collections.singletonList("0,0,0")));
+        mmDefaults.put("seal", defaultSealConfig());
         mmDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.mythic_wave.start_message"));
 
         manager.registerAction("MYTHIC_WAVE", map -> {
@@ -304,8 +305,9 @@ public class DefaultRegistry {
                     String mob = String.valueOf(map.getOrDefault("mob", mmDefaults.get("mob")));
                     boolean scaleWithParty = map.containsKey("scale_with_party") ? Boolean.parseBoolean(map.get("scale_with_party").toString()) : (boolean) mmDefaults.get("scale_with_party");
                     String targetToKill = String.valueOf(map.getOrDefault("target_to_kill", mmDefaults.get("target_to_kill")));
+                    BossSeal bossSeal = BossSeal.fromConfig(map.get("seal"));
 
-                    return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty, targetToKill);
+                    return new MythicMobWaveAction(mob, amount, level, v, scaleWithParty, targetToKill, bossSeal);
                 }, plugin.getLanguageManager().getString("editor.actions_name.mythic_wave", "Spawn Mythic Boss"), Material.WITHER_SKELETON_SKULL,
                 plugin.getLanguageManager().getString("editor.actions.mythic_wave", "MythicMobs Boss"),
                 mmDefaults, new HashMap<>());
@@ -418,6 +420,7 @@ public class DefaultRegistry {
         bossDefaults.put("enrage_attributes", new ArrayList<>(Arrays.asList("attack_damage:20.0", "movement_speed:0.5")));
         bossDefaults.put("custom_drops", new ArrayList<String>());
         bossDefaults.put("phases", new HashMap<String, Object>());
+        bossDefaults.put("seal", defaultSealConfig());
         bossDefaults.put("time_limit", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_limit", -1));
         bossDefaults.put("time_penalty", plugin.getConfigFile().getInt("action-defaults.boss_battle.time_penalty", 1));
         bossDefaults.put("start_message", plugin.getConfigFile().getStringList("action-defaults.boss_battle.start_message"));
@@ -456,7 +459,9 @@ public class DefaultRegistry {
                         phases = BossBattleAction.parsePhases(sec);
                     }
 
-                    return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, equipment, phases, enrageTime, enrageMessage, enrageAttrs, customDrops);
+                    BossSeal bossSeal = BossSeal.fromConfig(map.get("seal"));
+
+                    return new BossBattleAction(loc, mob, name, baseHealth, scale, color, style, attrs, equipment, phases, enrageTime, enrageMessage, enrageAttrs, customDrops, bossSeal);
                 }, plugin.getLanguageManager().getString("editor.actions_name.boss_battle", "Vanilla Boss Battle"), Material.WITHER_SKELETON_SKULL,
                 plugin.getLanguageManager().getString("editor.actions.boss_battle", "Spawn a Vanilla boss with Healthbar, scaling, and phases."),
                 bossDefaults, new HashMap<>());

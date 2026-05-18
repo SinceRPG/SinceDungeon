@@ -38,6 +38,10 @@ action-defaults:
     target_to_kill: "NONE"
     locations:
       - "0,0,0"
+    seal:
+      enabled: false
+      material: "BARRIER"
+      regions: [ ]
     start_message:
       - "&4A massive aura appears. The Boss has arrived!"
   loot_chest:
@@ -87,6 +91,10 @@ action-defaults:
   boss_battle:
     time_limit: -1
     time_penalty: 1
+    seal:
+      enabled: false
+      material: "BARRIER"
+      regions: [ ]
     start_message:
       - "&cThe Boss has appeared!"
 

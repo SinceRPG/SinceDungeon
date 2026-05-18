@@ -32,7 +32,6 @@ public class RewardSessionManager {
 
         cleanupTask = SchedulerCompat.runGlobalTimer(plugin, () -> {
             long now = System.currentTimeMillis();
-            RewardGUI gui = new RewardGUI(plugin);
 
             int expireSeconds = plugin.getConfigFile().getInt("reward.session-expire-seconds", 300);
             long expireMillis = expireSeconds * 1000L;

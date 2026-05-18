@@ -131,6 +131,23 @@ hologram-drops:
 roulette:
   enabled: true
   title: "&6&lReward Spin"
+  gui-size: 27
+  border-material: "BLACK_STAINED_GLASS_PANE"
+  pointer-material: "HOPPER"
+  top-pointer-slot: 4
+  bottom-pointer-slot: 22
+  spin-start-slot: 9
+  spin-end-slot: 17
+  reward-slot: 13
+  next-spin-delay-ticks: 40
+  animation:
+    frames: 60
+    slow-at-frame: 40
+    slower-at-frame: 50
+    slowest-at-frame: 55
+    slow-delay-ticks: 2
+    slower-delay-ticks: 4
+    slowest-delay-ticks: 8
 
 hologram-leaderboard:
   # Interval in seconds to pull data from DB and update displays

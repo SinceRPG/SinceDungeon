@@ -50,6 +50,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     private final String enrageMessage;
     private final List<String> enrageAttributes;
     private final List<String> customDrops;
+    private final BossSeal bossSeal;
     private final Set<Integer> executedPhases = new HashSet<>();
 
     private UUID bossId = null;
@@ -63,7 +64,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
                             double scaleHealthPerPlayer, String barColor, String barStyle,
                             List<String> baseAttributes, List<String> baseEquipment,
                             Map<Integer, PhaseData> phases, int enrageTime, String enrageMessage,
-                            List<String> enrageAttributes, List<String> customDrops) {
+                            List<String> enrageAttributes, List<String> customDrops, BossSeal bossSeal) {
         this.spawnLoc = spawnLoc;
         this.mobType = mobType;
         this.customName = customName;
@@ -78,6 +79,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         this.enrageMessage = enrageMessage;
         this.enrageAttributes = enrageAttributes;
         this.customDrops = customDrops;
+        this.bossSeal = bossSeal != null ? bossSeal : BossSeal.disabled();
     }
 
     public static Map<Integer, PhaseData> parsePhases(ConfigurationSection sec) {
@@ -147,6 +149,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
         this.spawnedEntities.add(this.bossId);
         this.activeEntities.add(boss); // OPTIMIZATION: Cache physical entity
         this.spawnTimeMillis = System.currentTimeMillis();
+        this.bossSeal.apply(game);
 
         double totalHealth = baseHealth + (scaleHealthPerPlayer * Math.max(0, game.getParticipants().size() - 1));
         AttributeInstance healthAttr = boss.getAttribute(Attribute.MAX_HEALTH);
@@ -252,6 +255,7 @@ public class BossBattleAction extends DungeonAction implements Tickable {
     @Override
     public void cleanup(DungeonGame game) {
         super.cleanup(game);
+        this.bossSeal.remove();
         if (this.bossBar != null) {
             this.bossBar.removeAll();
             this.bossBar = null;

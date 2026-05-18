@@ -8,6 +8,7 @@ import net.danh.sinceDungeon.guis.reward.RewardSessionManager;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sincedungeonpremium.SinceDungeonPremium;
 import net.danh.sincedungeonpremium.managers.RouletteManager;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 
@@ -19,6 +20,7 @@ public class RouletteRewardSystem implements RewardSystem {
 
     private final SinceDungeonPremium plugin;
     private RouletteManager rouletteManager;
+    private RewardGUI fallbackRewardGUI;
 
     public RouletteRewardSystem(SinceDungeonPremium plugin) {
         this.plugin = plugin;
@@ -28,6 +30,8 @@ public class RouletteRewardSystem implements RewardSystem {
     public void initialize() {
         RewardSessionManager.startCleanupTask(SinceDungeon.getPlugin());
         rouletteManager = new RouletteManager(plugin);
+        fallbackRewardGUI = new RewardGUI(SinceDungeon.getPlugin());
+        Bukkit.getPluginManager().registerEvents(fallbackRewardGUI, SinceDungeon.getPlugin());
     }
 
     @Override
@@ -35,6 +39,9 @@ public class RouletteRewardSystem implements RewardSystem {
         RewardSessionManager.clearAll();
         if (rouletteManager != null) {
             HandlerList.unregisterAll(rouletteManager);
+        }
+        if (fallbackRewardGUI != null) {
+            HandlerList.unregisterAll(fallbackRewardGUI);
         }
     }
 
@@ -46,7 +53,7 @@ public class RouletteRewardSystem implements RewardSystem {
             // Fallback to standard core logic if disabled but system is actively registered
             RewardSession session = new RewardSession(rewardAmount, template);
             RewardSessionManager.addSession(player, session);
-            new RewardGUI(SinceDungeon.getPlugin()).openRewardGUI(player, rewardAmount, template);
+            fallbackRewardGUI.openRewardGUI(player, rewardAmount, template);
             return;
         }
 
@@ -60,7 +67,7 @@ public class RouletteRewardSystem implements RewardSystem {
         RewardSession session = RewardSessionManager.getSession(player);
         if (session != null && session.getChestCount() > 0) {
             // Roulette forces a visual spin. For offline/abrupt claims, we fallback to the instant generic auto-claimer.
-            new RewardGUI(SinceDungeon.getPlugin()).forceClaimAll(player, session);
+            fallbackRewardGUI.forceClaimAll(player, session);
             RewardSessionManager.removeSession(player);
         }
     }

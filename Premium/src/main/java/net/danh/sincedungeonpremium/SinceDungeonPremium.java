@@ -84,6 +84,10 @@ public final class SinceDungeonPremium extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        SinceDungeon core = SinceDungeon.getPlugin();
+        if (core != null && core.isEnabled() && core.getRewardManager() != null) {
+            core.getRewardManager().setRewardSystem(new DefaultRewardSystem(core));
+        }
         if (hologramManager != null) {
             hologramManager.cleanup();
         }
