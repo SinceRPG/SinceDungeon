@@ -30,6 +30,7 @@ public class RewardSessionManager {
             cleanupTask.cancel();
         }
 
+        RewardGUI gui = new RewardGUI(plugin);
         cleanupTask = SchedulerCompat.runGlobalTimer(plugin, () -> {
             long now = System.currentTimeMillis();
 

@@ -101,7 +101,7 @@ public class DefaultRegistry {
     private static void registerDefaultProcessors(SinceDungeon plugin, DungeonManager manager) {
         manager.registerConditionProcessor("PAPI", PAPIHook::checkCondition);
 
-        manager.registerRewardProcessor("COMMAND", (p, val, displayName) -> SchedulerCompat.runGlobal(plugin, () -> {
+        manager.registerRewardProcessor("COMMAND", (p, val, displayName) -> Bukkit.getScheduler().runTask(plugin, () -> {
             String cmd = PAPIHook.setPlaceholders(p, val).replace("%player%", p.getName());
             if (cmd.startsWith("/")) {
                 cmd = cmd.substring(1);
@@ -493,5 +493,13 @@ public class DefaultRegistry {
             v.add(DungeonLoader.parseVector((String) obj));
         }
         return v;
+    }
+
+    private static Map<String, Object> defaultSealConfig() {
+        Map<String, Object> seal = new LinkedHashMap<>();
+        seal.put("enabled", false);
+        seal.put("material", "BARRIER");
+        seal.put("regions", new ArrayList<Map<String, String>>());
+        return seal;
     }
 }
