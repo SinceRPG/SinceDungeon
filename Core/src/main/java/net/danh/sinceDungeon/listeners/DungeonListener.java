@@ -101,6 +101,9 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent e) {
         if (e.getBlock().getWorld().getName().startsWith(worldPrefix)) {
+            if (e.getEntity() instanceof FallingBlock) {
+                return;
+            }
             e.setCancelled(true);
         }
     }
@@ -198,15 +201,6 @@ public class DungeonListener implements Listener {
     public void onSlimeSplit(SlimeSplitEvent e) {
         if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
             e.setCancelled(true);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onEntitySpawn(EntitySpawnEvent e) {
-        if (e.getEntity().getWorld().getName().startsWith(worldPrefix)) {
-            if (e.getEntity() instanceof FallingBlock) {
-                e.setCancelled(true);
-            }
         }
     }
 
