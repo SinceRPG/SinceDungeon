@@ -37,7 +37,7 @@ body:
     id: server_version
     attributes:
       label: Server Version
-      description: What is the exact version of your server? (e.g., git-Paper-196 (MC: 1.20.4))
+      description: "What is the exact version of your server? (e.g., git-Paper-196 (MC: 1.20.4))"
       placeholder: Run /version and paste the output here.
     validations:
       required: true
