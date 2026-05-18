@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Handles all core gameplay events occurring within an active Dungeon instance.
@@ -476,7 +477,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "cancelPendingRequest")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -493,7 +494,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "handlePlayerDisconnect")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -507,7 +508,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "PartyManager")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
 
         try {
@@ -521,7 +522,7 @@ public class DungeonListener implements Listener {
                     .replace("<task>", "LivesManager")
                     .replace("<error>", ex.getMessage());
             plugin.getLogger().severe(errorMsg);
-            ex.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, errorMsg, ex);
         }
     }
 

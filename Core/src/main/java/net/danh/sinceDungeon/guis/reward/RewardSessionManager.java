@@ -69,6 +69,7 @@ public class RewardSessionManager {
         if (cleanupTask != null && !cleanupTask.isCancelled()) {
             cleanupTask.cancel();
         }
+        cleanupTask = null;
     }
 
     public static Map<UUID, RewardSession> getSessions() {

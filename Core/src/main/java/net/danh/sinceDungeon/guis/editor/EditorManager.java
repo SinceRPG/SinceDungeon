@@ -41,7 +41,7 @@ public class EditorManager implements Listener {
                 String msg = plugin.getLanguageManager().getString("editor.chat.created");
                 if (msg != null) p.sendMessage(msg.replace("<file>", filename));
             } catch (Exception e) {
-                e.printStackTrace();
+                plugin.getLogger().warning("Failed to create dungeon editor file " + filename + ": " + e.getMessage());
             }
         }
 

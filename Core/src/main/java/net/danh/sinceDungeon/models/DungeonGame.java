@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class DungeonGame {
@@ -965,8 +966,7 @@ public class DungeonGame {
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().severe("Error processing DungeonGame stop routing: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Error processing DungeonGame stop routing: " + e.getMessage(), e);
         } finally {
             if (dungeonWorld != null) {
                 World w = dungeonWorld;

@@ -1,5 +1,7 @@
 package net.danh.sinceDungeon.utils;
 
+import net.danh.sinceDungeon.SinceDungeon;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -7,6 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.logging.Level;
 
 /**
  * Advanced operations targeting system I/O, World duplication, and recursive cleanup logic.
@@ -55,7 +58,7 @@ public class WorldUtils {
             });
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            SinceDungeon.getPlugin().getLogger().log(Level.WARNING, "Failed to copy world " + source.getName() + " to " + target.getName(), e);
             return false;
         }
     }

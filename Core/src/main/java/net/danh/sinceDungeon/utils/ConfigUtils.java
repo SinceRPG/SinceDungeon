@@ -39,7 +39,7 @@ public class ConfigUtils {
                 try {
                     file.createNewFile();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    plugin.getLogger().severe("Failed to create config file " + name + ": " + e.getMessage());
                 }
             }
         }
@@ -57,7 +57,14 @@ public class ConfigUtils {
 
         InputStream defaultStream = plugin.getResource(name);
         if (defaultStream == null) return;
-        YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultStream, StandardCharsets.UTF_8));
+        YamlConfiguration defaultConfig;
+        try (InputStream stream = defaultStream;
+             InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+            defaultConfig = YamlConfiguration.loadConfiguration(reader);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to read default config " + name + ": " + e.getMessage());
+            return;
+        }
         boolean changed = false;
 
         for (String key : defaultConfig.getKeys(true)) {
@@ -85,7 +92,7 @@ public class ConfigUtils {
         try {
             config.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().severe("Failed to save config file " + name + ": " + e.getMessage());
         }
     }
 

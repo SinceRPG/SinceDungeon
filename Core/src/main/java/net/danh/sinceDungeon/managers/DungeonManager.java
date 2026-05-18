@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 public class DungeonManager {
     private final SinceDungeon plugin;
@@ -301,7 +302,7 @@ public class DungeonManager {
         } catch (Exception e) {
             String logMsg = plugin.getLanguageManager().getString("admin.log.action_create_fail", "Failed to create action <type>: <error>");
             plugin.getLogger().warning(logMsg.replace("<type>", type).replace("<error>", e.getMessage()));
-            e.printStackTrace();
+            plugin.getLogger().log(Level.WARNING, logMsg.replace("<type>", type).replace("<error>", e.getMessage()), e);
             return null;
         }
     }
@@ -562,7 +563,7 @@ public class DungeonManager {
             } catch (Exception e) {
                 String logErr = plugin.getLanguageManager().getString("admin.log.lobby_error", "Error starting dungeon lobby for <player>");
                 plugin.getLogger().severe(logErr.replace("<player>", p.getName()));
-                e.printStackTrace();
+                plugin.getLogger().log(Level.SEVERE, logErr.replace("<player>", p.getName()), e);
                 for (Player participant : participants) {
                     activeGames.remove(participant.getUniqueId());
                 }
