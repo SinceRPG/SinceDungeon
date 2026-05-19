@@ -2,9 +2,6 @@
 layout: page
 title: Languages and Customization
 ---
-
-# Languages and Customization
-
 SinceDungeon ships with language folders for:
 
 - `en`

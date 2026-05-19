@@ -2,9 +2,6 @@
 layout: page
 title: Permissions
 ---
-
-# Permissions
-
 ## Admin Permission
 
 ```text

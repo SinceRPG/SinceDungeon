@@ -2,9 +2,6 @@
 layout: page
 title: Developer API
 ---
-
-# Developer API
-
 SinceDungeon exposes `SinceDungeonAPI` for third-party plugins.
 
 ```java

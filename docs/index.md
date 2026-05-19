@@ -2,9 +2,6 @@
 layout: home
 title: SinceDungeon Wiki
 ---
-
-# SinceDungeon Wiki
-
 SinceDungeon is a Paper 1.21 dungeon plugin for instanced, configurable dungeon runs. It provides template-world instancing, staged objectives, built-in party support, lives and cooldown systems, reward chests, leaderboards, PlaceholderAPI support, an in-game editor, and an extensible Java API.
 
 The project is split into two plugins:

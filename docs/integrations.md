@@ -2,9 +2,6 @@
 layout: page
 title: Integrations
 ---
-
-# Integrations
-
 ## PlaceholderAPI
 
 PlaceholderAPI is optional. If installed, SinceDungeon registers internal expansions and also uses PlaceholderAPI for conditions and command rewards.

@@ -2,9 +2,6 @@
 layout: page
 title: Lives and Cooldowns
 ---
-
-# Lives and Cooldowns
-
 SinceDungeon includes two progression gates:
 
 - **Lives** control entry, death penalties, revives, and regeneration.

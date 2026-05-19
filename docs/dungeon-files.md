@@ -2,9 +2,6 @@
 layout: page
 title: Dungeon Files
 ---
-
-# Dungeon Files
-
 Each dungeon is a YAML file:
 
 ```text

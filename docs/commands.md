@@ -2,9 +2,6 @@
 layout: page
 title: Commands
 ---
-
-# Commands
-
 Command roots are configurable in Core `config.yml`.
 
 Default roots:

@@ -2,9 +2,6 @@
 layout: page
 title: Configuration
 ---
-
-# Configuration
-
 SinceDungeon loads Core configuration from `config.yml`, plus setting files under `settings/`. Dungeon-specific files can override many gameplay settings per map.
 
 ## Cross-Server

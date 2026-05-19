@@ -2,9 +2,6 @@
 layout: page
 title: Troubleshooting
 ---
-
-# Troubleshooting
-
 ## Dungeon Does Not Appear in Tab Completion
 
 Check:

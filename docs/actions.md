@@ -2,9 +2,6 @@
 layout: page
 title: Actions
 ---
-
-# Actions
-
 Actions are stage objectives. Each action block must include a `type`.
 
 ```yaml

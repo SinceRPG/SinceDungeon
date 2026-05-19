@@ -2,9 +2,6 @@
 layout: page
 title: Folia and Schematic Instancing
 ---
-
-# Folia and Schematic Instancing
-
 Core's default `WORLD` instancing clones and loads full world folders at runtime. That is suitable for Paper, but Folia does not support Bukkit runtime world creation. For Folia, use Premium schematic shared-world mode.
 
 ## Recommended Folia Setup

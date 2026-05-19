@@ -2,9 +2,6 @@
 layout: page
 title: Leaderboards
 ---
-
-# Leaderboards
-
 SinceDungeon stores leaderboard data in the configured database and displays it through GUIs, PlaceholderAPI, and Premium holograms.
 
 ## Categories

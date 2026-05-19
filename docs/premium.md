@@ -2,9 +2,6 @@
 layout: page
 title: Premium Addon
 ---
-
-# Premium Addon
-
 SinceDungeon Premium Addon extends Core with advanced actions, roulette rewards, hologram drops, hologram leaderboards, affixes, webhooks, and MythicMobs item support.
 
 Premium plugin:

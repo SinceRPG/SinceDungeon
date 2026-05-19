@@ -2,9 +2,6 @@
 layout: page
 title: Getting Started
 ---
-
-# Getting Started
-
 ## Installation
 
 1. Build or download `SinceDungeon.jar`.

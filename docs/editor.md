@@ -2,9 +2,6 @@
 layout: page
 title: Editor
 ---
-
-# Editor
-
 SinceDungeon includes an in-game editor for admins.
 
 ```text

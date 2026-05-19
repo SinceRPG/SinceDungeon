@@ -2,9 +2,6 @@
 layout: page
 title: Rewards
 ---
-
-# Rewards
-
 Dungeon completion grants reward chests based on completion time. The default Core system opens a reward GUI; Premium can replace this with roulette-style spins.
 
 ## Reward Tiers
