@@ -88,7 +88,7 @@ admin:
     top_save_error: "[TopManager] Lỗi khi lưu dữ liệu lên CSDL."
     cooldown_load_error: "[CooldownManager] Lỗi khi tải dữ liệu hồi chiêu."
     holo_config_save_error: "Lỗi khi lưu hologram vào config!"
-    holo_plugin_missing: "Chưa cài đặt DecentHolograms. Vô hiệu hóa Bảng xếp hạng Hologram."
+    holo_plugin_missing: "Legacy message: native display holograms do not require DecentHolograms."
     webhook_fail: "Đẩy dữ liệu tới Discord Webhook thất bại với mã: <response>"
     party_chat_console: "[Kênh Tổ Đội - <id>] <msg>"
   warning:

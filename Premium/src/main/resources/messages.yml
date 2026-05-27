@@ -42,7 +42,7 @@ log:
   invalid_hologram_location: "Invalid hologram location in config: <location>"
 admin:
   reload: "&aPremium configuration and holograms reloaded successfully!"
-  holo_plugin_missing: "DecentHolograms is not installed. Holographic leaderboards are disabled."
+  holo_plugin_missing: "Legacy message: native display holograms do not require DecentHolograms."
   holo_config_save_error: "Failed to save hologram leaderboard config."
   holo_created: "&aHologram created and saved successfully!"
   holo_deleted: "&aHologram removed successfully!"

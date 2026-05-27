@@ -88,7 +88,7 @@ admin:
     top_save_error: "[TopManager] 保存排行榜数据失败。"
     cooldown_load_error: "[CooldownManager] 加载冷却时间失败。"
     holo_config_save_error: "将全息图保存到配置文件失败！"
-    holo_plugin_missing: "未安装 DecentHolograms。全息排行榜已禁用。"
+    holo_plugin_missing: "Legacy message: native display holograms do not require DecentHolograms."
     webhook_fail: "Discord 警告 HTTP: <response>"
     party_chat_console: "[队伍聊天 - <id>] <msg>"
   warning:
