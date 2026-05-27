@@ -1,4 +1,5 @@
 lives:
+  admin_reduce: "&aĐã giảm <amount> mạng của <player>. Hiện tại: <current>/<max>."
   party_member_not_enough: "&cThành viên <player> không đủ mạng sống. Hủy tiến trình vào Hầm ngục."
   player_not_found: "&cKhông tìm thấy người chơi hoặc đang ngoại tuyến."
   check_other: "&eMạng của <player>: &a<current>&7/&a<max> &7(Hồi <amount> mạng mỗi <time>s)."

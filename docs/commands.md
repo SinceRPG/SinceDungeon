@@ -8,7 +8,7 @@ Default roots:
 
 - `/dungeon`, aliases `/dg`, `/inst`
 - `/party`, aliases `/p`, `/pt`
-- `/sincedungeonpremium`, aliases `/sd`, `/sdungeon`
+- `/sincedungeon`, aliases `/sincedungeonpremium`, `/sd`, `/sdungeon`
 - Premium: `/sdp`, alias `/sdpremium`
 
 Tab completion respects dungeon visibility. Members only see `public: true` dungeons. Admins with `SinceDungeon.admin` see both public and private dungeons.
@@ -57,35 +57,36 @@ Requires `SinceDungeon.admin`.
 
 | Command | Description |
 | --- | --- |
-| `/sincedungeonpremium reload` | Reload plugin files. |
-| `/sincedungeonpremium stage insert <map_id> <position>` | Insert and shift dungeon stages. |
-| `/sincedungeonpremium top reset <map>` | Reset a map leaderboard. |
-| `/sincedungeonpremium top resetplayer <target>` | Reset a player's leaderboard entries across all maps. |
-| `/sincedungeonpremium top resetplayer <target> <map>` | Reset a player's leaderboard entries for one map. |
+| `/sincedungeon reload` | Reload plugin files. |
+| `/sincedungeon stage insert <map_id> <position>` | Insert and shift dungeon stages. |
+| `/sincedungeon top reset <map>` | Reset a map leaderboard. |
+| `/sincedungeon top resetplayer <target>` | Reset a player's leaderboard entries across all maps. |
+| `/sincedungeon top resetplayer <target> <map>` | Reset a player's leaderboard entries for one map. |
 
 ## Lives Admin Commands
 
 | Command | Description |
 | --- | --- |
-| `/sincedungeonpremium lives <target> add <amount>` | Add current lives. |
-| `/sincedungeonpremium lives <target> set <amount>` | Set current lives. |
-| `/sincedungeonpremium lives <target> addmax <amount>` | Add max lives. |
-| `/sincedungeonpremium lives <target> setregenamount <amount>` | Set custom regen amount. |
-| `/sincedungeonpremium lives <target> setregeninterval <seconds>` | Set custom regen interval. |
-| `/sincedungeonpremium lives <target> resetregen` | Reset custom regen settings. |
-| `/sincedungeonpremium lives <target> check` | Check lives. |
-| `/sincedungeonpremium givelifeitem <target> <amount>` | Give a Soul Crystal item. |
+| `/sincedungeon lives <target> add <amount> [-s]` | Add current lives. |
+| `/sincedungeon lives <target> reduce <amount> [-s]` | Reduce current lives. |
+| `/sincedungeon lives <target> set <amount> [-s]` | Set current lives. |
+| `/sincedungeon lives <target> addmax <amount> [-s]` | Add max lives. |
+| `/sincedungeon lives <target> setregenamount <amount> [-s]` | Set custom regen amount. |
+| `/sincedungeon lives <target> setregeninterval <seconds> [-s]` | Set custom regen interval. |
+| `/sincedungeon lives <target> resetregen [-s]` | Reset custom regen settings. |
+| `/sincedungeon lives <target> check [-s]` | Check lives. |
+| `/sincedungeon givelifeitem <target> <amount> [-s]` | Give a Soul Crystal item. |
 
 ## Cooldown Admin Commands
 
 | Command | Description |
 | --- | --- |
-| `/sincedungeonpremium cooldown check <target> <map>` | Check a player's cooldown. |
-| `/sincedungeonpremium cooldown reset <target> <map>` | Reset one dungeon cooldown. |
-| `/sincedungeonpremium cooldown resetall <target>` | Reset all cooldowns. |
-| `/sincedungeonpremium cooldown reduce <target> <seconds>` | Reduce all cooldowns. |
-| `/sincedungeonpremium givecooldownitem reset <target> <amount>` | Give reset tickets. |
-| `/sincedungeonpremium givecooldownitem reduce <target> <amount> <seconds>` | Give reduction tickets. |
+| `/sincedungeon cooldown check <target> <map>` | Check a player's cooldown. |
+| `/sincedungeon cooldown reset <target> <map>` | Reset one dungeon cooldown. |
+| `/sincedungeon cooldown resetall <target>` | Reset all cooldowns. |
+| `/sincedungeon cooldown reduce <target> <seconds>` | Reduce all cooldowns. |
+| `/sincedungeon givecooldownitem reset <target> <amount>` | Give reset tickets. |
+| `/sincedungeon givecooldownitem reduce <target> <amount> <seconds>` | Give reduction tickets. |
 
 ## Premium Commands
 

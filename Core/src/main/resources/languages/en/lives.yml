@@ -1,4 +1,5 @@
 lives:
+  admin_reduce: "&aSuccessfully reduced <player>'s lives by <amount>. Current: <current>/<max>."
   party_member_not_enough: "&cMember <player> does not have enough lives. Aborting Dungeon entry."
   player_not_found: "&cPlayer not found or offline."
   check_other: "&e<player>'s Lives: &a<current>&7/&a<max> &7(Regens <amount> life every <time>s)."

@@ -47,7 +47,7 @@ Soul Crystals can restore lives and are also used by `/dungeon revive`.
 Admin command:
 
 ```text
-/sincedungeonpremium givelifeitem <target> <amount>
+/sincedungeon givelifeitem <target> <amount> [-s]
 ```
 
 Configured item:
@@ -75,13 +75,14 @@ Requirements:
 ## Lives Admin Commands
 
 ```text
-/sincedungeonpremium lives <target> add <amount>
-/sincedungeonpremium lives <target> set <amount>
-/sincedungeonpremium lives <target> addmax <amount>
-/sincedungeonpremium lives <target> setregenamount <amount>
-/sincedungeonpremium lives <target> setregeninterval <seconds>
-/sincedungeonpremium lives <target> resetregen
-/sincedungeonpremium lives <target> check
+/sincedungeon lives <target> add <amount> [-s]
+/sincedungeon lives <target> reduce <amount> [-s]
+/sincedungeon lives <target> set <amount> [-s]
+/sincedungeon lives <target> addmax <amount> [-s]
+/sincedungeon lives <target> setregenamount <amount> [-s]
+/sincedungeon lives <target> setregeninterval <seconds> [-s]
+/sincedungeon lives <target> resetregen [-s]
+/sincedungeon lives <target> check [-s]
 ```
 
 ## Cooldowns
@@ -109,13 +110,13 @@ dungeon:
 Reset ticket:
 
 ```text
-/sincedungeonpremium givecooldownitem reset <target> <amount>
+/sincedungeon givecooldownitem reset <target> <amount>
 ```
 
 Reduction ticket:
 
 ```text
-/sincedungeonpremium givecooldownitem reduce <target> <amount> <seconds>
+/sincedungeon givecooldownitem reduce <target> <amount> <seconds>
 ```
 
 Configured items:
@@ -129,10 +130,10 @@ items:
 ## Cooldown Admin Commands
 
 ```text
-/sincedungeonpremium cooldown check <target> <map>
-/sincedungeonpremium cooldown reset <target> <map>
-/sincedungeonpremium cooldown resetall <target>
-/sincedungeonpremium cooldown reduce <target> <seconds>
+/sincedungeon cooldown check <target> <map>
+/sincedungeon cooldown reset <target> <map>
+/sincedungeon cooldown resetall <target>
+/sincedungeon cooldown reduce <target> <seconds>
 ```
 
 ## PlaceholderAPI

@@ -42,6 +42,7 @@ dungeon:
       - "/party"
       - "/p"
       - "/dungeon"
+      - "/sincedungeon"
       - "/sincedungeonpremium"
 ```
 

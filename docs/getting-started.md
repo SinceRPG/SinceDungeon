@@ -93,7 +93,7 @@ stages:
 Use:
 
 ```text
-/sincedungeonpremium reload
+/sincedungeon reload
 ```
 
 or the configured admin command and aliases. Premium also provides:

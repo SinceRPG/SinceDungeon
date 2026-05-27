@@ -83,8 +83,9 @@ commands:
   dungeon-aliases:
     - "dg"
     - "inst"
-  admin: "sincedungeonpremium"
+  admin: "sincedungeon"
   admin-aliases:
+    - "sincedungeonpremium"
     - "sd"
     - "sdungeon"
 

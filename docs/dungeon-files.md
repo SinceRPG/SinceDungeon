@@ -168,6 +168,6 @@ locations:
 Admins can insert a stage into an existing dungeon file and shift later stage numbers:
 
 ```text
-/sincedungeonpremium stage insert <map_id> <position>
+/sincedungeon stage insert <map_id> <position>
 /sdp stage insert <map_id> <position>
 ```

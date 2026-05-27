@@ -58,8 +58,8 @@ commands:
   party-aliases: ["p", "pt"]
   dungeon: "dungeon"
   dungeon-aliases: ["dg", "inst"]
-  admin: "sincedungeonpremium"
-  admin-aliases: ["sd", "sdungeon"]
+  admin: "sincedungeon"
+  admin-aliases: ["sincedungeonpremium", "sd", "sdungeon"]
 ```
 
 Premium's command is fixed as `/sdp`, with alias `/sdpremium`.
@@ -131,6 +131,7 @@ dungeon:
       - "/party"
       - "/p"
       - "/dungeon"
+      - "/sincedungeon"
       - "/sincedungeonpremium"
 ```
 

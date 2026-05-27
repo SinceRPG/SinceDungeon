@@ -102,7 +102,11 @@ Commands are configurable to avoid conflicts with other plugins.
 commands:
   party: "party"
   dungeon: "dungeon"
-  admin: "sincedungeonpremium"
+  admin: "sincedungeon"
+  admin-aliases:
+    - "sincedungeonpremium"
+    - "sd"
+    - "sdungeon"
 ```
 
 ## Generated Settings Files

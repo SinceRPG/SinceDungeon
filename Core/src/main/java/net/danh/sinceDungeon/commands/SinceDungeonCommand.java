@@ -2,6 +2,7 @@ package net.danh.sinceDungeon.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
@@ -29,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Handles the registration and execution of administrative /sincedungeonpremium commands.
+ * Handles the registration and execution of administrative /sincedungeon commands.
  * Natively supports the 'stage insert' command to manipulate YAML configurations safely.
  */
 public class SinceDungeonCommand {
@@ -215,16 +216,18 @@ public class SinceDungeonCommand {
                                             builder.suggest("5");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                                                plugin.getLivesManager().addLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_add").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
+                                        .executes(ctx -> executeLivesAdd(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesAdd(plugin, ctx)))
+                                ))
+                                .then(Commands.literal("reduce").then(Commands.argument("amount", IntegerArgumentType.integer(1))
+                                        .suggests((ctx, builder) -> {
+                                            builder.suggest("1");
+                                            builder.suggest("3");
+                                            builder.suggest("5");
+                                            return builder.buildFuture();
                                         })
+                                        .executes(ctx -> executeLivesReduce(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesReduce(plugin, ctx)))
                                 ))
                                 .then(Commands.literal("set").then(Commands.argument("amount", IntegerArgumentType.integer())
                                         .suggests((ctx, builder) -> {
@@ -233,16 +236,8 @@ public class SinceDungeonCommand {
                                             builder.suggest("5");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                                                plugin.getLivesManager().setLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesSet(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesSet(plugin, ctx)))
                                 ))
                                 .then(Commands.literal("addmax").then(Commands.argument("amount", IntegerArgumentType.integer())
                                         .suggests((ctx, builder) -> {
@@ -251,16 +246,8 @@ public class SinceDungeonCommand {
                                             builder.suggest("5");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                                                plugin.getLivesManager().addMaxLives(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_addmax").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesAddMax(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesAddMax(plugin, ctx)))
                                 ))
                                 .then(Commands.literal("setregenamount").then(Commands.argument("amount", IntegerArgumentType.integer())
                                         .suggests((ctx, builder) -> {
@@ -268,16 +255,8 @@ public class SinceDungeonCommand {
                                             builder.suggest("2");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                                                plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), amount);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set_regen_amount").replace("<amount>", String.valueOf(amount)).replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesSetRegenAmount(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesSetRegenAmount(plugin, ctx)))
                                 ))
                                 .then(Commands.literal("setregeninterval").then(Commands.argument("seconds", IntegerArgumentType.integer())
                                         .suggests((ctx, builder) -> {
@@ -286,48 +265,16 @@ public class SinceDungeonCommand {
                                             builder.suggest("7200");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
-                                                plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), seconds);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_set_regen_interval").replace("<amount>", String.valueOf(seconds)).replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesSetRegenInterval(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesSetRegenInterval(plugin, ctx)))
                                 ))
                                 .then(Commands.literal("resetregen")
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), -1);
-                                                plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), -1);
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_reset_regen").replace("<player>", target.getName())));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesResetRegen(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesResetRegen(plugin, ctx)))
                                 )
                                 .then(Commands.literal("check")
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                LivesManager.PlayerLives l = plugin.getLivesManager().getLives(target.getUniqueId());
-                                                int interval = l.getCustomRegenInterval() != -1 ? l.getCustomRegenInterval() : plugin.getConfigFile().getInt("lives.regen-interval-seconds", 3600);
-                                                int amt = l.getCustomRegenAmount() != -1 ? l.getCustomRegenAmount() : plugin.getConfigFile().getInt("lives.regen-amount", 1);
-
-                                                String msg = plugin.getLanguageManager().getString("lives.check_other")
-                                                        .replace("<player>", target.getName())
-                                                        .replace("<current>", String.valueOf(l.getCurrentLives()))
-                                                        .replace("<max>", String.valueOf(l.getMaxLives()))
-                                                        .replace("<amount>", String.valueOf(amt))
-                                                        .replace("<time>", String.valueOf(interval));
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(msg));
-                                            } else
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.player_not_found")));
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeLivesCheck(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeLivesCheck(plugin, ctx)))
                                 )
                         )
                 )
@@ -347,31 +294,8 @@ public class SinceDungeonCommand {
                                             builder.suggest("64");
                                             return builder.buildFuture();
                                         })
-                                        .executes(ctx -> {
-                                            Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
-                                            if (target != null) {
-                                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
-
-                                                NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
-                                                ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
-
-                                                ItemStack item = ItemBuilder.fromConfig(plugin, "items.life_crystal", "TOTEM_OF_UNDYING")
-                                                        .amount(amount)
-                                                        .applyConfig(cfg, "&a&lExtra Life (+<amount>)", "<amount>", String.valueOf(amount))
-                                                        .setTag(lifeKey, PersistentDataType.INTEGER, amount)
-                                                        .build();
-
-                                                target.getInventory().addItem(item);
-
-                                                target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.item_received").replace("<amount>", String.valueOf(amount))));
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.admin_gave_item")
-                                                        .replace("<amount>", String.valueOf(amount))
-                                                        .replace("<player>", target.getName())));
-                                            } else {
-                                                ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("admin.invalid_player")));
-                                            }
-                                            return 1;
-                                        })
+                                        .executes(ctx -> executeGiveLifeItem(plugin, ctx))
+                                        .then(Commands.literal("-s").executes(ctx -> executeGiveLifeItem(plugin, ctx)))
                                 )
                         )
                 )
@@ -612,5 +536,171 @@ public class SinceDungeonCommand {
                 .build();
 
         event.registrar().register(adminNode, "SinceDungeon Admin", aliases);
+    }
+
+    private static boolean isSilent(CommandContext<CommandSourceStack> ctx) {
+        return ctx.getInput().trim().endsWith(" -s");
+    }
+
+    private static void send(CommandContext<CommandSourceStack> ctx, String message) {
+        if (!isSilent(ctx)) {
+            ctx.getSource().getSender().sendMessage(ColorUtils.parseWithPrefix(message));
+        }
+    }
+
+    private static int executeLivesAdd(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        plugin.getLivesManager().addLives(target.getUniqueId(), amount);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_add")
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesReduce(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(target.getUniqueId());
+        if (lives == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int before = lives.getCurrentLives();
+        plugin.getLivesManager().removeLives(target.getUniqueId(), amount);
+        int reduced = before - lives.getCurrentLives();
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_reduce")
+                .replace("<amount>", String.valueOf(reduced))
+                .replace("<player>", target.getName())
+                .replace("<current>", String.valueOf(lives.getCurrentLives()))
+                .replace("<max>", String.valueOf(lives.getMaxLives())));
+        return 1;
+    }
+
+    private static int executeLivesSet(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        plugin.getLivesManager().setLives(target.getUniqueId(), amount);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_set")
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesAddMax(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        plugin.getLivesManager().addMaxLives(target.getUniqueId(), amount);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_addmax")
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesSetRegenAmount(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+        plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), amount);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_set_regen_amount")
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesSetRegenInterval(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int seconds = IntegerArgumentType.getInteger(ctx, "seconds");
+        plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), seconds);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_set_regen_interval")
+                .replace("<amount>", String.valueOf(seconds))
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesResetRegen(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        plugin.getLivesManager().setCustomRegenAmount(target.getUniqueId(), -1);
+        plugin.getLivesManager().setCustomRegenInterval(target.getUniqueId(), -1);
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_reset_regen")
+                .replace("<player>", target.getName()));
+        return 1;
+    }
+
+    private static int executeLivesCheck(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        LivesManager.PlayerLives lives = plugin.getLivesManager().getLives(target.getUniqueId());
+        if (lives == null) {
+            send(ctx, plugin.getLanguageManager().getString("lives.player_not_found"));
+            return 0;
+        }
+        int interval = lives.getCustomRegenInterval() != -1 ? lives.getCustomRegenInterval() : plugin.getConfigFile().getInt("lives.regen-interval-seconds", 3600);
+        int amount = lives.getCustomRegenAmount() != -1 ? lives.getCustomRegenAmount() : plugin.getConfigFile().getInt("lives.regen-amount", 1);
+        send(ctx, plugin.getLanguageManager().getString("lives.check_other")
+                .replace("<player>", target.getName())
+                .replace("<current>", String.valueOf(lives.getCurrentLives()))
+                .replace("<max>", String.valueOf(lives.getMaxLives()))
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<time>", String.valueOf(interval)));
+        return 1;
+    }
+
+    private static int executeGiveLifeItem(SinceDungeon plugin, CommandContext<CommandSourceStack> ctx) {
+        Player target = Bukkit.getPlayerExact(StringArgumentType.getString(ctx, "target"));
+        if (target == null) {
+            send(ctx, plugin.getLanguageManager().getString("admin.invalid_player"));
+            return 0;
+        }
+        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+
+        NamespacedKey lifeKey = new NamespacedKey(plugin, "life_amount");
+        ConfigurationSection cfg = plugin.getConfigFile().getSection("items.life_crystal");
+
+        ItemStack item = ItemBuilder.fromConfig(plugin, "items.life_crystal", "TOTEM_OF_UNDYING")
+                .amount(amount)
+                .applyConfig(cfg, "&a&lExtra Life (+<amount>)", "<amount>", String.valueOf(amount))
+                .setTag(lifeKey, PersistentDataType.INTEGER, amount)
+                .build();
+
+        target.getInventory().addItem(item);
+
+        if (!isSilent(ctx)) {
+            target.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.item_received").replace("<amount>", String.valueOf(amount))));
+        }
+        send(ctx, plugin.getLanguageManager().getString("lives.admin_gave_item")
+                .replace("<amount>", String.valueOf(amount))
+                .replace("<player>", target.getName()));
+        return 1;
     }
 }

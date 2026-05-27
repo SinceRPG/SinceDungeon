@@ -1,4 +1,5 @@
 lives:
+  admin_reduce: "&a成功将 <player> 的生命减少 <amount>。当前: <current>/<max>。"
   party_member_not_enough: "&c成员 <player> 没有足够的生命数。正在中止副本进入程序。"
   player_not_found: "&c未找到玩家或玩家已离线。"
   check_other: "&e<player> 的生命数: &a<current>&7/&a<max> &7(每 <time>秒 恢复 <amount> 条生命)。"

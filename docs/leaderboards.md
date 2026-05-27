@@ -36,9 +36,9 @@ Only public maps are suggested to players.
 ## Admin Reset Commands
 
 ```text
-/sincedungeonpremium top reset <map>
-/sincedungeonpremium top resetplayer <target>
-/sincedungeonpremium top resetplayer <target> <map>
+/sincedungeon top reset <map>
+/sincedungeon top resetplayer <target>
+/sincedungeon top resetplayer <target> <map>
 ```
 
 ## GUI Settings

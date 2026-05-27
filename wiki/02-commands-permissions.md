@@ -14,8 +14,9 @@ commands:
   dungeon-aliases:
     - "dg"
     - "inst"
-  admin: "sincedungeonpremium"
+  admin: "sincedungeon"
   admin-aliases:
+    - "sincedungeonpremium"
     - "sd"
     - "sdungeon"
 ```
@@ -48,31 +49,32 @@ Typical usage:
 
 ## Admin Commands
 
-The admin root command is configured by `commands.admin`.
+The default admin root command is `/sincedungeon` and can be changed with `commands.admin`.
 
 ```text
-/<admin> reload
-/<admin> stage insert <dungeon> <position>
-/<admin> top reset <dungeon>
-/<admin> top resetplayer <player>
-/<admin> top resetplayer <player> <dungeon>
-/<admin> lives <player> add <amount>
-/<admin> lives <player> set <amount>
-/<admin> lives <player> addmax <amount>
-/<admin> lives <player> setregenamount <amount>
-/<admin> lives <player> setregeninterval <seconds>
-/<admin> lives <player> resetregen
-/<admin> lives <player> check
-/<admin> givelifeitem <player> <amount>
-/<admin> cooldown check <player> <dungeon>
-/<admin> cooldown reset <player> <dungeon>
-/<admin> cooldown resetall <player>
-/<admin> cooldown reduce <player> <seconds>
-/<admin> givecooldownitem reset <player> <amount>
-/<admin> givecooldownitem reduce <player> <amount> <seconds>
+/sincedungeon reload
+/sincedungeon stage insert <dungeon> <position>
+/sincedungeon top reset <dungeon>
+/sincedungeon top resetplayer <player>
+/sincedungeon top resetplayer <player> <dungeon>
+/sincedungeon lives <player> add <amount> [-s]
+/sincedungeon lives <player> reduce <amount> [-s]
+/sincedungeon lives <player> set <amount> [-s]
+/sincedungeon lives <player> addmax <amount> [-s]
+/sincedungeon lives <player> setregenamount <amount> [-s]
+/sincedungeon lives <player> setregeninterval <seconds> [-s]
+/sincedungeon lives <player> resetregen [-s]
+/sincedungeon lives <player> check [-s]
+/sincedungeon givelifeitem <player> <amount> [-s]
+/sincedungeon cooldown check <player> <dungeon>
+/sincedungeon cooldown reset <player> <dungeon>
+/sincedungeon cooldown resetall <player>
+/sincedungeon cooldown reduce <player> <seconds>
+/sincedungeon givecooldownitem reset <player> <amount>
+/sincedungeon givecooldownitem reduce <player> <amount> <seconds>
 ```
 
-`/<admin> stage insert` shifts existing numeric stages down and creates a blank stage at the requested position.
+`/sincedungeon stage insert` shifts existing numeric stages down and creates a blank stage at the requested position.
 
 ## Premium Commands
 

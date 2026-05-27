@@ -121,7 +121,7 @@ into the assigned shared-world region.
 10. Add one or more actions to each stage.
 11. Use the Advanced YAML editor for fields that do not have a dedicated GUI button.
 12. Save the dungeon.
-13. Run `/<admin> reload` or `/sdp reload` if Premium config changed.
+13. Run `/sincedungeon reload` or `/sdp reload` if Premium config changed.
 14. Test with `/dungeon join <dungeon-id>`.
 
 ## Coordinate Rules
