@@ -251,13 +251,27 @@ public class DungeonGame {
             startCountdown();
         })).exceptionally(ex -> {
             SchedulerCompat.runGlobal(plugin, () -> {
-                broadcastMessage("error.create_failed");
+                Throwable root = rootCause(ex);
+                if (root instanceof UnsupportedOperationException && root.getMessage() != null && root.getMessage().contains("Folia")) {
+                    broadcastMessage("error.folia_world_mode_unsupported");
+                } else {
+                    broadcastMessage("error.create_failed");
+                }
                 String logFail = plugin.getLanguageManager().getString("admin.log.instance_create_fail", "Failed to create dungeon world: <error>");
-                plugin.getLogger().severe(logFail.replace("<error>", ex.getMessage()));
+                String error = root.getMessage() != null ? root.getMessage() : root.getClass().getSimpleName();
+                plugin.getLogger().severe(logFail.replace("<error>", error));
                 stop(true, DungeonEndEvent.EndReason.FORCE_STOPPED);
             });
             return null;
         });
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     private void startCountdown() {

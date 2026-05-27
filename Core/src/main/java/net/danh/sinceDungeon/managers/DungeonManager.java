@@ -106,8 +106,10 @@ public class DungeonManager {
     public void joinDungeon(Player p, String id) {
         if (!plugin.isStartupReady()) {
             String msg = plugin.getLanguageManager().getString("error.startup_not_ready", "&cDungeon data is still loading. Please try again in a moment.");
-            joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
+            p.sendMessage(ColorUtils.parseWithPrefix(msg));
+            return;
         }
+        joinDungeon(p, id, p.hasPermission("SinceDungeon.admin"));
     }
 
     public void joinDungeon(Player p, String id, boolean allowPrivate) {
@@ -550,7 +552,11 @@ public class DungeonManager {
             DungeonStartEvent startEvent = new DungeonStartEvent(p, tmpl, participants);
             Bukkit.getPluginManager().callEvent(startEvent);
 
-            if (startEvent.isCancelled() || participants.isEmpty()) return;
+            if (startEvent.isCancelled() || participants.isEmpty()) {
+                String msg = plugin.getLanguageManager().getString("error.start_cancelled", "&cDungeon entry was cancelled.");
+                p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                return;
+            }
 
             DungeonGame game = new DungeonGame(plugin, p, participants, tmpl);
 

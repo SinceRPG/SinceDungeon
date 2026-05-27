@@ -68,7 +68,7 @@ admin:
     world_unload_fail: "无法卸载世界: <world>"
     world_force_unloaded: "强制卸载副本世界: <world>"
     world_force_unload_fail: "严重错误: 在关闭服务器期间无法强制卸载世界 <world>！"
-    folia_world_mode_unsupported: "[Instancing] Folia 26.1.2 不支持 Bukkit 运行时创建世界。请使用已预加载的 shared-world provider。"
+    folia_world_mode_unsupported: "[Instancing] Folia does not support Bukkit runtime world creation. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
     folia_world_unload_skipped: "[Instancing] Folia 请求卸载世界 <world>；在 Folia 上只应使用服务器已加载的世界。"
     lobby_error: "为 <player> 启动副本大厅时出错"
     action_create_fail: "创建动作 <type> 失败: <error>"

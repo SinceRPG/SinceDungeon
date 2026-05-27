@@ -84,7 +84,7 @@ admin:
     template_load_error: "Error loading template <id>: <error>"
     top_fetch_error: "[TopManager] Failed to fetch clear count for player."
     top_save_error: "[TopManager] Failed to save database metrics."
-    folia_world_mode_unsupported: "[Instancing] Folia 26.1.2 does not support Bukkit runtime world creation. Use a preloaded shared-world provider."
+    folia_world_mode_unsupported: "[Instancing] Folia does not support Bukkit runtime world creation. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
     folia_world_unload_skipped: "[Instancing] Folia world unload was requested for <world>; only worlds loaded by the server should be used on Folia."
     cooldown_load_error: "[CooldownManager] Failed to load cooldowns."
     holo_config_save_error: "Failed to save hologram to config!"

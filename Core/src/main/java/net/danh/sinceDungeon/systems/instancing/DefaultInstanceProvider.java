@@ -45,6 +45,16 @@ public class DefaultInstanceProvider implements InstanceProvider {
     public CompletableFuture<World> createInstance(String templateName, String instanceId) {
         CompletableFuture<World> finalFuture = new CompletableFuture<>();
 
+        if (SchedulerCompat.isFolia()) {
+            String errorMsg = plugin.getLanguageManager().getString(
+                    "admin.log.folia_world_mode_unsupported",
+                    "[Instancing] Folia does not support Bukkit runtime world creation. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
+            );
+            plugin.getLogger().severe(errorMsg);
+            finalFuture.completeExceptionally(new UnsupportedOperationException(errorMsg));
+            return finalFuture;
+        }
+
         if (templateName == null || templateName.contains("/") || templateName.contains("\\") || templateName.contains(".")) {
             String errorMsg = plugin.getLanguageManager().getString("error.path_traversal", "Path Traversal attack detected in World Name: <world>");
             finalFuture.completeExceptionally(new IllegalArgumentException(errorMsg.replace("<world>", templateName)));

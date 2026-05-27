@@ -20,7 +20,7 @@ import java.util.function.Consumer;
  */
 public final class SchedulerCompat {
 
-    private static final boolean FOLIA = hasMethod(Bukkit.getServer().getClass(), "getGlobalRegionScheduler");
+    private static final boolean FOLIA = hasClass("io.papermc.paper.threadedregions.RegionizedServer");
 
     private SchedulerCompat() {
     }
@@ -242,13 +242,13 @@ public final class SchedulerCompat {
         throw new NoSuchMethodException(type.getName() + "." + name + "/" + parameterCount);
     }
 
-    private static boolean hasMethod(Class<?> type, String name) {
-        for (Method method : type.getMethods()) {
-            if (method.getName().equals(name)) {
-                return true;
-            }
+    private static boolean hasClass(String className) {
+        try {
+            Class.forName(className);
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
         }
-        return false;
     }
 
     private static long ticksToMillis(long ticks) {
