@@ -2,6 +2,7 @@
 layout: page
 title: Developer API
 ---
+
 SinceDungeon exposes `SinceDungeonAPI` for third-party plugins.
 
 ```java
@@ -21,7 +22,8 @@ DungeonGame game = api.getGame(player);
 Map<UUID, DungeonGame> games = api.getAllActiveGames();
 ```
 
-The two-argument `joinDungeon` follows normal visibility rules: private dungeons require the player to have `SinceDungeon.admin`. The three-argument overload can explicitly allow private dungeons for controlled integrations.
+The two-argument `joinDungeon` follows normal visibility rules: private dungeons require the player to have
+`SinceDungeon.admin`. The three-argument overload can explicitly allow private dungeons for controlled integrations.
 
 ## Templates
 
@@ -159,14 +161,14 @@ Reasons:
 
 ## Extension Interfaces
 
-| Interface | Purpose |
-| --- | --- |
-| `PartyProvider` | Replace the built-in party system. |
-| `InstanceProvider` | Replace default world instancing. |
-| `RewardSystem` | Replace reward distribution. |
-| `RewardProcessor` | Add reward types. |
-| `ConditionProcessor` | Add condition types. |
-| `CustomItemProvider` | Add item-data formats. |
+| Interface            | Purpose                            |
+|----------------------|------------------------------------|
+| `PartyProvider`      | Replace the built-in party system. |
+| `InstanceProvider`   | Replace default world instancing.  |
+| `RewardSystem`       | Replace reward distribution.       |
+| `RewardProcessor`    | Add reward types.                  |
+| `ConditionProcessor` | Add condition types.               |
+| `CustomItemProvider` | Add item-data formats.             |
 
 ## Version
 

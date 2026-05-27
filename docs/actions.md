@@ -2,6 +2,7 @@
 layout: page
 title: Actions
 ---
+
 Actions are stage objectives. Each action block must include a `type`.
 
 ```yaml
@@ -210,19 +211,19 @@ phases:
 
 Premium registers these additional action types:
 
-| Type | Purpose |
-| --- | --- |
-| `BUFF` | Applies a potion effect to all participants. |
-| `ESCORT_NPC` | Protect an NPC while it moves to a target. |
-| `BRANCHING_PATH` | Let players choose between two future stages. |
-| `LEVER_PUZZLE` | Requires levers to be activated in sequence. |
-| `CHECKPOINT` | Updates respawn/checkpoint location. |
-| `DAMAGE_ZONE` | Creates a damaging area hazard. |
-| `JUMP_STAGE` | Forces the run to continue at another stage. |
+| Type                 | Purpose                                       |
+|----------------------|-----------------------------------------------|
+| `BUFF`               | Applies a potion effect to all participants.  |
+| `ESCORT_NPC`         | Protect an NPC while it moves to a target.    |
+| `BRANCHING_PATH`     | Let players choose between two future stages. |
+| `LEVER_PUZZLE`       | Requires levers to be activated in sequence.  |
+| `CHECKPOINT`         | Updates respawn/checkpoint location.          |
+| `DAMAGE_ZONE`        | Creates a damaging area hazard.               |
+| `JUMP_STAGE`         | Forces the run to continue at another stage.  |
 | `CINEMATIC_DIALOGUE` | Plays timed title/chat/sound dialogue frames. |
-| `PROJECTILE_TRAP` | Fires projectiles repeatedly. |
-| `DEFEND_CORE` | Protect an entity for a duration. |
-| `GIVE_ITEM` | Gives a configured item to participants. |
-| `PLAY_SOUND` | Plays a sound for the party. |
+| `PROJECTILE_TRAP`    | Fires projectiles repeatedly.                 |
+| `DEFEND_CORE`        | Protect an entity for a duration.             |
+| `GIVE_ITEM`          | Gives a configured item to participants.      |
+| `PLAY_SOUND`         | Plays a sound for the party.                  |
 
 See [Premium Addon](premium.md) for full examples.

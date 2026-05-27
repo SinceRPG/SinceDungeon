@@ -156,15 +156,15 @@ public class WorldManager {
                 return;
             }
             if (Boolean.TRUE.equals(unloaded)) {
-            String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
-            plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
+                String logSuccess = plugin.getLanguageManager().getString("admin.log.world_unloaded", "Unloaded dungeon world: <world>");
+                plugin.getLogger().info(logSuccess.replace("<world>", world.getName()));
 
-            SchedulerCompat.runAsyncLater(plugin, () -> {
-                if (!WorldUtils.deleteWorld(folder)) {
-                    String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
-                    plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
-                }
-            }, deleteDelayTicks(plugin));
+                SchedulerCompat.runAsyncLater(plugin, () -> {
+                    if (!WorldUtils.deleteWorld(folder)) {
+                        String logWarn = plugin.getLanguageManager().getString("admin.log.world_delete_fail", "Failed to fully delete world folder: <world>. It may be locked by another process.");
+                        plugin.getLogger().warning(logWarn.replace("<world>", folder.getName()));
+                    }
+                }, deleteDelayTicks(plugin));
                 return;
             }
             scheduleUnloadRetry(plugin, world, folder, retries);

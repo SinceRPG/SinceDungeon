@@ -4,11 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider.Party;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
-import redis.clients.jedis.ConnectionPoolConfig;
-import redis.clients.jedis.DefaultJedisClientConfig;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisPubSub;
-import redis.clients.jedis.UnifiedJedis;
+import redis.clients.jedis.*;
 import redis.clients.jedis.providers.PooledConnectionProvider;
 
 import java.time.Duration;
@@ -25,10 +21,10 @@ public class RedisManager {
     private final SinceDungeon plugin;
     private final String channelName;
     private final String localServerName;
+    private final AtomicBoolean listening = new AtomicBoolean(false);
     private UnifiedJedis jedis;
     private JedisPubSub pubSub;
     private SchedulerCompat.TaskHandle listenerTask;
-    private final AtomicBoolean listening = new AtomicBoolean(false);
 
     public RedisManager(SinceDungeon plugin) {
         this.plugin = plugin;

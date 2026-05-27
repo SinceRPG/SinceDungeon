@@ -2,6 +2,7 @@
 layout: page
 title: Troubleshooting
 ---
+
 ## Dungeon Does Not Appear in Tab Completion
 
 Check:
@@ -14,7 +15,8 @@ Check:
 
 ## Member Cannot Join a Dungeon
 
-If the dungeon has `public: false`, this is expected. Private dungeons are blocked for regular members and are intended for admin testing or hidden content.
+If the dungeon has `public: false`, this is expected. Private dungeons are blocked for regular members and are intended
+for admin testing or hidden content.
 
 ## Dungeon Fails to Start
 
@@ -92,7 +94,8 @@ Check:
 
 ## Folia Dungeon Instances Fail to Create
 
-Folia cannot create or load Bukkit worlds at runtime. Use Premium `SCHEMATIC` mode with `instancing.schematic.shared-world.enabled: true`, and preload the configured shared world before the plugin starts.
+Folia cannot create or load Bukkit worlds at runtime. Use Premium `SCHEMATIC` mode with
+`instancing.schematic.shared-world.enabled: true`, and preload the configured shared world before the plugin starts.
 
 ## Schematic Dungeon Is Empty
 

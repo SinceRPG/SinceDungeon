@@ -2,7 +2,9 @@
 layout: page
 title: Folia and Schematic Instancing
 ---
-Core's default `WORLD` instancing clones and loads full world folders at runtime. That is suitable for Paper, but Folia does not support Bukkit runtime world creation. For Folia, use Premium schematic shared-world mode.
+
+Core's default `WORLD` instancing clones and loads full world folders at runtime. That is suitable for Paper, but Folia
+does not support Bukkit runtime world creation. For Folia, use Premium schematic shared-world mode.
 
 ## Recommended Folia Setup
 
@@ -59,7 +61,8 @@ ForgottenCrypt_Template.schematic
 
 ## Coordinate Offsets
 
-Dungeon YAML coordinates remain local to the schematic. The shared-world provider allocates an isolated region and Core offsets action locations into that region at runtime.
+Dungeon YAML coordinates remain local to the schematic. The shared-world provider allocates an isolated region and Core
+offsets action locations into that region at runtime.
 
 This applies to spawn locations, stage actions, chests, levers, doors, walls, zones, traps, NPCs, and checkpoints.
 
@@ -75,4 +78,5 @@ Full-world providers still unload and delete the generated dungeon world folder.
 
 ## Paper Setup
 
-Paper can use either `WORLD` full world folder clone mode or `SCHEMATIC` mode. For large servers, schematic shared-world mode avoids repeated world creation and reduces filesystem churn.
+Paper can use either `WORLD` full world folder clone mode or `SCHEMATIC` mode. For large servers, schematic shared-world
+mode avoids repeated world creation and reduces filesystem churn.

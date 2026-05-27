@@ -2,13 +2,15 @@
 layout: page
 title: Dungeon Files
 ---
+
 Each dungeon is a YAML file:
 
 ```text
 plugins/SinceDungeon/dungeons/<dungeon_id>.yml
 ```
 
-The filename without `.yml` is the dungeon ID used by commands, leaderboards, API calls, and Premium affix configuration.
+The filename without `.yml` is the dungeon ID used by commands, leaderboards, API calls, and Premium affix
+configuration.
 
 ## Top-Level Structure
 
@@ -16,10 +18,10 @@ The filename without `.yml` is the dungeon ID used by commands, leaderboards, AP
 template-world: "ForgottenCrypt_Template"
 public: true
 
-settings: {}
-conditions: {}
-rewards: {}
-stages: {}
+settings: { }
+conditions: { }
+rewards: { }
+stages: { }
 ```
 
 ## Template World
@@ -38,7 +40,8 @@ public: true
 
 Public dungeons appear in tab completion for player-facing commands such as `/dungeon join` and `/dungeon top`.
 
-When `public: false`, normal members cannot join the dungeon, even if they manually type the dungeon ID. Admins with `SinceDungeon.admin` can still see private dungeons in tab completion and can join them for testing.
+When `public: false`, normal members cannot join the dungeon, even if they manually type the dungeon ID. Admins with
+`SinceDungeon.admin` can still see private dungeons in tab completion and can join them for testing.
 
 ## Settings
 
@@ -135,11 +138,11 @@ stages:
         radius: 3.0
 ```
 
-| Key | Meaning |
-| --- | --- |
-| `chance` | Chance for the stage to appear. |
+| Key        | Meaning                                  |
+|------------|------------------------------------------|
+| `chance`   | Chance for the stage to appear.          |
 | `commands` | Console commands after stage completion. |
-| `actions` | Named action blocks. |
+| `actions`  | Named action blocks.                     |
 
 ## Coordinates
 

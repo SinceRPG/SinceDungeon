@@ -436,15 +436,15 @@ public class SchematicInstanceProvider implements InstanceProvider {
                 return;
             }
             if (Boolean.TRUE.equals(unloaded)) {
-            String logSuccess = plugin.getFileManager().getMessageRaw("log.world_unloaded").replace("<world>", world.getName());
-            plugin.getLogger().info(logSuccess);
+                String logSuccess = plugin.getFileManager().getMessageRaw("log.world_unloaded").replace("<world>", world.getName());
+                plugin.getLogger().info(logSuccess);
 
-            SchedulerCompat.runAsyncLater(plugin, () -> {
-                if (!WorldUtils.deleteWorld(folder)) {
-                    String logWarn = plugin.getFileManager().getMessageRaw("log.world_delete_fail").replace("<world>", folder.getName());
-                    plugin.getLogger().warning(logWarn);
-                }
-            }, deleteDelayTicks());
+                SchedulerCompat.runAsyncLater(plugin, () -> {
+                    if (!WorldUtils.deleteWorld(folder)) {
+                        String logWarn = plugin.getFileManager().getMessageRaw("log.world_delete_fail").replace("<world>", folder.getName());
+                        plugin.getLogger().warning(logWarn);
+                    }
+                }, deleteDelayTicks());
                 return;
             }
             scheduleUnloadRetry(world, folder, retries);

@@ -2,6 +2,7 @@
 layout: page
 title: Editor
 ---
+
 SinceDungeon includes an in-game editor for admins.
 
 ```text
@@ -63,7 +64,8 @@ action-defaults:
 
 ## Premium Editor Extensions
 
-When Premium is installed, it registers extra action types into the same action registry. They become available to the editor through the API registration layer.
+When Premium is installed, it registers extra action types into the same action registry. They become available to the
+editor through the API registration layer.
 
 Premium actions include:
 

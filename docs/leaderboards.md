@@ -2,16 +2,18 @@
 layout: page
 title: Leaderboards
 ---
-SinceDungeon stores leaderboard data in the configured database and displays it through GUIs, PlaceholderAPI, and Premium holograms.
+
+SinceDungeon stores leaderboard data in the configured database and displays it through GUIs, PlaceholderAPI, and
+Premium holograms.
 
 ## Categories
 
-| Category | Meaning |
-| --- | --- |
-| `FASTEST_TIME` | Fastest solo or credited player clear times. |
-| `PARTY_FASTEST_TIME` | Fastest party clear times. |
-| `MOST_KILLS` | Highest kill counts. |
-| `MOST_CLEARS` | Most dungeon clears. |
+| Category             | Meaning                                      |
+|----------------------|----------------------------------------------|
+| `FASTEST_TIME`       | Fastest solo or credited player clear times. |
+| `PARTY_FASTEST_TIME` | Fastest party clear times.                   |
+| `MOST_KILLS`         | Highest kill counts.                         |
+| `MOST_CLEARS`        | Most dungeon clears.                         |
 
 ## Top Award Mode
 

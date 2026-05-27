@@ -2,7 +2,9 @@
 layout: page
 title: Configuration
 ---
-SinceDungeon loads Core configuration from `config.yml`, plus setting files under `settings/`. Dungeon-specific files can override many gameplay settings per map.
+
+SinceDungeon loads Core configuration from `config.yml`, plus setting files under `settings/`. Dungeon-specific files
+can override many gameplay settings per map.
 
 ## Cross-Server
 
@@ -15,7 +17,8 @@ cross-server:
   return-server: "lobby"
 ```
 
-Cross-server mode is marked experimental in the default config. It uses proxy plugin messaging and Redis Pub/Sub so a lobby server can request a dungeon run on a dungeon node.
+Cross-server mode is marked experimental in the default config. It uses proxy plugin messaging and Redis Pub/Sub so a
+lobby server can request a dungeon run on a dungeon node.
 
 ## Redis
 
@@ -55,11 +58,11 @@ Core command labels can be changed:
 ```yaml
 commands:
   party: "party"
-  party-aliases: ["p", "pt"]
+  party-aliases: [ "p", "pt" ]
   dungeon: "dungeon"
-  dungeon-aliases: ["dg", "inst"]
+  dungeon-aliases: [ "dg", "inst" ]
   admin: "sincedungeon"
-  admin-aliases: ["sincedungeonpremium", "sd", "sdungeon"]
+  admin-aliases: [ "sincedungeonpremium", "sd", "sdungeon" ]
 ```
 
 Premium's command is fixed as `/sdp`, with alias `/sdpremium`.
@@ -108,14 +111,14 @@ dungeon:
 
 Important options:
 
-| Option | Meaning |
-| --- | --- |
-| `lobby-countdown` | Delay before an instance starts. |
-| `template-folder` | Folder containing template worlds. |
-| `world-prefix` | Prefix for generated dungeon instance worlds. |
-| `death-action` | Default death behavior. |
-| `out-of-lives-action` | Behavior when a player has no lives left. |
-| `top-awarded-to` | Whether all members or leader only receive top entries. |
+| Option                | Meaning                                                 |
+|-----------------------|---------------------------------------------------------|
+| `lobby-countdown`     | Delay before an instance starts.                        |
+| `template-folder`     | Folder containing template worlds.                      |
+| `world-prefix`        | Prefix for generated dungeon instance worlds.           |
+| `death-action`        | Default death behavior.                                 |
+| `out-of-lives-action` | Behavior when a player has no lives left.               |
+| `top-awarded-to`      | Whether all members or leader only receive top entries. |
 
 Gameplay restrictions:
 
@@ -157,7 +160,8 @@ Configurable built-in items:
 - `items.cooldown_reduce`
 - `items.life_crystal`
 
-Item options include material, name, lore, glowing, rarity, flags, custom model data, max stack size, sounds, and particles.
+Item options include material, name, lore, glowing, rarity, flags, custom model data, max stack size, sounds, and
+particles.
 
 ## Menus
 

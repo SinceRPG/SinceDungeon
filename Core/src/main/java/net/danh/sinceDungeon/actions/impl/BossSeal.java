@@ -65,6 +65,26 @@ public class BossSeal {
         return regions.isEmpty() ? disabled() : new BossSeal(true, material, regions);
     }
 
+    private static Region parseRegion(Object raw) {
+        Object corner1Obj = get(raw, "corner1");
+        Object corner2Obj = get(raw, "corner2");
+        if (corner1Obj == null || corner2Obj == null) return null;
+
+        Vector corner1 = DungeonLoader.parseVector(corner1Obj.toString());
+        Vector corner2 = DungeonLoader.parseVector(corner2Obj.toString());
+        return new Region(corner1, corner2);
+    }
+
+    private static Object get(Object raw, String key) {
+        if (raw instanceof ConfigurationSection section) {
+            return section.get(key);
+        }
+        if (raw instanceof Map<?, ?> map) {
+            return map.get(key);
+        }
+        return null;
+    }
+
     public void apply(DungeonGame game) {
         if (!enabled || applied || game.getWorld() == null) return;
 
@@ -99,26 +119,6 @@ public class BossSeal {
         }
         changedBlocks.clear();
         applied = false;
-    }
-
-    private static Region parseRegion(Object raw) {
-        Object corner1Obj = get(raw, "corner1");
-        Object corner2Obj = get(raw, "corner2");
-        if (corner1Obj == null || corner2Obj == null) return null;
-
-        Vector corner1 = DungeonLoader.parseVector(corner1Obj.toString());
-        Vector corner2 = DungeonLoader.parseVector(corner2Obj.toString());
-        return new Region(corner1, corner2);
-    }
-
-    private static Object get(Object raw, String key) {
-        if (raw instanceof ConfigurationSection section) {
-            return section.get(key);
-        }
-        if (raw instanceof Map<?, ?> map) {
-            return map.get(key);
-        }
-        return null;
     }
 
     private record Region(Vector corner1, Vector corner2) {

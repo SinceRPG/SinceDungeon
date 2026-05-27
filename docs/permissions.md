@@ -2,6 +2,7 @@
 layout: page
 title: Permissions
 ---
+
 ## Admin Permission
 
 ```text
@@ -21,7 +22,8 @@ This permission controls:
 
 ## Multiverse Inventory Bypass
 
-Core config includes bypass permissions that can be temporarily granted to prevent inventory clearing issues when a dungeon instance world is deleted while a player is inside it:
+Core config includes bypass permissions that can be temporarily granted to prevent inventory clearing issues when a
+dungeon instance world is deleted while a player is inside it:
 
 ```yaml
 settings:

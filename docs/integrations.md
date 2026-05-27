@@ -2,9 +2,11 @@
 layout: page
 title: Integrations
 ---
+
 ## PlaceholderAPI
 
-PlaceholderAPI is optional. If installed, SinceDungeon registers internal expansions and also uses PlaceholderAPI for conditions and command rewards.
+PlaceholderAPI is optional. If installed, SinceDungeon registers internal expansions and also uses PlaceholderAPI for
+conditions and command rewards.
 
 ### Lives and Cooldown Placeholders
 
@@ -16,14 +18,14 @@ sincedungeon
 
 Placeholders:
 
-| Placeholder | Output |
-| --- | --- |
-| `%sincedungeon_lives%` | Current lives. |
-| `%sincedungeon_max_lives%` | Max lives. |
-| `%sincedungeon_lives_regen_amount%` | Current regen amount. |
-| `%sincedungeon_lives_regen_interval%` | Current regen interval in seconds. |
-| `%sincedungeon_lives_time_to_regen%` | Time until next life. |
-| `%sincedungeon_cooldown_<map>%` | Remaining cooldown for a dungeon, or ready text. |
+| Placeholder                           | Output                                           |
+|---------------------------------------|--------------------------------------------------|
+| `%sincedungeon_lives%`                | Current lives.                                   |
+| `%sincedungeon_max_lives%`            | Max lives.                                       |
+| `%sincedungeon_lives_regen_amount%`   | Current regen amount.                            |
+| `%sincedungeon_lives_regen_interval%` | Current regen interval in seconds.               |
+| `%sincedungeon_lives_time_to_regen%`  | Time until next life.                            |
+| `%sincedungeon_cooldown_<map>%`       | Remaining cooldown for a dungeon, or ready text. |
 
 ### Top Placeholders
 

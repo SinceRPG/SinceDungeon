@@ -7,8 +7,8 @@
 name: Bug Report
 description: Report an issue or unexpected behavior in the plugin.
 title: "[BUG] <Provide a short summary of the issue>"
-labels: ["bug", "needs-triage"]
-assignees: []
+labels: [ "bug", "needs-triage" ]
+assignees: [ ]
 
 body:
   - type: markdown

@@ -2,6 +2,7 @@
 layout: page
 title: Languages and Customization
 ---
+
 SinceDungeon ships with language folders for:
 
 - `en`
@@ -33,7 +34,8 @@ languages/en/reward.yml
 languages/en/top.yml
 ```
 
-Premium injects additional language keys when it loads or reloads, so Premium messages can coexist with Core language files.
+Premium injects additional language keys when it loads or reloads, so Premium messages can coexist with Core language
+files.
 
 ## Text Formatting
 

@@ -2,7 +2,9 @@
 layout: page
 title: Rewards
 ---
-Dungeon completion grants reward chests based on completion time. The default Core system opens a reward GUI; Premium can replace this with roulette-style spins.
+
+Dungeon completion grants reward chests based on completion time. The default Core system opens a reward GUI; Premium
+can replace this with roulette-style spins.
 
 ## Reward Tiers
 
@@ -36,19 +38,20 @@ rewards:
         - "<gray>A bright reward."
 ```
 
-| Key | Meaning |
-| --- | --- |
-| `type` | Reward processor type. |
-| `value` | Raw reward value. |
+| Key      | Meaning                                     |
+|----------|---------------------------------------------|
+| `type`   | Reward processor type.                      |
+| `value`  | Raw reward value.                           |
 | `chance` | Weight/chance used during reward selection. |
-| `name` | Display name in reward UI/messages. |
-| `lore` | Optional reward lore. |
+| `name`   | Display name in reward UI/messages.         |
+| `lore`   | Optional reward lore.                       |
 
 ## Built-In Reward Types
 
 ### COMMAND
 
-Runs a console command. `%player%` is replaced with the receiving player name, and PlaceholderAPI placeholders are parsed if PlaceholderAPI is installed.
+Runs a console command. `%player%` is replaced with the receiving player name, and PlaceholderAPI placeholders are
+parsed if PlaceholderAPI is installed.
 
 ```yaml
 type: "COMMAND"

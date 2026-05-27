@@ -2,6 +2,7 @@
 layout: page
 title: Lives and Cooldowns
 ---
+
 SinceDungeon includes two progression gates:
 
 - **Lives** control entry, death penalties, revives, and regeneration.
@@ -123,8 +124,8 @@ Configured items:
 
 ```yaml
 items:
-  cooldown_reset: {}
-  cooldown_reduce: {}
+  cooldown_reset: { }
+  cooldown_reduce: { }
 ```
 
 ## Cooldown Admin Commands

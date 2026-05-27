@@ -7,8 +7,8 @@
 name: Feature Request
 description: Suggest an idea, new command, or enhancement for the plugin.
 title: "[FEATURE] <Short description of the requested feature>"
-labels: ["enhancement", "pending-review"]
-assignees: []
+labels: [ "enhancement", "pending-review" ]
+assignees: [ ]
 
 body:
   - type: markdown

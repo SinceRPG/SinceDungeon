@@ -2,6 +2,7 @@
 layout: page
 title: Getting Started
 ---
+
 ## Installation
 
 1. Build or download `SinceDungeon.jar`.
@@ -12,9 +13,11 @@ title: Getting Started
 6. Create dungeon files inside `plugins/SinceDungeon/dungeons/`.
 7. Start the server and run `/dungeon join <dungeon_id>`.
 
-For Premium features, also place `SinceDungeon-PremiumAddon.jar` in `plugins/`. Premium requires Core to be installed and enabled.
+For Premium features, also place `SinceDungeon-PremiumAddon.jar` in `plugins/`. Premium requires Core to be installed
+and enabled.
 
-On Folia, use Premium schematic shared-world mode. Core's default full-world cloning relies on runtime world creation, which Folia does not support.
+On Folia, use Premium schematic shared-world mode. Core's default full-world cloning relies on runtime world creation,
+which Folia does not support.
 
 ## Build From Source
 
@@ -39,7 +42,8 @@ Expected artifact names:
 
 - Create or copy a world folder for the dungeon template.
 - Set `template-world` in the dungeon file to that folder name.
-- Keep `public: true` if regular players should see and join it. Use `public: false` for private test dungeons; admins can still join them.
+- Keep `public: true` if regular players should see and join it. Use `public: false` for private test dungeons; admins
+  can still join them.
 - Add at least one stage with at least one action.
 - Add reward tiers and reward pool entries if completion should grant loot.
 - Test with an operator account first.
@@ -80,13 +84,13 @@ stages:
 
 ## File Locations
 
-| File or folder | Purpose |
-| --- | --- |
-| `plugins/SinceDungeon/config.yml` | Main merged Core configuration. |
-| `plugins/SinceDungeon/dungeons/` | Dungeon template YAML files. |
-| `plugins/SinceDungeon/languages/` | Language files. |
-| `plugins/SinceDungeon-PremiumAddon/config.yml` | Premium configuration. |
-| Template world folder | Source world copied for each instance. |
+| File or folder                                 | Purpose                                |
+|------------------------------------------------|----------------------------------------|
+| `plugins/SinceDungeon/config.yml`              | Main merged Core configuration.        |
+| `plugins/SinceDungeon/dungeons/`               | Dungeon template YAML files.           |
+| `plugins/SinceDungeon/languages/`              | Language files.                        |
+| `plugins/SinceDungeon-PremiumAddon/config.yml` | Premium configuration.                 |
+| Template world folder                          | Source world copied for each instance. |
 
 ## Reloading
 
@@ -102,4 +106,5 @@ or the configured admin command and aliases. Premium also provides:
 /sdp reload
 ```
 
-Server restart is still recommended after changing dependencies, template world folders, database backend, or cross-server settings.
+Server restart is still recommended after changing dependencies, template world folders, database backend, or
+cross-server settings.
