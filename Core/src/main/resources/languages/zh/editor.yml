@@ -136,6 +136,21 @@ editor:
     setting_deduct_lives_lore:
       - "&7当前: &f<val>"
       - "&e左键点击编辑"
+    setting_deduct_lives_leave: "&e离开副本扣除生命数"
+    setting_deduct_lives_leave_lore:
+      - "&7当前: &f<val>"
+      - "&70 表示关闭此惩罚。"
+      - "&e左键点击编辑"
+    setting_deduct_lives_fail: "&e副本失败扣除生命数"
+    setting_deduct_lives_fail_lore:
+      - "&7当前: &f<val>"
+      - "&70 表示关闭此惩罚。"
+      - "&e左键点击编辑"
+    setting_deduct_lives_clear: "&e完成副本扣除生命数"
+    setting_deduct_lives_clear_lore:
+      - "&7当前: &f<val>"
+      - "&70 表示关闭此惩罚。"
+      - "&e左键点击编辑"
     setting_keep_inv_lore:
       - "&7当前: <val>"
       - "&e左键点击切换"

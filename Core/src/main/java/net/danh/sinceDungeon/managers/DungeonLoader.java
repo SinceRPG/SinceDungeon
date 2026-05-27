@@ -47,6 +47,9 @@ public class DungeonLoader {
         boolean clearMobDrops = config.contains("settings.clear-mob-drops") ? config.getBoolean("settings.clear-mob-drops") : plugin.getConfigFile().getBoolean("dungeon.clear-mob-drops", true);
         int reqLives = config.getInt("settings.required-lives-to-join", 1);
         int deductLives = config.getInt("settings.lives-deducted-per-death", 1);
+        int deductLivesOnLeave = Math.max(0, config.getInt("settings.lives-deducted-on-leave", 0));
+        int deductLivesOnFail = Math.max(0, config.getInt("settings.lives-deducted-on-fail", 0));
+        int deductLivesOnClear = Math.max(0, config.getInt("settings.lives-deducted-on-clear", 0));
         boolean randomizeStages = config.contains("settings.randomize-stages") ? config.getBoolean("settings.randomize-stages") : plugin.getConfigFile().getBoolean("dungeon.gameplay.randomize-stages", false);
         int maxPlayers = config.getInt("settings.max-players", -1);
         int cooldownSeconds = config.getInt("settings.cooldown-seconds", 0);
@@ -62,6 +65,7 @@ public class DungeonLoader {
         DungeonTemplate.Settings settings = new DungeonTemplate.Settings(
                 keepInv, preventDrop, blockPearls, kickDelay, forceWeather,
                 saveStats, deathAction, clearMobDrops, reqLives, deductLives,
+                deductLivesOnLeave, deductLivesOnFail, deductLivesOnClear,
                 randomizeStages, maxPlayers, cooldownSeconds, cooldownOnLeave,
                 onStartCmds, onFinishCmds, onFirstFinishCmds, requiredItem,
                 consumeRequiredItem, startLocation

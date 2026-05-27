@@ -22,6 +22,10 @@ settings:
   required-lives-to-join: 1
   # Penalty upon death
   lives-deducted-per-death: 1
+  # Optional life penalties for dungeon outcomes. Set to 0 to disable.
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
   # Gameplay Rules
   keep-inventory-on-death: true
   prevent-item-dropping: true

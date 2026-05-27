@@ -136,6 +136,21 @@ editor:
     setting_deduct_lives_lore:
       - "&7Current: &f<val>"
       - "&eLeft Click to edit"
+    setting_deduct_lives_leave: "&eLives Deducted on Leave"
+    setting_deduct_lives_leave_lore:
+      - "&7Current: &f<val>"
+      - "&70 disables this penalty."
+      - "&eLeft Click to edit"
+    setting_deduct_lives_fail: "&eLives Deducted on Fail"
+    setting_deduct_lives_fail_lore:
+      - "&7Current: &f<val>"
+      - "&70 disables this penalty."
+      - "&eLeft Click to edit"
+    setting_deduct_lives_clear: "&eLives Deducted on Clear"
+    setting_deduct_lives_clear_lore:
+      - "&7Current: &f<val>"
+      - "&70 disables this penalty."
+      - "&eLeft Click to edit"
     setting_keep_inv_lore:
       - "&7Current: <val>"
       - "&eLeft Click to toggle"

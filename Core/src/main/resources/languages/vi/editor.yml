@@ -136,6 +136,21 @@ editor:
     setting_deduct_lives_lore:
       - "&7Hiện tại: &f<val>"
       - "&eChuột Trái: Chỉnh sửa"
+    setting_deduct_lives_leave: "&eMạng Bị Trừ Khi Rời Dungeon"
+    setting_deduct_lives_leave_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&70 = tắt mức phạt này."
+      - "&eChuột trái: Chỉnh sửa"
+    setting_deduct_lives_fail: "&eMạng Bị Trừ Khi Thất Bại"
+    setting_deduct_lives_fail_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&70 = tắt mức phạt này."
+      - "&eChuột trái: Chỉnh sửa"
+    setting_deduct_lives_clear: "&eMạng Bị Trừ Khi Hoàn Thành"
+    setting_deduct_lives_clear_lore:
+      - "&7Hiện tại: &f<val>"
+      - "&70 = tắt mức phạt này."
+      - "&eChuột trái: Chỉnh sửa"
     setting_keep_inv_lore:
       - "&7Hiện tại: <val>"
       - "&eChuột Trái: Bật/Tắt"

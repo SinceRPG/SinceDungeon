@@ -891,6 +891,10 @@ public class DungeonGame {
             applyCooldown(p);
         }
 
+        if (!isCleared && template != null) {
+            deductConfiguredLives(p, template.settings().livesDeductedOnLeave(), "lives.reason_leave");
+        }
+
         if (participants != null) participants.remove(p);
         plugin.getDungeonManager().removeGame(p.getUniqueId());
 
@@ -924,6 +928,8 @@ public class DungeonGame {
         if (kickTask != null && !kickTask.isCancelled()) kickTask.cancel();
 
         try {
+            deductConfiguredEndLives(reason);
+
             if (reason != DungeonEndEvent.EndReason.CLEARED && template != null && template.settings().cooldownOnLeave()) {
                 if (participants != null) {
                     for (Player p : participants) {
@@ -989,6 +995,47 @@ public class DungeonGame {
             } else {
                 aggressivelyCleanupMemory();
             }
+        }
+    }
+
+    private void deductConfiguredEndLives(DungeonEndEvent.EndReason reason) {
+        if (template == null || participants == null || participants.isEmpty()) return;
+
+        int amount = switch (reason) {
+            case CLEARED -> template.settings().livesDeductedOnClear();
+            case FAILED -> template.settings().livesDeductedOnFail();
+            case FORCE_STOPPED -> 0;
+        };
+
+        if (amount <= 0) return;
+
+        String reasonKey = switch (reason) {
+            case CLEARED -> "lives.reason_clear";
+            case FAILED -> "lives.reason_fail";
+            case FORCE_STOPPED -> "lives.reason_force_stop";
+        };
+
+        for (Player p : participants) {
+            deductConfiguredLives(p, amount, reasonKey);
+        }
+    }
+
+    private void deductConfiguredLives(Player p, int amount, String reasonKey) {
+        if (p == null || amount <= 0) return;
+
+        plugin.getLivesManager().removeLives(p.getUniqueId(), amount);
+        LivesManager.PlayerLives livesData = plugin.getLivesManager().getLives(p.getUniqueId());
+        int current = livesData != null ? livesData.getCurrentLives() : 0;
+        int max = livesData != null ? livesData.getMaxLives() : 0;
+
+        if (p.isOnline()) {
+            String reason = plugin.getLanguageManager().getString(reasonKey, reasonKey);
+            String msg = plugin.getLanguageManager().getString("lives.deducted_event", "&cYou lost <amount> life/lives because of <reason>. Remaining: <current>/<max>.");
+            p.sendMessage(ColorUtils.parseWithPrefix(msg
+                    .replace("<amount>", String.valueOf(amount))
+                    .replace("<reason>", reason)
+                    .replace("<current>", String.valueOf(current))
+                    .replace("<max>", String.valueOf(max))));
         }
     }
 

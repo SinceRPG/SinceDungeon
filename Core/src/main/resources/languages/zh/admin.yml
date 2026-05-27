@@ -68,7 +68,7 @@ admin:
     world_unload_fail: "无法卸载世界: <world>"
     world_force_unloaded: "强制卸载副本世界: <world>"
     world_force_unload_fail: "严重错误: 在关闭服务器期间无法强制卸载世界 <world>！"
-    folia_world_mode_unsupported: "[Instancing] Folia does not support Bukkit runtime world creation. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
+    folia_world_mode_unsupported: "[Instancing] Folia 不支持运行时创建 Bukkit 世界。请使用 Premium SCHEMATIC shared-world，并预先加载共享世界。"
     folia_world_unload_skipped: "[Instancing] Folia 请求卸载世界 <world>；在 Folia 上只应使用服务器已加载的世界。"
     lobby_error: "为 <player> 启动副本大厅时出错"
     action_create_fail: "创建动作 <type> 失败: <error>"
@@ -88,7 +88,7 @@ admin:
     top_save_error: "[TopManager] 保存排行榜数据失败。"
     cooldown_load_error: "[CooldownManager] 加载冷却时间失败。"
     holo_config_save_error: "将全息图保存到配置文件失败！"
-    holo_plugin_missing: "Legacy message: native display holograms do not require DecentHolograms."
+    holo_plugin_missing: "旧提示：原生 display entity 全息不需要 DecentHolograms。"
     webhook_fail: "Discord 警告 HTTP: <response>"
     party_chat_console: "[队伍聊天 - <id>] <msg>"
   warning:
