@@ -1,4 +1,4 @@
-name: SinceDungeon Core Dev Release
+name: SinceDungeon Core Releases
 
 on:
   push:
@@ -10,20 +10,19 @@ permissions:
   contents: write
 
 concurrency:
-  group: core-dev-release
-  cancel-in-progress: true
+  group: sincedungeon-core-release-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
-  DEVBUILD_TAG: latest-devbuild
 
 jobs:
-  release-core-devbuild:
-    name: Build Core and update latest devbuild
+  build_release:
+    name: Build & Publish Core Releases
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -35,93 +34,159 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      - name: Build Core only
+      - name: Build Core Plugin
         run: |
           chmod +x ./gradlew
           ./gradlew clean :Core:shadowJar
 
-      - name: Prepare release metadata
+      - name: Prepare Release Metadata
         id: meta
         shell: bash
         run: |
           set -euo pipefail
 
-          CORE_VERSION="$(./gradlew :Core:properties -q | awk -F': ' '/^version:/ { print $2; exit }')"
-          SHORT_SHA="$(git rev-parse --short HEAD)"
-          CORE_JAR="$(find build/libs -maxdepth 1 -type f -name 'SinceDungeon-*.jar' ! -name '*-original.jar' ! -name '*PremiumAddon*' | head -n 1)"
-
-          if [ -z "$CORE_JAR" ] || [ ! -f "$CORE_JAR" ]; then
-            echo "Core JAR was not found in build/libs." >&2
+          VERSION=$(./gradlew :Core:properties -q | awk -F': ' '/^version:/ { print $2; exit }')
+          if [ -z "$VERSION" ]; then
+            echo "Core Gradle project version could not be detected." >&2
             exit 1
           fi
 
-          ASSET_NAME="SinceDungeon-${CORE_VERSION}-dev-${SHORT_SHA}.jar"
-          cp "$CORE_JAR" "$ASSET_NAME"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION_TAG="v${VERSION}"
+          DEV_TAG="latest-devbuild"
 
-          if git rev-parse "$DEVBUILD_TAG" >/dev/null 2>&1; then
-            RANGE="$DEVBUILD_TAG..HEAD"
-          else
-            RANGE="$(git rev-list --max-parents=0 HEAD)..HEAD"
+          JAR_FILE=$(find build/libs -maxdepth 1 -type f -name "SinceDungeon-*.jar" ! -name "*-original.jar" ! -name "*PremiumAddon*" | sort | head -n 1)
+          if [ -z "$JAR_FILE" ] || [ ! -f "$JAR_FILE" ]; then
+            echo "No Core build jar found in build/libs." >&2
+            exit 1
           fi
 
-          {
-            echo "## SinceDungeon Core v${CORE_VERSION}"
-            echo
-            echo "- Dev build: \`${SHORT_SHA}\`"
-            echo "- Source commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
-            echo
-            echo "## Changes"
-            echo
-            if git log "$RANGE" --pretty=format:'- %s (%h)' -- . ':!Premium/**' | grep -q .; then
-              git log "$RANGE" --pretty=format:'- %s (%h)' -- . ':!Premium/**'
-              echo
-            else
-              echo "- No Core changes detected since the previous devbuild."
-            fi
-          } > release-notes.md
+          mkdir -p dist
+          RELEASE_JAR="dist/SinceDungeon-${VERSION}.jar"
+          DEV_JAR="dist/SinceDungeon-latest-devbuild.jar"
+          cp "$JAR_FILE" "$RELEASE_JAR"
+          cp "$JAR_FILE" "$DEV_JAR"
 
-          {
-            echo "core_version=$CORE_VERSION"
-            echo "short_sha=$SHORT_SHA"
-            echo "asset_name=$ASSET_NAME"
-          } >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$VERSION_TAG" >> "$GITHUB_OUTPUT"
+          echo "dev_tag=$DEV_TAG" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "release_jar=$RELEASE_JAR" >> "$GITHUB_OUTPUT"
+          echo "dev_jar=$DEV_JAR" >> "$GITHUB_OUTPUT"
 
-      - name: Update latest devbuild release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ASSET_NAME: ${{ steps.meta.outputs.asset_name }}
-          CORE_VERSION: ${{ steps.meta.outputs.core_version }}
-          SHORT_SHA: ${{ steps.meta.outputs.short_sha }}
+      - name: Generate Changelogs
+        id: changelog
         shell: bash
         run: |
           set -euo pipefail
 
-          git tag -f "$DEVBUILD_TAG" "$GITHUB_SHA"
-          git push origin "refs/tags/${DEVBUILD_TAG}" --force
+          VERSION_TAG="${{ steps.meta.outputs.version_tag }}"
+          VERSION="${{ steps.meta.outputs.version }}"
 
-          if gh release view "$DEVBUILD_TAG" >/dev/null 2>&1; then
-            gh release edit "$DEVBUILD_TAG" \
-              --title "SinceDungeon Core v${CORE_VERSION} latest devbuild" \
-              --notes-file release-notes.md \
-              --prerelease
-
-            while IFS= read -r asset; do
-              [ -z "$asset" ] && continue
-              gh release delete-asset "$DEVBUILD_TAG" "$asset" --yes
-            done < <(gh release view "$DEVBUILD_TAG" --json assets -q '.assets[].name' | grep '^SinceDungeon-.*\.jar$' || true)
-
-            gh release upload "$DEVBUILD_TAG" "$ASSET_NAME" --clobber
+          PREVIOUS_VERSION_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+(\.[0-9]+)*([-+][A-Za-z0-9._-]+)?$' | grep -v "^${VERSION_TAG}$" | head -n 1 || true)
+          if [ -n "$PREVIOUS_VERSION_TAG" ]; then
+            RANGE="${PREVIOUS_VERSION_TAG}..HEAD"
+            RANGE_TEXT="since ${PREVIOUS_VERSION_TAG}"
           else
-            gh release create "$DEVBUILD_TAG" "$ASSET_NAME" \
-              --title "SinceDungeon Core v${CORE_VERSION} latest devbuild" \
-              --notes-file release-notes.md \
-              --prerelease \
-              --target "$GITHUB_SHA"
+            RANGE="HEAD"
+            RANGE_TEXT="from repository history"
           fi
 
-      - name: Upload Core artifact
+          {
+            echo "## SinceDungeon Core ${VERSION}"
+            echo
+            echo "Built from commit \`${GITHUB_SHA}\`."
+            echo
+            echo "### Changes ${RANGE_TEXT}"
+            git log "$RANGE" --pretty=format:'- %s (%h)' --no-merges -- . ':!Premium/**' || true
+          } > version_changelog.md
+
+          if ! grep -q '^- ' version_changelog.md; then
+            echo "- No Core commit changelog was available for this build." >> version_changelog.md
+          fi
+
+          {
+            echo "## Latest SinceDungeon Core Dev Build"
+            echo
+            echo "- Version: \`${VERSION}\`"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Branch: \`${GITHUB_REF_NAME}\`"
+            echo "- Build: [#${GITHUB_RUN_NUMBER}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+            echo
+            echo "### Recent Core Changes"
+            git log -20 --pretty=format:'- %s (%h)' --no-merges -- . ':!Premium/**' || true
+          } > devbuild_changelog.md
+
+          if ! grep -q '^- ' devbuild_changelog.md; then
+            echo "- No Core commit changelog was available for this build." >> devbuild_changelog.md
+          fi
+
+          echo "version_body=version_changelog.md" >> "$GITHUB_OUTPUT"
+          echo "dev_body=devbuild_changelog.md" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Latest Dev Build Release
+        if: github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEV_TAG="${{ steps.meta.outputs.dev_tag }}"
+          DEV_JAR="${{ steps.meta.outputs.dev_jar }}"
+          DEV_BODY="${{ steps.changelog.outputs.dev_body }}"
+
+          git tag -f "$DEV_TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/${DEV_TAG}"
+
+          if gh release view "$DEV_TAG" >/dev/null 2>&1; then
+            gh release edit "$DEV_TAG" \
+              --title "Latest SinceDungeon Core Dev Build" \
+              --notes-file "$DEV_BODY" \
+              --prerelease \
+              --latest=true
+          else
+            gh release create "$DEV_TAG" \
+              --title "Latest SinceDungeon Core Dev Build" \
+              --notes-file "$DEV_BODY" \
+              --prerelease \
+              --latest=true
+          fi
+
+          gh release upload "$DEV_TAG" "$DEV_JAR" --clobber
+
+      - name: Publish Version Release
+        if: github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION_TAG="${{ steps.meta.outputs.version_tag }}"
+          RELEASE_JAR="${{ steps.meta.outputs.release_jar }}"
+          VERSION_BODY="${{ steps.changelog.outputs.version_body }}"
+
+          git tag -f "$VERSION_TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/${VERSION_TAG}"
+
+          if gh release view "$VERSION_TAG" >/dev/null 2>&1; then
+            gh release edit "$VERSION_TAG" \
+              --title "SinceDungeon Core ${{ steps.meta.outputs.version }}" \
+              --notes-file "$VERSION_BODY" \
+              --latest=false
+          else
+            gh release create "$VERSION_TAG" \
+              --title "SinceDungeon Core ${{ steps.meta.outputs.version }}" \
+              --notes-file "$VERSION_BODY" \
+              --latest=false
+          fi
+
+          gh release upload "$VERSION_TAG" "$RELEASE_JAR" --clobber
+
+      - name: Upload Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SinceDungeon-Core-${{ steps.meta.outputs.core_version }}-dev-${{ steps.meta.outputs.short_sha }}
-          path: ${{ steps.meta.outputs.asset_name }}
+          name: SinceDungeon-Core-${{ steps.meta.outputs.version }}-${{ steps.meta.outputs.short_sha }}
+          path: dist/*.jar
           retention-days: 14
