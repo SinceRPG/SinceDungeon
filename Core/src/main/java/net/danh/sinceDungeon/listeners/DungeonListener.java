@@ -9,11 +9,11 @@ import net.danh.sinceDungeon.managers.WorldManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.systems.party.DefaultPartyProvider;
 import net.danh.sinceDungeon.utils.ColorUtils;
-import net.danh.sinceDungeon.utils.PlayerUtils;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -30,8 +30,10 @@ import org.bukkit.permissions.PermissionAttachment;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -41,6 +43,7 @@ import java.util.logging.Level;
  */
 public class DungeonListener implements Listener {
     private final SinceDungeon plugin;
+    private final Map<UUID, PendingDeathAction> pendingDeathActions = new ConcurrentHashMap<>();
     private String worldPrefix;
 
     public DungeonListener(SinceDungeon plugin) {
@@ -460,6 +463,7 @@ public class DungeonListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         boolean debug = plugin.getConfigFile().getBoolean("settings.debug", false);
+        pendingDeathActions.remove(p.getUniqueId());
 
         if (debug) {
             String msg = plugin.getLanguageManager().getString("admin.debug.quit_triggered", "[Debug] PlayerQuitEvent triggered for <player>");
@@ -565,6 +569,39 @@ public class DungeonListener implements Listener {
             Location spawnLoc = game.getRespawnLocation();
             e.setRespawnLocation(spawnLoc);
         }
+
+        PendingDeathAction action = pendingDeathActions.remove(p.getUniqueId());
+        if (action == null) return;
+
+        SchedulerCompat.runGlobalLater(plugin, () -> {
+            if (!p.isOnline()) return;
+
+            DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
+            if (checkGame == null || !checkGame.isRunning()) return;
+
+            switch (action) {
+                case RESPAWN -> finishDungeonRespawn(p);
+                case SPECTATE -> {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.death_spectate")));
+                    p.setGameMode(GameMode.SPECTATOR);
+                    checkGame.checkWipeout();
+                }
+                case OUT_OF_LIVES_SPECTATE -> {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_spectate")));
+                    p.setGameMode(GameMode.SPECTATOR);
+                    checkGame.checkWipeout();
+                }
+                case FAIL -> checkGame.stop(true, DungeonEndEvent.EndReason.FAILED);
+                case OUT_OF_LIVES_FAIL -> {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
+                    checkGame.stop(true, DungeonEndEvent.EndReason.FAILED);
+                }
+                case OUT_OF_LIVES_KICK -> {
+                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
+                    checkGame.handlePlayerDisconnect(p, false);
+                }
+            }
+        }, 1L);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -605,45 +642,47 @@ public class DungeonListener implements Listener {
                 }
             }
 
-            final boolean finalOutOfLives = outOfLives;
-
-            SchedulerCompat.runGlobalLater(plugin, () -> {
-                if (!p.isOnline()) return;
-                DungeonGame checkGame = plugin.getDungeonManager().getGame(p.getUniqueId());
-                if (checkGame == null || !checkGame.isRunning()) return;
-
-                PlayerUtils.respawn(p);
-
-                String deathAction = "RESPAWN";
-                if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
-                    deathAction = game.getTemplate().settings().deathAction();
-                }
-
-                if (finalOutOfLives) {
-                    String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
-                    if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_spectate")));
-                        p.setGameMode(GameMode.SPECTATOR);
-                        game.checkWipeout();
-                    } else if (outOfLivesAction.equalsIgnoreCase("FAIL")) {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
-                        game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                    } else {
-                        p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("lives.out_of_lives_kick")));
-                        game.handlePlayerDisconnect(p, false);
-                    }
-                } else if (deathAction.equalsIgnoreCase("FAIL")) {
-                    game.stop(true, DungeonEndEvent.EndReason.FAILED);
-                } else if (deathAction.equalsIgnoreCase("SPECTATE")) {
-                    p.sendMessage(ColorUtils.parseWithPrefix(plugin.getLanguageManager().getString("game.death_spectate")));
-                    p.setGameMode(GameMode.SPECTATOR);
-                    game.checkWipeout();
-                } else {
-                    p.setHealth(p.getAttribute(Attribute.MAX_HEALTH).getValue());
-                    p.setFoodLevel(20);
-                }
-            }, 2L);
+            pendingDeathActions.put(p.getUniqueId(), resolvePendingDeathAction(game, outOfLives));
         }
+    }
+
+    private PendingDeathAction resolvePendingDeathAction(DungeonGame game, boolean outOfLives) {
+        if (outOfLives) {
+            String outOfLivesAction = plugin.getConfigFile().getString("dungeon.out-of-lives-action", "SPECTATE");
+            if (outOfLivesAction.equalsIgnoreCase("SPECTATE")) return PendingDeathAction.OUT_OF_LIVES_SPECTATE;
+            if (outOfLivesAction.equalsIgnoreCase("FAIL")) return PendingDeathAction.OUT_OF_LIVES_FAIL;
+            return PendingDeathAction.OUT_OF_LIVES_KICK;
+        }
+
+        String deathAction = "RESPAWN";
+        if (game.getTemplate() != null && game.getTemplate().settings().deathAction() != null) {
+            deathAction = game.getTemplate().settings().deathAction();
+        }
+
+        if (deathAction.equalsIgnoreCase("FAIL")) return PendingDeathAction.FAIL;
+        if (deathAction.equalsIgnoreCase("SPECTATE")) return PendingDeathAction.SPECTATE;
+        return PendingDeathAction.RESPAWN;
+    }
+
+    private void finishDungeonRespawn(Player p) {
+        AttributeInstance maxHealth = p.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealth != null) {
+            p.setHealth(maxHealth.getValue());
+        }
+        p.setFoodLevel(20);
+        p.setFireTicks(0);
+        p.setFallDistance(0);
+        p.setNoDamageTicks(40);
+        p.setGameMode(GameMode.SURVIVAL);
+    }
+
+    private enum PendingDeathAction {
+        RESPAWN,
+        SPECTATE,
+        FAIL,
+        OUT_OF_LIVES_SPECTATE,
+        OUT_OF_LIVES_FAIL,
+        OUT_OF_LIVES_KICK
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
