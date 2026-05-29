@@ -193,7 +193,11 @@ jobs:
 
             CORE_JAR=$(find build/libs -name "SinceDungeon-*.jar" ! -name "*-original.jar" ! -name "SinceDungeon-PremiumAddon-*.jar" | head -n 1)
             if [ -f "$CORE_JAR" ]; then
-              curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$CORE_JAR" "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
+              COMMIT_COUNT=$(git rev-list --count HEAD)
+              mkdir -p discord_upload
+              NEW_CORE_JAR="discord_upload/SinceDungeon-build-${COMMIT_COUNT}.jar"
+              cp "$CORE_JAR" "$NEW_CORE_JAR"
+              curl -X PATCH -F "payload_json=<core_success.json;type=application/json" -F "file=@$NEW_CORE_JAR" "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
             else
               curl -X PATCH -H "Content-Type: application/json" -d @core_success.json "${WEBHOOK_URL_FREE}/messages/${CORE_MSG_ID}?thread_id=${THREAD_ID_FREE}"
             fi
@@ -226,7 +230,11 @@ jobs:
 
             PREMIUM_JAR=$(find build/libs -name "SinceDungeon-PremiumAddon-*.jar" ! -name "*-original.jar" | head -n 1)
             if [ -f "$PREMIUM_JAR" ]; then
-              curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$PREMIUM_JAR" "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
+              COMMIT_COUNT=$(git rev-list --count HEAD)
+              mkdir -p discord_upload
+              NEW_PREMIUM_JAR="discord_upload/SinceDungeon-PremiumAddon-build-${COMMIT_COUNT}.jar"
+              cp "$PREMIUM_JAR" "$NEW_PREMIUM_JAR"
+              curl -X PATCH -F "payload_json=<prem_success.json;type=application/json" -F "file=@$NEW_PREMIUM_JAR" "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
             else
               curl -X PATCH -H "Content-Type: application/json" -d @prem_success.json "${WEBHOOK_URL_PREMIUM}/messages/${PREM_MSG_ID}?thread_id=${THREAD_ID_PREMIUM}"
             fi

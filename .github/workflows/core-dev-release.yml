@@ -118,6 +118,14 @@ jobs:
           git push -f origin "refs/tags/${DEV_TAG}"
 
           if gh release view "$DEV_TAG" >/dev/null 2>&1; then
+            # Delete old JAR assets to prevent clutter since the filenames are now unique
+            OLD_ASSETS=$(gh release view "$DEV_TAG" --json assets --jq '.assets[].name')
+            for asset in $OLD_ASSETS; do
+              if [[ "$asset" == SinceDungeon-*.jar ]]; then
+                gh release delete-asset "$DEV_TAG" "$asset" -y || true
+              fi
+            done
+
             gh release edit "$DEV_TAG" \
               --title "Latest SinceDungeon Core Dev Build" \
               --notes-file "$DEV_BODY" \
