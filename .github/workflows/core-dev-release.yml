@@ -1,0 +1,127 @@
+name: SinceDungeon Core Dev Release
+
+on:
+  push:
+    branches:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: core-dev-release
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+  DEVBUILD_TAG: latest-devbuild
+
+jobs:
+  release-core-devbuild:
+    name: Build Core and update latest devbuild
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Build Core only
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean :Core:shadowJar
+
+      - name: Prepare release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CORE_VERSION="$(./gradlew :Core:properties -q | awk -F': ' '/^version:/ { print $2; exit }')"
+          SHORT_SHA="$(git rev-parse --short HEAD)"
+          CORE_JAR="$(find build/libs -maxdepth 1 -type f -name 'SinceDungeon-*.jar' ! -name '*-original.jar' ! -name '*PremiumAddon*' | head -n 1)"
+
+          if [ -z "$CORE_JAR" ] || [ ! -f "$CORE_JAR" ]; then
+            echo "Core JAR was not found in build/libs." >&2
+            exit 1
+          fi
+
+          ASSET_NAME="SinceDungeon-${CORE_VERSION}-dev-${SHORT_SHA}.jar"
+          cp "$CORE_JAR" "$ASSET_NAME"
+
+          if git rev-parse "$DEVBUILD_TAG" >/dev/null 2>&1; then
+            RANGE="$DEVBUILD_TAG..HEAD"
+          else
+            RANGE="$(git rev-list --max-parents=0 HEAD)..HEAD"
+          fi
+
+          {
+            echo "## SinceDungeon Core v${CORE_VERSION}"
+            echo
+            echo "- Dev build: \`${SHORT_SHA}\`"
+            echo "- Source commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+            echo
+            echo "## Changes"
+            echo
+            if git log "$RANGE" --pretty=format:'- %s (%h)' -- . ':!Premium/**' | grep -q .; then
+              git log "$RANGE" --pretty=format:'- %s (%h)' -- . ':!Premium/**'
+              echo
+            else
+              echo "- No Core changes detected since the previous devbuild."
+            fi
+          } > release-notes.md
+
+          {
+            echo "core_version=$CORE_VERSION"
+            echo "short_sha=$SHORT_SHA"
+            echo "asset_name=$ASSET_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update latest devbuild release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET_NAME: ${{ steps.meta.outputs.asset_name }}
+          CORE_VERSION: ${{ steps.meta.outputs.core_version }}
+          SHORT_SHA: ${{ steps.meta.outputs.short_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git tag -f "$DEVBUILD_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/${DEVBUILD_TAG}" --force
+
+          if gh release view "$DEVBUILD_TAG" >/dev/null 2>&1; then
+            gh release edit "$DEVBUILD_TAG" \
+              --title "SinceDungeon Core v${CORE_VERSION} latest devbuild" \
+              --notes-file release-notes.md \
+              --prerelease
+
+            while IFS= read -r asset; do
+              [ -z "$asset" ] && continue
+              gh release delete-asset "$DEVBUILD_TAG" "$asset" --yes
+            done < <(gh release view "$DEVBUILD_TAG" --json assets -q '.assets[].name' | grep '^SinceDungeon-.*\.jar$' || true)
+
+            gh release upload "$DEVBUILD_TAG" "$ASSET_NAME" --clobber
+          else
+            gh release create "$DEVBUILD_TAG" "$ASSET_NAME" \
+              --title "SinceDungeon Core v${CORE_VERSION} latest devbuild" \
+              --notes-file release-notes.md \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi
+
+      - name: Upload Core artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SinceDungeon-Core-${{ steps.meta.outputs.core_version }}-dev-${{ steps.meta.outputs.short_sha }}
+          path: ${{ steps.meta.outputs.asset_name }}
+          retention-days: 14
