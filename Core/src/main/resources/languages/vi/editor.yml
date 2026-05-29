@@ -576,6 +576,7 @@ editor:
     saved: "&aLưu cấu trúc Dungeon thành công!"
     created: "&aKhởi tạo file cấu hình mới: <file>"
     template_set: "&aGắn thư mục mẫu thành công: <world>"
+    folia_world_copy_blocked: "&cFolia không thể chạy dungeon Core copy world từ template-world. Hãy dùng Premium SCHEMATIC shared-world với world đã preload trước khi lưu hoặc tham gia dungeon này."
     public_toggled: "&eTrạng thái Mở cửa: <status>"
     condition_val_hint_check: "&eĐịnh dạng: %player_level% >= 10"
     condition_val_hint_msg: "&eĐịnh dạng: Bạn chưa đạt cấp 10!"

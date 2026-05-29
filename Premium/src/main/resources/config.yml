@@ -152,6 +152,10 @@ roulette:
 hologram-leaderboard:
   # Interval in seconds to pull data from DB and update displays
   update-interval-seconds: 300
+  # Vertical distance between TextDisplay lines
+  line-spacing: 0.28
+  # Entity tracking/render range for each TextDisplay line
+  view-range: 64.0
   locations:
   # Note: Admins can use the internal API / command to set this up in-game now.
 

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added proactive Folia validation for Core template-world/world-copy dungeons during template load, join, and editor
+  save, with guidance to use Premium `SCHEMATIC` shared-world mode.
+- Documented outcome-based life costs (`lives-deducted-on-leave`, `lives-deducted-on-fail`,
+  `lives-deducted-on-clear`) and clarified their interaction with per-death costs and cooldown-on-leave.
+- Updated Premium hologram docs for native TextDisplay leaderboard holograms and added default line spacing/view range
+  config keys.
+
 ### Fixed
 
 - Enforced private dungeon visibility: regular members cannot join `public: false` dungeons, while admins can

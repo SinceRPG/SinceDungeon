@@ -8,7 +8,7 @@ and holograms.
 - SinceDungeon Core
 - WorldEdit or FastAsyncWorldEdit for schematic mode
 - Optional MythicMobs
-- Optional DecentHolograms
+- Native TextDisplay holograms are built in; DecentHolograms is not required
 
 ## Schematic Instancing
 
@@ -25,7 +25,7 @@ instancing:
 Schematic files go in:
 
 ```text
-plugins/SinceDungeonPremium/schematics/
+plugins/SinceDungeon-PremiumAddon/schematics/
 ```
 
 The file name is based on dungeon `template-world`.
@@ -272,17 +272,21 @@ hologram-drops:
   enabled: true
 ```
 
-Shows reward drops with holographic presentation if the required hologram dependency is available.
+Shows reward drops with holographic presentation.
 
 ## Hologram Leaderboards
 
 ```yaml
 hologram-leaderboard:
   update-interval-seconds: 300
+  line-spacing: 0.28
+  view-range: 64.0
   locations: { }
 ```
 
 Premium commands can create, move, and delete leaderboard holograms.
+Leaderboard holograms are native `TextDisplay` entities. They are refreshed on the configured interval, centered toward
+viewers, and cleaned up/re-rendered by the Premium hologram manager.
 
 ## Discord Webhooks
 

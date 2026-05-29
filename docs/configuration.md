@@ -148,7 +148,9 @@ lives:
   regen-amount: 1
 ```
 
-Players can spend lives to join dungeons and lose lives on death depending on dungeon settings.
+Players can spend lives to join dungeons and lose lives on death depending on dungeon settings. Dungeon files can set
+`lives-deducted-per-death` plus outcome costs for leave, fail, and clear; outcome costs are independent from
+`cooldown-on-leave`.
 
 ## Items
 

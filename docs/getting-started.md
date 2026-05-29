@@ -17,7 +17,8 @@ For Premium features, also place `SinceDungeon-PremiumAddon.jar` in `plugins/`. 
 and enabled.
 
 On Folia, use Premium schematic shared-world mode. Core's default full-world cloning relies on runtime world creation,
-which Folia does not support.
+which Folia does not support. Core template-world dungeons are validated during load, editor save, and join so this
+unsupported setup is blocked before runtime.
 
 ## Build From Source
 
@@ -58,6 +59,9 @@ settings:
   max-players: 4
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
   cooldown-seconds: 1800
 
 rewards:

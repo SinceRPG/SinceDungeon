@@ -12,7 +12,7 @@ The project is split into two plugins:
 - **SinceDungeon Core**: dungeon engine, commands, editor, actions, rewards, top boards, lives, cooldowns, database,
   Redis/cross-server support, and developer API.
 - **SinceDungeon Premium Addon**: advanced dungeon actions, roulette rewards, hologram drops, hologram leaderboards,
-  Mythic+ affixes, Discord webhooks, DecentHolograms support, and extra MythicMobs item integration.
+  Mythic+ affixes, Discord webhooks, native TextDisplay holograms, and extra MythicMobs item integration.
 
 ## Quick Links
 
@@ -42,7 +42,6 @@ The project is split into two plugins:
     - MythicMobs
     - MythicLib
     - MMOItems
-    - DecentHolograms, Premium only
     - WorldEdit or FastAsyncWorldEdit, Premium schematic instancing
     - Redis and proxy messaging for experimental cross-server matchmaking
 
@@ -59,6 +58,9 @@ The project is split into two plugins:
 | Lives          | Player life pool used for entry requirements, death penalties, and revive items.             |
 | Cooldowns      | Per-dungeon cooldowns after completion or early exit, depending on config.                   |
 | Top boards     | Database-backed leaderboard categories for time, party time, kills, and clears.              |
+
+On Folia, Core template-world copy mode is blocked before a run starts because Folia cannot create Bukkit worlds at
+runtime. Use Premium `SCHEMATIC` shared-world mode with a preloaded shared world.
 
 ## Suggested Wiki Order
 

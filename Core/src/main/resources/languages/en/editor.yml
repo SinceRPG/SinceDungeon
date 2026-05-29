@@ -570,6 +570,7 @@ editor:
     saved: "&aFile saved successfully!"
     created: "&aCreated new dungeon file: <file>"
     template_set: "&aTemplate map set to: <world>"
+    folia_world_copy_blocked: "&cFolia cannot run Core template-world copy dungeons. Use Premium SCHEMATIC shared-world mode with a preloaded shared world before saving or joining this dungeon."
     public_toggled: "&ePublic Status: <status>"
     condition_val_hint_check: "&eEnter PAPI condition (e.g., %player_level% >= 10)"
     condition_val_hint_msg: "&eEnter error message"

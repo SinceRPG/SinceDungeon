@@ -90,7 +90,7 @@ Types:
 
 ## Premium Hologram Leaderboards
 
-Premium can display leaderboard holograms through DecentHolograms.
+Premium displays leaderboard holograms with native `TextDisplay` entities. No DecentHolograms installation is required.
 
 ```text
 /sdp hologram create <map_id> <category>
@@ -103,4 +103,6 @@ Update interval:
 ```yaml
 hologram-leaderboard:
   update-interval-seconds: 300
+  line-spacing: 0.28
+  view-range: 64.0
 ```

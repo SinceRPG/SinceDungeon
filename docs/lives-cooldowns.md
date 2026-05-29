@@ -24,7 +24,14 @@ Dungeon files can require and deduct lives:
 settings:
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
 ```
+
+`lives-deducted-per-death` is charged for each death during the run. The outcome settings are charged when that
+outcome happens: leave/disconnect before clear, dungeon failure, or dungeon clear. They stack with any per-death losses
+already taken, and `0` disables that specific outcome cost.
 
 ## Out of Lives
 
@@ -104,7 +111,8 @@ dungeon:
     cooldown-on-leave: false
 ```
 
-`cooldown-on-leave` applies cooldowns even when a player leaves, disconnects, or fails.
+`cooldown-on-leave` applies cooldowns even when a player leaves, disconnects, or fails. It does not enable or disable
+`lives-deducted-on-leave` or `lives-deducted-on-fail`; those settings are controlled independently.
 
 ## Cooldown Items
 

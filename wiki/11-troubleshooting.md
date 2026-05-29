@@ -49,13 +49,13 @@ template-world: "MyDungeon"
 Required file:
 
 ```text
-plugins/SinceDungeonPremium/schematics/MyDungeon.schem
+plugins/SinceDungeon-PremiumAddon/schematics/MyDungeon.schem
 ```
 
 or:
 
 ```text
-plugins/SinceDungeonPremium/schematics/MyDungeon.schematic
+plugins/SinceDungeon-PremiumAddon/schematics/MyDungeon.schematic
 ```
 
 ## Premium schematic mode does not enable
@@ -66,6 +66,23 @@ Check:
 - Core is installed.
 - WorldEdit or FastAsyncWorldEdit is installed.
 - `instancing.mode` is `SCHEMATIC`.
+- On Folia, `instancing.schematic.shared-world.enabled` is true and the shared world is already loaded.
+
+## Folia blocks Core world-copy dungeons
+
+Message:
+
+```text
+This server cannot start world-copy dungeons on Folia.
+```
+
+Cause:
+
+- The dungeon uses Core `template-world` folder copying, which requires runtime Bukkit world creation.
+
+Fix:
+
+- Install Premium, set `instancing.mode: "SCHEMATIC"`, enable shared-world mode, and preload the configured shared world.
 
 ## Placeholder conditions always fail
 
@@ -117,6 +134,18 @@ The plugin has ghost rescue behavior. Check:
 - Multiverse-Inventories bypass permissions.
 - `settings.mvi-bypass-permissions`.
 - Whether the generated world folder can be deleted by the server process.
+
+## Premium holograms do not appear
+
+Check:
+
+- Premium is enabled.
+- The hologram was created with `/sdp hologram create`.
+- The hologram world is loaded.
+- Database contains leaderboard entries.
+- `hologram-leaderboard.view-range` is high enough.
+
+DecentHolograms is not required; Premium uses native TextDisplay entities.
 
 ## Database fails to initialize
 

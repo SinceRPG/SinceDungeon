@@ -33,6 +33,8 @@ template-world: "ForgottenCrypt_Template"
 ```
 
 The plugin creates a temporary instance world for the run and removes it when the run ends.
+This mode is for Paper. On Folia, Core validates and blocks world-folder mode before runtime because Folia cannot create
+Bukkit worlds dynamically.
 
 ## Premium Schematic Mode
 
@@ -40,7 +42,7 @@ Use this mode when each dungeon is a schematic file.
 
 1. Install Core and Premium.
 2. Install WorldEdit or FastAsyncWorldEdit.
-3. Enable schematic mode in `plugins/SinceDungeonPremium/config.yml`:
+3. Enable schematic mode in `plugins/SinceDungeon-PremiumAddon/config.yml`:
 
 ```yaml
 instancing:
@@ -53,7 +55,7 @@ instancing:
 4. Put the schematic in:
 
 ```text
-plugins/SinceDungeonPremium/schematics/
+plugins/SinceDungeon-PremiumAddon/schematics/
 ```
 
 5. Set the dungeon file:
@@ -65,8 +67,8 @@ template-world: "ForgottenCrypt_Template"
 6. Use one of these file names:
 
 ```text
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schem
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schematic
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schem
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schematic
 ```
 
 `template-world` is the base file name without the extension.
@@ -74,6 +76,7 @@ plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schematic
 ## Shared World Schematic Mode
 
 Shared world mode pastes every run into a separated region inside one void world.
+This is the supported Folia setup when the shared world is preloaded before the plugin enables.
 
 ```yaml
 instancing:

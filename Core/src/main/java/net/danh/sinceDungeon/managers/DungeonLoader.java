@@ -3,6 +3,7 @@ package net.danh.sinceDungeon.managers;
 import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.models.DungeonReward;
 import net.danh.sinceDungeon.models.DungeonTemplate;
+import net.danh.sinceDungeon.utils.FoliaDungeonValidator;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.Vector;
@@ -34,6 +35,7 @@ public class DungeonLoader {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         String world = config.getString("template-world");
         if (world == null) return null;
+        FoliaDungeonValidator.warnUnsupportedTemplateLoad(plugin, id, world);
 
         boolean isPublic = config.getBoolean("public", false);
 

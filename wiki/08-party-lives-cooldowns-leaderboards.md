@@ -40,9 +40,16 @@ Dungeon template fields:
 settings:
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
 ```
 
 Lives regenerate based on global config unless overridden per player.
+
+`lives-deducted-per-death` is charged for every death during a run. The three outcome settings are charged when a
+player leaves or disconnects, the run fails, or the run clears. These can stack with per-death losses already taken.
+Set an outcome cost to `0` to disable that specific penalty.
 
 ## Cooldowns
 
@@ -55,6 +62,9 @@ settings:
   cooldown-seconds: 1800
   cooldown-on-leave: true
 ```
+
+`cooldown-on-leave` applies cooldowns to leave/disconnect/fail outcomes. It does not control the outcome life costs;
+use the `lives-deducted-on-*` settings for those.
 
 Cooldown tools:
 
@@ -89,3 +99,4 @@ SinceDungeon.top.ignore
 ## Top GUI
 
 The top GUI displays leaderboard records from the database. Public dungeons can be shown in public lists and top menus.
+Premium leaderboard holograms are rendered with native TextDisplay entities, so DecentHolograms is not required.

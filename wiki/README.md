@@ -33,7 +33,7 @@ The wiki documents every major feature exposed by the plugin:
 - Leaderboards
 - PlaceholderAPI conditions
 - Redis cross-server mode
-- Premium roulette, hologram drops, affixes, Discord webhooks, schematic engine, and hologram leaderboards
+- Premium roulette, hologram drops, affixes, Discord webhooks, schematic engine, and native TextDisplay hologram leaderboards
 - Public API, events, and extension interfaces
 - Full per-dungeon setup workflow from file creation to GUI editing and test runs
 

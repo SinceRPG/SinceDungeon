@@ -125,6 +125,11 @@ public class DungeonManager {
             return;
         }
 
+        if (!FoliaDungeonValidator.canStart(plugin, template)) {
+            FoliaDungeonValidator.notifyJoinBlocked(plugin, p, template);
+            return;
+        }
+
         if (plugin.getConfigFile().getBoolean("cross-server.enabled", false)) {
 
             if (plugin.getPartyManager().getProvider().hasParty(p.getUniqueId()) && !plugin.getPartyManager().getProvider().isLeader(p.getUniqueId())) {
@@ -480,6 +485,11 @@ public class DungeonManager {
             if (!tmpl.isPublic() && !allowPrivate) {
                 String msg = plugin.getLanguageManager().getString("error.dungeon_not_public", "&cThis dungeon is not public yet.");
                 p.sendMessage(ColorUtils.parseWithPrefix(msg));
+                return;
+            }
+
+            if (!FoliaDungeonValidator.canStart(plugin, tmpl)) {
+                FoliaDungeonValidator.notifyJoinBlocked(plugin, p, tmpl);
                 return;
             }
 

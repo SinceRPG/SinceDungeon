@@ -10,6 +10,9 @@ settings:
   max-players: 6
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
   keep-inventory-on-death: true
   prevent-item-dropping: true
   block-ender-pearls: true
@@ -127,5 +130,5 @@ stages:
 For Premium schematic mode, place:
 
 ```text
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schem
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schem
 ```

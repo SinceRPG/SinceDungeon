@@ -61,7 +61,7 @@ template-world: "ForgottenCrypt_Template"
 Schematic file:
 
 ```text
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schem
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schem
 ```
 
 ## Gameplay Settings Menu

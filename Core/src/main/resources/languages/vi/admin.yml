@@ -69,6 +69,7 @@ admin:
     world_force_unloaded: "Đã ép tải xuất (force unload) thế giới Dungeon: <world>"
     world_force_unload_fail: "NGHIÊM TRỌNG: Không thể ép tải xuất thế giới <world> trong quá trình tắt server!"
     folia_world_mode_unsupported: "[Instancing] Folia không hỗ trợ tạo world Bukkit khi server đang chạy. Hãy dùng Premium SCHEMATIC shared-world với world đã preload."
+    folia_template_world_blocked: "[Instancing] Dungeon '<dungeon>' dùng template-world '<world>', nhưng dungeon Core copy world không thể chạy trên Folia. Hãy dùng Premium SCHEMATIC shared-world với world đã preload."
     folia_world_unload_skipped: "[Instancing] Có yêu cầu unload world <world> trên Folia; trên Folia chỉ nên dùng world đã được server load sẵn."
     lobby_error: "Lỗi khi khởi tạo sảnh chờ Dungeon cho <player>"
     action_create_fail: "Không thể tạo hành động <type>: <error>"

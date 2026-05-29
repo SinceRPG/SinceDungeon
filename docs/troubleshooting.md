@@ -86,16 +86,18 @@ Cross-server mode is experimental. Check:
 
 Check:
 
-- DecentHolograms is installed.
 - Premium is enabled after Core.
 - The hologram was created with `/sdp hologram create`.
 - The configured category is valid.
 - Database contains leaderboard entries.
+- The hologram world is loaded and `hologram-leaderboard.view-range` is high enough.
 
 ## Folia Dungeon Instances Fail to Create
 
 Folia cannot create or load Bukkit worlds at runtime. Use Premium `SCHEMATIC` mode with
 `instancing.schematic.shared-world.enabled: true`, and preload the configured shared world before the plugin starts.
+Core validates template-world copy dungeons during load, editor save, and join; unsupported Folia setups are blocked
+before the plugin tries to create a runtime world.
 
 ## Schematic Dungeon Is Empty
 

@@ -4,6 +4,7 @@ import net.danh.sinceDungeon.SinceDungeon;
 import net.danh.sinceDungeon.managers.DungeonLoader;
 import net.danh.sinceDungeon.models.DungeonTemplate;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.FoliaDungeonValidator;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.danh.sinceDungeon.utils.SoundUtils;
 import org.bukkit.Material;
@@ -62,6 +63,15 @@ public class EditorSession {
 
     public void save() {
         if (file == null) return;
+        if (FoliaDungeonValidator.isWorldCopyUnsupported(plugin) && config.getString("template-world") != null) {
+            String msg = plugin.getLanguageManager().getString(
+                    "editor.chat.folia_world_copy_blocked",
+                    "&cCannot save this dungeon on Folia while Core world-copy instancing is active. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
+            );
+            if (player.isOnline()) player.sendMessage(ColorUtils.parseWithPrefix(msg));
+            FoliaDungeonValidator.warnUnsupportedTemplateLoad(plugin, file.getName().replace(".yml", ""), config.getString("template-world"));
+            return;
+        }
         String yamlData = config.saveToString();
 
         SchedulerCompat.runAsync(plugin, () -> {

@@ -41,11 +41,13 @@ stages: { }
 Core world mode:
 
 - `template-world` is the world folder to clone.
+- This mode is blocked on Folia because Folia cannot create Bukkit worlds at runtime.
 
 Premium schematic mode:
 
 - `template-world` is the schematic file base name.
 - `ForgottenCrypt_Template` maps to `ForgottenCrypt_Template.schem`.
+- On Folia, use Premium `SCHEMATIC` shared-world mode with the shared world preloaded.
 
 ## `public`
 
@@ -62,6 +64,9 @@ settings:
   max-players: 6
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
   keep-inventory-on-death: true
   prevent-item-dropping: true
   block-ender-pearls: true
@@ -86,6 +91,15 @@ Death actions:
 - `RESPAWN`: player respawns inside the dungeon.
 - `FAIL`: death ends or fails the run.
 - `SPECTATE`: dead player spectates remaining players.
+
+Life costs:
+
+- `lives-deducted-per-death` is charged each time a player dies.
+- `lives-deducted-on-leave` is charged when a player leaves or disconnects before clear.
+- `lives-deducted-on-fail` is charged when the dungeon fails.
+- `lives-deducted-on-clear` is charged when the dungeon clears.
+- Outcome costs are independent from per-death costs; set an outcome cost to `0` to disable it.
+- `cooldown-on-leave` only controls cooldowns on leave/fail and does not change life costs.
 
 ## Conditions
 

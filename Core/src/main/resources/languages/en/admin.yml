@@ -82,6 +82,7 @@ admin:
     item_dynamic_parse_error: "Error parsing dynamic item data: <data>"
     random_wave_parse_error: "[RandomWave] Failed to parse mob pool entry: <entry> — expected format: VANILLA:<EntityType>:<weight> or MYTHIC:<MobId>:<weight>[:<level>]"
     template_load_error: "Error loading template <id>: <error>"
+    folia_template_world_blocked: "[Instancing] Dungeon '<dungeon>' uses template-world '<world>', but Core world-copy dungeons cannot run on Folia. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."
     top_fetch_error: "[TopManager] Failed to fetch clear count for player."
     top_save_error: "[TopManager] Failed to save database metrics."
     folia_world_mode_unsupported: "[Instancing] Folia does not support Bukkit runtime world creation. Use Premium SCHEMATIC shared-world mode with a preloaded shared world."

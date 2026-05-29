@@ -576,6 +576,7 @@ editor:
     saved: "&a文件保存成功！"
     created: "&a创建了新的副本文件: <file>"
     template_set: "&a模板地图已设置为: <world>"
+    folia_world_copy_blocked: "&cFolia 无法运行 Core template-world 复制世界副本。保存或加入前，请使用 Premium SCHEMATIC shared-world，并预先加载共享世界。"
     public_toggled: "&e公开状态: <status>"
     condition_val_hint_check: "&e输入 PAPI 条件 (例如，%player_level% >= 10)"
     condition_val_hint_msg: "&e输入错误消息"

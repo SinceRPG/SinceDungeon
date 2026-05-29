@@ -6,6 +6,7 @@ import net.danh.sinceDungeon.hooks.MMOItemsHook;
 import net.danh.sinceDungeon.managers.DungeonManager;
 import net.danh.sinceDungeon.models.DungeonGame;
 import net.danh.sinceDungeon.utils.ColorUtils;
+import net.danh.sinceDungeon.utils.FoliaDungeonValidator;
 import net.danh.sinceDungeon.utils.ItemBuilder;
 import net.danh.sinceDungeon.utils.SchedulerCompat;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -271,6 +272,10 @@ public class EditorMenuListener implements Listener {
             session.awaitInput(EditorSession.InputType.EDIT_STRING, "edit_world_name", val -> {
                 session.getConfig().set("template-world", val);
                 gui.sendMessage(p, "template_set", "<world>", val);
+                if (FoliaDungeonValidator.isWorldCopyUnsupported(plugin)) {
+                    gui.sendMessage(p, "folia_world_copy_blocked");
+                    FoliaDungeonValidator.warnUnsupportedTemplateLoad(plugin, session.getFile().getName().replace(".yml", ""), val);
+                }
                 gui.openDungeonMenu(p, session);
             });
             plugin.getEditorListener().startListening(p, session);

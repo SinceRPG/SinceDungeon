@@ -92,9 +92,9 @@ type: "MMOITEM"
 value: "SWORD:SILVER_LANCE:1"
 ```
 
-## DecentHolograms
+## Native TextDisplay Holograms
 
-Premium can create hologram leaderboards when DecentHolograms is installed.
+Premium creates leaderboard holograms with Minecraft native `TextDisplay` entities. DecentHolograms is not required.
 
 ```text
 /sdp hologram create <map_id> <category>

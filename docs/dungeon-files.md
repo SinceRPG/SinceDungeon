@@ -31,6 +31,8 @@ template-world: "ForgottenCrypt_Template"
 ```
 
 The value must match the source world folder name. SinceDungeon creates temporary instance worlds from this template.
+On Folia, this Core world-copy mode is not supported; use Premium `SCHEMATIC` shared-world mode, where the same
+`template-world` value names the schematic file.
 
 ## Public Visibility
 
@@ -50,6 +52,9 @@ settings:
   max-players: 6
   required-lives-to-join: 1
   lives-deducted-per-death: 1
+  lives-deducted-on-leave: 0
+  lives-deducted-on-fail: 0
+  lives-deducted-on-clear: 0
   keep-inventory-on-death: true
   prevent-item-dropping: true
   block-ender-pearls: true
@@ -70,6 +75,15 @@ Death actions:
 - `RESPAWN`: respawn at the dungeon start or checkpoint.
 - `FAIL`: fail the entire run.
 - `SPECTATE`: let the player watch remaining teammates.
+
+Life costs:
+
+- `lives-deducted-per-death` is charged each time a player dies inside the run.
+- `lives-deducted-on-leave` is charged when a player leaves or disconnects before the run clears.
+- `lives-deducted-on-fail` is charged to participants when the dungeon ends as failed.
+- `lives-deducted-on-clear` is charged to participants when the dungeon is cleared.
+- Set any outcome cost to `0` to disable that outcome penalty. Outcome costs are separate from per-death costs.
+- `cooldown-on-leave` only controls whether cooldowns are applied on leave/fail; it does not change life deductions.
 
 Command hooks:
 

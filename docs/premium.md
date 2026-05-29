@@ -277,12 +277,16 @@ roulette:
 
 ## Holograms
 
+Premium hologram leaderboards use native Minecraft `TextDisplay` entities. DecentHolograms is no longer required.
+
 ```yaml
 hologram-drops:
   enabled: true
 
 hologram-leaderboard:
   update-interval-seconds: 300
+  line-spacing: 0.28
+  view-range: 64.0
   locations:
 ```
 

@@ -9,7 +9,7 @@
 - MMOItems is optional for MMOItems rewards/items.
 - SinceDungeon Premium requires SinceDungeon Core.
 - Premium schematic mode requires WorldEdit or FastAsyncWorldEdit.
-- DecentHolograms is optional for Premium hologram leaderboards.
+- Premium hologram leaderboards use native TextDisplay entities and do not require DecentHolograms.
 
 ## Core Installation
 
@@ -35,11 +35,11 @@ plugins/SinceDungeon/
 1. Install SinceDungeon Core first.
 2. Put the Premium jar in `plugins/`.
 3. Start the server once.
-4. Edit `plugins/SinceDungeonPremium/config.yml`.
+4. Edit `plugins/SinceDungeon-PremiumAddon/config.yml`.
 5. If using schematic mode, place files in:
 
 ```text
-plugins/SinceDungeonPremium/schematics/
+plugins/SinceDungeon-PremiumAddon/schematics/
 ```
 
 ## Recommended First Setup
@@ -65,8 +65,8 @@ template-world: "ForgottenCrypt_Template"
 The Premium plugin will look for:
 
 ```text
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schem
-plugins/SinceDungeonPremium/schematics/ForgottenCrypt_Template.schematic
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schem
+plugins/SinceDungeon-PremiumAddon/schematics/ForgottenCrypt_Template.schematic
 ```
 
 Enable schematic mode in Premium config:
@@ -77,5 +77,7 @@ instancing:
 ```
 
 If `shared-world.enabled` is true, all schematic runs are pasted into isolated regions inside one shared void world.
+On Folia, use shared-world mode with the shared world already loaded before the plugin enables. Core world-copy
+template dungeons are blocked on Folia before runtime world creation is attempted.
 
 For the complete per-dungeon schematic workflow, see [Schematic and Instancing Setup](13-schematic-instancing.md).
